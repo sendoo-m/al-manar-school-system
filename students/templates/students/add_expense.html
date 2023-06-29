@@ -1,0 +1,12 @@
+{% extends 'students/base/administration_navbar.html' %}
+
+{% block title %}Add Expense{% endblock %}
+
+{% block content %}
+    <h1>Add Expense</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ expense_form.as_p }}
+        <button type="submit">Add</button>
+    </form>
+{% endblock %}

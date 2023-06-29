@@ -1,0 +1,126 @@
+{% load static %}
+{% load crispy_forms_tags %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %}</title>
+
+    <!-- Bootstrap CSS -->
+<link rel="stylesheet" href="{% static 'css/bootstrap.css' %}">
+<link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+<link rel="stylesheet" href="{% static 'css/bootstrap.rtl.css' %}">
+<link rel="stylesheet" href="{% static 'css/bootstrap.rtl.min.css' %}">
+
+<!-- Bootstrap Grid -->
+<link rel="stylesheet" href="{% static 'css/bootstrap-grid.css' %}">
+<link rel="stylesheet" href="{% static 'css/bootstrap-grid.min.css' %}">
+<link rel="stylesheet" href="{% static 'css/bootstrap-grid.rtl.css' %}">
+<link rel="stylesheet" href="{% static 'css/bootstrap-grid.rtl.min.css' %}">
+
+<!-- Bootstrap Reboot -->
+<link rel="stylesheet" href="{% static 'css/bootstrap-reboot.css' %}">
+<link rel="stylesheet" href="{% static 'css/bootstrap-reboot.min.css' %}">
+<link rel="stylesheet" href="{% static 'css/bootstrap-reboot.rtl.css' %}">
+<link rel="stylesheet" href="{% static 'css/bootstrap-reboot.rtl.min.css' %}">
+
+<!-- Bootstrap Utilities -->
+<link rel="stylesheet" href="{% static 'css/bootstrap-utilities.css' %}">
+<link rel="stylesheet" href="{% static 'css/bootstrap-utilities.min.css' %}">
+<link rel="stylesheet" href="{% static 'css/bootstrap-utilities.rtl.css' %}">
+<link rel="stylesheet" href="{% static 'css/bootstrap-utilities.rtl.min.css' %}">
+
+<!-- Custom CSS -->
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+<!-- ICON -->
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.3/css/all.css" integrity="sha384-DfFM3Lw7K8HYJBm57L/GhGzMOEwZrSvWz+/+Lb/aWb1CtPz4+E5f5cYVtcFMzDfG" crossorigin="anonymous">
+
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons%401.5.0/font/bootstrap-icons.css" integrity="sha384-nDw2I+O6iZ3xvQ/7xhPmJNnK5BZ/+VcEeQbK9v+1JqA7n8qJZ9YyGmzQ5RjZw1d" crossorigin="anonymous">
+
+<!-- Bootstrap CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.0.2/css/bootstrap.min.css" integrity="sha512-xIUVMw9jyfjQy7VJ1amv2B5YbI/5sQ0SbR4oJxU9E7gVh2QOeZ5s7rZiN4Zs3qbjZkSgGf0Lh+RZsA6F/iOqXg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+<!-- end ICON -->
+
+</head>
+<body>
+  {% if user.is_authenticated and user.is_staff and user.is_superuser %}
+  {% block content %}
+        
+        {% comment %} {% include 'students/base/nav.html' %} {% endcomment %}
+        {% comment %} {% include 'students/home.html' %} {% endcomment %}
+        <!--Graphs-->
+        {% include 'students/base/404.html' %}
+        <div class="container">
+        </div>
+        <!-- End Graphs-->
+        {% endblock content %}
+        {% else %}
+        {% include 'students/staff_index.html' %}
+        {% block contentstaff %}
+        
+    {% endblock contentstaff %}
+  {% endif %}
+        <!-- Mohamed Gamal try -->
+      {% comment %} {% include 'students/base/nav.html' %}
+      <br>
+      <div class="container py-4">
+      {% block content %}
+      {% if user.is_authenticated and user.is_staff and user.is_superuser %}
+      {% include 'students/home.html' %}
+
+      {% else %}
+      {% include 'students/staff_index.html' %}
+
+      {% endif %}
+      {% endblock %}
+      <br>
+      <br>
+      
+      </div>
+      <!-- Footer -->
+        {% include 'students/base/footer.html' %} {% endcomment %}
+        <!-- Mohamed Gamal try -->
+
+
+<!-- Bootstrap JS Bundle -->
+<script src="{% static 'js/bootstrap.bundle.js' %}"></script>
+<script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'js/bootstrap.bundle.min.js.map' %}"></script>
+
+<!-- Bootstrap ES Modules -->
+<script src="{% static 'js/bootstrap.esm.js' %}"></script>
+<script src="{% static 'js/bootstrap.esm.min.js' %}"></script>
+<script src="{% static 'js/bootstrap.esm.min.js.map' %}"></script>
+
+<!-- Bootstrap JS -->
+<script src="{% static 'js/bootstrap.js' %}"></script>
+<script src="{% static 'js/bootstrap.min.js' %}"></script>
+<script src="{% static 'js/bootstrap.min.js.map' %}"></script>
+
+<!-- Font Awesome -->
+<script src="{% static 'js/fontawesome.js' %}"></script>
+
+<!-- Popper.js -->
+<script src="{% static 'js/popper.min.js' %}"></script>
+
+<!-- Tether -->
+<script src="{% static 'js/tether.min.js' %}"></script>
+<!-- Initialize the Bootstrap dropdown component -->
+<script>
+  $(document).ready(function() {
+    $('.dropdown-toggle').dropdown();
+  });
+  var dropdownElementList = [].slice.call(document.querySelectorAll('.dropdown-toggle'))
+  var dropdownList = dropdownElementList.map(function (dropdownToggleEl) {
+    return new bootstrap.Dropdown(dropdownToggleEl)
+  })
+</script>
+
+</body>
+</html> 

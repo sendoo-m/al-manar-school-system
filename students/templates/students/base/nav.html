@@ -1,0 +1,51 @@
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+      <a class="navbar-brand" href="#">Al Manar School Account App</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}" href="{% url 'students:home' %}">Home</a>
+          </li>
+          {% comment %} <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'student_list' %}active{% endif %}" href="{% url 'students:student_list' %}">Students</a>
+          </li> {% endcomment %}
+          {% comment %} <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'add_student' %}active{% endif %}" href="{% url 'students:add_student' %}">Add Student</a>
+          </li> {% endcomment %}
+           <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'report' %}active{% endif %}" href="{% url 'students:report' %}">Reports</a>
+          </li> 
+          {% comment %} <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'search_student' %}active{% endif %}" href="{% url 'students:search_student' %}">Search Students</a>
+          </li> {% endcomment %}
+           <li class="nav-item">
+            <a class="nav-link" href="{% url 'students:g_reports' %}">Generated Reports</a>
+          </li> 
+        </ul>
+        <ul class="navbar-nav">
+          {% if user.is_authenticated %}
+            <li class="nav-item">
+              <a class="nav-link text-light" href="{% url 'account:view_profile' %}">Welcome, {{ user.username }}</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link text-light" href="{% url 'account:change_password' %}">Change Password</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link text-light" href="{% url 'account:logout' %}">Log out</a>
+            </li>
+          {% else %}
+            <li class="nav-item">
+              <a class="nav-link text-light" href="{% url 'account:login' %}">Login</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link text-light" href="{% url 'account:signup' %}">Sign up</a>
+            </li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </nav>

@@ -1,0 +1,20 @@
+{% extends 'students/base/administration_navbar.html' %}
+{% comment %} {% extends 'students/base.html' %} {% endcomment %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+    <h1>Register</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ academic_year_form.as_p }}
+        <button type="submit">Register</button>
+        {% comment %} {{ educational_stage_form.as_p }} {% endcomment %}
+        {% comment %} <button type="submit">Register</button> {% endcomment %}
+        {% comment %} {{ classroom_form.as_p }} {% endcomment %}
+        {% comment %} 'academic_year_form': academic_year_form,
+        'educational_stage_form': educational_stage_form,
+        'classroom_form': classroom_form, {% endcomment %}
+        {% comment %} <button type="submit">Register</button> {% endcomment %}
+    </form>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends 'students/base.html' %}
+
+{% block title %}Expenses by Educational Stage{% endblock %}
+
+{% block content %}
+  <h1>Expenses by Educational Stage</h1>
+  <form method="GET">
+    <label for="stage_id">Select an Educational Stage:</label>
+    <select id="stage_id" name="stage_id">
+      {% for stage in educational_stages %}
+        <option value="{{ stage.id }}">{{ stage.name }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">Get Report</button>
+  </form>
+
+  {% if expenses %}
+    <h2>Expenses for {{ stage.name }}</h2>
+    <ul>
+      {% for expense in expenses %}
+        <li>{{ expense.description }} - ${{ expense.amount }}</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No expenses found for this educational stage.</p>
+  {% endif %}
+{% endblock %}

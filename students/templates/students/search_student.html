@@ -1,0 +1,109 @@
+{% extends 'students/base/account_navbar.html' %}
+{% comment %} {% extends 'students/base.html' %}  {% endcomment %}
+
+{% block title %}Search Students{% endblock %}
+
+
+{% block content %}
+  <div class="container my-1">
+    <h1>Search Students</h1>
+    <form method="GET" action="{% url 'students:search_student' %}">
+      <div class="input-group mb-3">
+        <input type="text" class="form-control" name="query" placeholder="Search by name or National ID ">
+        <button type="submit" class="btn btn-primary">Search</button>
+      </div>
+    </form>
+
+    {% if students %}
+      <h2>Search Results</h2>
+      <div class="table-responsive">
+        <table> <!--  class="table table-bordered"  -->
+          <thead ><!-- class="bg-primary text-white" -->
+            <tr>
+              <th>Name</th>
+              <th>National Number</th>
+              {% comment %} <th>Status</th> {% endcomment %}
+              <th>Age</th>
+              <th>Classroom</th>
+              <th>Stage</th> 
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for student in students %}
+              <tr>
+                <td>{{ student.name }}</td>
+                <td>{{ student.national_number }}</td>
+                {% comment %} <td> <!-- علامة الدفع باللون الاخضر-->
+                  {% if installment.paid %}
+                      <span class="status-mark status-paid">&#10004;</span>
+                  {% else %}
+                      {% if student.premium %}
+                          <span class="status-mark status-premium">&#9888;</span>
+                      {% else %}
+                          <span class="status-mark status-unpaid">&#10008;</span>
+                      {% endif %}
+                  {% endif %}
+              </td><!-- نهاية علامة الدفع بالالوان --> {% endcomment %}
+                <td>{{ student.age }}</td>
+                <td>
+                  {% for classroom in student.classroom.all %}
+                  {{ classroom.name }}
+                  {% if not forloop.last %}, {% endif %}
+                  {% empty %}
+                  N/A
+                  {% endfor %}
+              </td>
+              <td>
+                {% for classroom in student.classroom.all %}
+                {{ classroom.stage }}
+                {% if not forloop.last %}, {% endif %}
+                {% empty %}
+                N/A
+                {% endfor %}
+            </td>
+                
+                <td>
+                  {% comment %} <a href="{% url 'students:edit_student' pk=student.pk %}" class="btn btn-primary btn-sm">Edit</a> {% endcomment %}
+                  <a href="{% url 'students:student_detail' pk=student.pk %}" class="btn btn-primary btn-sm">تفاصيل ودفع الأقساط</a>
+                  
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <nav aria-label="Pagination">
+        <ul class="pagination">
+          {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&query={{ query }}{% endif %}" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+                <span class="sr-only">Previous</span>
+              </a>
+            </li>
+          {% endif %}
+          {% for page in page_obj.paginator.page_range %}
+            {% if page == page_obj.number %}
+              <li class="page-item active" aria-current="page">
+                <a class="page-link" href="#">{{ page }} <span class="sr-only">(current)</span></a>
+              </li>
+            {% else %}
+              <li class="page-item"><a class="page-link" href="?page={{ page }}{% if query %}&query={{ query }}{% endif %}">{{ page }}</a></li>
+            {% endif %}
+          {% endfor %}
+          {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&query={{ query }}{% endif %}" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+                <span class="sr-only">Next</span>
+              </a>
+            </li>
+          {% endif %}
+        </ul>
+      </nav> 
+    {% else %}
+      <p>No students found.</p>
+    {% endif %}
+  </div>
+{% endblock %}

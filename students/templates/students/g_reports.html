@@ -1,0 +1,42 @@
+{% extends 'students/base/administration_navbar.html' %}
+{% comment %} {% extends 'students/base.html' %} {% endcomment %}
+
+{% block title %}Generate Reports{% endblock %}
+
+{% block content %}
+    <h1>Generate Reports</h1>
+    <div class="row">
+        <div class="col-md-6">
+            <h2>Student Report</h2>
+            <form action="{% url 'students:generate_student_report' %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">Generate Student Report</button>
+            </form>
+        </div>
+        <div class="col-md-6">
+            <h2>Installment Report</h2>
+            <form action="{% url 'students:generate_installment_report' %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">Generate Installment Report</button>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+
+{% comment %} {% extends 'students/base.html' %}
+
+{% block title %}Reports{% endblock %}
+
+{% block content %}
+    <h1>Reports</h1>
+    <div class="row">
+        <div class="col-md-6">
+            <h2>Installment Report</h2>
+            <a href="{% url 'generate_installment_report' %}" class="btn btn-primary">Generate Installment Report</a>
+        </div>
+        <div class="col-md-6">
+            <h2>Student Report</h2>
+            <a href="{% url 'generate_student_report' %}" class="btn btn-primary">Generate Student Report</a>
+        </div>
+    </div>
+{% endblock %} {% endcomment %}

@@ -1,0 +1,24 @@
+{% extends 'students/base.html' %}
+
+{% block content %}
+<title>Paid Students</title>
+<h1>Paid Students</h1>
+    
+<div class="container">
+    <h2>Paid Students</h2>
+    <div class="row">
+      <div class="col-md-4 mb-3">
+        <div class="card border-primary">
+          <div class="card-header">Total Students</div>
+
+    <h1>Paid Students</h1>
+    {% for student in paid_students %}
+        <p>Name: {{ student.name }}</p>
+        <p>National Number: {{ student.national_number }}</p>
+        <p>Age: {{ student.age }}</p>
+        <p>Gender: {{ student.gender }}</p>
+        <p>Date of Birth: {{ student.date_of_birth }}</p>
+        <p>Academic Year: {{ student.academic_year }}</p>
+    {% endfor %}
+
+    {% endblock %}

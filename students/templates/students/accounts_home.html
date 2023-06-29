@@ -1,0 +1,21 @@
+{% extends 'students/base/account_navbar.html' %}
+{% load static %}
+
+{% block title %}Student Affairs!{% endblock %}
+{% block content %}
+   <div class="container py-4">
+
+    <h2>Welcome, Accounts!</h2>
+    <p>This is the home page for accounts.</p>
+
+    {% comment %} <h1>Accounts Home</h1> {% endcomment %}
+  {% comment %} <a href="{% url 'students:search_student' %}">Search Students</a> {% endcomment %}
+  {% comment %} <a href="{% url 'students:student_list' %}">All Students</a> {% endcomment %}
+    <div class="col-12 col-md-6 col-lg-3 mb-4">
+        <a href="{% url 'students:search_student' %}" class="d-flex flex-column align-items-center justify-content-center {% if request.resolver_match.url_name == 'search_student' %}active{% endif %}">
+          <i class="fas fa-search fa-4x text-warning mb-3"></i>
+          <span class="text-center text-uppercase font-weight-bold">Search Students</span>
+        </a>
+      </div>
+{% endblock %} 
+

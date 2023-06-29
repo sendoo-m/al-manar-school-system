@@ -1,0 +1,23 @@
+{% extends 'students/base/account_navbar.html' %}
+{% comment %} {% extends 'students/base.html' %} {% endcomment %}
+{% load crispy_forms_tags %}
+
+{% block title %}دفع الأقساط{% endblock %}
+
+{% block content %}
+    <h1>دفع الأقساط</h1>
+    <p>اسم الطالب: {{ student_name }}</p>  <!-- Display the student's name -->
+    <p>الرقم القومي: {{ national_number }}</p>  <!-- Display the student's national number -->
+
+    {% comment %} {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %} {% endcomment %}
+    
+    <form method="post">
+        {% csrf_token %}
+        {{ installment_form|crispy }}
+        <input type="submit" value="Pay Installment">
+    </form>
+{% endblock %}

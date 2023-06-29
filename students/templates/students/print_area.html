@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Print Area</title>
+</head>
+<body>
+    <h1>Classroom Details</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Phone Number</th>
+                <th>Total Paid</th>
+                <th>Total Expenses</th>
+                <th>Discount</th>
+                <th>Total Owed</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in page_obj %}
+              <tr>
+                <td>{{ student.name }}</td>
+                <td>{{ student.phone_number }}</td>
+                <td>{{ student.total_payments }}</td>
+                <td>{{ total_expenses }}</td>
+                <td>{{ student.discount }}</td>
+                <td>
+                  <strong style="color: {% if student.total_owed > 0 %}red{% elif student.total_owed < 0 %}green{% else %}green{% endif %}">
+                    {% if student.total_owed > 0 %}
+                      {{ student.total_owed }}
+                    {% elif student.total_owed < 0 %}
+                      Paid over
+                      {{ student.total_owed }}
+                    {% else %}
+                      0
+                    {% endif %}
+                  </strong>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6">No students found.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+    </table>
+</body>
+</html>

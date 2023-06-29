@@ -1,0 +1,71 @@
+{% extends 'students/base/account_navbar.html' %}
+{% comment %} {% extends 'students/base.html' %} {% endcomment %}
+{% block title %}Receipt {{ tuition.student }}{% endblock %}
+{% block content %}
+<style>
+    /* Hide the button on the print paper */
+    @media print {
+      .print-button {
+        display: none;
+      }
+    }
+    @media print {
+        footer {
+            display: none;
+        }
+    }
+</style>
+
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <h1 class="mb-4">Receipt</h1>
+            <table class="table table-bordered"> <!--  -->
+                <tbody>
+                    <tr>
+                        <th>Payment Date:</th>
+                        <td>{{ tuition.receipt_date|date:"F d, Y" }} {{ tuition.receipt_date|time:"h:i A" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Payment User:</th>
+                        <td>{{ tuition.payment_user }}</td>
+                    </tr>
+                    <tr>
+                        <th>Student Name:</th>
+                        <td>{{ tuition.student }}</td>
+                    </tr>
+                    <tr>
+                        <th>Installment Number:</th>
+                        <td>{{ tuition.installment_number }}</td>
+                    </tr>
+                    <tr>
+                        <th>Amount Paid:</th>
+                        <td>{{ tuition.amount_tuition }}</td>
+                       
+                    </tr>
+                    <tr>
+                        <th>Amount Remaining:</th>
+                        <td>
+                            {% if total_owed > 0 %}
+                                {{ total_owed }}
+                            {% elif total_owed < 0 %}
+                                Paid over
+                                {{ total_owed }}<!--|absolute -->
+                            {% else %}
+                                0
+                            {% endif %}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <button class="btn btn-primary print-button" onclick="printReceipt()">Print</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function printReceipt() {
+        window.print();
+    }
+</script>
+{% endblock content %}

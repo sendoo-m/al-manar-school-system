@@ -1,0 +1,96 @@
+{% extends 'students/base/administration_navbar.html' %}
+{% load static %}
+
+{% block title %}Administration!{% endblock %}
+{% comment %} <div class="container py-4"> {% endcomment %}
+{% block content %}
+
+
+  <h3 class="text-center mb-5 text-white bg-success">Welcome to Al-Manar School Account App</h3>
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-6 col-lg-3 mb-4">
+      <a href="{% url 'students:administration_home' %}" class="d-flex flex-column align-items-center justify-content-center  {% if request.resolver_match.url_name == 'administration_home' %}active{% endif %}" style="text-decoration: none;">
+        <i class="fas fa-home fa-4x text-primary mb-3"></i>
+        <span class="text-center text-uppercase font-weight-bold" style="font-size: 18px;">الرئيسية</span><!-- Home -->
+      </a>
+    </div>
+    <div class="col-12 col-md-6 col-lg-3 mb-4">
+      <a href="{% url 'students:student_list' %}" class="d-flex flex-column align-items-center justify-content-center  {% if request.resolver_match.url_name == 'student_list' %}active{% endif %}" style="text-decoration: none;">
+        <i class="fas fa-users fa-4x text-secondary mb-3"></i>
+        <span class="text-center text-uppercase font-weight-bold" style="font-size: 18px;"> قائمة الطلاب</span><!-- Students -->
+      </a>
+    </div>
+    <div class="col-12 col-md-6 col-lg-3 mb-4">
+      <a href="{% url 'students:add_student' %}" class="d-flex flex-column align-items-center justify-content-center  {% if request.resolver_match.url_name == 'add_student' %}active{% endif %}" style="text-decoration: none;">
+        <i class="fas fa-user-plus fa-4x text-success mb-3"></i>
+        <span class="text-center text-uppercase font-weight-bold" style="font-size: 18px;"> اضافة طالب</span><!-- Add Student -->
+      </a>
+    </div> 
+    <div class="col-12 col-md-6 col-lg-3 mb-4">
+      <a href="{% url 'students:report' %}" class="d-flex flex-column align-items-center justify-content-center  {% if request.resolver_match.url_name == 'report' %}active{% endif %}" style="text-decoration: none;">
+        <i class="fas fa-chart-bar fa-4x text-danger mb-3"></i>
+        <span class="text-center text-uppercase font-weight-bold" style="font-size: 18px;"> تقرير المراحل</span><!-- Reports -->
+      </a>
+    </div>
+    <div class="col-12 col-md-6 col-lg-3 mb-4">
+      <a href="{% url 'students:search_student' %}" class="d-flex flex-column align-items-center justify-content-center  {% if request.resolver_match.url_name == 'search_student' %}active{% endif %}" style="text-decoration: none;">
+        <i class="fas fa-search fa-4x text-warning mb-3"></i>
+        <span class="text-center text-uppercase font-weight-bold" style="font-size: 18px;"> دفع الاقساط</span><!-- Search Students -->
+      </a>
+    </div>
+    <div class="col-12 col-md-6 col-lg-3 mb-4">
+      <a href="{% url 'students:g_reports' %}" class="d-flex flex-column align-items-center justify-content-center  {% if request.resolver_match.url_name == 'g_reports' %}active{% endif %}" style="text-decoration: none;">
+        <i class="fas fa-file-alt fa-4x text-info mb-3"></i>
+        <span class="text-center text-uppercase font-weight-bold" style="font-size: 18px;"> انشاء تقارير </span><!-- Generated Reports -->
+      </a>
+    </div>
+    <div class="col-12 col-md-6 col-lg-3 mb-4">
+      <a href="{% url 'students:all_reports' %}" class="d-flex flex-column align-items-center justify-content-center  {% if request.resolver_match.url_name == 'all_reports' %}active{% endif %}" style="text-decoration: none;">
+        <i class="fas fa-clipboard-list fa-4x text-primary mb-3"></i>
+        <span class="text-center text-uppercase font-weight-bold" style="font-size: 18px;"> إحصائيات إجمالية</span><!-- All Reports -->
+      </a>
+    </div>
+    <div class="col-12 col-md-6 col-lg-3 mb-4">
+      <a href="{% url 'students:daily_report' %}" class="d-flex flex-column align-items-center justify-content-center  {% if request.resolver_match.url_name == 'daily_report' %}active{% endif %}" style="text-decoration: none;">
+        <i class="fas fa-calendar-day fa-4x text-secondary mb-3"></i>
+        <span class="text-center text-uppercase font-weight-bold" style="font-size: 18px;"> تقرير يومي</span> <!-- Daily Report -->
+      </a>
+    </div>
+    <div class="row justify-content-center">
+    <div class="col-12 col-md-6 col-lg-3 mb-4">
+      <a href="{% url 'students:upgrade_students' %}" class="d-flex flex-column align-items-center justify-content-center  {% if request.resolver_match.url_name == 'upgrade-students' %}active{% endif %}" style="text-decoration: none;">
+        <i class="fas fa-graduation-cap fa-4x text-success mb-3"></i>
+        <span class="text-center text-uppercase font-weight-bold" style="font-size: 18px;">Upgrade Students</span>
+      </a>
+    </div>
+    {% if user.is_authenticated %}
+    <div class="col-12 col-md-6 col-lg-3 mb-4">
+      <a href="{% url 'account:view_profile' %}" class="d-flex flex-column align-items-center justify-content-center">
+        <i class="fas fa-user fa-4x text-primary mb-3"></i>
+        <span class="text-center text-uppercase font-weight-bold">Welcome, {{ user.username }}</span>
+      </a>
+    </div>
+    <div class="col-12 col-md-6 col-lg-3 mb-4">
+      <a href="{% url 'account:change_password' %}" class="d-flex flex-column align-items-center justify-content-center">
+        <i class="fas fa-lock fa-4x text-secondary mb-3"></i>
+        <span class="text-center text-uppercase font-weight-bold">Change Password</span>
+      </a>
+    </div>
+    <div class="col-12 col-md-6 col-lg-3 mb-4">
+      <a href="{% url 'logout' %}" class="d-flex flex-column align-items-center justify-content-center">
+        <i class="fas fa-sign-out-alt fa-4x text-danger mb-3"></i>
+        <span class="text-center text-uppercase font-weight-bold">Logout</span>
+      </a>
+    </div>
+    {% else %}
+    <div class="col-12 col-md-6 col-lg-3 mb-4">
+      <a href="{% url 'account:login' %}" class="d-flex flex-column align-items-center justify-content-center">
+        <i class="fas fa-sign-in-alt fa-4x text-primary mb-3"></i>
+        <span class="text-center text-uppercase font-weight-bold">Login</span>
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% comment %} {% endblock %} {% endcomment %}
+{% endblock %}

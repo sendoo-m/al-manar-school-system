@@ -1,0 +1,8 @@
+<h1>Expenses Report</h1>
+<ul>
+    {% for expense in expenses %}
+        <li>{{ expense.expense_type }} - {{ expense.amount }} - {{ expense.date }}</li>
+    {% empty %}
+        <li>No expenses</li>
+    {% endfor %}
+</ul>

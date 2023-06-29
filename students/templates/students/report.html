@@ -1,0 +1,53 @@
+{% extends 'students/base/administration_navbar.html' %}
+{% comment %} {% extends 'students/base.html' %} {% endcomment %}
+
+{% block title %}Reports{% endblock %}
+
+{% block content %}
+    <h1>Reports</h1>
+    <div class="row">
+        <div class="col-md-6">
+            <h2>Statistics</h2>
+            <div class="bg-light p-3 mb-3">
+                <p class="mb-0">Number of registered students: {{ registered_students }}</p>
+                <p class="mb-0">Total installments that have been paid: {{ total_paid_installments }}</p>
+                <p class="mb-0">Total number of students who did not pay: {{ total_unpaid_students }}</p>
+                <p class="mb-0">Total male students: {{ total_male_students }}</p>
+                <p class="mb-0">Total female students: {{ total_female_students }}</p>
+                <p class="mb-0">Total tuition: {{ total_tuitions }}</p>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <h2>Stages</h2>
+            <div class="table-responsive">
+                <table > <!-- class="table table-striped" -->
+                    <thead > <!-- class="table-primary" -->
+                        <tr>
+                            <th>Educational Stage</th>
+                            <th>Number of Students</th>
+                            <th>Stage Expenses</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stage_stat in stage_stats %}
+                            <tr class="{% cycle 'table-secondary' 'table-white' %}">
+                                <td>{{ stage_stat.stage.name }}</td>
+                                <td>{{ stage_stat.total_stage_students }}</td>
+                                <td>
+                                    {% for expense in stage_stat.expenses %}
+                                        {{ expense.amount }}
+                                    {% empty %}
+                                        No expenses found.
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                
+                
+            </div>
+        </div>
+    </div>
+    
+{% endblock %}

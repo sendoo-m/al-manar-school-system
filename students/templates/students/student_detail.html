@@ -1,0 +1,141 @@
+{% extends 'students/base/account_navbar.html' %}
+{% comment %} {% extends 'students/base.html' %} {% endcomment %}
+{% load crispy_forms_tags %}
+{% load custom_filters %}
+
+{% block title %}{{ student.name }} - Student Detail{% endblock %}
+
+{% block content %}
+<style>
+    /* Hide the button on the print paper */
+    @media print {
+      .print-button {
+        display: none;
+      }
+    }
+    @media print {
+        footer {
+            display: none;
+        }
+    }
+</style>
+<!-- ============================= chat GPT code ============================= -->
+<h3 class='text-center text-danger'>الحسابات والمدفوعات الخاصة بـ {{ student.name }} </h3>
+<!-- Existing code omitted for brevity -->
+<!-- Display expenses -->
+{% comment %} <h2>المصاريف</h2> {% endcomment %}
+<div class="button " >
+    <h4 class="text-center text-primary">Discount: {{ discount }}</h4>
+    <table> <!--class="table table-striped"-->
+        <thead>
+            <tr>
+                <th>المصاريف المدرسية</th>
+                <th>مبلغ</th>
+                <th>تاريخ رصد المبلغ</th>
+                <th>  خصم</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for expense in expenses %}
+            <tr>
+                <td>{{ expense.expense_type }}</td>
+                <td>{{ expense.amount }}</td>
+                <td>{{ expense.date }}</td>
+                <td>{{ expense.discounted_amount }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<!-- ============================= chat GPT code ============================= -->
+<br>    
+<h4 class='text-center text-primary'> الاقساط التي تم سدادها -  {{ student.name }}</h4>
+    {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+  <a href="{% url 'students:pay_installment' pk=student.pk %}" class="btn btn-success btn-lg px-4 py-2 rounded-pill">دفع قسط </a>
+      <table> <!-- class="table"-->
+        <thead>
+            <tr>
+                <th>Receipt Number</th>
+                <th>Receipt Date</th>
+                <th>Amount</th>
+                <th>Paid</th>
+                {% comment %} <th>Status</th> {% endcomment %}
+                <th>Payer</th>
+                <th>Receipt</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for installment in installments %}
+                <tr>
+                    <td>{{ installment.installment_number }}</td>
+                    <td>{{ installment.receipt_date|date:"F d, Y" }} {{ installment.receipt_date|time:"h:i A" }}</td>
+                    <td>{{ installment.amount_tuition }}</td>
+                    <td>
+                    {% if installment.paid %}
+                        Yes
+                    {% else %}
+                        No
+                    {% endif %}
+                    </td>
+                    {% comment %} <td> <!-- علامة الدفع باللون الاخضر-->
+                        {% if installment.paid %}
+                            <span class="status-mark status-paid">&#10004;</span>
+                        {% else %}
+                            {% if student.premium %}
+                                <span class="status-mark status-premium">&#9888;</span>
+                            {% else %}
+                                <span class="status-mark status-unpaid">&#10008;</span>
+                            {% endif %}
+                        {% endif %}
+                    </td><!-- نهاية علامة الدفع بالالوان --> {% endcomment %}
+                    <td>{{ installment.payment_user }}</td>
+                    <td>
+                        <a href="{% url 'students:receipt' pk=installment.pk %}" class="btn btn-secondary btn-sm">إيصال القسط</a>
+                        {% comment %}<form method="POST" action="{% url 'students:delete_installment' pk=installment.pk %}" style="display: inline;">
+                            {% csrf_token %}
+                             <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this installment?')">Delete</button> 
+                        </form>{% endcomment %}
+                    </td>
+                </tr>
+            {% endfor %}
+            <tr>
+                <td colspan="2"><strong>Total Paid:</strong></td>
+                <td colspan="4"><strong>{{ total_paid }}</strong></td>
+            </tr>
+            {% if expenses %}
+            <tr>
+                <td colspan="2"><strong>Total Expenses:</strong></td>
+                <td colspan="4"><strong>{{ total_expenses }}</strong></td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td colspan="2"><strong>Total Owed:</strong></td>
+                <td colspan="4">
+                    <strong style="color: {% if total_owed > 0 %}red{% elif total_owed < 0 %}green{% else %}green{% endif %}">
+                        {% if total_owed > 0 %}
+                            {{ total_owed }}
+                        {% elif total_owed < 0 %}
+                            Paid over
+                            {{ total_owed|abs_value }} 
+                        {% else %}
+                            0
+                        {% endif %}
+                    </strong>
+                </td>
+
+            </tr>
+           
+        </tbody>
+    </table>
+    <button class="btn btn-primary print-button" onclick="printReceipt()">طباعة حساب الطالب</button>
+    <script>
+        function printReceipt() {
+            window.print();
+        }
+    </script>
+    {% endblock %}
+

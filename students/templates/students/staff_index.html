@@ -1,0 +1,65 @@
+{% include 'students/base/nav_staff.html' %}
+{% comment %} {% block title %}Home Staff{% endblock %} {% endcomment %}
+
+{% block contentstaff %}
+<div class="container py-4">
+  <h3 class="text-center mb-5 text-white bg-success">Welcome to Al-Manar School App</h3>
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-6 col-lg-3 mb-4">
+      <a href="{% url 'students:home' %}" class="d-flex flex-column align-items-center justify-content-center {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+        <i class="fas fa-home fa-4x text-primary mb-3"></i>
+        <span class="text-center text-uppercase font-weight-bold">Home</span>
+      </a>
+    </div>
+    <div class="col-12 col-md-6 col-lg-3 mb-4">
+      <a href="{% url 'students:student_list' %}" class="d-flex flex-column align-items-center justify-content-center {% if request.resolver_match.url_name == 'student_list' %}active{% endif %}">
+        <i class="fas fa-users fa-4x text-secondary mb-3"></i>
+        <span class="text-center text-uppercase font-weight-bold">Students</span>
+      </a>
+    </div>
+    <div class="col-12 col-md-6 col-lg-3 mb-4">
+      <a href="{% url 'students:add_student' %}" class="d-flex flex-column align-items-center justify-content-center {% if request.resolver_match.url_name == 'add_student' %}active{% endif %}">
+        <i class="fas fa-user-plus fa-4x text-success mb-3"></i>
+        <span class="text-center text-uppercase font-weight-bold">Add Student</span>
+      </a>
+    </div>
+    
+    <div class="col-12 col-md-6 col-lg-3 mb-4">
+      <a href="{% url 'students:search_student' %}" class="d-flex flex-column align-items-center justify-content-center {% if request.resolver_match.url_name == 'search_student' %}active{% endif %}">
+        <i class="fas fa-search fa-4x text-warning mb-3"></i>
+        <span class="text-center text-uppercase font-weight-bold">Search Students</span>
+      </a>
+    </div>
+    
+    {% if user.is_authenticated %}
+    <div class="col-12 col-md-6 col-lg-3 mb-4">
+      <a href="{% url 'account:view_profile' %}" class="d-flex flex-column align-items-center justify-content-center">
+        <i class="fas fa-user fa-4x text-primary mb-3"></i>
+        <span class="text-center text-uppercase font-weight-bold">Welcome, {{ user.username }}</span>
+      </a>
+    </div>
+    <div class="col-12 col-md-6 col-lg-3 mb-4">
+      <a href="{% url 'account:change_password' %}" class="d-flex flex-column align-items-center justify-content-center">
+        <i class="fas fa-lock fa-4x text-secondary mb-3"></i>
+        <span class="text-center text-uppercase font-weight-bold">Change Password</span>
+      </a>
+    </div>
+    <div class="col-12 col-md-6 col-lg-3 mb-4">
+      <a href="{% url 'account:logout' %}" class="d-flex flex-column align-items-center justify-content-center">
+        <i class="fas fa-sign-out-alt fa-4x text-danger mb-3"></i>
+        <span class="text-center text-uppercase font-weight-bold">Logout</span>
+      </a>
+    </div>
+    {% else %}
+    <div class="col-12 col-md-6 col-lg-3 mb-4">
+      <a href="{% url 'account:login' %}" class="d-flex flex-column align-items-center justify-content-center">
+        <i class="fas fa-sign-in-alt fa-4x text-primary mb-3"></i>
+        <span class="text-center text-uppercase font-weight-bold">Login</span>
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+</div>
+{% endblock contentstaff %}
+{% include 'students/base/footer.html' %} 

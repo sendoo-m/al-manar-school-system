@@ -1,0 +1,32 @@
+{% extends 'students/base/administration_navbar.html' %}
+{% comment %} {% extends 'students/base.html' %} {% endcomment %}
+
+{% block title %}Student Report{% endblock %}
+
+{% block content %}
+    <h1>Student Report</h1>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Student Name</th>
+                    <th>National Number</th>
+                    <th>Age</th>
+                    <th>Gender</th>
+                    <th>Date of Birth</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in report_data %}
+                    <tr>
+                        <td>{{ student.name }}</td>
+                        <td>{{ student.national_number }}</td>
+                        <td>{{ student.age }}</td>
+                        <td>{{ student.gender }}</td>
+                        <td>{{ student.date_of_birth }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

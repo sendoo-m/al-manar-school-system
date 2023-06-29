@@ -1,0 +1,19 @@
+{% extends 'students/base.html' %}
+
+{% block content %}
+
+<head>
+    <title>Unpaid Students</title>
+</head>
+
+    <h1>Unpaid Students</h1>
+    {% for student in unpaid_students %}
+        <p>Name: {{ student.name }}</p>
+        <p>National Number: {{ student.national_number }}</p>
+        <p>Age: {{ student.age }}</p>
+        <p>Gender: {{ student.gender }}</p>
+        <p>Date of Birth: {{ student.date_of_birth }}</p>
+        <p>Academic Year: {{ student.academic_year }}</p>
+    {% endfor %}
+
+{% endblock %}

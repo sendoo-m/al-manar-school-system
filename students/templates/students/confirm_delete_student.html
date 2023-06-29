@@ -1,0 +1,15 @@
+{% extends 'students/base/administration_navbar.html' %}
+{% comment %} {% extends 'students/base.html' %} {% endcomment %}
+
+{% block content %}
+  <h1>Delete Student</h1>
+  <p>Are you sure you want to delete the following student?</p>
+  <p><strong>Name:</strong> {{ student.name }}</p>
+  <p><strong>National Number:</strong> {{ student.national_number }}</p>
+
+  <form action="{% url 'students:delete_student' student.id %}" method="POST">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Delete</button>
+    <a href="{% url 'students:home' %}" class="btn btn-secondary">Cancel</a>
+  </form>
+{% endblock %}

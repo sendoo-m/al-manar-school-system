@@ -1,0 +1,27 @@
+{% extends 'students/base.html' %}
+{% load crispy_forms_tags %}
+
+
+
+{% block title %}Logout{% endblock %}
+
+{% block content %}
+    <h1>You have been logged out</h1>
+    <p>Thank you for using our Apps. You have been successfully logged out.</p>
+    {% comment %} <div class="container">
+        <div class="row mt-5">
+        <div class="col-md-6 offset-md-3">
+        <div class="border bg-white p-3">
+        <h3>Logout Page</h3>
+        <hr>
+        <div class="alert alert-danger">
+        <h4>You have log out</h4>
+        <a href="{% url 'account:login' %}" class="d-flex flex-column align-items-center justify-content-center">
+            
+            <span class="text-center text-uppercase font-weight-bold">Login</span>
+          </a>    
+    </div>
+        </div>
+        </div>
+    </div> {% endcomment %}
+{% endblock %}

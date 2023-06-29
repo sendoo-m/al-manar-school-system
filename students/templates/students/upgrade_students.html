@@ -1,0 +1,23 @@
+{% extends 'students/base/administration_navbar.html' %}
+{% comment %} {% extends 'students/base.html' %} {% endcomment %}
+
+{% block title %} Upgrade Student {% endblock %}
+
+{% block content %}
+
+<!-- upgrade_students.html -->
+{% if success_message %}
+    <div class="alert alert-success">
+        {{ success_message }}
+    </div>
+{% endif %}
+
+<!-- Rest of the template content -->
+
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit">Upgrade Students</button>
+</form>
+
+{% endblock %}

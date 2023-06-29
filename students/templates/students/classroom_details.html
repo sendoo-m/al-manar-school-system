@@ -1,0 +1,292 @@
+{% extends 'students/base/administration_navbar.html' %}
+{% comment %} {% extends 'students/base.html' %} {% endcomment %}
+{% block title %}Classroom Details - {{ classroom.name }}{% endblock %}
+{% block content %}
+
+{% comment %} <style>
+  /* Define a CSS style for the print button */
+  .print-button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px;
+      border: none;
+      cursor: pointer;
+  }
+</style>
+  <h1>Classroom Details - {{ classroom.name }}</h1>
+    
+  <div class="container">
+    <!-- Add search bar -->
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <form method="GET" action="{% url 'students:classroom_details' classroom.id %}" class="d-flex">
+          <input type="text" name="search" class="form-control me-2" placeholder="Search students" value="{{ search_query }}">
+          <button type="submit" class="btn btn-primary">Search</button>
+        </form>
+      </div>
+    </div>
+
+    <button class="print-button" onclick="window.print()">Print</button>
+
+    <!-- Display students with pagination --> 
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Phone Number</th>
+      <th>Total Paid</th>
+      <th>Total Expenses</th>
+      <th>Discount</th>
+      <th>Total Owed</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for student in page_obj %}
+      <tr>
+        <td>{{ student.name }}</td>
+        <td>{{ student.phone_number }}</td>
+        <td>{{ student.total_payments }}</td>
+        <td>{{ total_expenses }}</td>
+        <td>{{ student.discount }}</td>
+        <td>
+          <strong style="color: {% if student.total_owed > 0 %}red{% elif student.total_owed < 0 %}green{% else %}green{% endif %}">
+            {% if student.total_owed > 0 %}
+              {{ student.total_owed }}
+            {% elif student.total_owed < 0 %}
+              Paid over
+              {{ student.total_owed }}
+            {% else %}
+              0
+            {% endif %}
+          </strong>
+        </td>
+      </tr>
+    {% empty %}
+      <tr>
+        <td colspan="6">No students found.</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+    <!-- Add pagination links -->
+    <nav aria-label="Page navigation">
+      <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page=1">&laquo; First</a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+          </li>
+        {% endif %}
+  
+        <li class="page-item active" aria-current="page">
+          <span class="page-link">{{ page_obj.number }}</span>
+        </li>
+  
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div> {% endcomment %}
+  <style>
+    /* Define a CSS style for the table */
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      {% comment %} max-width: 800px; {% endcomment %}
+      margin: 0 auto;
+    }
+  
+    /* Define CSS styles for the table header */
+    th {
+      background-color: #337ab7;
+      color: white;
+      font-weight: bold;
+      text-align: left;
+      padding: 12px;
+    }
+  
+    /* Define CSS styles for the table data */
+    td {
+      border: 1px solid #ddd;
+      padding: 8px;
+    }
+  
+    /* Define CSS styles for the even rows */
+    tr:nth-child(even) td {
+      background-color: #f2f2f2;
+    }
+  
+    /* Define CSS styles for the print button */
+    .print-button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px;
+      border: none;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+    /* Hide the button on the print paper */
+    @media print {
+      .print-button {
+        display: none;
+      }
+    }
+    @media print {
+        footer {
+            display: none;
+        }
+    }
+  </style>
+  <h3  class="text-center" >Classroom Details - {{ classroom.name }}</h3>
+    <br>
+  <div class="container">
+    <!-- Add search bar -->
+    <div class="row mb-3 ">
+      <div class="col-md-6 mx-auto">
+        <form method="GET" action="{% url 'students:classroom_details' classroom.id %}" class="d-flex">
+          <input type="text" name="search" class="form-control me-2" placeholder="Search students" value="{{ search_query }}">
+          <button type="submit" class="btn btn-primary">Search</button>
+          <a href="{% url 'students:classroom_details' classroom.id  %}" class="btn btn-secondary ms-1" title="Refresh">
+            <i class="fas fa-sync-alt"></i>
+            </a>
+        </form>
+      </div>
+    </div>
+  <!-- <button class="print-button" onclick="printTable()">Print</button> -->
+  
+  <!-- Add the sort button -->
+  <!-- {% comment %} <button onclick="sortTable()">Sort by Total Paid</button> {% endcomment %} -->
+
+
+  <div id="printable-table">
+    <!-- Display students with pagination --> 
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Phone Number</th>
+          <th>Total Paid</th>
+          <th>Total Expenses</th>
+          <th>Discount</th>
+          <th>Total Owed</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for student in page_obj %}
+          <tr>
+            <td>{{ student.name }}</td>
+            <td>{{ student.phone_number }}</td>
+            <td>{{ student.total_payments }}</td>
+            <td>{{ total_expenses }}</td>
+            <td>{{ student.discount }}</td>
+            <td>
+              <strong style="color: {% if student.total_owed > 0 %}red{% elif student.total_owed < 0 %}green{% else %}green{% endif %}">
+                {% if student.total_owed > 0 %}
+                  {{ student.total_owed }}
+                {% elif student.total_owed < 0 %}
+                  Paid over
+                  {{ student.total_owed }}
+                {% else %}
+                  0
+                {% endif %}
+              </strong>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6">No students found.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <br>
+    <!-- Add pagination links -->
+    <nav aria-label="Page navigation">
+      <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page=1">&laquo; First</a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+          </li>
+        {% endif %}
+  
+        <li class="page-item active" aria-current="page">
+          <span class="page-link">{{ page_obj.number }}</span>
+        </li>
+  
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div> 
+  
+  <script>
+    function printTable() {
+      window.print();
+    }
+  </script>
+  <script>
+  function sortTable() {
+      var table, rows, switching, i, x, y, shouldSwitch;
+      table = document.getElementById("printable-table"); // Update table variable to reference the correct table element
+      
+      switching = true;
+      
+      // Set the sorting direction to ascending
+      var ascending = true;
+      
+      // Continuously loop through all rows except the header
+      while (switching) {
+          switching = false;
+          rows = table.getElementsByTagName("TR");
+          
+          // Start from the second row (index 1)
+          for (i = 1; i < (rows.length - 1); i++) {
+              shouldSwitch = false;
+              
+              x = rows[i].getElementsByTagName("TD")[2];  // Total Paid column
+              y = rows[i + 1].getElementsByTagName("TD")[2];
+              
+              // Check if the two values should switch places
+              if (ascending) {
+                  if (Number(x.innerHTML) > Number(y.innerHTML)) {
+                      shouldSwitch = true;
+                      break;
+                  }
+              } else {
+                  if (Number(x.innerHTML) < Number(y.innerHTML)) {
+                      shouldSwitch = true;
+                      break;
+                  }
+              }
+          }
+          
+          if (shouldSwitch) {
+              // If a switch has been marked, make the switch and mark that a switch has been done
+              rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+              switching = true;
+          }
+      }
+      
+      // Reverse the sorting direction for the next click
+      ascending = !ascending;
+  }
+</script>
+    
+{% endblock %}

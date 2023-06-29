@@ -1,0 +1,86 @@
+{% extends 'students/base/student_affairs_navbar.html' %}
+
+{% comment %} {% extends 'students/base.html' %} {% endcomment %}
+{% load crispy_forms_tags %}
+
+{% block title %}Add Student{% endblock %}
+
+
+{% block content %}
+
+  {% comment %}{% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+   <form method="post" novalidate>
+    {% csrf_token %}
+    <div class="row">
+      <div class="col-md-4">{{ student_form.name|as_crispy_field }}</div>
+      <div class="col-md-4">{{ student_form.national_number|as_crispy_field }}</div>
+      <div class="col-md-4">{{ student_form.date_of_birth|as_crispy_field }}</div>
+    </div>
+    <div><hr style="border: 1px solid #007bff;"></div>
+    <div class="row">
+      <div class="col-3">{{ student_form.age|as_crispy_field }}</div>
+      <div class="col-3">{{ student_form.gender|as_crispy_field }}</div>
+      <div class="col-3">{{ student_form.classroom|as_crispy_field }}</div>
+      
+      <div><hr style="border: 1px solid #007bff;"></div>
+  </div>
+    <div class="row">
+      <div>
+          <button type="submit" class="btn btn-primary mt-3 my-btn" >حفظ</button>
+          <a href="{% url 'students:add_student' %} " class="btn btn-dark mt-3 my-btn" >مسح البيانات</a>
+          <a href="{% url 'students:add_student' %} " class="btn btn-secondary mt-3 my-btn" >الغاء التسجيل</a>
+        </div>
+    </div>
+  </form> {% endcomment %}
+  <div class="container mt-3">
+    <div class="row justify-content-center">
+      <div class="col-md-8">
+        <div class="card border-white rounded-0 shadow">
+          <div class="card-header bg-light rounded-top">
+            <h4 class="mb-0">Add Student</h4>
+          </div>
+          <div class="card-body bg-light rounded-bottom">
+            {% if messages %}
+              {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+              {% endfor %}
+            {% endif %}
+            <form method="post" novalidate style="width: 70%;">
+              {% csrf_token %}
+              <div class="form-group">{{ student_form.name|as_crispy_field }}</div>
+              <div class="form-group">{{ student_form.national_number|as_crispy_field }}  
+                <small class="form-text text-muted">
+                  Enter National number must be a 14-digit number.
+                </small>
+              </div>
+              <div class="form-group">{{ student_form.phone_number|as_crispy_field }}  
+                <small class="form-text text-muted">
+                  Enter Phone number must be a 11-digit number.
+                </small>
+              </div>
+              <div class="form-group">{{ student_form.date_of_birth|as_crispy_field }}</div>
+              <div class="form-group">{{ student_form.age|as_crispy_field }}  
+                <small class="form-text text-muted">
+                  Age must be between 4 and 17 years.
+                </small>
+              </div>
+              <div class="form-group">{{ student_form.gender|as_crispy_field }}</div>
+              <div class="form-group">{{ student_form.classroom|as_crispy_field }}</div>
+              <div class="form-group">{{ student_form.academic_year|as_crispy_field }}</div>
+              <div class="form-group">{{ student_form.discount|as_crispy_field }}</div>
+              <div class="form-group text-right">
+                <button type="submit" class="btn btn-primary btn-lg">Save</button>
+                <a href="{% url 'students:add_student' %}" class="btn btn-secondary btn-lg ml-2">Cancel</a>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}

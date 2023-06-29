@@ -1,0 +1,222 @@
+{% extends 'students/base.html' %}
+
+
+
+<!-- 
+<body>
+    <h1>Student Dashboard</h1>
+
+    <form method="GET" action="{% url 'students:student_dashboard' %}">
+        <input type="text" name="q" placeholder="Search by name, national number, or phone number" value="{{ request.GET.q }}">
+        <select name="gender">
+            <option value="">All</option>
+            <option value="M" {% if request.GET.gender == 'M' %}selected{% endif %}>Male</option>
+            <option value="F" {% if request.GET.gender == 'F' %}selected{% endif %}>Female</option>
+        </select>
+        <button type="submit">Search</button>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th><a href="?order_by=name">Name</a></th>
+                <th>National Number</th>
+                <th>Phone Number</th>
+                <th>Gender</th>
+                <th>Age</th>
+                <th>Date of Birth</th>
+                <th><a href="?order_by=total_payments">Total Payments</a></th>
+                <th><a href="?order_by=total_owed">Total Owed</a></th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in page_obj %}
+            <tr>
+                <td>{{ student.name }}</td>
+                <td>{{ student.national_number }}</td>
+                <td>{{ student.phone_number }}</td>
+                <td>{{ student.gender }}</td>
+                <td>{{ student.age }}</td>
+                <td>{{ student.date_of_birth }}</td>
+                <td>{{ student.total_payments }}</td>
+                <td>{{ student.total_owed }}</td>
+                <td>
+                    <!-- Add actions/buttons for each student -->
+               <!-- </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <!-- Render pagination links -->
+<!--<div class="pagination">
+    {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+    {% endif %}
+
+    <span class="current-page">{{ page_obj.number }}</span>
+
+    {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}">Next</a>
+    {% endif %}
+</div>
+ -->
+ {% load static %}
+ {% block title %}Student Dashboard Administration{% endblock %}
+ <head>
+     <link rel="stylesheet" href="{% static 'path/to/font-awesome/css/all.min.css' %}">
+     <style>
+         .secondary-bg {
+             background-color: #415541;
+         }
+ 
+         .no-underline {
+             text-decoration: none;
+         }
+     </style>
+ </head>
+ {% block content %}
+ <div class="container">
+     <h1 class="page-title">Student Dashboard</h1>
+    <form method="GET" action="{% url 'students:student_dashboard' %}">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <input type="text" class="form-control" name="q" placeholder="Search by name, national number, or phone number" value="{{ request.GET.q }}">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <select class="form-control" name="gender">
+                        <option value="">All</option>
+                        <option value="M" {% if request.GET.gender == 'M' %}selected{% endif %}>Male</option>
+                        <option value="F" {% if request.GET.gender == 'F' %}selected{% endif %}>Female</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary">Search</button>
+            </div>
+        </div>
+    </form>
+<br>
+
+<div class="row">
+    <div class="col-md-12">
+        <a href="{% url 'students:export_students' %}" class="btn btn-primary">Export Students</a>
+    </div>
+</div>
+<br>
+
+    <table >
+        <thead>
+            <tr>
+                <th>
+                    <a href="?order_by=name" class="sortable no-underline {% if order_by == 'name' %}active{% endif %}">
+                        Name
+                        {% if order_by == 'name' %}
+                            <i class="fas fa-sort{% if ascending %}-up{% else %}-down{% endif %}"></i>
+                        {% endif %}
+                    </a>
+                </th>
+                <th>
+                    National Number
+                    {% if order_by == 'national_number' %}
+                        <i class="fas fa-sort{% if ascending %}-up{% else %}-down{% endif %}"></i>
+                    {% endif %}
+                </th>
+                <th>
+                    Phone Number
+                    {% if order_by == 'phone_number' %}
+                        <i class="fas fa-sort{% if ascending %}-up{% else %}-down{% endif %}"></i>
+                    {% endif %}
+                </th>
+                <th>
+                    Gender
+                    {% if order_by == 'gender' %}
+                        <i class="fas fa-sort{% if ascending %}-up{% else %}-down{% endif %}"></i>
+                    {% endif %}
+                </th>
+                <th>
+                    Age
+                    {% if order_by == 'age' %}
+                        <i class="fas fa-sort{% if ascending %}-up{% else %}-down{% endif %}"></i>
+                    {% endif %}
+                </th>
+                <th>
+                    Date of Birth
+                    {% if order_by == 'date_of_birth' %}
+                        <i class="fas fa-sort{% if ascending %}-up{% else %}-down{% endif %}"></i>
+                    {% endif %}
+                </th>
+                <th>
+                    <a href="?order_by=total_payments" class="sortable no-underline {% if order_by == 'total_payments' %}active{% endif %}">
+                        Total Payments
+                        {% if order_by == 'total_payments' %}
+                            <i class="fas fa-sort{% if ascending %}-up{% else %}-down{% endif %}"></i>
+                        {% endif %}
+                    </a>
+                </th>
+                <th>
+                    <a href="?order_by=total_owed" class="sortable no-underline {% if order_by == 'total_owed' %}active{% endif %}">
+                        Total Owed
+                        {% if order_by == 'total_owed' %}
+                            <i class="fas fa-sort{% if ascending %}-up{% else %}-down{% endif %}"></i>
+                        {% endif %}
+                    </a>
+                </th>
+                <!-- <th>Actions</th> -->
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in page_obj %}
+            <tr>
+                <td>{{ student.name }}</td>
+                <td>{{ student.national_number }}</td>
+                <td>{{ student.phone_number }}</td>
+                <td>{{ student.gender }}</td>
+                <td>{{ student.age }}</td>
+                <td>{{ student.date_of_birth }}</td>
+                <td>{{ student.total_payments }}</td>
+                <td>{{ student.total_owed }}</td>
+                <!-- <td>
+                    <a href="{% url 'students:edit_student' student.id %}" class="action-icon">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <a href="{% url 'students:delete_student' student.id %}" class="action-icon">
+                        <i class="fas fa-trash"></i>
+                    </a>
+                </td> -->
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="d-flex justify-content-center">
+        <nav aria-label="Page navigation example">
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo;</a></li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                {% endif %}
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+                {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">&raquo;</a></li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</div>
+
+ {% endblock %}
+ 
+ 

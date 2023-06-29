@@ -1,0 +1,8 @@
+<h1>Installments Unpaid Report</h1>
+<ul>
+    {% for installment in installments_unpaid %}
+        <li>{{ installment.amount }} - {{ installment.receipt_date }}</li>
+    {% empty %}
+        <li>No unpaid installments</li>
+    {% endfor %}
+</ul>

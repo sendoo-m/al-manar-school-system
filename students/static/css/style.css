@@ -1,0 +1,182 @@
+.card {
+  max-width: 600px;
+  margin: 0 auto;
+  background-color: #f8f9fa;
+}
+.card-title {
+  color: #007bff;
+  font-size: 2rem;
+  font-weight: 500;
+}
+.card-text {
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+.btn-primary {
+  background-color: #007bff;
+  border-color: #007bff;
+}
+.btn-primary:hover {
+  background-color: #0069d9;
+  border-color: #0062cc;
+}
+
+@media print {
+  footer {
+      display: none;
+  }
+}
+
+
+  /* Define a CSS style for the table */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    /* max-width: 800px;  */
+    margin: 0 auto;
+  }
+
+  /* Define CSS styles for the table header */
+  th {
+    background-color: #337ab7;
+    color: white;
+    font-weight: bold;
+    text-align: left;
+    padding: 12px;
+  }
+
+  /* Define CSS styles for the table data */
+  td {
+    border: 1px solid #ddd;
+    padding: 8px;
+  }
+
+  /* Define CSS styles for the even rows */
+  tr:nth-child(even) td {
+    background-color: #f2f2f2;
+  }
+
+  /* Define CSS styles for the print button */
+  .print-button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px;
+    border: none;
+    cursor: pointer;
+    margin-bottom: 20px;
+  }
+  /* Hide the button on the print paper */
+  @media print {
+    .print-button {
+      display: none;
+    }
+  }
+  @media print {
+      footer {
+          display: none;
+      }
+  }
+
+
+
+
+
+
+
+
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .pagination a {
+    color: #333;
+    text-decoration: none;
+    padding: 0.5rem 0.75rem;
+    margin: 0 0.25rem;
+    border: 1px solid #ccc;
+  }
+
+  .pagination a:hover {
+    background-color: #eee;
+  }
+
+  .pagination .current-page {
+    color: #fff;
+    background-color: #333;
+    padding: 0.5rem 0.75rem;
+    margin: 0 0.25rem;
+    border: 1px solid #333;
+  }
+
+  .sort-arrow {
+    margin-left: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: bold;
+  }
+
+  .sort-arrow.asc:after {
+    content: ' ▲';
+  }
+
+  .sort-arrow.desc:after {
+    content: ' ▼';
+  }
+
+
+
+
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .pagination a {
+    color: #333;
+    text-decoration: none;
+    padding: 0.5rem 0.75rem;
+    margin: 0 0.25rem;
+    border: 1px solid #ccc;
+  }
+  
+  .pagination a:hover {
+    background-color: #eee;
+  }
+  
+  .pagination .current-page {
+    color: #fff;
+    background-color: #333;
+    padding: 0.5rem 0.75rem;
+    margin: 0 0.25rem;
+    border: 1px solid #333;
+  }
+  
+  .sort-arrow {
+    margin-left: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: bold;
+  }
+  
+  .sort-arrow.asc:after {
+    content: ' ▲';
+  }
+  
+  .sort-arrow.desc:after {
+    content: ' ▼';
+  }
+
+  .th-secondary-bg {
+    background-color: #415541;
+  }
+
+  .no-underline {
+    text-decoration: none;
+    color: #ffffff;
+    /* background-color: #415541; */
+  }

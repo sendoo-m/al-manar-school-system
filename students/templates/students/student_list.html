@@ -1,0 +1,115 @@
+{% extends 'students/base/student_affairs_navbar.html' %}
+
+{% comment %} {% extends 'students/base.html' %} {% endcomment %}
+{% block title %}Students List{% endblock %}
+{% block content %}
+    <h1>Students List</h1>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="bg-light p-3 mb-3">
+                <h2>Students</h2>
+                <p class="mb-0">Total number of students: {{ students|length }}</p>
+                <p class="mb-0">Total male students: {{ total_male_students }}</p>
+                <p class="mb-0">Total female students: {{ total_female_students }}</p>
+            </div>
+            <form method="get" class="form-inline mb-3">
+                <div class="form-group mr-2">
+                    {{ search_form.search_query.label_tag }}
+                    {{ search_form.search_query }}
+                </div>
+                <div class="form-group mr-2">
+                    {{ search_form.educational_stage.label_tag }}
+                    {{ search_form.educational_stage }}
+                </div>
+                <div class="form-group mr-2">
+                    {{ search_form.gender.label_tag }}
+                    {{ search_form.gender }}
+                </div>
+                <div class="form-group mr-2">
+                    {{ search_form.date_of_birth.label_tag }}
+                    {{ search_form.date_of_birth }}
+                </div>
+                <div class="form-group mr-2">
+                    {{ search_form.classroom.label_tag }}
+                    {{ search_form.classroom }}
+                </div>
+                <button type="submit" class="btn btn-primary">Search</button>
+                
+                <a href="{% url 'students:student_list' %}" class="btn btn-secondary  ml-2">Clear</a>
+            </form>
+            <br >
+        </div>
+        <div class="col-md-6">
+            <h2>Student Table</h2>
+            {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+            {% endif %}
+            <div class="table-responsive">
+                <table> <!--  class="table table-striped"  -->
+                    <thead> <!--  class="table-primary"  -->
+                      <tr>
+                        <th>Name</th>
+                        <th>National Number</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for student in page_obj %}
+                        <tr class="{% cycle 'table-secondary' 'table-white' %}">
+                        <td>{{ student.name }}</td>
+                        <td>{{ student.national_number }}</td>
+                        <td>
+                            <a href="{% url 'students:edit_student' pk=student.pk %}" class="btn btn-sm btn-primary">Edit</a>
+                        </td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                <!--  =======================  start pagination work =======================  -->
+                {% comment %} <div class="pagination">
+                    <span class="step-links">
+                        {% if page_obj.has_previous %}
+                            <a href="?page=1">&laquo; first</a>
+                            <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+                        {% endif %}
+            
+                        <span class="current-page">
+                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+                        </span>
+            
+                        {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}">next</a>
+                            <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+                        {% endif %}
+                    </span>
+                </div> {% endcomment %}
+                <!--  =======================  End pagination =======================  -->
+                <div class="d-flex justify-content-center">
+                    <nav aria-label="Page navigation example">
+                        <ul class="pagination">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo;</a></li>
+                            {% else %}
+                                <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                            {% endif %}
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                                {% endif %}
+                            {% endfor %}
+                            {% if page_obj.has_next %}
+                                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">&raquo;</a></li>
+                            {% else %}
+                                <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
