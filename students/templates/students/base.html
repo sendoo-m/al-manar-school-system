@@ -71,15 +71,12 @@
           <li class="nav-item">
             <a class="nav-link {% if request.resolver_match.url_name == 'add_student' %}active{% endif %}" href="{% url 'students:add_student' %}">إضافة طالب</a>
           </li>
-          {% comment %} <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'report' %}active{% endif %}" href="{% url 'students:report' %}">Reports</a>
-          </li> {% endcomment %}
+          <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'student_dashboard' %}active{% endif %}" href="{% url 'students:student_dashboard' %}">Dashboard</a>
+          </li>
           <li class="nav-item">
             <a class="nav-link {% if request.resolver_match.url_name == 'search_student' %}active{% endif %}" href="{% url 'students:search_student' %}">دفع الأقساط</a>
           </li>
-          {% comment %} <li class="nav-item">
-            <a class="nav-link" href="{% url 'students:g_reports' %}">Generated Reports</a>
-          </li> {% endcomment %}
         </ul>
         <ul class="navbar-nav">
           {% if user.is_authenticated %}
@@ -96,9 +93,9 @@
             <li class="nav-item">
               <a class="nav-link" href="{% url 'account:login' %}">Login</a>
             </li>
-            <li class="nav-item">
+            {% comment %} <li class="nav-item">
               <a class="nav-link" href="{% url 'account:signup' %}">Sign up</a>
-            </li>
+            </li> {% endcomment %}
           {% endif %}
         </ul>
       </div>

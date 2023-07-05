@@ -814,7 +814,8 @@ def upgrade_students_view(request):
 from django.http import HttpResponse
 from tablib import Dataset
 from .resources import StudentResource
-
+@never_cache
+@login_required
 def export_students(request):
     student_resource = StudentResource()
     dataset = student_resource.export()
@@ -822,7 +823,8 @@ def export_students(request):
     response['Content-Disposition'] = 'attachment; filename="students.xlsx"'
     return response
 
-
+@never_cache
+@login_required
 def student_dashboard(request):
     gender_filter = request.GET.get('gender')
     order_by = request.GET.get('order_by', 'name,total_payments,total_owed')
@@ -847,6 +849,14 @@ def student_dashboard(request):
     paginator = Paginator(students, 10)  # 10 students per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+    
+    total_payments_data = [student.total_payments for student in students]
+    total_owed_data = [student.total_owed for student in students]
 
-    context = {'page_obj': page_obj}
+    context = {
+        'page_obj': page_obj,
+        'total_payments_data': total_payments_data,
+        'total_owed_data': total_owed_data,
+        'students_data': students,
+    }
     return render(request, 'students/dashboard.html', context)

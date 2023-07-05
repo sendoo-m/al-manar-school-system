@@ -86,9 +86,9 @@
             <li class="nav-item">
               <a class="nav-link" href="{% url 'account:view_profile' %}">Welcome, {{ user.username }}</a>
             </li>
-            <li class="nav-item">
+            {% comment %} <li class="nav-item">
               <a class="nav-link" href="{% url 'account:change_password' %}">Change Password</a>
-            </li>
+            </li> {% endcomment %}
             <li class="nav-item">
               <a class="nav-link" href="{% url 'logout' %}">Log out</a>
             </li>

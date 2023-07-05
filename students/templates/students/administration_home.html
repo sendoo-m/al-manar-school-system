@@ -9,9 +9,9 @@
   <h3 class="text-center mb-5 text-white bg-success">Welcome to Al-Manar School Account App</h3>
   <div class="row justify-content-center">
     <div class="col-12 col-md-6 col-lg-3 mb-4">
-      <a href="{% url 'students:administration_home' %}" class="d-flex flex-column align-items-center justify-content-center  {% if request.resolver_match.url_name == 'administration_home' %}active{% endif %}" style="text-decoration: none;">
-        <i class="fas fa-home fa-4x text-primary mb-3"></i>
-        <span class="text-center text-uppercase font-weight-bold" style="font-size: 18px;">الرئيسية</span><!-- Home -->
+      <a href="{% url 'students:student_dashboard' %}" class="d-flex flex-column align-items-center justify-content-center  {% if request.resolver_match.url_name == 'student_dashboard' %}active{% endif %}" style="text-decoration: none;">
+        <i class="fas fas fa-user-graduate fa-4x text-primary mb-3"></i>
+        <span class="text-center text-uppercase font-weight-bold" style="font-size: 18px;">student dashboard</span><!-- Home -->
       </a>
     </div>
     <div class="col-12 col-md-6 col-lg-3 mb-4">
