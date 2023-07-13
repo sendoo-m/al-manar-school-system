@@ -29,6 +29,7 @@ class User(AbstractUser):
     department = models.CharField(max_length=20, choices=[
         ('accounts', 'Accounts'),
         ('student_affairs', 'Student Affairs'),
+        ('sub_admin', 'sub_admin'),
         ('administration', 'Administration')
     ])
     

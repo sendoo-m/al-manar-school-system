@@ -53,17 +53,17 @@
   
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <div class="container">
-      <a class="navbar-brand" href="{% url 'students:administration_home' %}">
+      <a class="navbar-brand" href="{% url 'students:sub_admin_home' %}">
         <img src="{% static 'img/logo.png' %}" alt="Logo" width="80">
       </a>
-      <a class="navbar-brand" href="{% url 'students:administration_home' %}">Al Manar School Account App</a>
+      <a class="navbar-brand" href="{% url 'students:sub_admin_home' %}">Al Manar School Account App</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav me-auto">
           <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'administration_home' %}active{% endif %}" href="{% url 'students:administration_home' %}">الرئيسية</a>
+            <a class="nav-link {% if request.resolver_match.url_name == 'sub_admin_home' %}active{% endif %}" href="{% url 'students:sub_admin_home' %}">الرئيسية</a>
           </li>
           {% comment %} <li class="nav-item">
             <a class="nav-link {% if request.resolver_match.url_name == 'student_list' %}active{% endif %}" href="{% url 'students:student_list' %}">قائمة الطلاب</a>

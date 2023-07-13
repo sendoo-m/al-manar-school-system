@@ -74,6 +74,8 @@ def login_view(request):
                     return redirect('students:student_affairs_home')
                 elif user.department == 'administration':
                     return redirect('students:administration_home')
+                elif user.department == 'sub_admin':
+                    return redirect('students:sub_admin_home')
                 elif user.department == 'accounts':
                     return redirect('students:accounts_home')
                 else:

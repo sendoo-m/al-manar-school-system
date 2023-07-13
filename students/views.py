@@ -26,6 +26,9 @@ def home(request):
         return redirect('student_affairs_home')
     elif user.department == 'administration':
         return redirect('administration_home')
+    elif user.department == 'sub_admin':
+        return redirect('sub_admin_home')
+    
     else:
         students = Student.objects.all()
         paginator = Paginator(students, 10)  # Display 10 students per page
@@ -58,6 +61,14 @@ def administration_home(request):
         
     }
     return render (request, 'students/administration_home.html', context)
+
+@never_cache
+@login_required    
+def sub_admin_home(request):
+    context = {
+        
+    }
+    return render (request, 'students/sub_admin_home.html', context)
 
 
 @never_cache
