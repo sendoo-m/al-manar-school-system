@@ -1,0 +1,210 @@
+<!-- templates/treasury_management/manage_users.html -->
+{% extends 'treasury_management/base.html' %}
+
+{% block title %}إدارة مستخدمي الخزينة{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h2><i class="fas fa-users-cog me-2"></i>إدارة مستخدمي الخزينة</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{% url 'treasury_management:dashboard' %}">الرئيسية</a></li>
+                    <li class="breadcrumb-item active">إدارة المستخدمين</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="badge bg-danger">مدير عام</div>
+    </div>
+</div>
+
+<!-- إحصائيات المجموعات -->
+<div class="row mb-4">
+    {% for group in treasury_groups %}
+    <div class="col-md-2 col-sm-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                <h5 class="card-title">{{ group.user_set.count }}</h5>
+                <p class="card-text small">{{ group.description }}</p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- قائمة المستخدمين -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-list me-2"></i>جميع المستخدمين</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>المستخدم</th>
+                        <th>البريد الإلكتروني</th>
+                        <th>مجموعات الخزينة</th>
+                        <th>الحالة</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-user-circle fa-2x text-muted me-2"></i>
+                                <div>
+                                    <strong>{{ user.get_full_name|default:user.username }}</strong>
+                                    <br><small class="text-muted">@{{ user.username }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ user.email|default:"غير محدد" }}</td>
+                        <td>
+                            {% for group_info in user.treasury_groups_list %}
+                                <span class="badge bg-info me-1">{{ group_info.description }}</span>
+                            {% empty %}
+                            <span class="text-muted">لا توجد صلاحيات</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% if user.is_active %}
+                            <span class="badge bg-success">نشط</span>
+                            {% else %}
+                            <span class="badge bg-secondary">معطل</span>
+                            {% endif %}
+                            
+                            {% if user.is_superuser %}
+                            <span class="badge bg-danger">مدير عام</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-primary" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#manageUserModal"
+                                        data-user-id="{{ user.id }}"
+                                        data-user-name="{{ user.get_full_name|default:user.username }}">
+                                    <i class="fas fa-edit"></i> إدارة
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center">لا توجد مستخدمين</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal إدارة المستخدم -->
+<div class="modal fade" id="manageUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-cog me-2"></i>إدارة صلاحيات المستخدم</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" name="user_id" id="modalUserId">
+                    
+                    <div class="mb-3">
+                        <strong id="modalUserName"></strong>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">إضافة إلى مجموعة:</label>
+                        <div class="row">
+                            <div class="col-8">
+                                <select name="group_name" class="form-select">
+                                    <option value="">اختر مجموعة...</option>
+                                    {% for group in treasury_groups %}
+                                    <option value="{{ group.name }}">{{ group.description }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-4">
+                                <button type="submit" name="action" value="add_group" class="btn btn-success">
+                                    <i class="fas fa-plus"></i> إضافة
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">إزالة من مجموعة:</label>
+                        <div class="row">
+                            <div class="col-8">
+                                <select name="group_name" class="form-select">
+                                    <option value="">اختر مجموعة للإزالة...</option>
+                                    {% for group in treasury_groups %}
+                                    <option value="{{ group.name }}">{{ group.description }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-4">
+                                <button type="submit" name="action" value="remove_group" class="btn btn-danger">
+                                    <i class="fas fa-minus"></i> إزالة
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- معلومات المجموعات -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">تفاصيل المجموعات</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for group in treasury_groups %}
+                    <div class="col-md-6 mb-3">
+                        <div class="border rounded p-3">
+                            <h6 class="text-primary">{{ group.description }}</h6>
+                            <p class="text-muted small">{{ group.name }}</p>
+                            <div class="text-success">
+                                <i class="fas fa-users me-1"></i>
+                                {{ group.user_set.count }} مستخدم
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('manageUserModal');
+    modal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const userId = button.getAttribute('data-user-id');
+        const userName = button.getAttribute('data-user-name');
+        
+        document.getElementById('modalUserId').value = userId;
+        document.getElementById('modalUserName').textContent = userName;
+    });
+});
+</script>
+{% endblock %}

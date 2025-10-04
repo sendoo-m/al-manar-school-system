@@ -1,0 +1,715 @@
+<!-- treasury_management/templates/treasury_management/account_categories_list.html -->
+{% extends 'treasury_management/base.html' %}
+{% load static %}
+
+{% block title %}تصنيفات الحسابات{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">تصنيفات الحسابات</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-card {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .pagination-wrapper {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        margin-top: 1rem;
+    }
+    
+    .pagination .page-link {
+        border: none;
+        color: #6c757d;
+        padding: 0.5rem 0.75rem;
+        margin: 0 2px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .pagination .page-link:hover {
+        background-color: #e9ecef;
+        color: #495057;
+        transform: translateY(-1px);
+    }
+    
+    .pagination .page-item.active .page-link {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border-color: transparent;
+        color: white;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .results-info {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+    
+    .table-actions {
+        position: sticky;
+        top: 0;
+        background: white;
+        z-index: 10;
+        padding: 1rem 0;
+        border-bottom: 2px solid #dee2e6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2><i class="fas fa-folder me-2"></i>تصنيفات الحسابات</h2>
+                <p class="text-muted mb-0">تصنيفات الحسابات المالية وهيكلها</p>
+            </div>
+            <div>
+                <a href="{% url 'treasury_management:setup_basic_categories' %}" class="btn btn-success me-2">
+                    <i class="fas fa-magic me-1"></i>إعداد التصنيفات الأساسية
+                </a>
+                <a href="{% url 'treasury_management:add_account_category' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>إضافة تصنيف جديد
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- إحصائيات سريعة -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <div class="h4 mb-1">{{ stats.total_categories }}</div>
+                <div class="opacity-75">إجمالي التصنيفات</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <div class="h4 mb-1">{{ stats.active_categories }}</div>
+                <div class="opacity-75">تصنيفات نشطة</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="card bg-warning text-white">
+            <div class="card-body text-center">
+                <div class="h4 mb-1">{{ stats.parent_categories }}</div>
+                <div class="opacity-75">تصنيفات رئيسية</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <div class="h4 mb-1">{{ stats.child_categories }}</div>
+                <div class="opacity-75">تصنيفات فرعية</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- فلاتر البحث -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card filter-card">
+            <div class="card-body">
+                <form method="GET" id="filterForm">
+                    <div class="row align-items-end">
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <label class="form-label">البحث</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" class="form-control" name="search" 
+                                       value="{{ search }}" placeholder="ابحث بالاسم أو الكود">
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-2 col-md-6 mb-3">
+                            <label class="form-label">النوع</label>
+                            <select class="form-select" name="type">
+                                <option value="">جميع الأنواع</option>
+                                {% for type_code, type_name in category_types %}
+                                <option value="{{ type_code }}" {% if category_type == type_code %}selected{% endif %}>
+                                    {{ type_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-lg-2 col-md-6 mb-3">
+                            <label class="form-label">الحالة</label>
+                            <select class="form-select" name="active">
+                                <option value="">الكل</option>
+                                <option value="true" {% if is_active == 'true' %}selected{% endif %}>نشط</option>
+                                <option value="false" {% if is_active == 'false' %}selected{% endif %}>غير نشط</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-lg-2 col-md-6 mb-3">
+                            <label class="form-label">الترتيب</label>
+                            <select class="form-select" name="order_by">
+                                <option value="code" {% if order_by == 'code' %}selected{% endif %}>الكود</option>
+                                <option value="name" {% if order_by == 'name' %}selected{% endif %}>الاسم</option>
+                                <option value="category_type" {% if order_by == 'category_type' %}selected{% endif %}>النوع</option>
+                                <option value="created_at" {% if order_by == 'created_at' %}selected{% endif %}>تاريخ الإنشاء</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-lg-1 col-md-6 mb-3">
+                            <label class="form-label">عدد</label>
+                            <select class="form-select" name="per_page">
+                                <option value="5" {% if items_per_page == 5 %}selected{% endif %}>5</option>
+                                <option value="10" {% if items_per_page == 10 %}selected{% endif %}>10</option>
+                                <option value="15" {% if items_per_page == 15 %}selected{% endif %}>15</option>
+                                <option value="25" {% if items_per_page == 25 %}selected{% endif %}>25</option>
+                                <option value="50" {% if items_per_page == 50 %}selected{% endif %}>50</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-lg-2 col-md-6 mb-3">
+                            <div class="btn-group w-100">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-filter"></i> تطبيق
+                                </button>
+                                <a href="?" class="btn btn-outline-secondary">
+                                    <i class="fas fa-refresh"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- فلاتر إضافية -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" name="parent_only" value="true" 
+                                       {% if parent_only == 'true' %}checked{% endif %}>
+                                <label class="form-check-label">التصنيفات الرئيسية فقط</label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if not categories %}
+<!-- محتوى عند عدم وجود نتائج -->
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center py-5">
+                <div class="mb-4">
+                    <i class="fas fa-folder-open fa-5x text-muted mb-3"></i>
+                    <h3 class="text-muted">
+                                                {% if search or category_type or is_active %}
+                            لا توجد نتائج للبحث
+                        {% else %}
+                            لا توجد تصنيفات للحسابات
+                        {% endif %}
+                    </h3>
+                    <p class="lead text-muted">
+                        {% if search or category_type or is_active %}
+                            جرب تعديل معايير البحث أو الفلاتر
+                        {% else %}
+                            ابدأ بإنشاء التصنيفات الأساسية للنظام المحاسبي
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <div class="d-flex justify-content-center gap-3">
+                    {% if search or category_type or is_active %}
+                        <a href="?" class="btn btn-outline-primary">
+                            <i class="fas fa-refresh me-1"></i>إعادة تعيين الفلاتر
+                        </a>
+                    {% else %}
+                        <a href="{% url 'treasury_management:setup_basic_categories' %}" class="btn btn-success">
+                            <i class="fas fa-magic me-1"></i>إنشاء التصنيفات الأساسية تلقائياً
+                        </a>
+                        <a href="{% url 'treasury_management:add_account_category' %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>إضافة تصنيف يدوياً
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+
+<!-- معلومات النتائج -->
+<div class="results-info">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>{{ paginator.count }}</strong> تصنيف
+            {% if search %}
+                - نتائج البحث عن "<strong>{{ search }}</strong>"
+            {% endif %}
+            {% if category_type %}
+                - النوع: <strong>{{ category_type }}</strong>
+            {% endif %}
+        </div>
+        <div class="col-md-4 text-end">
+            صفحة {{ categories.number }} من {{ paginator.num_pages }}
+        </div>
+    </div>
+</div>
+
+<!-- جدول التصنيفات -->
+<div class="card">
+    <div class="table-actions">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-sm btn-outline-success" onclick="exportData('excel')">
+                        <i class="fas fa-file-excel me-1"></i>Excel
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="exportData('pdf')">
+                        <i class="fas fa-file-pdf me-1"></i>PDF
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-info" onclick="printTable()">
+                        <i class="fas fa-print me-1"></i>طباعة
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-6 text-end">
+                <small class="text-muted">عرض {{ categories.start_index }}-{{ categories.end_index }} من {{ paginator.count }}</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table table-hover mb-0" id="categoriesTable">
+            <thead class="table-light">
+                <tr>
+                    <th>الكود</th>
+                    <th>اسم التصنيف</th>
+                    <th>النوع</th>
+                    <th>التصنيف الرئيسي</th>
+                    <th>عدد الحسابات</th>
+                    <th>الحالة</th>
+                    <th class="no-print">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for category in categories %}
+                <tr {% if category.parent %}class="table-light"{% endif %}>
+                    <td>
+                        <strong>{{ category.code }}</strong>
+                        {% if category.parent %}
+                        <br><small class="text-muted">└ فرعي</small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if category.parent %}
+                        <span class="text-muted me-2">└</span>
+                        {% endif %}
+                        <strong>{{ category.name }}</strong>
+                        {% if category.description %}
+                        <br><small class="text-muted">{{ category.description|truncatechars:50 }}</small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge 
+                            {% if category.category_type == 'REVENUE' %}bg-success
+                            {% elif category.category_type == 'EXPENSE' %}bg-danger
+                            {% elif category.category_type == 'ASSET' %}bg-info
+                            {% elif category.category_type == 'LIABILITY' %}bg-warning
+                            {% else %}bg-secondary{% endif %}">
+                            {{ category.get_category_type_display }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if category.parent %}
+                        <span class="badge bg-light text-dark">{{ category.parent.name }}</span>
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge bg-primary">{{ category.accounts_count }}</span>
+                        {% if category.children_count > 0 %}
+                        <br><small class="text-info">{{ category.children_count }} فرعي</small>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if category.is_active %}
+                        <span class="badge bg-success">✓ نشط</span>
+                        {% else %}
+                        <span class="badge bg-secondary">✗ غير نشط</span>
+                        {% endif %}
+                    </td>
+                    <td class="no-print">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-outline-info" 
+                                    onclick="showCategoryDetails({{ category.id }})"
+                                    title="تفاصيل">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <a href="{% url 'treasury_management:edit_account_category' category.id %}" 
+                               class="btn btn-sm btn-outline-warning"
+                               title="تحرير">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            {% if category.accounts_count == 0 and category.children_count == 0 %}
+                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                    onclick="deleteCategory({{ category.id }}, '{{ category.name }}')"
+                                    title="حذف">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            {% else %}
+                            <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                    title="لا يمكن الحذف - يحتوي على حسابات أو تصنيفات فرعية"
+                                    disabled>
+                                <i class="fas fa-lock"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination الراقي -->
+<div class="pagination-wrapper">
+    <div class="row align-items-center">
+        <div class="col-md-4">
+            <div class="pagination-info">
+                <small class="text-muted">
+                    عرض {{ categories.start_index }}-{{ categories.end_index }} من {{ paginator.count }} تصنيف
+                </small>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            {% if paginator.num_pages > 1 %}
+            <nav aria-label="تنقل الصفحات">
+                <ul class="pagination justify-content-end mb-0">
+                    <!-- الصفحة الأولى -->
+                    {% if categories.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if category_type %}type={{ category_type }}&{% endif %}{% if is_active %}active={{ is_active }}&{% endif %}{% if parent_only %}parent_only={{ parent_only }}&{% endif %}order_by={{ order_by }}&per_page={{ items_per_page }}&page=1" title="الصفحة الأولى">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if category_type %}type={{ category_type }}&{% endif %}{% if is_active %}active={{ is_active }}&{% endif %}{% if parent_only %}parent_only={{ parent_only }}&{% endif %}order_by={{ order_by }}&per_page={{ items_per_page }}&page={{ categories.previous_page_number }}" title="السابق">
+                                <i class="fas fa-angle-left"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="fas fa-angle-double-left"></i></span>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="fas fa-angle-left"></i></span>
+                        </li>
+                    {% endif %}
+
+                    <!-- أرقام الصفحات -->
+                    {% for page_num in paginator.page_range %}
+                        {% if page_num == categories.number %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                        {% elif page_num > categories.number|add:'-3' and page_num < categories.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if category_type %}type={{ category_type }}&{% endif %}{% if is_active %}active={{ is_active }}&{% endif %}{% if parent_only %}parent_only={{ parent_only }}&{% endif %}order_by={{ order_by }}&per_page={{ items_per_page }}&page={{ page_num }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                        {% elif page_num == 1 or page_num == paginator.num_pages %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if category_type %}type={{ category_type }}&{% endif %}{% if is_active %}active={{ is_active }}&{% endif %}{% if parent_only %}parent_only={{ parent_only }}&{% endif %}order_by={{ order_by }}&per_page={{ items_per_page }}&page={{ page_num }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                        {% elif page_num == 2 or page_num == paginator.num_pages|add:'-1' %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    <!-- الصفحة الأخيرة -->
+                    {% if categories.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if category_type %}type={{ category_type }}&{% endif %}{% if is_active %}active={{ is_active }}&{% endif %}{% if parent_only %}parent_only={{ parent_only }}&{% endif %}order_by={{ order_by }}&per_page={{ items_per_page }}&page={{ categories.next_page_number }}" title="التالي">
+                                <i class="fas fa-angle-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if category_type %}type={{ category_type }}&{% endif %}{% if is_active %}active={{ is_active }}&{% endif %}{% if parent_only %}parent_only={{ parent_only }}&{% endif %}order_by={{ order_by }}&per_page={{ items_per_page }}&page={{ paginator.num_pages }}" title="الصفحة الأخيرة">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="fas fa-angle-right"></i></span>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="fas fa-angle-double-right"></i></span>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- معلومات إضافية -->
+    <div class="row mt-3">
+        <div class="col-md-6">
+            <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-primary" onclick="goToPage('first')">
+                    <i class="fas fa-fast-backward me-1"></i>الأولى
+                </button>
+                <button class="btn btn-outline-primary" onclick="goToPage('last')">
+                    الأخيرة<i class="fas fa-fast-forward ms-1"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="col-md-6 text-end">
+            <div class="input-group input-group-sm" style="width: 150px; display: inline-flex;">
+                <span class="input-group-text">انتقل إلى</span>
+                <input type="number" class="form-control" id="pageJump" 
+                       min="1" max="{{ paginator.num_pages }}" 
+                       placeholder="{{ categories.number }}">
+                <button class="btn btn-primary" onclick="jumpToPage()">
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal لتفاصيل التصنيف -->
+<div class="modal fade" id="categoryModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-folder me-2"></i>تفاصيل تصنيف الحساب</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="categoryDetails">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">جاري التحميل...</span>
+                    </div>
+                    <div class="mt-2">جاري تحميل التفاصيل...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal للحذف -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-trash me-2"></i>تأكيد الحذف</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <i class="fas fa-exclamation-triangle fa-3x text-warning"></i>
+                </div>
+                <p class="text-center">
+                    هل أنت متأكد من حذف تصنيف الحساب <strong id="categoryNameToDelete" class="text-danger"></strong>؟
+                </p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>تحذير:</strong> هذا الإجراء لا يمكن التراجع عنه.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>إلغاء
+                </button>
+                <form method="POST" id="deleteForm" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i>تأكيد الحذف
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// وظائف التفاعل
+function showCategoryDetails(categoryId) {
+    const modal = new bootstrap.Modal(document.getElementById('categoryModal'));
+    const detailsContainer = document.getElementById('categoryDetails');
+    
+    detailsContainer.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">جاري التحميل...</span>
+            </div>
+            <div class="mt-2">جاري تحميل التفاصيل...</div>
+        </div>
+    `;
+    
+    modal.show();
+    
+    fetch(`/treasury/account-category-detail/${categoryId}/`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            detailsContainer.innerHTML = data.html;
+        } else {
+            detailsContainer.innerHTML = `
+                <div class="alert alert-danger text-center">
+                    <i class="fas fa-exclamation-circle fa-2x mb-2"></i>
+                    <h5>خطأ في تحميل التفاصيل</h5>
+                    <p>${data.error || 'حدث خطأ غير متوقع'}</p>
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        detailsContainer.innerHTML = `
+            <div class="alert alert-warning text-center">
+                <i class="fas fa-wifi fa-2x mb-2"></i>
+                <h5>خطأ في الاتصال</h5>
+                <p>تعذر الاتصال بالخادم. يرجى المحاولة مرة أخرى.</p>
+                <button class="btn btn-primary" onclick="showCategoryDetails(${categoryId})">
+                    <i class="fas fa-refresh me-1"></i>إعادة المحاولة
+                </button>
+            </div>
+        `;
+    });
+}
+
+function deleteCategory(categoryId, categoryName) {
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    const form = document.getElementById('deleteForm');
+    
+    document.getElementById('categoryNameToDelete').textContent = categoryName;
+    form.action = `/treasury/delete-account-category/${categoryId}/`;
+    modal.show();
+}
+
+// وظائف التنقل
+function goToPage(direction) {
+    const currentParams = new URLSearchParams(window.location.search);
+    let targetPage;
+    
+    if (direction === 'first') {
+        targetPage = 1;
+    } else if (direction === 'last') {
+        targetPage = {{ paginator.num_pages }};
+    }
+    
+    currentParams.set('page', targetPage);
+    window.location.href = '?' + currentParams.toString();
+}
+
+function jumpToPage() {
+    const pageNum = document.getElementById('pageJump').value;
+    const maxPages = {{ paginator.num_pages }};
+    
+    if (pageNum && pageNum >= 1 && pageNum <= maxPages) {
+        const currentParams = new URLSearchParams(window.location.search);
+        currentParams.set('page', pageNum);
+        window.location.href = '?' + currentParams.toString();
+    } else {
+        alert('يرجى إدخال رقم صفحة صحيح بين 1 و ' + maxPages);
+    }
+}
+
+// تطبيق الفلاتر تلقائياً
+document.addEventListener('DOMContentLoaded', function() {
+    const filterForm = document.getElementById('filterForm');
+    const searchInput = filterForm.querySelector('[name="search"]');
+    
+    // البحث التلقائي بعد التوقف عن الكتابة
+    let searchTimeout;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            filterForm.submit();
+        }, 500);
+    });
+    
+    // تطبيق الفلاتر عند التغيير
+    filterForm.querySelectorAll('select').forEach(select => {
+        select.addEventListener('change', function() {
+            filterForm.submit();
+        });
+    });
+});
+
+// وظائف التصدير
+function exportData(format) {
+    const currentParams = new URLSearchParams(window.location.search);
+    currentParams.set('export', format);
+    window.location.href = '?' + currentParams.toString();
+}
+
+function printTable() {
+    const printContent = document.getElementById('categoriesTable').outerHTML;
+    const originalContent = document.body.innerHTML;
+    
+    document.body.innerHTML = `
+        <div class="container-fluid">
+            <h2 class="text-center mb-4">تصنيفات الحسابات</h2>
+            ${printContent}
+        </div>
+    `;
+    
+    window.print();
+    document.body.innerHTML = originalContent;
+    window.location.reload();
+}
+
+// تأثيرات الحركة
+document.addEventListener('DOMContentLoaded', function() {
+    const rows = document.querySelectorAll('tbody tr');
+    rows.forEach((row, index) => {
+        row.style.opacity = '0';
+        row.style.transform = 'translateX(-20px)';
+        
+        setTimeout(() => {
+            row.style.transition = 'all 0.3s ease';
+            row.style.opacity = '1';
+            row.style.transform = 'translateX(0)';
+        }, index * 50);
+    });
+});
+</script>
+{% endblock %}

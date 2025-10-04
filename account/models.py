@@ -1,16 +1,10 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 
-
-# Create your models here.
-
-# account/models.py
-
 class CustomUserManager(BaseUserManager):
     def create_user(self, username, password=None, **extra_fields):
         if not username:
-            raise ValueError('The Email field must be set')
-        # email = self.normalize_email(email)
+            raise ValueError('The Username field must be set')
         user = self.model(username=username, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -22,21 +16,36 @@ class CustomUserManager(BaseUserManager):
         return self.create_user(username, password, **extra_fields)
 
 class User(AbstractUser):
-    username = models.CharField(max_length=150, unique=True)  # Add the username field
-    # email = models.EmailField(unique=True)
+    username = models.CharField(max_length=150, unique=True)
     date_of_enrollment = models.DateField(null=True, blank=True)
     national_id = models.CharField(max_length=20, null=True, blank=True)
-    department = models.CharField(max_length=20, choices=[
-        ('accounts', 'Accounts'),
-        ('student_affairs', 'Student Affairs'),
-        ('sub_admin', 'sub_admin'),
-        ('administration', 'Administration')
-    ])
+    
+    # تم حذف حقل department - سنعتمد على SystemRole فقط
     
     USERNAME_FIELD = 'username'
-    # REQUIRED_FIELDS = ['email']
-    
     objects = CustomUserManager()
+    
+    # دالة للحصول على الدور من SystemRole
+    def get_system_role(self):
+        if hasattr(self, 'system_role'):
+            return self.system_role.role
+        return None
+    
+    # دالة للحصول على اسم الدور المعروض
+    def get_role_display_name(self):
+        if hasattr(self, 'system_role'):
+            return self.system_role.get_role_display()
+        return "غير محدد"
+    
+    # التحقق من صلاحية الوصول حسب الدور
+    def has_role(self, role):
+        return self.get_system_role() == role
+    
+    # التحقق من النشاط
+    def is_role_active(self):
+        if hasattr(self, 'system_role'):
+            return self.system_role.is_active
+        return False
     
     class Meta:
         permissions = [

@@ -1,0 +1,172 @@
+{% extends 'books_inventory/base.html' %}
+{% load static %}
+
+{% block title %}تعديل الكتاب - {{ book.title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:inventory_home' %}">الرئيسية</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:books_list' %}">قائمة الكتب</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:book_detail' book.pk %}">{{ book.title }}</a></li>
+                <li class="breadcrumb-item active">تعديل</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h4><i class="fas fa-edit"></i> تعديل الكتاب</h4>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="card-body">
+                    
+                    <!-- معلومات الكتاب الأساسية -->
+                    <div class="row mb-4">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label class="form-label">عنوان الكتاب <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="title" value="{{ book.title }}" required placeholder="أدخل عنوان الكتاب">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">نوع الكتاب <span class="text-danger">*</span></label>
+                                <select class="form-select" name="book_type" required>
+                                    <option value="">اختر نوع الكتاب</option>
+                                    {% for type_code, type_name in book_type_choices %}
+                                    <option value="{{ type_code }}" {% if book.book_type == type_code %}selected{% endif %}>{{ type_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- المادة والتفاصيل الأكاديمية -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">المادة الدراسية <span class="text-danger">*</span></label>
+                                <select class="form-select" name="subject" required>
+                                    <option value="">اختر المادة</option>
+                                    {% for subject in subjects %}
+                                    <option value="{{ subject.id }}" {% if book.subject.id == subject.id %}selected{% endif %}>{{ subject.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">السنة الدراسية</label>
+                                <input type="text" class="form-control" name="academic_year" value="{{ book.academic_year|default:'' }}" placeholder="مثال: 2024/2025">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">الفترة الدراسية</label>
+                                <select class="form-select" name="term">
+                                    {% for term_code, term_name in term_choices %}
+                                    <option value="{{ term_code }}" {% if book.term == term_code %}selected{% endif %}>{{ term_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- تفاصيل إضافية -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">سنة الطبعة</label>
+                                <input type="text" class="form-control" name="edition_year" value="{{ book.edition_year|default:'' }}" placeholder="مثال: 2024">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">عدد الصفحات</label>
+                                <input type="number" class="form-control" name="pages_count" value="{{ book.pages_count|default:'' }}" min="1" placeholder="عدد صفحات الكتاب">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">سعر التكلفة (ج.م)</label>
+                                <input type="number" class="form-control" name="cost_price" value="{{ book.cost_price }}" min="0" step="0.01" placeholder="0.00">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- الوصف -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label class="form-label">وصف الكتاب</label>
+                                <textarea class="form-control" name="description" rows="3" placeholder="وصف مختصر للكتاب أو محتوياته">{{ book.description|default:'' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- الصفوف الدراسية -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <label class="form-label">الصفوف الدراسية المرتبطة</label>
+                            <div class="row">
+                                {% for grade in grade_levels %}
+                                <div class="col-md-4 col-lg-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="grade_levels" value="{{ grade.id }}" id="grade_{{ grade.id }}" 
+                                               {% if grade in book.grade_levels.all %}checked{% endif %}>
+                                        <label class="form-check-label" for="grade_{{ grade.id }}">
+                                            {{ grade.education_level.name }} - {{ grade.name }}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- إعدادات المخزون -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">الحد الأدنى للمخزون</label>
+                                <input type="number" class="form-control" name="minimum_stock_level" value="{{ book.minimum_stock_level }}" min="0">
+                                <div class="form-text">سيتم التنبيه عند انخفاض المخزون عن هذا الرقم</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mt-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="is_active" id="is_active" {% if book.is_active %}checked{% endif %}>
+                                    <label class="form-check-label" for="is_active">
+                                        <strong>كتاب نشط</strong>
+                                        <br><small class="text-muted">يمكن استلامه وتوزيعه</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+                
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'books_inventory:book_detail' book.pk %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> إلغاء
+                        </a>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-save"></i> حفظ التغييرات
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

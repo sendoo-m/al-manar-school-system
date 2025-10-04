@@ -1,33 +1,56 @@
+# students/urls.py - مع تعليقات الصلاحيات
 from django.urls import path
 from . import views
 
 app_name = 'students'
+
 urlpatterns = [
-    path('accounts_home/', views.accounts_home, name='accounts_home'),
-    path('student_affairs_home/', views.student_affairs_home, name='student_affairs_home'),
-    path('administration_home/', views.administration_home, name='administration_home'),
-    path('sub_admin_home/', views.sub_admin_home, name='sub_admin_home'),
-    path('', views.home, name='home'),
-    path('students/', views.student_list, name='student_list'),
-    path('student_detail/<int:pk>/', views.student_detail, name='student_detail'),
-    path('delete_installment/<int:pk>/', views.delete_installment, name='delete_installment'),
-    path('edit_student/<int:pk>/', views.edit_student, name='edit_student'),
-    # path('register/', views.register, name='register'),
-    path('add_student/', views.add_student, name='add_student'),
-    path('delete_student/<int:student_id>/', views.delete_student, name='delete_student'),
-    path('students/confirm_delete_student/<int:student_id>/', views.confirm_delete_student, name='confirm_delete_student'),
-    path('add_expense/<int:pk>/', views.add_expense, name='add_expense'),
-    path('pay_installment/<int:pk>/', views.pay_installment, name='pay_installment'),
-    path('receipt/<int:pk>/', views.receipt, name='receipt'),
-    path('report/', views.report, name='report'),
-    path('daily_report/', views.generate_daily_report, name='daily_report'),
-    path('all_reports/', views.all_reports, name='all_reports'),
-    path('classroom/<int:classroom_id>/', views.classroom_details, name='classroom_details'),
-    path('search/', views.search_student, name='search_student'),
-    path('generate-student-report/', views.generate_student_report, name='generate_student_report'),
-    path('generate-installment-report/', views.generate_installment_report, name='generate_installment_report'),
-    path('g-reports/', views.g_reports, name='g_reports'),
-    path('upgrade-students/', views.upgrade_students_view, name='upgrade_students'),
-    path('dashboard/', views.student_dashboard, name='student_dashboard'),
-    path('export/', views.export_students, name='export_students'),
+    # ===================================
+    # 🏠 الصفحات الرئيسية (جميع المستخدمين)
+    # ===================================
+    path('', views.home, name='home'),  # أساسي
+    path('student_affairs_home/', views.student_affairs_home, name='student_affairs_home'),  # أساسي
+    
+    # ===================================
+    # 👥 إدارة الطلاب
+    # ===================================
+    path('student_list/', views.student_list, name='student_list'),  # عرض - أساسي
+    path('add_student/', views.add_student, name='add_student'),  # إضافة - موظف شؤون الطلاب
+    path('student_detail/<int:pk>/', views.student_detail, name='student_detail'),  # عرض - أساسي
+    path('edit_student/<int:pk>/', views.edit_student, name='edit_student'),  # تعديل - مدير فقط
+    path('students/confirm_delete_student/<int:student_id>/', views.confirm_delete_student, name='confirm_delete_student'),  # حذف - مدير عام فقط
+    
+    # ===================================
+    # 🔍 البحث (جميع المستخدمين)
+    # ===================================
+    path('search_student/', views.search_student, name='search_student'),  # بحث - أساسي
+    path('ajax/search/', views.ajax_student_search, name='ajax_search'),  # AJAX - أساسي
+    
+    # ===================================
+    # 📊 التقارير (مدير + إدارة فقط)
+    # ===================================
+    path('report/', views.report, name='report'),  # تقارير أساسية
+    path('all_reports/', views.all_reports, name='all_reports'),  # تقارير متقدمة
+    path('daily_report/', views.daily_report, name='daily_report'),  # تقرير يومي
+    path('student_dashboard/', views.student_dashboard, name='student_dashboard'),  # لوحة إحصائيات
+    
+    # ===================================
+    # 🔧 الأدوات الإدارية (مدير عام فقط)
+    # ===================================
+    path('export_students/', views.export_students, name='export_students'),  # تصدير - حساس
+    path('upgrade_students/', views.upgrade_students, name='upgrade_students'),  # ترقية - حساس
+    
+    # ===================================
+    # 🔌 APIs (جميع المستخدمين)
+    # ===================================
+    path('api/grades/<int:level_id>/', views.get_grades_by_level, name='get_grades_by_level'),  # API - أساسي
+    path('get-grades-by-level/<int:level_id>/', views.get_grades_by_level, name='get_grades_by_level'),
+
+    
+    # الأدوات المتقدمة
+    path('export-advanced/', views.export_students_advanced, name='export_students_advanced'),
+    path('import-advanced/', views.import_students_advanced, name='import_students_advanced'),
+    path('upgrade-wizard/', views.upgrade_students_wizard, name='upgrade_students_wizard'),
+    path('user-guide/', views.user_guide, name='user_guide'),
+
 ]

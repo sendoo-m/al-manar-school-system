@@ -1,0 +1,28 @@
+<!-- templates/payments/quick_payment.html -->
+{% extends 'payments/base.html' %}
+
+{% block title %}دفع سريع - مدرسة المنار{% endblock %}
+{% block page_title %}دفع سريع{% endblock %}
+{% block page_subtitle %}إضافة مدفوع جديد بسرعة{% endblock %}
+{% block page_icon %}<i class="fas fa-plus-circle me-3"></i>{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <div class="content-card-body">
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            اختر طالباً أولاً للبدء في عملية الدفع السريع
+        </div>
+        
+        <!-- نموذج الدفع السريع سيكون هنا -->
+        <div class="text-center py-5">
+            <i class="fas fa-plus-circle fa-4x text-primary mb-3"></i>
+            <h5>الدفع السريع</h5>
+            <p class="text-muted">قيد التطوير...</p>
+            <a href="{% url 'payments:student_search' %}" class="btn btn-primary">
+                ابدأ بالبحث عن طالب
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

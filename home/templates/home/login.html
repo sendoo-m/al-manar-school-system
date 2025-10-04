@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block title %}تسجيل الدخول - مدرسة المنار{% endblock %}
+
+{% block body_content %}
+<div class="d-flex align-items-center justify-content-center min-vh-100">
+    <div class="login-container">
+        <div class="login-card">
+            <!-- Logo -->
+            <div class="text-center mb-4">
+                <div class="mb-3">
+                    <i class="fas fa-school fa-4x text-primary"></i>
+                </div>
+                <h2 class="text-dark mb-1">مدرسة المنار</h2>
+                <p class="text-muted">نظام إدارة المدرسة</p>
+            </div>
+
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Login Form -->
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="id_username" class="form-label">
+                        <i class="fas fa-user me-2"></i>اسم المستخدم
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           id="id_username" 
+                           name="username" 
+                           required 
+                           placeholder="أدخل اسم المستخدم"
+                           value="{{ form.username.value|default:'' }}">
+                    <div class="invalid-feedback">
+                        يرجى إدخال اسم المستخدم
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="id_password" class="form-label">
+                        <i class="fas fa-lock me-2"></i>كلمة المرور
+                    </label>
+                    <div class="input-group">
+                        <input type="password" 
+                               class="form-control" 
+                               id="id_password" 
+                               name="password" 
+                               required 
+                               placeholder="أدخل كلمة المرور">
+                        <button class="btn btn-outline-secondary" 
+                                type="button" 
+                                id="togglePassword">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="invalid-feedback">
+                        يرجى إدخال كلمة المرور
+                    </div>
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-sign-in-alt me-2"></i>تسجيل الدخول
+                    </button>
+                </div>
+            </form>
+
+            <!-- Footer -->
+            <div class="text-center mt-4">
+                <small class="text-muted">
+                    © 2025 مدرسة المنار - جميع الحقوق محفوظة
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Form validation
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        var forms = document.getElementsByClassName('needs-validation');
+        var validation = Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+})();
+
+// Toggle password visibility
+document.getElementById('togglePassword').addEventListener('click', function() {
+    const password = document.getElementById('id_password');
+    const icon = this.querySelector('i');
+    
+    if (password.type === 'password') {
+        password.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        password.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+});
+</script>
+{% endblock %}

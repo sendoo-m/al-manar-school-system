@@ -1,0 +1,103 @@
+<!-- Modal إضافة مرحلة تعليمية جديدة -->
+<div class="modal fade" id="addEducationLevelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-graduation-cap me-2"></i>إضافة مرحلة تعليمية جديدة
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            
+            <form id="addEducationLevelForm" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="levelName" class="form-label">اسم المرحلة التعليمية *</label>
+                        <input type="text" class="form-control" id="levelName" name="name" 
+                               placeholder="مثال: رياض الأطفال" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="levelNameEn" class="form-label">الاسم بالإنجليزية</label>
+                        <input type="text" class="form-control" id="levelNameEn" name="name_en" 
+                               placeholder="Kindergarten">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="minAge" class="form-label">العمر الأدنى *</label>
+                                <input type="number" class="form-control" id="minAge" name="min_age" 
+                                       min="3" max="20" required>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="maxAge" class="form-label">العمر الأقصى *</label>
+                                <input type="number" class="form-control" id="maxAge" name="max_age" 
+                                       min="3" max="20" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="levelOrder" class="form-label">ترتيب العرض</label>
+                        <input type="number" class="form-control" id="levelOrder" name="order" 
+                               value="1" min="1">
+                        <div class="form-text">يحدد ترتيب ظهور المرحلة في القوائم</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="levelDescription" class="form-label">وصف المرحلة</label>
+                        <textarea class="form-control" id="levelDescription" name="description" 
+                                  rows="3" placeholder="وصف مختصر للمرحلة التعليمية"></textarea>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>حفظ المرحلة
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('addEducationLevelForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>جاري الحفظ...';
+    submitBtn.disabled = true;
+    
+    fetch('/settings/create-education-level/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage('success', data.message);
+            bootstrap.Modal.getInstance(document.getElementById('addEducationLevelModal')).hide();
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showMessage('error', data.message);
+        }
+    })
+    .finally(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+});
+</script>

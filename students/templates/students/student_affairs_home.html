@@ -1,31 +1,202 @@
-{% extends 'students/base/student_affairs_navbar.html' %}
-{% load static %}
+<!-- templates/students/student_affairs_home.html -->
+{% extends 'students/base.html' %}
 
-{% block title %}Student Affairs!{% endblock %}
-{% block content %}
-   
+{% block title %}لوحة تحكم شؤون الطلاب{% endblock %}
+{% block page_title %}لوحة تحكم شؤون الطلاب{% endblock %}
+{% block page_subtitle %}مرحباً {{ user.get_full_name|default:user.username }}، إليك ملخص سريع عن حالة النظام{% endblock %}
+{% block page_icon %}<i class="fas fa-tachometer-alt me-3"></i>{% endblock %}
 
-  
-  <h2>Welcome, Student Affairs!</h2>
-  <p>This is the home page for student affairs.</p>
-<br>
-
-
-<div class="row justify-content-center">
-<div class="col-12 col-md-6 col-lg-3 mb-4">
-  <a href="{% url 'students:student_list' %}" class="d-flex flex-column align-items-center justify-content-center {% if request.resolver_match.url_name == 'student_list' %}active{% endif %}">
-    <i class="fas fa-users fa-4x text-secondary mb-3"></i>
-    <span class="text-center text-uppercase font-weight-bold">Students</span>
-  </a>
-</div>
-<div class="col-12 col-md-6 col-lg-3 mb-4">
-  <a href="{% url 'students:add_student' %}" class="d-flex flex-column align-items-center justify-content-center {% if request.resolver_match.url_name == 'add_student' %}active{% endif %}">
-    <i class="fas fa-user-plus fa-4x text-success mb-3"></i>
-    <span class="text-center text-uppercase font-weight-bold">Add Student</span>
-  </a>
-</div>
-</div>
-
-
+{% block breadcrumb %}
+<li class="breadcrumb-item active">لوحة التحكم</li>
 {% endblock %}
 
+{% block page_actions %}
+{% if permissions.can_add %}
+<a href="{% url 'students:add_student' %}" class="btn btn-success btn-custom me-2">
+    <i class="fas fa-user-plus me-1"></i>إضافة طالب جديد
+</a>
+{% endif %}
+<a href="{% url 'students:search_student' %}" class="btn btn-outline-primary btn-custom">
+    <i class="fas fa-search me-1"></i>البحث السريع
+</a>
+{% endblock %}
+
+{% block content %}
+<!-- إحصائيات سريعة -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="stats-card" style="border-left-color: var(--primary-color);">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="text-primary mb-1">{{ total_students|default:0 }}</h3>
+                    <p class="text-muted mb-0">إجمالي الطلاب</p>
+                    <small class="text-success">
+                        <i class="fas fa-chart-line me-1"></i>نشط
+                    </small>
+                </div>
+                <div class="text-primary opacity-75">
+                    <i class="fas fa-users fa-2x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="stats-card" style="border-left-color: var(--info-color);">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="text-info mb-1">{{ male_students|default:0 }}</h3>
+                    <p class="text-muted mb-0">طلاب ذكور</p>
+                    <small class="text-info">
+                        {% widthratio male_students total_students 100 %}%
+                    </small>
+                </div>
+                <div class="text-info opacity-75">
+                    <i class="fas fa-male fa-2x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="stats-card" style="border-left-color: var(--warning-color);">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="text-warning mb-1">{{ female_students|default:0 }}</h3>
+                    <p class="text-muted mb-0">طالبات إناث</p>
+                    <small class="text-warning">
+                        {% widthratio female_students total_students 100 %}%
+                    </small>
+                </div>
+                <div class="text-warning opacity-75">
+                    <i class="fas fa-female fa-2x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="stats-card" style="border-left-color: var(--success-color);">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="text-success mb-1">{{ students_paid|default:0 }}</h3>
+                    <p class="text-muted mb-0">مسدد الرسوم</p>
+                    <small class="text-success">
+                        <i class="fas fa-check-circle me-1"></i>مكتمل
+                    </small>
+                </div>
+                <div class="text-success opacity-75">
+                    <i class="fas fa-credit-card fa-2x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- إجراءات سريعة -->
+{% if permissions.can_add %}
+<div class="content-card mb-4">
+    <div class="content-card-header">
+        <h5><i class="fas fa-bolt me-2 text-warning"></i>الإجراءات السريعة</h5>
+    </div>
+    <div class="content-card-body">
+        <div class="row">
+            <div class="col-lg-4 col-md-6 mb-3">
+                <div class="d-grid">
+                    <a href="{% url 'students:add_student' %}" class="btn btn-outline-success btn-custom h-100 py-3">
+                        <i class="fas fa-user-plus fa-2x mb-2 d-block"></i>
+                        <strong>إضافة طالب جديد</strong>
+                        <br><small class="text-muted">تسجيل طالب في النظام</small>
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-3">
+                <div class="d-grid">
+                    <a href="{% url 'students:student_list' %}" class="btn btn-outline-primary btn-custom h-100 py-3">
+                        <i class="fas fa-list fa-2x mb-2 d-block"></i>
+                        <strong>عرض جميع الطلاب</strong>
+                        <br><small class="text-muted">تصفح قائمة الطلاب</small>
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-3">
+                <div class="d-grid">
+                    <a href="{% url 'students:search_student' %}" class="btn btn-outline-info btn-custom h-100 py-3">
+                        <i class="fas fa-search fa-2x mb-2 d-block"></i>
+                        <strong>البحث المتقدم</strong>
+                        <br><small class="text-muted">البحث في قاعدة البيانات</small>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- الطلاب المضافون حديثاً -->
+{% if recent_students %}
+<div class="content-card">
+    <div class="content-card-header">
+        <h5><i class="fas fa-clock me-2 text-primary"></i>الطلاب المضافون حديثاً</h5>
+    </div>
+    <div class="content-card-body">
+        <div class="table-responsive">
+            <table class="table table-custom table-hover">
+                <thead>
+                    <tr>
+                        <th>اسم الطالب</th>
+                        <th>الرقم القومي</th>
+                        <th>الصف</th>
+                        <th>تاريخ الإضافة</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in recent_students %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    <i class="fas fa-user-circle fa-2x text-primary"></i>
+                                </div>
+                                <div>
+                                    <strong>{{ student.name }}</strong>
+                                    <br><small class="text-muted">{{ student.get_gender_display_arabic }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="font-monospace">{{ student.national_number }}</span>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark">{{ student.grade_name }}</span>
+                        </td>
+                        <td>
+                            <small>{{ student.created_at|date:"d M Y" }}</small>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'students:student_detail' student.pk %}" class="btn btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if permissions.can_edit %}
+                                <a href="{% url 'students:edit_student' student.pk %}" class="btn btn-outline-warning">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="text-center mt-3">
+            <a href="{% url 'students:student_list' %}" class="btn btn-outline-primary btn-custom">
+                <i class="fas fa-list me-2"></i>عرض جميع الطلاب
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

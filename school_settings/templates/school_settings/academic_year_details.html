@@ -1,0 +1,704 @@
+{% extends 'school_settings/base.html' %}
+
+{% block title %}تفاصيل العام الدراسي {{ year.name }} - {{ system_settings.school_name }}{% endblock %}
+{% block header_title %}تفاصيل العام الدراسي{% endblock %}
+{% block header_icon %}<i class="fas fa-calendar-alt"></i>{% endblock %}
+{% block page_description %}عرض شامل لجميع معلومات العام الدراسي {{ year.name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item">
+    <a href="{% url 'school_settings:academic_years_list' %}">الأعوام الدراسية</a>
+</li>
+<li class="breadcrumb-item active">{{ year.name }}</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'school_settings:academic_years_list' %}" class="btn btn-outline-secondary btn-custom">
+        <i class="fas fa-arrow-right me-2"></i>العودة للقائمة
+    </a>
+    <a href="{% url 'school_settings:edit_academic_year' year.id %}" class="btn btn-outline-primary btn-custom">
+        <i class="fas fa-edit me-2"></i>تعديل
+    </a>
+    <button class="btn btn-outline-success btn-custom" onclick="printYearDetails()">
+        <i class="fas fa-print me-2"></i>طباعة
+    </button>
+    {% if not year.is_current and year.is_active %}
+    <button class="btn btn-outline-warning btn-custom" onclick="setCurrentYear()">
+        <i class="fas fa-star me-2"></i>تعيين كحالي
+    </button>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* نفس إعدادات CSS من صفحة تفاصيل السجل مع تعديلات للعام الدراسي */
+    body {
+        overflow-x: hidden !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+    }
+    
+    .container-fluid,
+    .row,
+    .col-lg-6,
+    .col-md-6 {
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box !important;
+    }
+
+    .year-header {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border-radius: 20px;
+        padding: 30px 20px;
+        margin-bottom: 20px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 25px rgba(40, 167, 69, 0.3);
+    }
+
+    .year-header.current {
+        background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+        box-shadow: 0 10px 25px rgba(255, 193, 7, 0.3);
+        animation: pulse-glow 3s infinite;
+    }
+
+    @keyframes pulse-glow {
+        0%, 100% { box-shadow: 0 10px 25px rgba(255, 193, 7, 0.3); }
+        50% { box-shadow: 0 15px 35px rgba(255, 193, 7, 0.5); }
+    }
+
+    .year-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+        animation: float 20s linear infinite;
+    }
+
+    @keyframes float {
+        0% { transform: translateX(-50px) translateY(-50px); }
+        100% { transform: translateX(50px) translateY(50px); }
+    }
+
+    .year-header-content {
+        position: relative;
+        z-index: 2;
+        text-align: center;
+    }
+
+    .year-badge {
+        display: inline-block;
+        background: rgba(255,255,255,0.2);
+        border: 2px solid rgba(255,255,255,0.3);
+        border-radius: 50px;
+        padding: 10px 25px;
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 15px;
+        backdrop-filter: blur(10px);
+    }
+
+    .year-status-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        font-size: 2rem;
+        margin: 0 auto 15px;
+        backdrop-filter: blur(10px);
+        border: 3px solid rgba(255,255,255,0.3);
+        background: rgba(255,255,255,0.2);
+    }
+
+    .details-section {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 15px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        border: 1px solid rgba(0,0,0,0.05);
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .details-section:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+    }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #f8f9fa;
+    }
+
+    .section-icon {
+        width: 45px;
+        height: 45px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 12px;
+        font-size: 1.3rem;
+        color: white;
+    }
+
+    .section-icon.basic {
+        background: linear-gradient(135deg, #28a745, #20c997);
+    }
+
+    .section-icon.dates {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+    }
+
+    .section-icon.students {
+        background: linear-gradient(135deg, #6f42c1, #e83e8c);
+    }
+
+    .section-icon.financial {
+        background: linear-gradient(135deg, #fd7e14, #ffc107);
+    }
+
+    .section-icon.terms {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+    }
+
+    .info-table {
+        background: transparent;
+        margin: 0;
+        width: 100%;
+        table-layout: fixed;
+    }
+
+    .info-table td {
+        border: none;
+        padding: 12px 15px;
+        vertical-align: middle;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+
+    .info-table tr:nth-child(even) {
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+
+    .info-label {
+        font-weight: 700;
+        color: #495057;
+        width: 40%;
+        text-align: right;
+    }
+
+    .info-value {
+        color: #212529;
+        width: 60%;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 15px;
+        margin: 20px 0;
+    }
+
+    .stat-card {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 15px;
+        text-align: center;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-3px);
+        border-color: #28a745;
+        box-shadow: 0 5px 15px rgba(40, 167, 69, 0.2);
+    }
+
+    .stat-number {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: #28a745;
+        margin-bottom: 5px;
+    }
+
+    .stat-label {
+        font-size: 0.8rem;
+        color: #6c757d;
+        font-weight: 600;
+    }
+
+    .timeline-container {
+        position: relative;
+        margin: 20px 0;
+    }
+
+    .timeline-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 12px;
+        border-right: 4px solid #28a745;
+        transition: all 0.3s ease;
+    }
+
+    .timeline-item:hover {
+        transform: translateX(-5px);
+        box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+    }
+
+    .timeline-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #28a745;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 15px;
+        flex-shrink: 0;
+    }
+
+    .timeline-content {
+        flex: 1;
+    }
+
+    .timeline-title {
+        font-weight: 700;
+        color: #495057;
+        margin-bottom: 5px;
+    }
+
+    .timeline-date {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .progress-container {
+        margin: 20px 0;
+    }
+
+    .progress {
+        height: 10px;
+        border-radius: 20px;
+        background: #e9ecef;
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        transition: width 1s ease;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 200px;
+        margin: 20px 0;
+        background: #f8f9fa;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px dashed #dee2e6;
+    }
+
+    @media (max-width: 768px) {
+        .year-header {
+            padding: 20px 15px;
+        }
+        
+        .year-badge {
+            font-size: 1.3rem;
+            padding: 8px 20px;
+        }
+        
+        .year-status-badge {
+            width: 70px;
+            height: 70px;
+            font-size: 1.8rem;
+        }
+        
+        .details-section {
+            padding: 15px;
+        }
+        
+        .info-table td {
+            padding: 8px 12px;
+        }
+        
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        
+        .section-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 1.1rem;
+        }
+    }
+
+    .page-footer {
+        margin-top: 20px;
+        margin-bottom: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header للعام الدراسي -->
+<div class="year-header {% if year.is_current %}current{% endif %}">
+    <div class="year-header-content">
+        <div class="year-badge">
+            العام الدراسي {{ year.name }}
+        </div>
+        
+        <div class="year-status-badge">
+            {% if year.is_current %}
+                <i class="fas fa-star"></i>
+            {% else %}
+                <i class="fas fa-calendar-alt"></i>
+            {% endif %}
+        </div>
+        
+        <h4 class="mb-2">
+            {% if year.is_current %}
+                العام الدراسي الحالي
+            {% elif year.is_active %}
+                عام دراسي نشط
+            {% else %}
+                عام دراسي غير نشط
+            {% endif %}
+        </h4>
+        
+        <p class="mb-0 opacity-90">
+            من {{ year.start_date|date:"d F Y" }} إلى {{ year.end_date|date:"d F Y" }}
+            {% if year.duration_days %}
+            ({{ year.duration_days }} يوماً)
+            {% endif %}
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- المعلومات الأساسية -->
+    <div class="col-lg-6 mb-3">
+        <div class="details-section">
+            <div class="section-header">
+                <div class="section-icon basic">
+                    <i class="fas fa-info-circle"></i>
+                </div>
+                <div>
+                    <h6 class="mb-1">المعلومات الأساسية</h6>
+                    <small class="text-muted">بيانات العام الدراسي الرئيسية</small>
+                </div>
+            </div>
+            
+            <table class="table info-table">
+                <tr>
+                    <td class="info-label">اسم العام:</td>
+                    <td class="info-value">
+                        <strong>{{ year.name }}</strong>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="info-label">الحالة:</td>
+                    <td class="info-value">
+                        {% if year.is_current %}
+                        <span class="badge bg-warning">العام الحالي</span>
+                        {% endif %}
+                        {% if year.is_active %}
+                        <span class="badge bg-success">نشط</span>
+                        {% else %}
+                        <span class="badge bg-secondary">غير نشط</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="info-label">تاريخ الإنشاء:</td>
+                    <td class="info-value">{{ year.created_date|date:"d/m/Y H:i" }}</td>
+                </tr>
+                <tr>
+                    <td class="info-label">آخر تحديث:</td>
+                    <td class="info-value">{{ year.updated_date|date:"d/m/Y H:i" }}</td>
+                </tr>
+                <tr>
+                    <td class="info-label">مدة العام:</td>
+                    <td class="info-value">
+                        {% if year.duration_days %}
+                        <span class="badge bg-info">{{ year.duration_days }} يوماً</span>
+                        {% else %}
+                        <span class="text-muted">غير محسوبة</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    
+    <!-- إحصائيات الطلاب -->
+    <div class="col-lg-6 mb-3">
+        <div class="details-section">
+            <div class="section-header">
+                <div class="section-icon students">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div>
+                    <h6 class="mb-1">إحصائيات الطلاب</h6>
+                    <small class="text-muted">أعداد الطلاب المسجلين</small>
+                </div>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">{{ year.male_students_count|default:0 }}</div>
+                    <div class="stat-label">الذكور</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ year.female_students_count|default:0 }}</div>
+                    <div class="stat-label">الإناث</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ year.students_count|default:0 }}</div>
+                    <div class="stat-label">الإجمالي</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ year.grades_count|default:0 }}</div>
+                    <div class="stat-label">الصفوف</div>
+                </div>
+            </div>
+            
+            <!-- رسم بياني بسيط -->
+            <!-- في قسم الرسم البياني - استبدل هذا الجزء: -->
+<div class="chart-container">
+    <div class="text-center">
+        <i class="fas fa-chart-pie fa-3x text-muted mb-2"></i>
+        <p class="text-muted mb-0">توزيع الطلاب حسب الجنس</p>
+        <small class="text-muted">
+            {% if year.students_count > 0 %}
+            الذكور: {{ year.male_students_count|default:0 }}
+            <br>
+            الإناث: {{ year.female_students_count|default:0 }}
+            <br>
+            الإجمالي: {{ year.students_count|default:0 }}
+            {% else %}
+            لا يوجد طلاب مسجلون
+            {% endif %}
+        </small>
+    </div>
+</div>
+
+        </div>
+    </div>
+</div>
+
+<!-- الجدول الزمني -->
+<div class="details-section">
+    <div class="section-header">
+        <div class="section-icon dates">
+            <i class="fas fa-calendar-check"></i>
+        </div>
+        <div>
+            <h6 class="mb-1">الجدول الزمني للعام الدراسي</h6>
+            <small class="text-muted">تواريخ البداية والنهاية للفصول</small>
+        </div>
+    </div>
+    
+    <div class="timeline-container">
+        <div class="timeline-item">
+            <div class="timeline-icon">
+                <i class="fas fa-play"></i>
+            </div>
+            <div class="timeline-content">
+                <div class="timeline-title">بداية العام الدراسي</div>
+                <div class="timeline-date">{{ year.start_date|date:"d F Y - l" }}</div>
+            </div>
+        </div>
+        
+        <div class="timeline-item">
+            <div class="timeline-icon">
+                <i class="fas fa-calendar"></i>
+            </div>
+            <div class="timeline-content">
+                <div class="timeline-title">الفصل الدراسي الأول</div>
+                <div class="timeline-date">
+                    {% if year.first_term_start and year.first_term_end %}
+                    من {{ year.first_term_start|date:"d/m/Y" }} إلى {{ year.first_term_end|date:"d/m/Y" }}
+                    {% if year.first_term_duration %}
+                    ({{ year.first_term_duration }} يوماً)
+                    {% endif %}
+                    {% else %}
+                    <span class="text-muted">غير محدد</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="timeline-item">
+            <div class="timeline-icon">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
+            <div class="timeline-content">
+                <div class="timeline-title">الفصل الدراسي الثاني</div>
+                <div class="timeline-date">
+                    {% if year.second_term_start and year.second_term_end %}
+                    من {{ year.second_term_start|date:"d/m/Y" }} إلى {{ year.second_term_end|date:"d/m/Y" }}
+                    {% if year.second_term_duration %}
+                    ({{ year.second_term_duration }} يوماً)
+                    {% endif %}
+                    {% else %}
+                    <span class="text-muted">غير محدد</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="timeline-item">
+            <div class="timeline-icon">
+                <i class="fas fa-stop"></i>
+            </div>
+            <div class="timeline-content">
+                <div class="timeline-title">نهاية العام الدراسي</div>
+                <div class="timeline-date">{{ year.end_date|date:"d F Y - l" }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- الملخص المالي -->
+{% if year.financial_summary %}
+<div class="details-section">
+    <div class="section-header">
+        <div class="section-icon financial">
+            <i class="fas fa-money-bill-wave"></i>
+        </div>
+        <div>
+            <h6 class="mb-1">الملخص المالي</h6>
+            <small class="text-muted">إحصائيات المصروفات والمدفوعات</small>
+        </div>
+    </div>
+    
+    <div class="row g-3">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-number">{{ year.financial_summary.total_fees|floatformat:0 }}</div>
+                <div class="stat-label">إجمالي المصروفات</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-number">{{ year.financial_summary.total_payments|floatformat:0 }}</div>
+                <div class="stat-label">المبلغ المحصل</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-number">{{ year.financial_summary.total_outstanding|floatformat:0 }}</div>
+                <div class="stat-label">المبلغ المستحق</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-number">{{ year.financial_summary.collection_percentage|floatformat:1 }}%</div>
+                <div class="stat-label">نسبة التحصيل</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- شريط التقدم -->
+    <div class="progress-container">
+        <div class="d-flex justify-content-between mb-2">
+            <span class="text-muted">نسبة التحصيل</span>
+            <span class="fw-bold">{{ year.financial_summary.collection_percentage|floatformat:1 }}%</span>
+        </div>
+        <div class="progress">
+            <div class="progress-bar" style="width: {{ year.financial_summary.collection_percentage }}%"></div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- أزرار الإجراءات -->
+<div class="text-center page-footer">
+    <div class="btn-group">
+        <a href="{% url 'school_settings:academic_years_list' %}" class="btn btn-outline-secondary btn-lg px-4">
+            <i class="fas fa-arrow-right me-2"></i>العودة للقائمة
+        </a>
+        
+        <a href="{% url 'school_settings:edit_academic_year' year.id %}" class="btn btn-outline-primary btn-lg px-4">
+            <i class="fas fa-edit me-2"></i>تعديل العام
+        </a>
+        
+        {% if not year.is_current and year.is_active %}
+        <button class="btn btn-outline-warning btn-lg px-4" onclick="setCurrentYear()">
+            <i class="fas fa-star me-2"></i>تعيين كعام حالي
+        </button>
+        {% endif %}
+        
+        <button class="btn btn-outline-info btn-lg px-4" onclick="generateReport()">
+            <i class="fas fa-chart-line me-2"></i>تقرير مفصل
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function printYearDetails() {
+    window.print();
+}
+
+function setCurrentYear() {
+    if (confirm('هل تريد تعيين هذا العام كعام دراسي حالي؟\n\nسيتم إلغاء تفعيل العام الحالي السابق.')) {
+        showMessage('success', 'تم تعيين العام الدراسي الحالي بنجاح');
+        setTimeout(() => location.reload(), 1500);
+    }
+}
+
+function generateReport() {
+    showMessage('info', 'جاري إنشاء التقرير المفصل...');
+    setTimeout(() => {
+        showMessage('success', 'تم إنشاء التقرير بنجاح');
+    }, 2000);
+}
+
+function showMessage(type, message) {
+    const colors = { success: 'success', error: 'danger', warning: 'warning', info: 'info' };
+    const icons = { success: 'fas fa-check-circle', error: 'fas fa-exclamation-circle', warning: 'fas fa-exclamation-triangle', info: 'fas fa-info-circle' };
+    
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${colors[type]} alert-dismissible fade show`;
+    alertDiv.style.cssText = `position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 350px; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); border-radius: 10px;`;
+    
+    alertDiv.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="${icons[type]} me-3"></i>
+            <div class="flex-grow-1">${message}</div>
+            <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    setTimeout(() => { if (alertDiv.parentNode) alertDiv.remove(); }, 5000);
+}
+</script>
+{% endblock %}

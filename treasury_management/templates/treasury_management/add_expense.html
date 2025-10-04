@@ -1,0 +1,1832 @@
+<!-- treasury_management/templates/treasury_management/add_expense.html -->
+{% extends 'treasury_management/base.html' %}
+{% load static %}
+
+{% block title %}إضافة مصروف يومي - نظام الخزينة{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'treasury_management:expenses_list' %}">المصروفات</a></li>
+<li class="breadcrumb-item active">إضافة مصروف جديد</li>
+{% endblock %}
+
+{% block content %}
+<style>
+    /* ===================================
+       🎨 EXPENSE FORM STYLES WITH PREVIEW
+    =================================== */
+    .expense-container {
+        background: linear-gradient(135deg, rgba(231, 76, 60, 0.02), rgba(192, 57, 43, 0.02));
+        border-radius: 20px;
+        padding: 25px;
+        margin: -10px;
+        min-height: calc(100vh - 200px);
+    }
+
+    /* التخطيط الجانبي */
+    .expense-layout {
+        display: flex;
+        gap: 25px;
+        margin-bottom: 30px;
+    }
+
+    .form-wrapper { flex: 0 0 65%; }
+    .preview-wrapper { flex: 0 0 35%; }
+
+    .expense-card {
+        background: white;
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(231, 76, 60, 0.1);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        margin-bottom: 25px;
+    }
+
+    .expense-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(231, 76, 60, 0.15);
+    }
+
+    .expense-header {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+        color: white;
+        padding: 25px 30px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .expense-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+        animation: float 20s linear infinite;
+    }
+
+    .expense-header-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .expense-header h4 {
+        margin: 0 0 8px 0;
+        font-weight: 700;
+        font-size: 1.6rem;
+        display: flex;
+        align-items: center;
+        color: white;
+    }
+
+    .expense-header i {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 12px;
+        border-radius: 12px;
+        margin-left: 15px;
+        font-size: 1.3rem;
+    }
+
+    .expense-header p {
+        margin: 0;
+        opacity: 0.9;
+        font-size: 1rem;
+        color: white;
+    }
+
+    /* أقسام النموذج */
+    .form-section {
+        background: rgba(248, 249, 250, 0.8);
+        border: 2px solid rgba(231, 76, 60, 0.1);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .form-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+        border-radius: 15px 15px 0 0;
+    }
+
+    .form-section:hover {
+        background: rgba(255, 255, 255, 0.9);
+        border-color: rgba(231, 76, 60, 0.2);
+        transform: translateY(-2px);
+    }
+
+    .section-title {
+        color: var(--text-primary);
+        font-weight: 700;
+        font-size: 1.1rem;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        padding-bottom: 10px;
+        border-bottom: 2px solid rgba(231, 76, 60, 0.1);
+    }
+
+    .section-icon {
+        width: 35px;
+        height: 35px;
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+        color: white;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 10px;
+        font-size: 1rem;
+        box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+    }
+
+    .section-icon.success { background: linear-gradient(135deg, #27ae60, #2ecc71); }
+    .section-icon.info { background: linear-gradient(135deg, #3498db, #2980b9); }
+    .section-icon.warning { background: linear-gradient(135deg, #f39c12, #e67e22); }
+
+    /* الحقول */
+    .form-label {
+        color: var(--text-primary);
+        font-weight: 600;
+        margin-bottom: 8px;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .form-label .text-danger {
+        margin-right: 5px;
+        font-size: 1.1rem;
+    }
+
+    .form-control, .form-select {
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 12px 15px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        background: white;
+        color: var(--text-primary);
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #e74c3c;
+        box-shadow: 0 0 0 0.2rem rgba(231, 76, 60, 0.15);
+        background: white;
+        transform: translateY(-1px);
+    }
+
+    .form-control:hover, .form-select:hover {
+        border-color: #bdc3c7;
+        background: white;
+    }
+
+    .form-text {
+        color: #6c757d;
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-top: 5px;
+    }
+
+    .form-text::before {
+        content: '\f05a';
+        font-family: 'Font Awesome 6 Free';
+        font-weight: 900;
+        margin-left: 6px;
+        color: #17a2b8;
+    }
+
+    /* ===================================
+       🎨 ENHANCED PREVIEW STYLES
+    =================================== */
+    .preview-card {
+        background: white;
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(46, 204, 113, 0.15);
+        overflow: hidden;
+        position: sticky;
+        top: 20px;
+        max-height: calc(100vh - 40px);
+        overflow-y: auto;
+        transition: all 0.3s ease;
+    }
+
+    .preview-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 35px rgba(46, 204, 113, 0.2);
+    }
+
+    .preview-header {
+        background: linear-gradient(135deg, #2ecc71, #27ae60);
+        color: white;
+        padding: 25px 20px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .preview-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+        background-size: 20px 20px;
+        animation: drift 25s linear infinite;
+    }
+
+    .preview-header-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .preview-icon {
+        width: 60px;
+        height: 60px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px;
+        font-size: 1.5rem;
+        backdrop-filter: blur(10px);
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        animation: pulse 2s infinite;
+    }
+
+    .preview-header h5 {
+        margin: 0 0 5px 0;
+        font-weight: 700;
+        font-size: 1.3rem;
+        color: white;
+    }
+
+    .preview-header p {
+        margin: 0;
+        opacity: 0.9;
+        font-size: 0.9rem;
+        color: white;
+    }
+
+    .preview-content {
+        padding: 25px 20px;
+    }
+
+    /* مؤشر حالة النموذج */
+    .preview-status {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-radius: 15px;
+        padding: 15px;
+        margin-bottom: 20px;
+        text-align: center;
+        border: 2px dashed #dee2e6;
+        transition: all 0.3s ease;
+    }
+
+    .preview-status.active {
+        background: linear-gradient(135deg, rgba(46, 204, 113, 0.1), rgba(39, 174, 96, 0.05));
+        border-color: #2ecc71;
+        border-style: solid;
+    }
+
+    .status-text {
+        font-weight: 600;
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .status-text.active {
+        color: #2ecc71;
+    }
+
+    .completion-bar {
+        width: 100%;
+        height: 4px;
+        background: #e9ecef;
+        border-radius: 2px;
+        overflow: hidden;
+        margin-top: 10px;
+    }
+
+    .completion-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #2ecc71, #27ae60);
+        border-radius: 2px;
+        transition: width 0.5s ease;
+        width: 0%;
+    }
+
+    /* أقسام المعاينة */
+    .preview-section {
+        margin-bottom: 20px;
+    }
+
+    .preview-section-title {
+        font-weight: 700;
+        color: #2c3e50;
+        font-size: 0.95rem;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #f1f3f4;
+    }
+
+    .preview-section-icon {
+        width: 25px;
+        height: 25px;
+        background: linear-gradient(135deg, #2ecc71, #27ae60);
+        color: white;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 8px;
+        font-size: 0.8rem;
+    }
+
+    .preview-item {
+        background: white;
+        border: 2px solid #f1f3f4;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 12px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .preview-item::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 3px;
+        background: #f1f3f4;
+        transition: all 0.3s ease;
+    }
+
+    .preview-item.filled {
+        background: linear-gradient(135deg, rgba(46, 204, 113, 0.08), rgba(255, 255, 255, 0.9));
+        border-color: rgba(46, 204, 113, 0.3);
+        transform: translateX(-3px);
+        box-shadow: 0 3px 10px rgba(46, 204, 113, 0.1);
+    }
+
+    .preview-item.filled::before {
+        background: linear-gradient(135deg, #2ecc71, #27ae60);
+    }
+
+    .preview-item.warning {
+        background: linear-gradient(135deg, rgba(255, 193, 7, 0.08), rgba(255, 255, 255, 0.9));
+        border-color: rgba(255, 193, 7, 0.3);
+    }
+
+    .preview-item.warning::before {
+        background: linear-gradient(135deg, #ffc107, #ffb300);
+    }
+
+    .preview-item.danger {
+        background: linear-gradient(135deg, rgba(220, 53, 69, 0.08), rgba(255, 255, 255, 0.9));
+        border-color: rgba(220, 53, 69, 0.3);
+        animation: shake 0.5s ease-in-out;
+    }
+
+    .preview-item.danger::before {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+    }
+
+    .preview-label {
+        font-weight: 700;
+        color: #495057;
+        font-size: 0.8rem;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .preview-label-icon {
+        width: 16px;
+        height: 16px;
+        background: #6c757d;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 6px;
+        font-size: 0.6rem;
+        color: white;
+    }
+
+    .preview-value {
+        color: #2c3e50;
+        font-size: 1rem;
+        line-height: 1.4;
+        font-weight: 500;
+    }
+
+    .preview-value.empty {
+        color: #adb5bd;
+        font-style: italic;
+        font-weight: 400;
+    }
+
+    .preview-value.amount {
+        font-weight: 800;
+        color: #e74c3c;
+        font-size: 1.2rem;
+        font-family: 'Courier New', monospace;
+    }
+
+    .preview-value.amount.large {
+        font-size: 1.4rem;
+        color: #c0392b;
+        text-shadow: 0 1px 2px rgba(192, 57, 43, 0.3);
+    }
+
+    .preview-value.truncated {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    /* مؤشر المخاطر */
+    .risk-indicator {
+        background: white;
+        border-radius: 10px;
+        padding: 12px;
+        margin-top: 15px;
+        border: 2px solid #f1f3f4;
+    }
+
+    .risk-indicator.safe {
+        border-color: #28a745;
+        background: linear-gradient(135deg, rgba(40, 167, 69, 0.05), white);
+    }
+
+    .risk-indicator.warning {
+        border-color: #ffc107;
+        background: linear-gradient(135deg, rgba(255, 193, 7, 0.05), white);
+    }
+
+    .risk-indicator.danger {
+        border-color: #dc3545;
+        background: linear-gradient(135deg, rgba(220, 53, 69, 0.05), white);
+    }
+
+    .risk-text {
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .risk-text.safe { color: #28a745; }
+    .risk-text.warning { color: #ffc107; }
+    .risk-text.danger { color: #dc3545; }
+
+    .risk-icon {
+        margin-left: 8px;
+        font-size: 1rem;
+    }
+
+    /* أزرار المعاينة */
+    .preview-actions {
+        padding: 15px 20px;
+        background: #f8f9fa;
+        border-top: 1px solid #f1f3f4;
+        text-align: center;
+    }
+
+    .preview-btn {
+        background: linear-gradient(135deg, #2ecc71, #27ae60);
+        color: white;
+        border: none;
+        border-radius: 25px;
+        padding: 8px 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .preview-btn:hover {
+        background: linear-gradient(135deg, #27ae60, #229954);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+    }
+
+    .preview-btn:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+    /* رسائل التحذير */
+    .alert {
+        border: none;
+        border-radius: 12px;
+        padding: 15px 20px;
+        font-weight: 500;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .alert-warning {
+        background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+        color: #856404;
+        border-right: 4px solid #f39c12;
+    }
+
+    .alert-danger {
+        background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+        color: #721c24;
+        border-right: 4px solid #e74c3c;
+    }
+
+    .alert-success {
+        background: linear-gradient(135deg, #d4edda, #c3e6cb);
+        color: #155724;
+        border-right: 4px solid #27ae60;
+    }
+
+    .alert-info {
+        background: linear-gradient(135deg, #d1ecf1, #bee5eb);
+        color: #0c5460;
+        border-right: 4px solid #17a2b8;
+    }
+
+    .alert-light {
+        background: white;
+        color: var(--text-primary);
+        border: 2px solid #e9ecef;
+        border-right: 4px solid #6c757d;
+    }
+
+    /* الأزرار */
+    .form-footer {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        padding: 20px 30px;
+        border-top: 1px solid rgba(0,0,0,0.05);
+        border-radius: 0 0 20px 20px;
+    }
+
+    .btn {
+        font-weight: 600;
+        padding: 10px 20px;
+        border-radius: 10px;
+        border: none;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+    }
+
+    .btn-danger {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background: linear-gradient(135deg, #c0392b, #a93226);
+        color: white;
+    }
+
+    .btn-outline-info {
+        border: 2px solid #17a2b8;
+        color: #17a2b8;
+        background: transparent;
+    }
+
+    .btn-outline-info:hover {
+        background: #17a2b8;
+        color: white;
+        border-color: #17a2b8;
+    }
+
+    .btn-secondary {
+        background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: linear-gradient(135deg, #7f8c8d, #95a5a6);
+        color: white;
+    }
+
+    /* بطاقات الدليل */
+    .guide-card {
+        border: none;
+        border-radius: 15px;
+        overflow: hidden;
+        margin-bottom: 20px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+    }
+
+    .guide-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    }
+
+    .guide-card .card-header {
+        font-weight: 700;
+        padding: 15px 20px;
+        border-bottom: none;
+    }
+
+    .guide-card .card-header h5 {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        color: white;
+    }
+
+    .guide-card .card-header i {
+        margin-left: 10px;
+        font-size: 1.1rem;
+    }
+
+    .border-danger .card-header {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+        color: white;
+    }
+
+    .border-warning .card-header {
+        background: linear-gradient(135deg, #f39c12, #e67e22);
+        color: white;
+    }
+
+    .border-info .card-header {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+    }
+
+    .border-success .card-header {
+        background: linear-gradient(135deg, #27ae60, #229954);
+        color: white;
+    }
+
+    /* الجداول */
+    .table {
+        font-size: 0.9rem;
+        margin-bottom: 0;
+    }
+
+    .table th {
+        background-color: #f8f9fa;
+        color: var(--text-primary);
+        font-weight: 600;
+        border-bottom: 2px solid #e9ecef;
+        padding: 10px 12px;
+    }
+
+    .table td {
+        padding: 8px 12px;
+        vertical-align: middle;
+        color: var(--text-primary);
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(231, 76, 60, 0.05);
+    }
+
+    .badge {
+        font-weight: 600;
+        padding: 6px 10px;
+        border-radius: 8px;
+        font-size: 0.8rem;
+    }
+
+    /* سير العمل */
+    .workflow-step {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .workflow-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 15px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        color: white;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        transition: all 0.3s ease;
+    }
+
+    .workflow-step:hover .workflow-icon {
+        transform: scale(1.05);
+    }
+
+    .workflow-step h6 {
+        color: var(--text-primary);
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+
+    .workflow-step small {
+        color: #6c757d;
+        font-weight: 500;
+    }
+
+    /* الانيميشن */
+    @keyframes float {
+        0%, 100% { transform: translateX(0) translateY(0); }
+        25% { transform: translateX(3px) translateY(-3px); }
+        50% { transform: translateX(-2px) translateY(2px); }
+        75% { transform: translateX(-3px) translateY(-2px); }
+    }
+
+    @keyframes drift {
+        0% { transform: rotate(0deg) translateX(0); }
+        100% { transform: rotate(360deg) translateX(20px); }
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    @keyframes shake {
+        0%, 100% { transform: translateX(-3px); }
+        25% { transform: translateX(-6px); }
+        75% { transform: translateX(0px); }
+    }
+
+    .fade-in {
+        animation: fadeInUp 0.8s ease-out;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* الاستجابة */
+    @media (max-width: 1200px) {
+        .expense-layout {
+            flex-direction: column;
+        }
+        
+        .form-wrapper,
+        .preview-wrapper {
+            flex: none;
+        }
+        
+        .preview-card {
+            position: static;
+            max-height: none;
+            margin-top: 20px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .expense-container {
+            padding: 15px;
+            margin: -5px;
+        }
+
+        .expense-header {
+            padding: 20px 25px;
+        }
+
+        .expense-header h4 {
+            font-size: 1.4rem;
+        }
+
+        .form-section {
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .section-icon {
+            width: 30px;
+            height: 30px;
+            font-size: 0.9rem;
+        }
+
+        .form-footer {
+            padding: 15px 20px;
+        }
+
+        .btn {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .preview-content {
+            padding: 20px 15px;
+        }
+        
+        .preview-icon {
+            width: 50px;
+            height: 50px;
+            font-size: 1.2rem;
+        }
+        
+        .preview-item {
+            padding: 12px;
+        }
+
+        .workflow-step {
+            margin-bottom: 15px;
+        }
+
+        .workflow-icon {
+            width: 50px;
+            height: 50px;
+            font-size: 1.1rem;
+        }
+    }
+</style>
+
+<!-- محتوى الصفحة -->
+<div class="expense-container">
+    <div class="expense-layout">
+        <!-- النموذج -->
+        <div class="form-wrapper">
+            <div class="expense-card fade-in">
+                <div class="expense-header">
+                    <div class="expense-header-content">
+                        <h4>
+                            <i class="fas fa-receipt"></i>
+                            إضافة مصروف يومي جديد
+                        </h4>
+                        <p>تسجيل المصروفات اليومية والإدارية للمدرسة</p>
+                    </div>
+                </div>
+                
+                <form method="POST" id="expenseForm">
+                    {% csrf_token %}
+                    <div class="card-body" style="padding: 30px;">
+                        
+                        <!-- قسم التصنيف والنوع -->
+                        <div class="form-section">
+                            <div class="section-title">
+                                <div class="section-icon">
+                                    <i class="fas fa-tags"></i>
+                                </div>
+                                <span>تصنيف المصروف</span>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">
+                                            <span class="text-danger">*</span>
+                                            تصنيف المصروف
+                                        </label>
+                                        <select class="form-select" name="category" id="categorySelect" required>
+                                            <option value="">اختر التصنيف المناسب</option>
+                                            {% for category in expense_categories %}
+                                            <option value="{{ category.id }}" 
+                                                    data-account="{{ category.account.name }}"
+                                                    data-budget="{{ category.monthly_budget|default:0 }}">
+                                                💰 {{ category.name }}
+                                                {% if category.monthly_budget %}
+                                                - ميزانية: {{ category.monthly_budget|floatformat:0 }} ج.م
+                                                {% endif %}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                        <div class="form-text" id="accountInfo">اختر التصنيف المناسب للمصروف</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">
+                                            <span class="text-danger">*</span>
+                                            نوع المصروف
+                                        </label>
+                                        <select class="form-select" name="expense_type" required>
+                                            <option value="">اختر النوع</option>
+                                            <option value="SALARIES">👥 مرتبات وأجور</option>
+                                            <option value="UTILITIES">⚡ مرافق (كهرباء، ماء، غاز)</option>
+                                            <option value="SUPPLIES">📝 مستلزمات ومواد</option>
+                                            <option value="MAINTENANCE">🔧 صيانة وإصلاح</option>
+                                            <option value="MARKETING">📢 دعاية وتسويق</option>
+                                            <option value="TRANSPORTATION">🚌 نقل ومواصلات</option>
+                                            <option value="FOOD">🍽️ تغذية وطعام</option>
+                                            <option value="MEDICAL">💊 طبي وصحي</option>
+                                            <option value="CLEANING">🧹 نظافة وتعقيم</option>
+                                            <option value="EDUCATION">📚 تعليمي وتدريبي</option>
+                                            <option value="OTHER">📋 أخرى</option>
+                                        </select>
+                                        <div class="form-text">نوع المصروف لتنظيم الإحصائيات</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- قسم الوصف -->
+                        <div class="form-section">
+                            <div class="section-title">
+                                <div class="section-icon success">
+                                    <i class="fas fa-align-left"></i>
+                                </div>
+                                <span>وصف المصروف</span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <span class="text-danger">*</span>
+                                    وصف تفصيلي للمصروف
+                                </label>
+                                <textarea class="form-control" name="description" rows="3" required 
+                                          placeholder="مثال: دفع فاتورة كهرباء شهر أكتوبر 2025 - مبنى المدرسة الرئيسي"></textarea>
+                                <div class="form-text">وصف مفصل وواضح للمصروف (سيظهر في التقارير)</div>
+                            </div>
+                        </div>
+
+                        <!-- قسم المبلغ والخزنة -->
+                        <div class="form-section">
+                            <div class="section-title">
+                                <div class="section-icon info">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </div>
+                                <span>المبلغ والخزنة</span>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">
+                                            <span class="text-danger">*</span>
+                                            المبلغ
+                                        </label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" name="amount" id="amountInput"
+                                                   min="0.01" step="0.01" required placeholder="0.00">
+                                            <span class="input-group-text">ج.م</span>
+                                        </div>
+                                        <div class="invalid-feedback" id="amountError"></div>
+                                        <div class="form-text" id="budgetInfo">مبلغ المصروف بالجنيه المصري</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">
+                                            <span class="text-danger">*</span>
+                                            الخزنة
+                                        </label>
+                                        <select class="form-select" name="treasury" id="treasurySelect" required>
+                                            <option value="">اختر الخزنة</option>
+                                            {% for treasury in treasuries %}
+                                            <option value="{{ treasury.id }}" data-balance="{{ treasury.current_balance }}">
+                                                🏦 {{ treasury.name }} - الرصيد: {{ treasury.current_balance|floatformat:2 }} ج.م
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                        <div class="form-text" id="treasuryBalance">اختر الخزنة التي سيتم الخصم منها</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- قسم التفاصيل الإضافية -->
+                        <div class="form-section">
+                            <div class="section-title">
+                                <div class="section-icon warning">
+                                    <i class="fas fa-info-circle"></i>
+                                </div>
+                                <span>تفاصيل إضافية</span>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">اسم المورد أو الجهة</label>
+                                        <input type="text" class="form-control" name="vendor_name" 
+                                               placeholder="مثال: شركة الكهرباء">
+                                        <div class="form-text">الجهة المدفوع لها المبلغ</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">رقم الفاتورة أو الإيصال</label>
+                                        <input type="text" class="form-control" name="invoice_number" 
+                                               placeholder="مثال: INV-2025-001">
+                                        <div class="form-text">رقم مرجعي للفاتورة أو الإيصال</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">تاريخ المصروف</label>
+                                        <input type="date" class="form-control" name="expense_date" 
+                                               value="{{ today|date:'Y-m-d' }}">
+                                        <div class="form-text">تاريخ حدوث المصروف الفعلي</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">ملاحظات إضافية</label>
+                                        <input type="text" class="form-control" name="notes" 
+                                               placeholder="أي ملاحظات أو تفاصيل إضافية">
+                                        <div class="form-text">ملاحظات داخلية للمراجعة</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- تحذيرات الميزانية -->
+                        <div class="alert alert-warning d-none" id="budgetWarning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>تحذير الميزانية:</strong>
+                            <div id="budgetWarningText"></div>
+                        </div>
+
+                        <!-- معاينة المصروف -->
+                        <div class="alert alert-light border d-none" id="expensePreview">
+                            <h6><i class="fas fa-eye me-2"></i>معاينة المصروف:</h6>
+                            <div id="previewContent"></div>
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="form-footer">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{% url 'treasury_management:expenses_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>إلغاء والعودة
+                            </a>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-info" id="previewBtn">
+                                    <i class="fas fa-eye me-1"></i>معاينة
+                                </button>
+                                <button type="submit" class="btn btn-danger" id="submitBtn">
+                                    <i class="fas fa-save me-1"></i>حفظ المصروف
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- المعاينة المحسنة -->
+        <div class="preview-wrapper">
+            <div class="preview-card fade-in" style="animation-delay: 0.2s;">
+                <div class="preview-header">
+                    <div class="preview-header-content">
+                        <div class="preview-icon">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <h5>معاينة المصروف</h5>
+                        <p>متابعة حية للبيانات المدخلة</p>
+                    </div>
+                </div>
+                
+                <div class="preview-content">
+                    <!-- مؤشر حالة النموذج -->
+                    <div class="preview-status" id="previewStatus">
+                        <div class="status-text" id="statusText">ابدأ بملء البيانات</div>
+                        <div class="completion-bar">
+                            <div class="completion-fill" id="completionFill"></div>
+                        </div>
+                    </div>
+
+                    <!-- القسم الأساسي -->
+                    <div class="preview-section">
+                        <div class="preview-section-title">
+                            <div class="preview-section-icon">
+                                <i class="fas fa-info"></i>
+                            </div>
+                            البيانات الأساسية
+                        </div>
+                        
+                        <div class="preview-item" id="previewCategory">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-tag"></i>
+                                </div>
+                                تصنيف المصروف
+                            </div>
+                            <div class="preview-value empty">لم يتم اختيار التصنيف</div>
+                        </div>
+                        
+                        <div class="preview-item" id="previewType">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-list"></i>
+                                </div>
+                                نوع المصروف
+                            </div>
+                            <div class="preview-value empty">لم يتم اختيار النوع</div>
+                        </div>
+                        
+                        <div class="preview-item" id="previewDescription">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-file-alt"></i>
+                                </div>
+                                وصف المصروف
+                            </div>
+                            <div class="preview-value empty truncated">لم يتم إدخال الوصف</div>
+                        </div>
+                    </div>
+
+                    <!-- القسم المالي -->
+                    <div class="preview-section">
+                        <div class="preview-section-title">
+                            <div class="preview-section-icon">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </div>
+                            التفاصيل المالية
+                        </div>
+                        
+                        <div class="preview-item" id="previewAmount">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-dollar-sign"></i>
+                                </div>
+                                المبلغ المطلوب
+                            </div>
+                            <div class="preview-value amount empty">0.00 ج.م</div>
+                        </div>
+                        
+                        <div class="preview-item" id="previewTreasury">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-university"></i>
+                                </div>
+                                الخزنة المحددة
+                            </div>
+                            <div class="preview-value empty">لم يتم اختيار الخزنة</div>
+                        </div>
+
+                        <!-- مؤشر المخاطر -->
+                        <div class="risk-indicator" id="riskIndicator" style="display: none;">
+                            <p class="risk-text" id="riskText">
+                                <i class="fas fa-shield-alt risk-icon"></i>
+                                آمن ضمن الحدود المسموحة
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- القسم الإضافي -->
+                    <div class="preview-section">
+                        <div class="preview-section-title">
+                            <div class="preview-section-icon">
+                                <i class="fas fa-plus"></i>
+                            </div>
+                            معلومات إضافية
+                        </div>
+                        
+                        <div class="preview-item" id="previewDate">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-calendar"></i>
+                                </div>
+                                تاريخ المصروف
+                            </div>
+                            <div class="preview-value">{{ today|date:'d/m/Y' }}</div>
+                        </div>
+                        
+                        <div class="preview-item" id="previewVendor" style="display: none;">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-user-tie"></i>
+                                </div>
+                                اسم المورد
+                            </div>
+                            <div class="preview-value"></div>
+                        </div>
+                        
+                        <div class="preview-item" id="previewInvoice" style="display: none;">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-receipt"></i>
+                                </div>
+                                رقم الفاتورة
+                            </div>
+                            <div class="preview-value"></div>
+                        </div>
+
+                        <div class="preview-item" id="previewNotes" style="display: none;">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-sticky-note"></i>
+                                </div>
+                                ملاحظات
+                            </div>
+                            <div class="preview-value"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- أزرار المعاينة -->
+                <div class="preview-actions">
+                    <button type="button" class="preview-btn" id="validateBtn" disabled>
+                        <i class="fas fa-check-circle"></i>
+                        التحقق من البيانات
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- دليل المصروفات -->
+    <div class="row mt-4">
+        <div class="col-lg-10 mx-auto">
+            <!-- تعليمات الاستخدام -->
+            <div class="guide-card border-danger fade-in" style="animation-delay: 0.4s;">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i>كيفية إضافة مصروف يومي</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary"><i class="fas fa-list-ol me-2"></i>خطوات الإضافة:</h6>
+                            <ol class="mb-3">
+                                <li><strong>اختر التصنيف:</strong> نوع المصروف (مرتبات، مرافق، إلخ)</li>
+                                <li><strong>حدد النوع:</strong> تصنيف فرعي للمصروف</li>
+                                <li><strong>اكتب الوصف:</strong> وصف مفصل وواضح</li>
+                                <li><strong>أدخل المبلغ:</strong> قيمة المصروف بدقة</li>
+                                <li><strong>اختر الخزنة:</strong> مصدر دفع المبلغ</li>
+                                <li><strong>أضف التفاصيل:</strong> المورد ورقم الفاتورة</li>
+                                <li><strong>احفظ المصروف:</strong> راجع البيانات ثم احفظ</li>
+                            </ol>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6 class="text-danger"><i class="fas fa-exclamation-triangle me-2"></i>نصائح مهمة:</h6>
+                            <ul class="mb-3">
+                                <li>تأكد من وجود رصيد كافٍ في الخزنة</li>
+                                <li>احتفظ بالفاتورة الأصلية كمرجع</li>
+                                <li>اكتب وصفاً مفصلاً لسهولة المراجعة</li>
+                                <li>راقب الميزانية الشهرية للتصنيف</li>
+                                <li>أدخل التاريخ الصحيح للمصروف</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- أمثلة المصروفات -->
+            <div class="guide-card border-warning fade-in" style="animation-delay: 0.6s;">
+                <div class="card-header">
+                    <h5><i class="fas fa-lightbulb"></i>أمثلة على المصروفات اليومية</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary">مصروفات شائعة:</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>النوع</th>
+                                            <th>مثال للوصف</th>
+                                            <th>التصنيف</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>⚡ كهرباء</td>
+                                            <td>فاتورة كهرباء أكتوبر 2025</td>
+                                            <td>فواتير الكهرباء</td>
+                                        </tr>
+                                        <tr>
+                                            <td>💧 مياه</td>
+                                            <td>فاتورة مياه الشرب والري</td>
+                                            <td>فواتير المياه</td>
+                                        </tr>
+                                        <tr>
+                                            <td>📝 قرطاسية</td>
+                                            <td>شراء أوراق طباعة وأقلام</td>
+                                            <td>مستلزمات تعليمية</td>
+                                        </tr>
+                                        <tr>
+                                            <td>🧹 نظافة</td>
+                                            <td>مواد تنظيف وتعقيم الفصول</td>
+                                            <td>صيانة ونظافة</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6 class="text-success">مصروفات موسمية:</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>النوع</th>
+                                            <th>مثال للوصف</th>
+                                            <th>التوقيت</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>🏫 صيانة</td>
+                                            <td>ترميم الفصول الدراسية</td>
+                                            <td>بداية العام</td>
+                                        </tr>
+                                        <tr>
+                                            <td>🎓 احتفالات</td>
+                                            <td>مصروفات حفل التخرج</td>
+                                            <td>نهاية العام</td>
+                                        </tr>
+                                        <tr>
+                                            <td>📚 كتب</td>
+                                            <td>شراء مناهج جديدة</td>
+                                            <td>بداية الترم</td>
+                                        </tr>
+                                        <tr>
+                                            <td>🌡️ تكييف</td>
+                                            <td>صيانة أجهزة التكييف</td>
+                                            <td>فصل الصيف</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- مراقبة الميزانية -->
+            <div class="guide-card border-info fade-in" style="animation-delay: 0.8s;">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-pie"></i>مراقبة الميزانية</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-info">إشارات التحذير:</h6>
+                            <ul class="list-unstyled">
+                                <li><span class="badge bg-warning me-2">⚠️</span>تجاوز 70% من الميزانية</li>
+                                <li><span class="badge bg-danger me-2">🚨</span>تجاوز 90% من الميزانية</li>
+                                <li><span class="badge bg-dark me-2">⛔</span>تجاوز الميزانية المحددة</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6 class="text-success">نصائح الميزانية:</h6>
+                            <ul class="list-unstyled">
+                                <li><span class="badge bg-success me-2">✅</span>راجع الميزانية قبل الإنفاق</li>
+                                <li><span class="badge bg-primary me-2">📊</span>راقب التقارير الشهرية</li>
+                                <li><span class="badge bg-info me-2">💡</span>خطط للمصروفات الكبيرة</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- سير العمل -->
+            <div class="guide-card border-success fade-in" style="animation-delay: 1s;">
+                <div class="card-header">
+                    <h5><i class="fas fa-cogs"></i>ماذا يحدث بعد الحفظ؟</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="workflow-step">
+                                <div class="workflow-icon" style="background: linear-gradient(135deg, #3498db, #2980b9);">
+                                    <i class="fas fa-save"></i>
+                                </div>
+                                <h6>حفظ المصروف</h6>
+                                <small>يتم حفظ المصروف برقم مرجعي</small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <div class="workflow-step">
+                                <div class="workflow-icon" style="background: linear-gradient(135deg, #f39c12, #e67e22);">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <h6>انتظار الاعتماد</h6>
+                                <small>يحتاج موافقة من الإدارة</small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <div class="workflow-step">
+                                <div class="workflow-icon" style="background: linear-gradient(135deg, #27ae60, #229954);">
+                                    <i class="fas fa-check"></i>
+                                </div>
+                                <h6>اعتماد المصروف</h6>
+                                <small>الموافقة وتحديث الأرصدة</small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <div class="workflow-step">
+                                <div class="workflow-icon" style="background: linear-gradient(135deg, #17a2b8, #138496);">
+                                    <i class="fas fa-chart-bar"></i>
+                                </div>
+                                <h6>تحديث التقارير</h6>
+                                <small>ظهور في التقارير والإحصائيات</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>ملاحظة:</strong> المصروفات أقل من 500 جنيه يتم اعتمادها تلقائياً، 
+                        أما المصروفات الأكبر فتحتاج موافقة من الإدارة.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('expenseForm');
+    const categorySelect = document.getElementById('categorySelect');
+    const treasurySelect = document.getElementById('treasurySelect');
+    const amountInput = document.getElementById('amountInput');
+    const previewBtn = document.getElementById('previewBtn');
+    const previewDiv = document.getElementById('expensePreview');
+    const budgetWarning = document.getElementById('budgetWarning');
+    
+    // تحديث المعاينة عند تغيير أي حقل
+    form.addEventListener('input', updatePreview);
+    form.addEventListener('change', updatePreview);
+    
+    function updatePreview() {
+        let completedFields = 0;
+        const totalRequiredFields = 4; // التصنيف، النوع، الوصف، المبلغ
+        
+        // التصنيف
+        const categoryOption = categorySelect.selectedOptions[0];
+        const categoryItem = document.getElementById('previewCategory');
+        if (categoryOption && categoryOption.value) {
+            categoryItem.classList.add('filled');
+            categoryItem.querySelector('.preview-value').classList.remove('empty');
+            categoryItem.querySelector('.preview-value').textContent = categoryOption.text.replace('💰 ', '').split(' - ')[0];
+            completedFields++;
+        } else {
+            categoryItem.classList.remove('filled');
+            categoryItem.querySelector('.preview-value').classList.add('empty');
+            categoryItem.querySelector('.preview-value').textContent = 'لم يتم اختيار التصنيف';
+        }
+        
+        // النوع
+        const typeOption = document.querySelector('select[name="expense_type"]').selectedOptions[0];
+        const typeItem = document.getElementById('previewType');
+        if (typeOption && typeOption.value) {
+            typeItem.classList.add('filled');
+            typeItem.querySelector('.preview-value').classList.remove('empty');
+            typeItem.querySelector('.preview-value').textContent = typeOption.text;
+            completedFields++;
+        } else {
+            typeItem.classList.remove('filled');
+            typeItem.querySelector('.preview-value').classList.add('empty');
+            typeItem.querySelector('.preview-value').textContent = 'لم يتم اختيار النوع';
+        }
+        
+        // المبلغ
+        const amount = parseFloat(amountInput.value) || 0;
+        const amountItem = document.getElementById('previewAmount');
+        const amountValue = amountItem.querySelector('.preview-value');
+        if (amount > 0) {
+            amountItem.classList.add('filled');
+            amountValue.classList.remove('empty');
+            amountValue.textContent = amount.toLocaleString() + ' ج.م';
+            
+            if (amount >= 10000) {
+                amountValue.classList.add('large');
+            } else {
+                amountValue.classList.remove('large');
+            }
+            completedFields++;
+        } else {
+            amountItem.classList.remove('filled');
+            amountValue.classList.add('empty');
+            amountValue.textContent = '0.00 ج.م';
+            amountValue.classList.remove('large');
+        }
+        
+        // الخزنة
+        const treasuryOption = treasurySelect.selectedOptions[0];
+        const treasuryItem = document.getElementById('previewTreasury');
+        if (treasuryOption && treasuryOption.value) {
+            const balance = parseFloat(treasuryOption.dataset.balance);
+            treasuryItem.classList.add('filled');
+            treasuryItem.querySelector('.preview-value').classList.remove('empty');
+            
+            if (amount > balance) {
+                treasuryItem.classList.add('danger');
+                treasuryItem.querySelector('.preview-value').textContent = treasuryOption.text.split(' - ')[0].replace('🏦 ', '') + ' (رصيد غير كافٍ!)';
+            } else {
+                treasuryItem.classList.remove('danger');
+                treasuryItem.querySelector('.preview-value').textContent = treasuryOption.text.split(' - ')[0].replace('🏦 ', '');
+            }
+        } else {
+            treasuryItem.classList.remove('filled', 'danger');
+            treasuryItem.querySelector('.preview-value').classList.add('empty');
+            treasuryItem.querySelector('.preview-value').textContent = 'لم يتم اختيار الخزنة';
+        }
+        
+        // الوصف
+        const description = document.querySelector('textarea[name="description"]').value;
+        const descItem = document.getElementById('previewDescription');
+        if (description.trim()) {
+            descItem.classList.add('filled');
+            descItem.querySelector('.preview-value').classList.remove('empty');
+            const shortDesc = description.length > 50 ? description.substring(0, 50) + '...' : description;
+            descItem.querySelector('.preview-value').textContent = shortDesc;
+            completedFields++;
+        } else {
+            descItem.classList.remove('filled');
+            descItem.querySelector('.preview-value').classList.add('empty');
+            descItem.querySelector('.preview-value').textContent = 'لم يتم إدخال الوصف';
+        }
+        
+        // التاريخ
+        const date = document.querySelector('input[name="expense_date"]').value;
+        const dateItem = document.getElementById('previewDate');
+        if (date) {
+            const formattedDate = new Date(date).toLocaleDateString('ar-EG');
+            dateItem.classList.add('filled');
+            dateItem.querySelector('.preview-value').textContent = formattedDate;
+        }
+        
+        // الحقول الاختيارية
+        const vendor = document.querySelector('input[name="vendor_name"]').value;
+        const vendorItem = document.getElementById('previewVendor');
+        if (vendor.trim()) {
+            vendorItem.style.display = 'block';
+            vendorItem.classList.add('filled');
+            vendorItem.querySelector('.preview-value').textContent = vendor;
+        } else {
+            vendorItem.style.display = 'none';
+        }
+        
+        const invoice = document.querySelector('input[name="invoice_number"]').value;
+        const invoiceItem = document.getElementById('previewInvoice');
+        if (invoice.trim()) {
+            invoiceItem.style.display = 'block';
+            invoiceItem.classList.add('filled');
+            invoiceItem.querySelector('.preview-value').textContent = invoice;
+        } else {
+            invoiceItem.style.display = 'none';
+        }
+
+        const notes = document.querySelector('input[name="notes"]').value;
+        const notesItem = document.getElementById('previewNotes');
+        if (notes.trim()) {
+            notesItem.style.display = 'block';
+            notesItem.classList.add('filled');
+            notesItem.querySelector('.preview-value').textContent = notes;
+        } else {
+            notesItem.style.display = 'none';
+        }
+        
+        // تحديث شريط التقدم
+        const completionPercentage = (completedFields / totalRequiredFields) * 100;
+        document.getElementById('completionFill').style.width = completionPercentage + '%';
+        
+        // تحديث حالة النموذج
+        const statusElement = document.getElementById('previewStatus');
+        const statusText = document.getElementById('statusText');
+        const validateBtn = document.getElementById('validateBtn');
+        
+        if (completedFields === totalRequiredFields) {
+            statusElement.classList.add('active');
+            statusText.classList.add('active');
+            statusText.textContent = '✅ جميع البيانات المطلوبة مكتملة';
+            validateBtn.disabled = false;
+        } else {
+            statusElement.classList.remove('active');
+            statusText.classList.remove('active');
+            statusText.textContent = `مطلوب ${totalRequiredFields - completedFields} حقل إضافي`;
+            validateBtn.disabled = true;
+        }
+        
+        // تحديث مؤشر المخاطر
+        updateRiskIndicator(amount, treasuryOption);
+        
+        // فحص الميزانية
+        checkBudget();
+    }
+
+    function updateRiskIndicator(amount, treasuryOption) {
+        const riskIndicator = document.getElementById('riskIndicator');
+        const riskText = document.getElementById('riskText');
+        
+        if (!amount || !treasuryOption) {
+            riskIndicator.style.display = 'none';
+            return;
+        }
+        
+        const balance = parseFloat(treasuryOption.dataset.balance);
+        riskIndicator.style.display = 'block';
+        
+        if (amount > balance) {
+            riskIndicator.className = 'risk-indicator danger';
+            riskText.className = 'risk-text danger';
+            riskText.innerHTML = '<i class="fas fa-exclamation-triangle risk-icon"></i>تحذير: المبلغ يتجاوز الرصيد المتاح';
+        } else if (amount > balance * 0.8) {
+            riskIndicator.className = 'risk-indicator warning';
+            riskText.className = 'risk-text warning';
+            riskText.innerHTML = '<i class="fas fa-exclamation-circle risk-icon"></i>تحذير: المبلغ يستنزف معظم الرصيد';
+        } else {
+            riskIndicator.className = 'risk-indicator safe';
+            riskText.className = 'risk-text safe';
+            riskText.innerHTML = '<i class="fas fa-shield-alt risk-icon"></i>آمن ضمن الحدود المسموحة';
+        }
+    }
+    
+    // عرض الحساب والميزانية المرتبطة بالتصنيف
+    categorySelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const accountName = selectedOption.getAttribute('data-account');
+        const budget = selectedOption.getAttribute('data-budget');
+        
+        if (accountName) {
+            let infoText = `<span class="text-info"><strong>الحساب المرتبط:</strong> ${accountName}</span>`;
+            if (budget && budget > 0) {
+                infoText += `<br><span class="text-warning"><strong>الميزانية الشهرية:</strong> ${parseFloat(budget).toLocaleString()} جنيه</span>`;
+            }
+            document.getElementById('accountInfo').innerHTML = infoText;
+        }
+    });
+    
+    // عرض رصيد الخزنة
+    treasurySelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const balance = selectedOption.getAttribute('data-balance');
+        
+        if (balance) {
+            const formattedBalance = parseFloat(balance).toLocaleString();
+            document.getElementById('treasuryBalance').innerHTML = 
+                `<span class="text-info"><strong>الرصيد الحالي:</strong> ${formattedBalance} جنيه</span>`;
+        }
+    });
+    
+    function checkBudget() {
+        const amount = parseFloat(amountInput.value) || 0;
+        const selectedCategory = categorySelect.options[categorySelect.selectedIndex];
+        const budget = parseFloat(selectedCategory?.getAttribute('data-budget')) || 0;
+        
+        if (budget > 0 && amount > 0) {
+            const percentage = (amount / budget) * 100;
+            let warningClass = 'alert-info';
+            let warningText = '';
+            
+            if (percentage > 100) {
+                warningClass = 'alert-danger';
+                warningText = `🚨 المبلغ يتجاوز الميزانية الشهرية بـ ${(amount - budget).toLocaleString()} جنيه!`;
+                document.getElementById('previewAmount').classList.add('danger');
+            } else if (percentage > 90) {
+                warningClass = 'alert-danger';
+                warningText = `⚠️ المبلغ يستنزف ${percentage.toFixed(1)}% من الميزانية الشهرية!`;
+                document.getElementById('previewAmount').classList.add('warning');
+            } else if (percentage > 70) {
+                warningClass = 'alert-warning';
+                warningText = `📊 المبلغ يمثل ${percentage.toFixed(1)}% من الميزانية الشهرية`;
+                document.getElementById('previewAmount').classList.add('warning');
+            } else if (percentage > 0) {
+                warningClass = 'alert-success';
+                warningText = `✅ المبلغ ضمن الميزانية (${percentage.toFixed(1)}% من الميزانية)`;
+                document.getElementById('previewAmount').classList.remove('warning', 'danger');
+            }
+            
+            if (warningText) {
+                budgetWarning.className = `alert ${warningClass}`;
+                document.getElementById('budgetWarningText').innerHTML = warningText;
+                budgetWarning.classList.remove('d-none');
+            } else {
+                budgetWarning.classList.add('d-none');
+            }
+        } else {
+            budgetWarning.classList.add('d-none');
+            document.getElementById('previewAmount').classList.remove('warning', 'danger');
+        }
+    }
+    
+    // معاينة المصروف
+    previewBtn.addEventListener('click', function() {
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData);
+        
+        if (!data.category || !data.amount || !data.description) {
+            alert('⚠️ يرجى ملء الحقول المطلوبة أولاً (التصنيف، المبلغ، الوصف)');
+            return;
+        }
+        
+        const categoryName = categorySelect.options[categorySelect.selectedIndex].text;
+        const treasuryName = treasurySelect.options[treasurySelect.selectedIndex].text;
+        const expenseTypeName = document.querySelector('select[name="expense_type"]').options[document.querySelector('select[name="expense_type"]').selectedIndex].text;
+        
+        const previewContent = `
+            <div class="row">
+                <div class="col-md-6">
+                    <strong>التصنيف:</strong> ${categoryName.replace('💰 ', '')}<br>
+                    <strong>النوع:</strong> ${expenseTypeName}<br>
+                    <strong>المبلغ:</strong> <span class="fw-bold text-danger">${parseFloat(data.amount).toLocaleString()} جنيه</span><br>
+                    <strong>التاريخ:</strong> ${data.expense_date}
+                </div>
+                <div class="col-md-6">
+                    <strong>الخزنة:</strong> ${treasuryName.split(' - ')[0].replace('🏦 ', '')}<br>
+                    ${data.vendor_name ? `<strong>المورد:</strong> ${data.vendor_name}<br>` : ''}
+                    ${data.invoice_number ? `<strong>رقم الفاتورة:</strong> ${data.invoice_number}<br>` : ''}
+                    ${data.notes ? `<strong>ملاحظات:</strong> ${data.notes}` : ''}
+                </div>
+            </div>
+            <div class="mt-3">
+                <strong>الوصف:</strong> <em>${data.description}</em>
+            </div>
+        `;
+        
+        document.getElementById('previewContent').innerHTML = previewContent;
+        previewDiv.classList.remove('d-none');
+        previewDiv.scrollIntoView({ behavior: 'smooth' });
+    });
+
+    // زر التحقق من البيانات
+    document.getElementById('validateBtn').addEventListener('click', function() {
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData);
+        
+        if (data.category && data.expense_type && data.description && data.amount && data.treasury) {
+            this.innerHTML = '<i class="fas fa-check"></i> البيانات صحيحة!';
+            this.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+            
+            setTimeout(() => {
+                this.innerHTML = '<i class="fas fa-check-circle"></i> التحقق من البيانات';
+                this.style.background = 'linear-gradient(135deg, #2ecc71, #27ae60)';
+            }, 2000);
+        }
+    });
+    
+    // إرسال النموذج
+    form.addEventListener('submit', function(e) {
+        const amount = parseFloat(amountInput.value);
+        const selectedTreasury = treasurySelect.options[treasurySelect.selectedIndex];
+        const balance = parseFloat(selectedTreasury?.getAttribute('data-balance'));
+        
+        if (amount > balance) {
+            e.preventDefault();
+            document.getElementById('amountError').textContent = 
+                `❌ المبلغ أكبر من الرصيد المتاح (${balance.toLocaleString()} جنيه)`;
+            amountInput.classList.add('is-invalid');
+            amountInput.scrollIntoView({ behavior: 'smooth' });
+            return false;
+        }
+        
+        amountInput.classList.remove('is-invalid');
+        
+        // تأكيد الحفظ
+        const confirmed = confirm(`هل أنت متأكد من حفظ هذا المصروف؟\n\nالمبلغ: ${amount.toLocaleString()} جنيه\nالتصنيف: ${categorySelect.options[categorySelect.selectedIndex].text}`);
+        if (!confirmed) {
+            e.preventDefault();
+        } else {
+            // إظهار رسالة التحميل
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>جاري الحفظ...';
+            submitBtn.disabled = true;
+        }
+    });
+    
+    // تحديث المعاينة في البداية
+    updatePreview();
+    
+    console.log('✅ نموذج المصروفات مع المعاينة الجانبية جاهز');
+});
+</script>
+{% endblock %}

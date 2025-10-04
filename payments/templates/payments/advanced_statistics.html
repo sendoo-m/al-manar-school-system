@@ -1,0 +1,892 @@
+<!-- templates/payments/advanced_statistics.html -->
+{% extends 'payments/base.html' %}
+{% load humanize %}
+
+{% block title %}الإحصائيات المتقدمة - مدرسة المنار{% endblock %}
+{% block page_title %}الإحصائيات المتقدمة للمدفوعات{% endblock %}
+{% block page_subtitle %}تحليل شامل ومفصل لبيانات المدفوعات مع رسوم بيانية تفاعلية{% endblock %}
+{% block page_icon %}<i class="fas fa-chart-pie me-3"></i>{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'payments:payments_home' %}">لوحة التحكم</a></li>
+<li class="breadcrumb-item"><a href="{% url 'payments:all_payments' %}">جميع المدفوعات</a></li>
+<li class="breadcrumb-item active">الإحصائيات المتقدمة</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group me-3">
+    <a href="{% url 'payments:daily_report' %}" class="btn btn-outline-primary btn-custom">
+        <i class="fas fa-calendar-day me-1"></i>التقرير اليومي
+    </a>
+    <a href="{% url 'payments:monthly_report' %}" class="btn btn-outline-info btn-custom">
+        <i class="fas fa-calendar-alt me-1"></i>التقرير الشهري
+    </a>
+</div>
+<div class="btn-group">
+    <button class="btn btn-success btn-custom" onclick="printCharts()">
+        <i class="fas fa-print me-1"></i>طباعة
+    </button>
+    <button class="btn btn-outline-secondary btn-custom" onclick="exportCharts()">
+        <i class="fas fa-download me-1"></i>تصدير PDF
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- خيارات التحليل -->
+<div class="content-card mb-4">
+    <div class="content-card-header">
+        <h5>
+            <i class="fas fa-sliders-h me-2 text-primary"></i>
+            خيارات التحليل
+        </h5>
+    </div>
+    <div class="content-card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label for="period" class="form-label fw-bold">فترة التحليل</label>
+                <select name="period" id="period" class="form-select">
+                    <option value="last_month" {% if period == 'last_month' %}selected{% endif %}>آخر شهر</option>
+                    <option value="last_3_months" {% if period == 'last_3_months' %}selected{% endif %}>آخر 3 شهور</option>
+                    <option value="last_6_months" {% if period == 'last_6_months' %}selected{% endif %}>آخر 6 شهور</option>
+                    <option value="last_year" {% if period == 'last_year' %}selected{% endif %}>آخر سنة</option>
+                    <option value="all_time" {% if period == 'all_time' %}selected{% endif %}>جميع الفترات</option>
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label for="chart_type" class="form-label fw-bold">نوع الرسم البياني</label>
+                <select name="chart_type" id="chart_type" class="form-select">
+                    <option value="line" {% if chart_type == 'line' %}selected{% endif %}>خطي</option>
+                    <option value="bar" {% if chart_type == 'bar' %}selected{% endif %}>أعمدة</option>
+                    <option value="pie" {% if chart_type == 'pie' %}selected{% endif %}>دائري</option>
+                    <option value="doughnut" {% if chart_type == 'doughnut' %}selected{% endif %}>حلقي</option>
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label for="group_by" class="form-label fw-bold">تجميع البيانات</label>
+                <select name="group_by" id="group_by" class="form-select">
+                    <option value="day" {% if group_by == 'day' %}selected{% endif %}>يومياً</option>
+                    <option value="week" {% if group_by == 'week' %}selected{% endif %}>أسبوعياً</option>
+                    <option value="month" {% if group_by == 'month' %}selected{% endif %}>شهرياً</option>
+                    <option value="payment_method" {% if group_by == 'payment_method' %}selected{% endif %}>طريقة الدفع</option>
+                    <option value="user" {% if group_by == 'user' %}selected{% endif %}>الموظف</option>
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-chart-line me-1"></i>تحديث التحليل
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- KPI Dashboard -->
+<div class="row mb-4">
+    <!-- إجمالي الإيرادات -->
+    <div class="col-xl-3 col-lg-6 mb-4">
+        <div class="stats-card revenue">
+            <div class="stats-icon">
+                <i class="fas fa-money-bill-wave"></i>
+            </div>
+            <div class="stats-content">
+                <div class="stats-value">{{ kpi.total_revenue|floatformat:0|default:"0" }}</div>
+                <div class="stats-label">إجمالي الإيرادات</div>
+                <div class="stats-subtext">{{ kpi.revenue_change|default:"+0" }}% من الفترة السابقة</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- عدد المعاملات -->
+    <div class="col-xl-3 col-lg-6 mb-4">
+        <div class="stats-card transactions">
+            <div class="stats-icon">
+                <i class="fas fa-exchange-alt"></i>
+            </div>
+            <div class="stats-content">
+                <div class="stats-value">{{ kpi.total_transactions|default:"0" }}</div>
+                <div class="stats-label">إجمالي المعاملات</div>
+                <div class="stats-subtext">{{ kpi.transactions_change|default:"+0" }}% من الفترة السابقة</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- متوسط قيمة المعاملة -->
+    <div class="col-xl-3 col-lg-6 mb-4">
+        <div class="stats-card average">
+            <div class="stats-icon">
+                <i class="fas fa-calculator"></i>
+            </div>
+            <div class="stats-content">
+                <div class="stats-value">{{ kpi.avg_transaction|floatformat:0|default:"0" }}</div>
+                <div class="stats-label">متوسط المعاملة</div>
+                <div class="stats-subtext">{{ kpi.avg_change|default:"+0" }}% من الفترة السابقة</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- عدد الطلاب النشطين -->
+    <div class="col-xl-3 col-lg-6 mb-4">
+        <div class="stats-card students">
+            <div class="stats-icon">
+                <i class="fas fa-graduation-cap"></i>
+            </div>
+            <div class="stats-content">
+                <div class="stats-value">{{ kpi.active_students|default:"0" }}</div>
+                <div class="stats-label">طلاب نشطين</div>
+                <div class="stats-subtext">{{ kpi.students_change|default:"+0" }}% من الفترة السابقة</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- الرسوم البيانية الرئيسية -->
+<div class="row mb-4">
+    <!-- الرسم البياني الأساسي -->
+    <div class="col-lg-8 mb-4">
+        <div class="content-card">
+            <div class="content-card-header">
+                <h5>
+                    <i class="fas fa-chart-line me-2 text-primary"></i>
+                    تطور المدفوعات - {{ period_display|default:"آخر شهر" }}
+                </h5>
+            </div>
+            <div class="content-card-body">
+                <canvas id="mainChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- في templates/payments/advanced_statistics.html - تحديث قسم توزيع طرق الدفع -->
+
+    <!-- توزيع طرق الدفع - مُصحح -->
+    <div class="col-lg-4 mb-4">
+        <div class="content-card">
+            <div class="content-card-header">
+                <h5>
+                    <i class="fas fa-chart-pie me-2 text-success"></i>
+                    توزيع طرق الدفع
+                </h5>
+            </div>
+            <div class="content-card-body">
+                <!-- container للرسم البياني مع حجم ثابت -->
+                <div class="chart-container" style="position: relative; height: 300px; width: 100%;">
+                    <canvas id="paymentMethodsChart"></canvas>
+                </div>
+                
+                <!-- قائمة طرق الدفع -->
+                <div class="payment-methods-list mt-4">
+                    {% if payment_methods_data %}
+                    {% for method in payment_methods_data %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex align-items-center">
+                            <div class="method-color me-2" 
+                                 style="background-color: {{ method.color }}; width: 15px; height: 15px; border-radius: 3px;"></div>
+                            <span class="method-name">{{ method.name }}</span>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold text-success">{{ method.amount|floatformat:0 }} ج.م</div>
+                            <small class="text-muted">{{ method.percentage }}%</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-chart-pie fa-2x mb-2"></i>
+                        <p>لا توجد بيانات لعرضها</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- أداء الموظفين -->
+<div class="content-card mb-4">
+    <div class="content-card-header">
+        <h5>
+            <i class="fas fa-users me-2 text-warning"></i>
+            أداء الموظفين - أفضل {{ employees_data|length }} موظفين
+        </h5>
+    </div>
+    <div class="content-card-body">
+        <div class="row">
+            <div class="col-lg-8">
+                <canvas id="employeesChart" height="200"></canvas>
+            </div>
+            <div class="col-lg-4">
+                <div class="employees-ranking">
+                    {% for employee in employees_data %}
+                    <div class="employee-item">
+                        <div class="employee-rank">{{ forloop.counter }}</div>
+                        <div class="employee-info">
+                            <div class="employee-name">{{ employee.name|default:"غير محدد" }}</div>
+                            <div class="employee-stats">
+                                <span class="amount">{{ employee.amount|floatformat:0 }} ج.م</span>
+                                <span class="count">{{ employee.count }} معاملة</span>
+                            </div>
+                        </div>
+                        <div class="employee-badge">
+                            {% if forloop.counter == 1 %}
+                            <i class="fas fa-crown text-warning"></i>
+                            {% elif forloop.counter == 2 %}
+                            <i class="fas fa-medal text-secondary"></i>
+                            {% elif forloop.counter == 3 %}
+                            <i class="fas fa-award text-success"></i>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- تحليل الاتجاهات -->
+<div class="row mb-4">
+    <!-- النمو الشهري -->
+    <div class="col-lg-6 mb-4">
+        <div class="content-card">
+            <div class="content-card-header">
+                <h5>
+                    <i class="fas fa-trending-up me-2 text-info"></i>
+                    النمو الشهري
+                </h5>
+            </div>
+            <div class="content-card-body">
+                <canvas id="growthChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- أنماط الدفع اليومية -->
+    <div class="col-lg-6 mb-4">
+        <div class="content-card">
+            <div class="content-card-header">
+                <h5>
+                    <i class="fas fa-calendar-week me-2 text-purple"></i>
+                    أنماط الدفع الأسبوعية
+                </h5>
+            </div>
+            <div class="content-card-body">
+                <canvas id="weeklyPatternsChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- جدول التحليل التفصيلي -->
+<div class="content-card mb-4">
+    <div class="content-card-header">
+        <h5>
+            <i class="fas fa-table me-2 text-dark"></i>
+            التحليل التفصيلي
+        </h5>
+    </div>
+    <div class="content-card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th>الفترة</th>
+                        <th>عدد المعاملات</th>
+                        <th>إجمالي المبلغ</th>
+                        <th>متوسط المعاملة</th>
+                        <th>أعلى مبلغ</th>
+                        <th>أقل مبلغ</th>
+                        <th>النمو %</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for period_stat in detailed_stats %}
+                    <tr>
+                        <td>
+                            <strong>{{ period_stat.period_name }}</strong>
+                            <br><small class="text-muted">{{ period_stat.period_date }}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-primary">{{ period_stat.count }}</span>
+                        </td>
+                        <td>
+                            <div class="payment-amount">{{ period_stat.total|floatformat:2 }} ج.م</div>
+                        </td>
+                        <td>{{ period_stat.average|floatformat:2 }} ج.م</td>
+                        <td class="text-success">{{ period_stat.max|floatformat:2 }} ج.م</td>
+                        <td class="text-warning">{{ period_stat.min|floatformat:2 }} ج.م</td>
+                        <td>
+                            {% if period_stat.growth > 0 %}
+                            <span class="text-success">
+                                <i class="fas fa-arrow-up"></i> +{{ period_stat.growth|floatformat:1 }}%
+                            </span>
+                            {% elif period_stat.growth < 0 %}
+                            <span class="text-danger">
+                                <i class="fas fa-arrow-down"></i> {{ period_stat.growth|floatformat:1 }}%
+                            </span>
+                            {% else %}
+                            <span class="text-muted">
+                                <i class="fas fa-minus"></i> 0%
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- نصائح وتوصيات -->
+<div class="content-card">
+    <div class="content-card-header">
+        <h5>
+            <i class="fas fa-lightbulb me-2 text-warning"></i>
+            نصائح وتوصيات تحليلية
+        </h5>
+    </div>
+    <div class="content-card-body">
+        <div class="row">
+            {% for insight in insights %}
+            <div class="col-lg-4 mb-3">
+                <div class="insight-card {{ insight.type }}">
+                    <div class="insight-icon">
+                        <i class="fas fa-{{ insight.icon }}"></i>
+                    </div>
+                    <div class="insight-content">
+                        <h6>{{ insight.title }}</h6>
+                        <p>{{ insight.description }}</p>
+                        {% if insight.action %}
+                        <small class="insight-action">{{ insight.action }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+/* في extra_css - إضافة أو تحديث هذه الأنماط */
+
+{% block extra_css %}
+<style>
+/* تصحيح مشكلة الرسوم البيانية */
+.chart-container {
+    position: relative;
+    height: 300px !important;
+    width: 100% !important;
+    max-height: 300px;
+    overflow: hidden;
+}
+
+.chart-container canvas {
+    max-width: 100% !important;
+    max-height: 300px !important;
+    width: auto !important;
+    height: auto !important;
+}
+
+/* تحسين عرض قائمة طرق الدفع */
+.payment-methods-list {
+    max-height: 250px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.payment-methods-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.payment-methods-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 2px;
+}
+
+.payment-methods-list::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 2px;
+}
+
+.payment-methods-list::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
+
+.method-color {
+    width: 15px;
+    height: 15px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.method-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* إصلاح باقي الرسوم البيانية */
+#mainChart, #employeesChart, #growthChart, #weeklyPatternsChart {
+    max-height: 400px !important;
+}
+
+/* تحسين الإحصائيات */
+.stats-card {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    border-left: 5px solid #007bff;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+    min-height: 120px; /* حد أدنى للارتفاع */
+}
+
+.stats-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+}
+
+.stats-card.revenue { border-left-color: #28a745; }
+.stats-card.transactions { border-left-color: #17a2b8; }
+.stats-card.average { border-left-color: #ffc107; }
+.stats-card.students { border-left-color: #6f42c1; }
+
+.stats-icon {
+    font-size: 3rem;
+    margin-left: 20px;
+    opacity: 0.7;
+    flex-shrink: 0;
+}
+
+.stats-content {
+    flex-grow: 1;
+}
+
+.stats-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #2c3e50;
+    line-height: 1;
+}
+
+.stats-label {
+    font-size: 1rem;
+    color: #6c757d;
+    margin-bottom: 5px;
+    margin-top: 5px;
+}
+
+.stats-subtext {
+    font-size: 0.85rem;
+    color: #28a745;
+}
+
+/* تحسين الموظفين */
+.employees-ranking {
+    max-height: 350px;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+.employee-item {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    margin-bottom: 10px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef;
+}
+
+.employee-item:hover {
+    background: #e9ecef;
+    transform: translateX(5px);
+    border-color: #dee2e6;
+}
+
+.employee-rank {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #007bff;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-left: 15px;
+    flex-shrink: 0;
+}
+
+.employee-info {
+    flex-grow: 1;
+    min-width: 0; /* للنص الطويل */
+}
+
+.employee-name {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.employee-stats {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-top: 2px;
+}
+
+.employee-stats .amount {
+    color: #28a745;
+    font-weight: 600;
+    margin-left: 10px;
+}
+
+.employee-badge {
+    flex-shrink: 0;
+    margin-right: 10px;
+}
+
+/* تحسين النصائح */
+.insight-card {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    border-left: 4px solid #007bff;
+    height: 100%;
+    display: flex;
+    align-items: start;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+}
+
+.insight-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.insight-card.positive { 
+    border-left-color: #28a745; 
+    background: linear-gradient(135deg, #ffffff 0%, #f8fff9 100%);
+}
+.insight-card.warning { 
+    border-left-color: #ffc107; 
+    background: linear-gradient(135deg, #ffffff 0%, #fffdf8 100%);
+}
+.insight-card.negative { 
+    border-left-color: #dc3545; 
+    background: linear-gradient(135deg, #ffffff 0%, #fdf8f8 100%);
+}
+
+.insight-icon {
+    font-size: 2rem;
+    margin-left: 15px;
+    opacity: 0.7;
+    flex-shrink: 0;
+}
+
+.insight-content {
+    flex-grow: 1;
+}
+
+.insight-content h6 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.insight-content p {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.insight-action {
+    color: #007bff;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .stats-card {
+        flex-direction: column;
+        text-align: center;
+        padding: 20px;
+    }
+    
+    .stats-icon {
+        margin-left: 0;
+        margin-bottom: 15px;
+    }
+    
+    .chart-container {
+        height: 250px !important;
+    }
+    
+    .employee-item {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .employee-rank {
+        margin: 0 0 10px 0;
+    }
+}
+
+@media print {
+    .btn, .page-actions, .breadcrumb-nav {
+        display: none !important;
+    }
+    
+    .content-card {
+        break-inside: avoid;
+        border: 1px solid #ddd !important;
+        box-shadow: none !important;
+    }
+    
+    .chart-container {
+        height: 250px !important;
+    }
+}
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCharts();
+});
+
+function initializeCharts() {
+    // الرسم البياني الرئيسي
+    const mainCtx = document.getElementById('mainChart').getContext('2d');
+    new Chart(mainCtx, {
+        type: '{{ chart_type|default:"line" }}',
+        data: {
+            labels: {{ main_chart.labels|safe|default:"[]" }},
+            datasets: [{
+                label: 'المدفوعات',
+                data: {{ main_chart.values|safe|default:"[]" }},
+                borderColor: '#007bff',
+                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString() + ' ج.م';
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // رسم طرق الدفع
+    const methodsCtx = document.getElementById('paymentMethodsChart').getContext('2d');
+    new Chart(methodsCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ payment_methods_chart.labels|safe|default:"[]" }},
+            datasets: [{
+                data: {{ payment_methods_chart.values|safe|default:"[]" }},
+                backgroundColor: {{ payment_methods_chart.colors|safe|default:"[]" }},
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+
+    // رسم أداء الموظفين
+    const employeesCtx = document.getElementById('employeesChart').getContext('2d');
+    new Chart(employeesCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ employees_chart.labels|safe|default:"[]" }},
+            datasets: [{
+                label: 'المدفوعات',
+                data: {{ employees_chart.values|safe|default:"[]" }},
+                backgroundColor: '#28a745',
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString() + ' ج.م';
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // رسم النمو
+    const growthCtx = document.getElementById('growthChart').getContext('2d');
+    new Chart(growthCtx, {
+        type: 'line',
+        data: {
+            labels: {{ growth_chart.labels|safe|default:"[]" }},
+            datasets: [{
+                label: 'معدل النمو %',
+                data: {{ growth_chart.values|safe|default:"[]" }},
+                borderColor: '#17a2b8',
+                backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // رسم الأنماط الأسبوعية
+    const weeklyCtx = document.getElementById('weeklyPatternsChart').getContext('2d');
+    new Chart(weeklyCtx, {
+        type: 'radar',
+        data: {
+            labels: ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'],
+            datasets: [{
+                label: 'متوسط المدفوعات',
+                data: {{ weekly_pattern|safe|default:"[]" }},
+                borderColor: '#6f42c1',
+                backgroundColor: 'rgba(111, 66, 193, 0.1)',
+                borderWidth: 3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+function printCharts() {
+    window.print();
+}
+
+function exportCharts() {
+    showPaymentMessage('info', 'ميزة تصدير الرسوم البيانية قيد التطوير...');
+}
+
+// دالة عرض الرسائل
+function showPaymentMessage(type, message) {
+    const existingAlerts = document.querySelectorAll('.alert.fixed-alert');
+    existingAlerts.forEach(alert => alert.remove());
+    
+    const icons = {
+        success: 'fas fa-check-circle',
+        error: 'fas fa-exclamation-circle',
+        warning: 'fas fa-exclamation-triangle',
+        info: 'fas fa-info-circle'
+    };
+    
+    const colors = {
+        success: 'success',
+        error: 'danger',
+        warning: 'warning',
+        info: 'info'
+    };
+    
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${colors[type] || 'info'} alert-dismissible fade show fixed-alert`;
+    alertDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 350px;
+        max-width: 500px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        border-radius: 10px;
+        font-weight: 500;
+    `;
+    
+    alertDiv.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="${icons[type] || icons.info} me-3" style="font-size: 1.2rem;"></i>
+            <div class="flex-grow-1">${message}</div>
+            <button type="button" class="btn-close ms-2" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

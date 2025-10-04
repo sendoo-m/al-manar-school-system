@@ -1,0 +1,129 @@
+{% extends 'books_inventory/base.html' %}
+{% load static %}
+
+{% block title %}إضافة مورد جديد - مخزن الكتب{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:inventory_home' %}">الرئيسية</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:suppliers_list' %}">قائمة الموردين</a></li>
+                <li class="breadcrumb-item active">إضافة مورد جديد</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4><i class="fas fa-plus"></i> إضافة مورد جديد</h4>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="card-body">
+                    
+                    <!-- معلومات المورد الأساسية -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">اسم المورد <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="name" required placeholder="أدخل اسم المورد">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">الشخص المسؤول</label>
+                                <input type="text" class="form-control" name="contact_person" placeholder="اسم الشخص المسؤول">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- معلومات الاتصال -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">رقم الهاتف</label>
+                                <input type="tel" class="form-control" name="phone_number" placeholder="رقم الهاتف">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">البريد الإلكتروني</label>
+                                <input type="email" class="form-control" name="email" placeholder="البريد الإلكتروني">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- العنوان -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label class="form-label">العنوان</label>
+                                <textarea class="form-control" name="address" rows="3" placeholder="عنوان المورد"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- الملاحظات -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label class="form-label">ملاحظات</label>
+                                <textarea class="form-control" name="notes" rows="3" placeholder="ملاحظات إضافية عن المورد"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- الحالة -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="is_active" id="is_active" checked>
+                                <label class="form-check-label" for="is_active">
+                                    <strong>مورد نشط</strong>
+                                    <br><small class="text-muted">إذا كان المورد نشط ويمكن التعامل معه</small>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+                
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'books_inventory:suppliers_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> إلغاء
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> حفظ المورد
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- نصائح -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-lightbulb text-warning"></i> نصائح</h6>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>تأكد من صحة بيانات الاتصال للمورد</li>
+                    <li>أضف وصف واضح في الملاحظات عن نوع المواد التي يوردها</li>
+                    <li>يمكن تعطيل المورد إذا توقف التعامل معه بدلاً من حذفه</li>
+                    <li>استخدم أسماء واضحة ومميزة للموردين</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

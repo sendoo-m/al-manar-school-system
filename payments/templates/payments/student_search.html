@@ -1,0 +1,486 @@
+<!-- templates/payments/student_search.html -->
+{% extends 'payments/base.html' %}
+
+{% block title %}البحث عن طالب - مدرسة المنار{% endblock %}
+{% block page_title %}البحث عن طالب{% endblock %}
+{% block page_subtitle %}ابحث عن طالب لعرض مدفوعاته أو إضافة مدفوع جديد{% endblock %}
+{% block page_icon %}<i class="fas fa-search me-3"></i>{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'payments:payments_home' %}">لوحة التحكم</a></li>
+<li class="breadcrumb-item active">البحث عن طالب</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'payments:all_payments' %}" class="btn btn-outline-secondary btn-custom">
+        <i class="fas fa-list me-1"></i>جميع المدفوعات
+    </a>
+    <button class="btn btn-outline-info btn-custom" onclick="showSearchTips()">
+        <i class="fas fa-lightbulb me-1"></i>نصائح البحث
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- نموذج البحث المتقدم -->
+<div class="content-card mb-4">
+    <div class="content-card-header">
+        <h5>
+            <i class="fas fa-search me-2 text-primary"></i>
+            البحث عن طالب
+        </h5>
+    </div>
+    <div class="content-card-body">
+        <div class="search-form">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">
+                        <i class="fas fa-user me-1"></i>اسم الطالب أو الرقم القومي
+                    </label>
+                    <input type="text" class="form-control form-control-lg" 
+                           placeholder="ابحث باسم الطالب أو الرقم القومي..."
+                           id="studentSearchInput"
+                           onkeypress="handleSearchKeyPress(event)">
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label class="form-label fw-bold">
+                        <i class="fas fa-graduation-cap me-1"></i>الصف الدراسي
+                    </label>
+                    <select class="form-select" id="gradeFilter">
+                        <option value="">جميع الصفوف</option>
+                        <!-- سيتم ملؤها ديناميكياً -->
+                    </select>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label class="form-label fw-bold">
+                        <i class="fas fa-calendar me-1"></i>العام الدراسي
+                    </label>
+                    <select class="form-select" id="yearFilter">
+                        <option value="">العام الحالي</option>
+                        <!-- سيتم ملؤها ديناميكياً -->
+                    </select>
+                </div>
+            </div>
+            
+            <div class="d-flex gap-2 justify-content-center">
+                <button class="btn btn-primary btn-lg" onclick="searchStudents()" id="searchBtn">
+                    <i class="fas fa-search me-2"></i>بحث
+                </button>
+                <button class="btn btn-outline-secondary btn-lg" onclick="clearSearch()">
+                    <i class="fas fa-times me-2"></i>مسح
+                </button>
+                <button class="btn btn-outline-info btn-lg" onclick="showAllStudents()">
+                    <i class="fas fa-users me-2"></i>جميع الطلاب
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- نتائج البحث -->
+<div id="searchResults" style="display: none;">
+    <div class="content-card">
+        <div class="content-card-header">
+            <h5>
+                <i class="fas fa-list me-2 text-success"></i>
+                نتائج البحث (<span id="resultsCount">0</span>)
+            </h5>
+        </div>
+        <div class="content-card-body">
+            <div id="studentsContainer">
+                <!-- النتائج ستظهر هنا -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- حالة التحميل -->
+<div id="loadingState" style="display: none;">
+    <div class="content-card">
+        <div class="content-card-body text-center py-5">
+            <div class="payment-spinner"></div>
+            <h5 class="mt-3">جاري البحث...</h5>
+            <p class="text-muted">يرجى الانتظار</p>
+        </div>
+    </div>
+</div>
+
+<!-- حالة عدم وجود نتائج -->
+<div id="noResultsState" style="display: none;">
+    <div class="content-card">
+        <div class="content-card-body text-center py-5">
+            <i class="fas fa-search fa-4x text-muted mb-3"></i>
+            <h5>لا توجد نتائج</h5>
+            <p class="text-muted">لم يتم العثور على طلاب تطابق معايير البحث</p>
+            <button class="btn btn-outline-primary" onclick="clearSearch()">
+                <i class="fas fa-redo me-2"></i>بحث جديد
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- نصائح البحث Modal -->
+<div class="modal fade" id="searchTipsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-lightbulb me-2"></i>نصائح البحث
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex align-items-start mb-3">
+                    <i class="fas fa-check-circle text-success me-2 mt-1"></i>
+                    <div>
+                        <strong>البحث بالاسم:</strong>
+                        <small class="text-muted d-block">يمكنك كتابة جزء من الاسم للبحث</small>
+                    </div>
+                </div>
+                <div class="d-flex align-items-start mb-3">
+                    <i class="fas fa-check-circle text-success me-2 mt-1"></i>
+                    <div>
+                        <strong>البحث بالرقم القومي:</strong>
+                        <small class="text-muted d-block">أدخل الرقم القومي كاملاً أو جزء منه</small>
+                    </div>
+                </div>
+                <div class="d-flex align-items-start mb-3">
+                    <i class="fas fa-check-circle text-success me-2 mt-1"></i>
+                    <div>
+                        <strong>الفلترة:</strong>
+                        <small class="text-muted d-block">استخدم الصف والعام لتضييق النتائج</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.student-card {
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.student-card:hover {
+    border-color: #007bff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,123,255,0.1);
+}
+
+.student-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+.payment-summary {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 15px;
+}
+
+.payment-status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.payment-status-badge.paid {
+    background: #d4edda;
+    color: #155724;
+}
+
+.payment-status-badge.pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.payment-status-badge.overdue {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.payment-spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #007bff;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // تحميل الخيارات في الفلاتر
+    loadGradeOptions();
+    loadYearOptions();
+    
+    // التركيز على حقل البحث
+    document.getElementById('studentSearchInput').focus();
+});
+
+// دالة البحث الرئيسية
+function searchStudents() {
+    const searchInput = document.getElementById('studentSearchInput').value.trim();
+    const gradeFilter = document.getElementById('gradeFilter').value;
+    const yearFilter = document.getElementById('yearFilter').value;
+    
+    // التحقق من وجود معايير البحث
+    if (!searchInput && !gradeFilter && !yearFilter) {
+        showPaymentMessage('warning', 'يرجى إدخال معايير البحث');
+        return;
+    }
+    
+    // إظهار حالة التحميل
+    showLoadingState();
+    
+    // إعداد البيانات للإرسال
+    const searchData = {
+        query: searchInput,
+        grade: gradeFilter,
+        year: yearFilter
+    };
+    
+    // إرسال طلب البحث
+    fetch('/payments/api/student-search/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(searchData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displaySearchResults(data.students);
+        } else {
+            showPaymentMessage('error', data.error || 'حدث خطأ في البحث');
+            showNoResults();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showPaymentMessage('error', 'حدث خطأ في الاتصال');
+        showNoResults();
+    });
+}
+
+// عرض نتائج البحث
+function displaySearchResults(students) {
+    hideAllStates();
+    
+    if (!students || students.length === 0) {
+        showNoResults();
+        return;
+    }
+    
+    const container = document.getElementById('studentsContainer');
+    const resultsCount = document.getElementById('resultsCount');
+    
+    resultsCount.textContent = students.length;
+    
+    let html = '<div class="row">';
+    
+    students.forEach(student => {
+        html += createStudentCard(student);
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+    
+    document.getElementById('searchResults').style.display = 'block';
+}
+
+// إنشاء بطاقة طالب
+function createStudentCard(student) {
+    const avatar = student.name ? student.name.charAt(0).toUpperCase() : 'ط';
+    
+    return `
+        <div class="col-lg-6 col-xl-4">
+            <div class="student-card">
+                <div class="d-flex align-items-start">
+                    <div class="student-avatar me-3">
+                        ${avatar}
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">${student.name || 'غير محدد'}</h6>
+                        <small class="text-muted d-block">${student.national_number || 'غير محدد'}</small>
+                        <small class="text-info">${student.grade_name || 'غير محدد'}</small>
+                    </div>
+                </div>
+                
+                <div class="payment-summary">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="fw-bold text-success">${student.total_paid || '0.00'}</div>
+                            <small class="text-muted">مدفوع</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="fw-bold text-warning">${student.total_remaining || '0.00'}</div>
+                            <small class="text-muted">متبقي</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="fw-bold text-primary">${student.payments_count || '0'}</div>
+                            <small class="text-muted">أقساط</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-3 d-flex gap-2">
+                    <a href="/payments/pay/${student.id}/" class="btn btn-success btn-sm flex-fill">
+                        <i class="fas fa-plus me-1"></i>دفع جديد
+                    </a>
+                    <button class="btn btn-info btn-sm" onclick="viewStudentPayments(${student.id}, '${student.name}')">
+                        <i class="fas fa-eye me-1"></i>المدفوعات
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// عرض مدفوعات طالب
+function viewStudentPayments(studentId, studentName) {
+    // يمكن توجيه لصفحة منفصلة أو modal
+    window.location.href = `/payments/all/?student=${studentId}`;
+}
+
+// إظهار حالة التحميل
+function showLoadingState() {
+    hideAllStates();
+    document.getElementById('loadingState').style.display = 'block';
+    
+    // تعطيل زر البحث
+    const searchBtn = document.getElementById('searchBtn');
+    searchBtn.disabled = true;
+    searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>جاري البحث...';
+}
+
+// إظهار حالة عدم وجود نتائج
+function showNoResults() {
+    hideAllStates();
+    document.getElementById('noResultsState').style.display = 'block';
+}
+
+// إخفاء جميع الحالات
+function hideAllStates() {
+    document.getElementById('searchResults').style.display = 'none';
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('noResultsState').style.display = 'none';
+    
+    // إعادة تفعيل زر البحث
+    const searchBtn = document.getElementById('searchBtn');
+    searchBtn.disabled = false;
+    searchBtn.innerHTML = '<i class="fas fa-search me-2"></i>بحث';
+}
+
+// مسح البحث
+function clearSearch() {
+    document.getElementById('studentSearchInput').value = '';
+    document.getElementById('gradeFilter').value = '';
+    document.getElementById('yearFilter').value = '';
+    hideAllStates();
+    document.getElementById('studentSearchInput').focus();
+}
+
+// عرض جميع الطلاب
+function showAllStudents() {
+    document.getElementById('studentSearchInput').value = '';
+    document.getElementById('gradeFilter').value = '';
+    document.getElementById('yearFilter').value = '';
+    searchStudents();
+}
+
+// معالجة ضغط Enter في حقل البحث
+function handleSearchKeyPress(event) {
+    if (event.key === 'Enter') {
+        searchStudents();
+    }
+}
+
+// عرض نصائح البحث
+function showSearchTips() {
+    const modal = new bootstrap.Modal(document.getElementById('searchTipsModal'));
+    modal.show();
+}
+
+// تحميل خيارات الصفوف
+function loadGradeOptions() {
+    // يمكن جلبها من API
+    const gradeSelect = document.getElementById('gradeFilter');
+    // مؤقتاً - خيارات ثابتة
+    const grades = [
+        {id: 1, name: 'الأول الابتدائي'},
+        {id: 2, name: 'الثاني الابتدائي'},
+        {id: 3, name: 'الثالث الابتدائي'}
+    ];
+    
+    grades.forEach(grade => {
+        const option = document.createElement('option');
+        option.value = grade.id;
+        option.textContent = grade.name;
+        gradeSelect.appendChild(option);
+    });
+}
+
+// تحميل خيارات السنوات
+function loadYearOptions() {
+    const yearSelect = document.getElementById('yearFilter');
+    const currentYear = new Date().getFullYear();
+    
+    for (let i = 0; i < 3; i++) {
+        const year = currentYear - i;
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = `${year}-${year + 1}`;
+        yearSelect.appendChild(option);
+    }
+}
+
+// دالة الحصول على CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

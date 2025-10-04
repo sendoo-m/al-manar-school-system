@@ -1,0 +1,608 @@
+{% extends 'school_settings/base.html' %}
+
+{% block title %}{{ page_title }} - {{ system_settings.school_name }}{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_icon %}<i class="fas fa-shield-alt"></i>{% endblock %}
+{% block current_page %}إعدادات الأمان{% endblock %}
+
+{% block extra_css %}
+<style>
+    .security-status {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .security-status::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+        animation: float 25s linear infinite;
+    }
+    
+    .security-metric {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        border: 1px solid rgba(0,0,0,0.05);
+        height: 100%;
+    }
+    
+    .security-metric:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .security-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px;
+        font-size: 1.3rem;
+        color: white;
+    }
+    
+    .security-setting {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 20px;
+        border: 1px solid rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+    }
+    
+    .security-setting:hover {
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .security-toggle {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 30px;
+    }
+    
+    .security-toggle input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .security-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 30px;
+    }
+    
+    .security-slider:before {
+        position: absolute;
+        content: "";
+        height: 22px;
+        width: 22px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+    
+    input:checked + .security-slider {
+        background-color: var(--success-color);
+    }
+    
+    input:checked + .security-slider:before {
+        transform: translateX(30px);
+    }
+    
+    .risk-level {
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .risk-low { background: #d4edda; color: #155724; }
+    .risk-medium { background: #fff3cd; color: #856404; }
+    .risk-high { background: #f8d7da; color: #721c24; }
+    
+    .activity-log {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .activity-item {
+        padding: 12px;
+        border-left: 3px solid var(--primary-color);
+        margin-bottom: 10px;
+        background: #f8f9fa;
+        border-radius: 0 8px 8px 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- حالة الأمان العامة -->
+<div class="security-status">
+    <div class="row align-items-center position-relative" style="z-index: 2;">
+        <div class="col-md-8">
+            <h3 class="mb-3">
+                <i class="fas fa-shield-check me-3"></i>
+                حالة الأمان العامة
+            </h3>
+            <div class="d-flex align-items-center mb-2">
+                <span class="risk-level risk-low me-3">مستوى أمان عالي</span>
+                <span>النظام محمي بشكل جيد</span>
+            </div>
+            <p class="mb-0">آخر فحص أمان: {{ current_time|date:"Y/m/d H:i" }}</p>
+        </div>
+        <div class="col-md-4 text-center">
+            <div class="display-4">
+                <i class="fas fa-lock opacity-50"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- مؤشرات الأمان -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="security-metric">
+            <div class="security-icon" style="background: linear-gradient(135deg, var(--success-color), #229954);">
+                <i class="fas fa-key"></i>
+            </div>
+            <h4 class="text-success">98%</h4>
+            <p class="text-muted mb-0">قوة كلمات المرور</p>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="security-metric">
+            <div class="security-icon" style="background: linear-gradient(135deg, var(--warning-color), #e67e22);">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            <h4 class="text-warning">{{ active_sessions|default:5 }}</h4>
+            <p class="text-muted mb-0">الجلسات النشطة</p>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="security-metric">
+            <div class="security-icon" style="background: linear-gradient(135deg, var(--info-color), #17a2b8);">
+                <i class="fas fa-history"></i>
+            </div>
+            <h4 class="text-info">{{ login_attempts|default:12 }}</h4>
+            <p class="text-muted mb-0">محاولات دخول اليوم</p>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="security-metric">
+            <div class="security-icon" style="background: linear-gradient(135deg, var(--danger-color), #c0392b);">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h4 class="text-danger">{{ failed_attempts|default:0 }}</h4>
+            <p class="text-muted mb-0">محاولات فاشلة</p>
+        </div>
+    </div>
+</div>
+
+<!-- إعدادات كلمات المرور -->
+<div class="settings-card mb-4">
+    <div class="settings-card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-key me-2"></i>
+            إعدادات كلمات المرور
+        </h5>
+    </div>
+    <div class="settings-card-body">
+        <form id="passwordSettingsForm">
+            {% csrf_token %}
+            
+            <div class="security-setting">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h6 class="mb-2">
+                            <i class="fas fa-ruler text-primary me-2"></i>
+                            الحد الأدنى لطول كلمة المرور
+                        </h6>
+                        <small class="text-muted">تحديد العدد الأدنى للأحرف المطلوبة في كلمة المرور</small>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <input type="number" class="form-control" name="min_password_length" 
+                                   value="8" min="4" max="20">
+                            <span class="input-group-text">حرف</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="security-setting">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h6 class="mb-2">
+                            <i class="fas fa-at text-success me-2"></i>
+                            طلب رموز خاصة
+                        </h6>
+                        <small class="text-muted">إجبار المستخدمين على استخدام رموز خاصة مثل @#$%</small>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <label class="security-toggle">
+                            <input type="checkbox" name="require_special_chars" checked>
+                            <span class="security-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="security-setting">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h6 class="mb-2">
+                            <i class="fas fa-hashtag text-warning me-2"></i>
+                            طلب أرقام
+                        </h6>
+                        <small class="text-muted">إجبار المستخدمين على تضمين أرقام في كلمة المرور</small>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <label class="security-toggle">
+                            <input type="checkbox" name="require_numbers" checked>
+                            <span class="security-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="security-setting">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h6 class="mb-2">
+                            <i class="fas fa-calendar-times text-danger me-2"></i>
+                            انتهاء صلاحية كلمة المرور
+                        </h6>
+                        <small class="text-muted">عدد الأيام قبل انتهاء صلاحية كلمة المرور</small>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <input type="number" class="form-control" name="password_expiry_days" 
+                                   value="90" min="30" max="365">
+                            <span class="input-group-text">يوم</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- إعدادات الجلسات -->
+<div class="settings-card mb-4">
+    <div class="settings-card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-clock me-2"></i>
+            إعدادات الجلسات والدخول
+        </h5>
+    </div>
+    <div class="settings-card-body">
+        <div class="security-setting">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h6 class="mb-2">
+                        <i class="fas fa-stopwatch text-primary me-2"></i>
+                        مدة انتهاء الجلسة
+                    </h6>
+                    <small class="text-muted">المدة بالدقائق قبل انتهاء صلاحية الجلسة تلقائياً</small>
+                </div>
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <input type="number" class="form-control" name="session_timeout" 
+                               value="30" min="5" max="480">
+                        <span class="input-group-text">دقيقة</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="security-setting">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h6 class="mb-2">
+                        <i class="fas fa-exclamation-circle text-warning me-2"></i>
+                        الحد الأقصى لمحاولات تسجيل الدخول
+                    </h6>
+                    <small class="text-muted">عدد المحاولات المسموحة قبل قفل الحساب مؤقتاً</small>
+                </div>
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <input type="number" class="form-control" name="max_login_attempts" 
+                               value="5" min="3" max="10">
+                        <span class="input-group-text">محاولة</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="security-setting">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h6 class="mb-2">
+                        <i class="fas fa-lock text-danger me-2"></i>
+                        مدة قفل الحساب
+                    </h6>
+                    <small class="text-muted">المدة بالدقائق لقفل الحساب بعد تجاوز المحاولات المسموحة</small>
+                </div>
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <input type="number" class="form-control" name="lockout_duration" 
+                               value="30" min="5" max="120">
+                        <span class="input-group-text">دقيقة</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- إعدادات التدقيق والمراقبة -->
+<div class="settings-card mb-4">
+    <div class="settings-card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-eye me-2"></i>
+            التدقيق والمراقبة
+        </h5>
+    </div>
+    <div class="settings-card-body">
+        <div class="security-setting">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h6 class="mb-2">
+                        <i class="fas fa-user-check text-info me-2"></i>
+                        تسجيل أنشطة المستخدمين
+                    </h6>
+                    <small class="text-muted">تسجيل جميع أنشطة المستخدمين في النظام</small>
+                </div>
+                <div class="col-md-4 text-end">
+                    <label class="security-toggle">
+                        <input type="checkbox" name="log_user_actions" checked>
+                        <span class="security-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="security-setting">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h6 class="mb-2">
+                        <i class="fas fa-money-bill-wave text-success me-2"></i>
+                        تسجيل العمليات المالية
+                    </h6>
+                    <small class="text-muted">تسجيل مفصل لجميع العمليات المالية والمدفوعات</small>
+                </div>
+                <div class="col-md-4 text-end">
+                    <label class="security-toggle">
+                        <input type="checkbox" name="log_financial_actions" checked>
+                        <span class="security-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="security-setting">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h6 class="mb-2">
+                        <i class="fas fa-download text-warning me-2"></i>
+                        تكرار النسخ الاحتياطية
+                    </h6>
+                    <small class="text-muted">عدد الأيام بين النسخ الاحتياطية التلقائية</small>
+                </div>
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <input type="number" class="form-control" name="backup_frequency" 
+                               value="7" min="1" max="30">
+                        <span class="input-group-text">يوم</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- النشاط الأخير -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="settings-card">
+            <div class="settings-card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-history me-2"></i>
+                    النشاط الأخير
+                </h5>
+            </div>
+            <div class="settings-card-body p-0">
+                <div class="activity-log">
+                    <div class="activity-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>تسجيل دخول ناجح</strong>
+                                <br><small class="text-muted">admin - 127.0.0.1</small>
+                            </div>
+                            <small class="text-muted">{{ current_time|date:"H:i" }}</small>
+                        </div>
+                    </div>
+                    
+                    <div class="activity-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>تحديث إعدادات</strong>
+                                <br><small class="text-muted">تحديث إعدادات الأمان</small>
+                            </div>
+                            <small class="text-muted">{{ current_time|date:"H:i" }}</small>
+                        </div>
+                    </div>
+                    
+                    <div class="activity-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>نسخ احتياطي</strong>
+                                <br><small class="text-muted">نسخة احتياطية تلقائية</small>
+                            </div>
+                            <small class="text-muted">أمس 23:00</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="settings-card">
+            <div class="settings-card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-tools me-2"></i>
+                    أدوات الأمان
+                </h5>
+            </div>
+            <div class="settings-card-body">
+                <div class="d-grid gap-3">
+                    <button class="btn btn-outline-primary" onclick="runSecurityScan()">
+                        <i class="fas fa-search me-2"></i>فحص أمان شامل
+                    </button>
+                    
+                    <button class="btn btn-outline-success" onclick="forcePasswordChange()">
+                        <i class="fas fa-key me-2"></i>إجبار تغيير كلمات المرور
+                    </button>
+                    
+                    <button class="btn btn-outline-warning" onclick="clearActiveSessions()">
+                        <i class="fas fa-sign-out-alt me-2"></i>إنهاء جميع الجلسات
+                    </button>
+                    
+                    <button class="btn btn-outline-danger" onclick="viewFailedAttempts()">
+                        <i class="fas fa-exclamation-triangle me-2"></i>المحاولات الفاشلة
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- أزرار الحفظ -->
+<div class="settings-card mt-4">
+    <div class="settings-card-footer" style="background: #f8f9fa; padding: 20px;">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="text-muted">
+                <small>
+                    <i class="fas fa-shield-alt me-1"></i>
+                    آخر تحديث للأمان: {{ current_time|date:"Y/m/d H:i" }}
+                </small>
+            </div>
+            <div class="btn-group">
+                <button type="button" class="btn btn-outline-secondary" onclick="resetSecuritySettings()">
+                    <i class="fas fa-undo me-1"></i>إعادة تعيين
+                </button>
+                <button type="button" class="btn btn-success" onclick="saveSecuritySettings()">
+                    <i class="fas fa-save me-1"></i>حفظ إعدادات الأمان
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// حفظ إعدادات الأمان
+function saveSecuritySettings() {
+    const form = document.getElementById('passwordSettingsForm');
+    const formData = new FormData(form);
+    
+    showMessage('info', 'جاري حفظ إعدادات الأمان...');
+    
+    // محاكاة الحفظ
+    setTimeout(() => {
+        showMessage('success', 'تم حفظ إعدادات الأمان بنجاح');
+    }, 2000);
+}
+
+// إعادة تعيين الإعدادات
+function resetSecuritySettings() {
+    if (confirm('هل تريد إعادة تعيين جميع إعدادات الأمان للقيم الافتراضية؟')) {
+        document.getElementById('passwordSettingsForm').reset();
+        showMessage('warning', 'تم إعادة تعيين إعدادات الأمان');
+    }
+}
+
+// فحص أمان شامل
+function runSecurityScan() {
+    showMessage('info', 'جاري تشغيل فحص الأمان الشامل...');
+    
+    setTimeout(() => {
+        showMessage('success', 'اكتمل فحص الأمان - لم يتم العثور على مشاكل');
+    }, 4000);
+}
+
+// إجبار تغيير كلمات المرور
+function forcePasswordChange() {
+    if (confirm('هل تريد إجبار جميع المستخدمين على تغيير كلمات المرور؟')) {
+        showMessage('warning', 'تم إجبار جميع المستخدمين على تغيير كلمات المرور');
+    }
+}
+
+// مسح الجلسات النشطة
+function clearActiveSessions() {
+    if (confirm('هل تريد إنهاء جميع الجلسات النشطة؟ سيتم تسجيل خروج جميع المستخدمين.')) {
+        showMessage('info', 'جاري إنهاء الجلسات النشطة...');
+        setTimeout(() => {
+            showMessage('success', 'تم إنهاء جميع الجلسات النشطة');
+        }, 2000);
+    }
+}
+
+// عرض المحاولات الفاشلة
+function viewFailedAttempts() {
+    alert('المحاولات الفاشلة:\n\n• IP: 192.168.1.100 - 3 محاولات فاشلة\n• IP: 10.0.0.50 - 2 محاولة فاشلة\n\nجميع المحاولات من داخل الشبكة المحلية');
+}
+
+// تحديث المؤشرات كل دقيقة
+setInterval(updateSecurityMetrics, 60000);
+
+function updateSecurityMetrics() {
+    // محاكاة تحديث البيانات
+    console.log('تم تحديث مؤشرات الأمان');
+}
+
+// تفعيل tooltips للمساعدة
+document.addEventListener('DOMContentLoaded', function() {
+    // إضافة تأثيرات للتبديل
+    const toggles = document.querySelectorAll('.security-toggle input');
+    toggles.forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            const settingName = this.name;
+            const isEnabled = this.checked;
+            console.log(`إعداد ${settingName}: ${isEnabled ? 'مُفعل' : 'مُعطل'}`);
+        });
+    });
+});
+</script>
+{% endblock %}

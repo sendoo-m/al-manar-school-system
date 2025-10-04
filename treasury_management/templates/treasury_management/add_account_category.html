@@ -1,0 +1,1290 @@
+<!-- treasury_management/templates/treasury_management/add_account_category.html -->
+{% extends 'treasury_management/base.html' %}
+{% load static %}
+
+{% block title %}إضافة تصنيف حساب جديد - نظام الخزينة{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'treasury_management:account_categories_list' %}">تصنيفات الحسابات</a></li>
+<li class="breadcrumb-item active">إضافة تصنيف جديد</li>
+{% endblock %}
+
+{% block content %}
+<style>
+    /* ===================================
+       🎨 CATEGORY FORM STYLES WITH PREVIEW
+    =================================== */
+    .category-container {
+        background: linear-gradient(135deg, rgba(23, 162, 184, 0.02), rgba(19, 132, 150, 0.02));
+        border-radius: 20px;
+        padding: 25px;
+        margin: -10px;
+        min-height: calc(100vh - 200px);
+    }
+
+    /* التخطيط الجانبي */
+    .category-layout {
+        display: flex;
+        gap: 25px;
+        margin-bottom: 30px;
+    }
+
+    .form-wrapper { flex: 0 0 60%; }
+    .preview-wrapper { flex: 0 0 40%; }
+
+    .category-card {
+        background: white;
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(23, 162, 184, 0.1);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        margin-bottom: 25px;
+    }
+
+    .category-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(23, 162, 184, 0.15);
+    }
+
+    .category-header {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+        padding: 25px 30px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .category-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+        animation: float 20s linear infinite;
+    }
+
+    .category-header-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .category-header h4 {
+        margin: 0 0 8px 0;
+        font-weight: 700;
+        font-size: 1.6rem;
+        display: flex;
+        align-items: center;
+        color: white;
+    }
+
+    .category-header i {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 12px;
+        border-radius: 12px;
+        margin-left: 15px;
+        font-size: 1.3rem;
+    }
+
+    .category-header p {
+        margin: 0;
+        opacity: 0.9;
+        font-size: 1rem;
+        color: white;
+    }
+
+    /* أقسام النموذج */
+    .form-section {
+        background: rgba(248, 249, 250, 0.8);
+        border: 2px solid rgba(23, 162, 184, 0.1);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .form-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        border-radius: 15px 15px 0 0;
+    }
+
+    .form-section:hover {
+        background: rgba(255, 255, 255, 0.9);
+        border-color: rgba(23, 162, 184, 0.2);
+        transform: translateY(-2px);
+    }
+
+    .section-title {
+        color: var(--text-primary);
+        font-weight: 700;
+        font-size: 1.1rem;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        padding-bottom: 10px;
+        border-bottom: 2px solid rgba(23, 162, 184, 0.1);
+    }
+
+    .section-icon {
+        width: 35px;
+        height: 35px;
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 10px;
+        font-size: 1rem;
+        box-shadow: 0 2px 8px rgba(23, 162, 184, 0.3);
+    }
+
+    .section-icon.success { background: linear-gradient(135deg, #28a745, #218838); }
+    .section-icon.info { background: linear-gradient(135deg, #17a2b8, #138496); }
+    .section-icon.warning { background: linear-gradient(135deg, #ffc107, #e0a800); }
+
+    /* الحقول */
+    .form-label {
+        color: var(--text-primary);
+        font-weight: 600;
+        margin-bottom: 8px;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .form-label .text-danger {
+        margin-right: 5px;
+        font-size: 1.1rem;
+    }
+
+    .form-control, .form-select {
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 12px 15px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        background: white;
+        color: var(--text-primary);
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #17a2b8;
+        box-shadow: 0 0 0 0.2rem rgba(23, 162, 184, 0.15);
+        background: white;
+        transform: translateY(-1px);
+    }
+
+    .form-control:hover, .form-select:hover {
+        border-color: #bdc3c7;
+        background: white;
+    }
+
+    .form-text {
+        color: #6c757d;
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-top: 5px;
+    }
+
+    .form-text::before {
+        content: '\f05a';
+        font-family: 'Font Awesome 6 Free';
+        font-weight: 900;
+        margin-left: 6px;
+        color: #17a2b8;
+    }
+
+    /* نصائح نوع التصنيف */
+    .category-type-hint {
+        border: none;
+        border-radius: 10px;
+        padding: 12px 15px;
+        margin: 10px 0;
+        font-size: 0.85rem;
+        border-right: 4px solid;
+        transition: all 0.3s ease;
+    }
+
+    .category-type-hint.asset {
+        background: linear-gradient(135deg, rgba(23, 162, 184, 0.1), rgba(255, 255, 255, 0.9));
+        border-right-color: #17a2b8;
+        color: #0c5460;
+    }
+
+    .category-type-hint.liability {
+        background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 255, 255, 0.9));
+        border-right-color: #ffc107;
+        color: #856404;
+    }
+
+    .category-type-hint.revenue {
+        background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(255, 255, 255, 0.9));
+        border-right-color: #28a745;
+        color: #155724;
+    }
+
+    .category-type-hint.expense {
+        background: linear-gradient(135deg, rgba(220, 53, 69, 0.1), rgba(255, 255, 255, 0.9));
+        border-right-color: #dc3545;
+        color: #721c24;
+    }
+
+    /* ===================================
+       🎨 ENHANCED PREVIEW STYLES
+    =================================== */
+    .preview-card {
+        background: white;
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(23, 162, 184, 0.15);
+        overflow: hidden;
+        position: sticky;
+        top: 20px;
+        max-height: calc(100vh - 40px);
+        overflow-y: auto;
+        transition: all 0.3s ease;
+    }
+
+    .preview-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 35px rgba(23, 162, 184, 0.2);
+    }
+
+    .preview-header {
+        background: linear-gradient(135deg, #6f42c1, #563d7c);
+        color: white;
+        padding: 25px 20px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .preview-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+        background-size: 20px 20px;
+        animation: drift 25s linear infinite;
+    }
+
+    .preview-header-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .preview-icon {
+        width: 60px;
+        height: 60px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px;
+        font-size: 1.5rem;
+        backdrop-filter: blur(10px);
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        animation: pulse 2s infinite;
+    }
+
+    .preview-header h5 {
+        margin: 0 0 5px 0;
+        font-weight: 700;
+        font-size: 1.3rem;
+        color: white;
+    }
+
+    .preview-header p {
+        margin: 0;
+        opacity: 0.9;
+        font-size: 0.9rem;
+        color: white;
+    }
+
+    .preview-content {
+        padding: 25px 20px;
+    }
+
+    /* مؤشر حالة النموذج */
+    .preview-status {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-radius: 15px;
+        padding: 15px;
+        margin-bottom: 20px;
+        text-align: center;
+        border: 2px dashed #dee2e6;
+        transition: all 0.3s ease;
+    }
+
+    .preview-status.active {
+        background: linear-gradient(135deg, rgba(111, 66, 193, 0.1), rgba(86, 61, 124, 0.05));
+        border-color: #6f42c1;
+        border-style: solid;
+    }
+
+    .status-text {
+        font-weight: 600;
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .status-text.active {
+        color: #6f42c1;
+    }
+
+    .completion-bar {
+        width: 100%;
+        height: 4px;
+        background: #e9ecef;
+        border-radius: 2px;
+        overflow: hidden;
+        margin-top: 10px;
+    }
+
+    .completion-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #6f42c1, #563d7c);
+        border-radius: 2px;
+        transition: width 0.5s ease;
+        width: 0%;
+    }
+
+    /* أقسام المعاينة */
+    .preview-section {
+        margin-bottom: 20px;
+    }
+
+    .preview-section-title {
+        font-weight: 700;
+        color: #2c3e50;
+        font-size: 0.95rem;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #f1f3f4;
+    }
+
+    .preview-section-icon {
+        width: 25px;
+        height: 25px;
+        background: linear-gradient(135deg, #6f42c1, #563d7c);
+        color: white;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 8px;
+        font-size: 0.8rem;
+    }
+
+    .preview-item {
+        background: white;
+        border: 2px solid #f1f3f4;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 12px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .preview-item::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 3px;
+        background: #f1f3f4;
+        transition: all 0.3s ease;
+    }
+
+    .preview-item.filled {
+        background: linear-gradient(135deg, rgba(111, 66, 193, 0.08), rgba(255, 255, 255, 0.9));
+        border-color: rgba(111, 66, 193, 0.3);
+        transform: translateX(-3px);
+        box-shadow: 0 3px 10px rgba(111, 66, 193, 0.1);
+    }
+
+    .preview-item.filled::before {
+        background: linear-gradient(135deg, #6f42c1, #563d7c);
+    }
+
+    .preview-item.asset {
+        background: linear-gradient(135deg, rgba(23, 162, 184, 0.08), rgba(255, 255, 255, 0.9));
+        border-color: rgba(23, 162, 184, 0.3);
+    }
+
+    .preview-item.asset::before {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+    }
+
+    .preview-item.liability {
+        background: linear-gradient(135deg, rgba(255, 193, 7, 0.08), rgba(255, 255, 255, 0.9));
+        border-color: rgba(255, 193, 7, 0.3);
+    }
+
+    .preview-item.liability::before {
+        background: linear-gradient(135deg, #ffc107, #e0a800);
+    }
+
+    .preview-item.revenue {
+        background: linear-gradient(135deg, rgba(40, 167, 69, 0.08), rgba(255, 255, 255, 0.9));
+        border-color: rgba(40, 167, 69, 0.3);
+    }
+
+    .preview-item.revenue::before {
+        background: linear-gradient(135deg, #28a745, #20c997);
+    }
+
+    .preview-item.expense {
+        background: linear-gradient(135deg, rgba(220, 53, 69, 0.08), rgba(255, 255, 255, 0.9));
+        border-color: rgba(220, 53, 69, 0.3);
+    }
+
+    .preview-item.expense::before {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+    }
+
+    .preview-label {
+        font-weight: 700;
+        color: #495057;
+        font-size: 0.8rem;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .preview-label-icon {
+        width: 16px;
+        height: 16px;
+        background: #6c757d;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 6px;
+        font-size: 0.6rem;
+        color: white;
+    }
+
+    .preview-value {
+        color: #2c3e50;
+        font-size: 1rem;
+        line-height: 1.4;
+        font-weight: 500;
+    }
+
+    .preview-value.empty {
+        color: #adb5bd;
+        font-style: italic;
+        font-weight: 400;
+    }
+
+    .preview-value.code {
+        font-weight: 800;
+        color: #6f42c1;
+        font-size: 1.1rem;
+        font-family: 'Courier New', monospace;
+    }
+
+    .preview-hierarchy {
+        background: rgba(111, 66, 193, 0.05);
+        border: 1px dashed #6f42c1;
+        border-radius: 8px;
+        padding: 10px;
+        margin-top: 15px;
+        text-align: center;
+    }
+
+    .hierarchy-item {
+        display: inline-block;
+        background: #6f42c1;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        margin: 2px;
+    }
+
+    .hierarchy-arrow {
+        color: #6f42c1;
+        margin: 0 5px;
+    }
+
+    /* رسائل التحذير */
+    .alert {
+        border: none;
+        border-radius: 12px;
+        padding: 15px 20px;
+        font-weight: 500;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    /* الأزرار */
+    .form-footer {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        padding: 20px 30px;
+        border-top: 1px solid rgba(0,0,0,0.05);
+        border-radius: 0 0 20px 20px;
+    }
+
+    .btn {
+        font-weight: 600;
+        padding: 10px 20px;
+        border-radius: 10px;
+        border: none;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+    }
+
+    .btn-info {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+    }
+
+    .btn-info:hover {
+        background: linear-gradient(135deg, #138496, #117a8b);
+        color: white;
+    }
+
+    .btn-secondary {
+        background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: linear-gradient(135deg, #7f8c8d, #95a5a6);
+        color: white;
+    }
+
+    /* بطاقات الدليل */
+    .guide-card {
+        border: none;
+        border-radius: 15px;
+        overflow: hidden;
+        margin-bottom: 20px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+    }
+
+    .guide-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    }
+
+    .guide-card .card-header {
+        font-weight: 700;
+        padding: 15px 20px;
+        border-bottom: none;
+    }
+
+    .guide-card .card-header h5 {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        color: white;
+    }
+
+    .guide-card .card-header i {
+        margin-left: 10px;
+        font-size: 1.1rem;
+    }
+
+    .border-success .card-header {
+        background: linear-gradient(135deg, #28a745, #218838);
+        color: white;
+    }
+
+    .border-info .card-header {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+    }
+
+    /* الجداول */
+    .table {
+        font-size: 0.9rem;
+        margin-bottom: 0;
+    }
+
+    .table th {
+        background-color: #f8f9fa;
+        color: var(--text-primary);
+        font-weight: 600;
+        border-bottom: 2px solid #e9ecef;
+        padding: 10px 12px;
+    }
+
+    .table td {
+        padding: 8px 12px;
+        vertical-align: middle;
+        color: var(--text-primary);
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(23, 162, 184, 0.05);
+    }
+
+    /* الانيميشن */
+    @keyframes float {
+        0%, 100% { transform: translateX(0) translateY(0); }
+        25% { transform: translateX(3px) translateY(-3px); }
+        50% { transform: translateX(-2px) translateY(2px); }
+        75% { transform: translateX(-3px) translateY(-2px); }
+    }
+
+    @keyframes drift {
+        0% { transform: rotate(0deg) translateX(0); }
+        100% { transform: rotate(360deg) translateX(20px); }
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    .fade-in {
+        animation: fadeInUp 0.8s ease-out;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* الاستجابة */
+    @media (max-width: 1200px) {
+        .category-layout {
+            flex-direction: column;
+        }
+        
+        .form-wrapper,
+        .preview-wrapper {
+            flex: none;
+        }
+        
+        .preview-card {
+            position: static;
+            max-height: none;
+            margin-top: 20px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .category-container {
+            padding: 15px;
+            margin: -5px;
+        }
+
+        .category-header {
+            padding: 20px 25px;
+        }
+
+        .category-header h4 {
+            font-size: 1.4rem;
+        }
+
+        .form-section {
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .section-icon {
+            width: 30px;
+            height: 30px;
+            font-size: 0.9rem;
+        }
+
+        .form-footer {
+            padding: 15px 20px;
+        }
+
+        .btn {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .preview-content {
+            padding: 20px 15px;
+        }
+        
+        .preview-icon {
+            width: 50px;
+            height: 50px;
+            font-size: 1.2rem;
+        }
+        
+        .preview-item {
+            padding: 12px;
+        }
+    }
+</style>
+
+<!-- محتوى الصفحة -->
+<div class="category-container">
+    <div class="category-layout">
+        <!-- النموذج -->
+        <div class="form-wrapper">
+            <div class="category-card fade-in">
+                <div class="category-header">
+                    <div class="category-header-content">
+                        <h4>
+                            <i class="fas fa-folder-plus"></i>
+                            إضافة تصنيف حساب جديد
+                        </h4>
+                        <p>إنشاء تصنيف محاسبي لتنظيم الحسابات</p>
+                    </div>
+                </div>
+                
+                <form method="POST" id="categoryForm">
+                    {% csrf_token %}
+                    <div class="card-body" style="padding: 30px;">
+                        
+                        <!-- قسم المعلومات الأساسية -->
+                        <div class="form-section">
+                            <div class="section-title">
+                                <div class="section-icon">
+                                    <i class="fas fa-info-circle"></i>
+                                </div>
+                                <span>المعلومات الأساسية</span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <span class="text-danger">*</span>
+                                    اسم التصنيف
+                                </label>
+                                <input type="text" class="form-control" name="name" required 
+                                       placeholder="مثال: الأصول النقدية">
+                                <div class="form-text">اسم وصفي للتصنيف</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <span class="text-danger">*</span>
+                                    كود التصنيف
+                                </label>
+                                <input type="text" class="form-control" name="code" required 
+                                       placeholder="مثال: CASH_ASSETS">
+                                <div class="form-text">كود فريد باللغة الإنجليزية</div>
+                            </div>
+                        </div>
+
+                        <!-- قسم النوع والتصنيف -->
+                        <div class="form-section">
+                            <div class="section-title">
+                                <div class="section-icon success">
+                                    <i class="fas fa-sitemap"></i>
+                                </div>
+                                <span>النوع والتصنيف</span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <span class="text-danger">*</span>
+                                    نوع التصنيف
+                                </label>
+                                <select class="form-select" name="category_type" required id="categoryType">
+                                    <option value="">اختر النوع</option>
+                                    <option value="ASSET">🏦 أصول</option>
+                                    <option value="REVENUE">💰 إيرادات</option>
+                                    <option value="EXPENSE">💸 مصروفات</option>
+                                    <option value="LIABILITY">📋 خصوم</option>
+                                </select>
+                                <div class="form-text">نوع الحساب المحاسبي</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">التصنيف الرئيسي</label>
+                                <select class="form-select" name="parent" id="parentSelect">
+                                    <option value="">تصنيف رئيسي</option>
+                                    {% for parent_category in parent_categories %}
+                                    <option value="{{ parent_category.id }}" data-type="{{ parent_category.category_type }}">
+                                        {{ parent_category.code }} - {{ parent_category.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">اتركه فارغاً إذا كان تصنيفاً رئيسياً</div>
+                            </div>
+                        </div>
+
+                        <!-- قسم الوصف -->
+                        <div class="form-section">
+                            <div class="section-title">
+                                <div class="section-icon warning">
+                                    <i class="fas fa-align-left"></i>
+                                </div>
+                                <span>الوصف التفصيلي</span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">الوصف</label>
+                                <textarea class="form-control" name="description" rows="3" 
+                                          placeholder="وصف مفصل للتصنيف ومحتوياته"></textarea>
+                                <div class="form-text">وصف اختياري لتوضيح غرض التصنيف</div>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="form-footer">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{% url 'treasury_management:account_categories_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>إلغاء والعودة
+                            </a>
+                            <button type="submit" class="btn btn-info" id="submitBtn">
+                                <i class="fas fa-save me-1"></i>حفظ التصنيف
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- المعاينة المحسنة -->
+        <div class="preview-wrapper">
+            <div class="preview-card fade-in" style="animation-delay: 0.2s;">
+                <div class="preview-header">
+                    <div class="preview-header-content">
+                        <div class="preview-icon">
+                            <i class="fas fa-folder-tree"></i>
+                        </div>
+                        <h5>معاينة التصنيف</h5>
+                        <p>متابعة حية للبيانات المدخلة</p>
+                    </div>
+                </div>
+                
+                <div class="preview-content">
+                    <!-- مؤشر حالة النموذج -->
+                    <div class="preview-status" id="previewStatus">
+                        <div class="status-text" id="statusText">ابدأ بملء البيانات</div>
+                        <div class="completion-bar">
+                            <div class="completion-fill" id="completionFill"></div>
+                        </div>
+                    </div>
+
+                    <!-- القسم الأساسي -->
+                    <div class="preview-section">
+                        <div class="preview-section-title">
+                            <div class="preview-section-icon">
+                                <i class="fas fa-info"></i>
+                            </div>
+                            البيانات الأساسية
+                        </div>
+                        
+                        <div class="preview-item" id="previewName">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-tag"></i>
+                                </div>
+                                اسم التصنيف
+                            </div>
+                            <div class="preview-value empty">لم يتم إدخال الاسم</div>
+                        </div>
+                        
+                        <div class="preview-item" id="previewCode">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-code"></i>
+                                </div>
+                                كود التصنيف
+                            </div>
+                            <div class="preview-value code empty">لم يتم إدخال الكود</div>
+                        </div>
+                        
+                        <div class="preview-item" id="previewType">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-layer-group"></i>
+                                </div>
+                                نوع التصنيف
+                            </div>
+                            <div class="preview-value empty">لم يتم اختيار النوع</div>
+                        </div>
+                    </div>
+
+                    <!-- القسم الهيكلي -->
+                    <div class="preview-section">
+                        <div class="preview-section-title">
+                            <div class="preview-section-icon">
+                                <i class="fas fa-sitemap"></i>
+                            </div>
+                            الهيكل التنظيمي
+                        </div>
+                        
+                        <div class="preview-item" id="previewParent">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-level-up-alt"></i>
+                                </div>
+                                التصنيف الرئيسي
+                            </div>
+                            <div class="preview-value">تصنيف رئيسي</div>
+                        </div>
+
+                        <!-- عرض التسلسل الهرمي -->
+                        <div class="preview-hierarchy" id="previewHierarchy" style="display: none;">
+                            <strong>التسلسل الهرمي:</strong><br>
+                            <div id="hierarchyPath"></div>
+                        </div>
+                    </div>
+
+                    <!-- القسم الإضافي -->
+                    <div class="preview-section">
+                        <div class="preview-section-title">
+                            <div class="preview-section-icon">
+                                <i class="fas fa-plus"></i>
+                            </div>
+                            معلومات إضافية
+                        </div>
+                        
+                        <div class="preview-item" id="previewDescription">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-file-alt"></i>
+                                </div>
+                                وصف التصنيف
+                            </div>
+                            <div class="preview-value empty">لا يوجد وصف</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- أمثلة مساعدة -->
+    <div class="row mt-4">
+        <div class="col-lg-8 mx-auto">
+            <!-- أمثلة للمساعدة -->
+            <div class="guide-card border-success fade-in" style="animation-delay: 0.4s;">
+                <div class="card-header">
+                    <h5><i class="fas fa-lightbulb"></i>أمثلة للمساعدة</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>النوع</th>
+                                    <th>مثال للاسم</th>
+                                    <th>مثال للكود</th>
+                                    <th>التصنيف الرئيسي</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span class="badge bg-info">🏦 أصول</span></td>
+                                    <td>الأصول النقدية</td>
+                                    <td><code>CASH_ASSETS</code></td>
+                                    <td>الأصول الرئيسية</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="badge bg-success">💰 إيرادات</span></td>
+                                    <td>الرسوم الدراسية</td>
+                                    <td><code>TUITION_FEES</code></td>
+                                    <td>الإيرادات التشغيلية</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="badge bg-danger">💸 مصروفات</span></td>
+                                    <td>المرتبات والأجور</td>
+                                    <td><code>SALARIES</code></td>
+                                    <td>المصروفات التشغيلية</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="badge bg-warning">📋 خصوم</span></td>
+                                    <td>القروض طويلة الأجل</td>
+                                    <td><code>LONG_LOANS</code></td>
+                                    <td>الخصوم المتداولة</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- نصائح مهمة -->
+            <div class="guide-card border-info fade-in" style="animation-delay: 0.6s;">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i>نصائح مهمة</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary"><i class="fas fa-check-circle me-2"></i>أفضل الممارسات:</h6>
+                            <ul class="mb-3">
+                                <li><strong>استخدم أسماء واضحة:</strong> تعبر عن المحتوى</li>
+                                <li><strong>أكواد منطقية:</strong> باللغة الإنجليزية</li>
+                                <li><strong>تسلسل هرمي منظم:</strong> من العام للخاص</li>
+                                <li><strong>وصف مفيد:</strong> يوضح الغرض</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6 class="text-warning"><i class="fas fa-exclamation-triangle me-2"></i>تجنب هذه الأخطاء:</h6>
+                            <ul class="mb-3 text-warning">
+                                <li>تكرار الأكواد</li>
+                                <li>أسماء غامضة أو مختصرة</li>
+                                <li>خطأ في نوع التصنيف</li>
+                                <li>تداخل في التسلسل الهرمي</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const categoryType = document.getElementById('categoryType');
+    const parentSelect = document.getElementById('parentSelect');
+    const codeInput = document.querySelector('[name="code"]');
+    const form = document.getElementById('categoryForm');
+    
+    // تحديث المعاينة عند تغيير أي حقل
+    form.addEventListener('input', updatePreview);
+    form.addEventListener('change', updatePreview);
+    
+    function updatePreview() {
+        let completedFields = 0;
+        const totalRequiredFields = 3; // الاسم، الكود، النوع
+        
+        // الاسم
+        const name = document.querySelector('input[name="name"]').value;
+        const nameItem = document.getElementById('previewName');
+        if (name.trim()) {
+            nameItem.classList.add('filled');
+            nameItem.querySelector('.preview-value').classList.remove('empty');
+            nameItem.querySelector('.preview-value').textContent = name;
+            completedFields++;
+        } else {
+            nameItem.classList.remove('filled');
+            nameItem.querySelector('.preview-value').classList.add('empty');
+            nameItem.querySelector('.preview-value').textContent = 'لم يتم إدخال الاسم';
+        }
+        
+        // الكود
+        const code = codeInput.value;
+        const codeItem = document.getElementById('previewCode');
+        if (code.trim()) {
+            codeItem.classList.add('filled');
+            codeItem.querySelector('.preview-value').classList.remove('empty');
+            codeItem.querySelector('.preview-value').textContent = code;
+            completedFields++;
+        } else {
+            codeItem.classList.remove('filled');
+            codeItem.querySelector('.preview-value').classList.add('empty');
+            codeItem.querySelector('.preview-value').textContent = 'لم يتم إدخال الكود';
+        }
+        
+        // النوع
+        const typeOption = categoryType.selectedOptions[0];
+        const typeItem = document.getElementById('previewType');
+        if (typeOption && typeOption.value) {
+            const categoryTypeValue = typeOption.value.toLowerCase();
+            typeItem.classList.add('filled', categoryTypeValue);
+            typeItem.querySelector('.preview-value').classList.remove('empty');
+            typeItem.querySelector('.preview-value').textContent = typeOption.text;
+            completedFields++;
+        } else {
+            typeItem.classList.remove('filled', 'asset', 'liability', 'revenue', 'expense');
+            typeItem.querySelector('.preview-value').classList.add('empty');
+            typeItem.querySelector('.preview-value').textContent = 'لم يتم اختيار النوع';
+        }
+        
+        // التصنيف الرئيسي
+        const parentOption = parentSelect.selectedOptions[0];
+        const parentItem = document.getElementById('previewParent');
+        const hierarchyDiv = document.getElementById('previewHierarchy');
+        if (parentOption && parentOption.value) {
+            parentItem.classList.add('filled');
+            parentItem.querySelector('.preview-value').classList.remove('empty');
+            parentItem.querySelector('.preview-value').textContent = parentOption.text;
+            
+            // عرض التسلسل الهرمي
+            hierarchyDiv.style.display = 'block';
+            const hierarchyPath = document.getElementById('hierarchyPath');
+            hierarchyPath.innerHTML = `
+                <span class="hierarchy-item">${parentOption.text.split(' - ')[1]}</span>
+                <span class="hierarchy-arrow">→</span>
+                <span class="hierarchy-item">${name || 'التصنيف الجديد'}</span>
+            `;
+        } else {
+            parentItem.classList.remove('filled');
+            parentItem.querySelector('.preview-value').classList.add('empty');
+            parentItem.querySelector('.preview-value').textContent = 'تصنيف رئيسي';
+            hierarchyDiv.style.display = 'none';
+        }
+        
+        // الوصف
+        const description = document.querySelector('textarea[name="description"]').value;
+        const descItem = document.getElementById('previewDescription');
+        if (description.trim()) {
+            descItem.classList.add('filled');
+            descItem.querySelector('.preview-value').classList.remove('empty');
+            const shortDesc = description.length > 50 ? description.substring(0, 50) + '...' : description;
+            descItem.querySelector('.preview-value').textContent = shortDesc;
+        } else {
+            descItem.classList.remove('filled');
+            descItem.querySelector('.preview-value').classList.add('empty');
+            descItem.querySelector('.preview-value').textContent = 'لا يوجد وصف';
+        }
+        
+        // تحديث شريط التقدم
+        const completionPercentage = (completedFields / totalRequiredFields) * 100;
+        document.getElementById('completionFill').style.width = completionPercentage + '%';
+        
+        // تحديث حالة النموذج
+        const statusElement = document.getElementById('previewStatus');
+        const statusText = document.getElementById('statusText');
+        
+        if (completedFields === totalRequiredFields) {
+            statusElement.classList.add('active');
+            statusText.classList.add('active');
+            statusText.textContent = '✅ جميع البيانات المطلوبة مكتملة';
+        } else {
+            statusElement.classList.remove('active');
+            statusText.classList.remove('active');
+            statusText.textContent = `مطلوب ${totalRequiredFields - completedFields} حقل إضافي`;
+        }
+    }
+    
+    // تفعيل الفلترة حسب نوع التصنيف
+    categoryType.addEventListener('change', function() {
+        const selectedType = this.value;
+        const parentOptions = parentSelect.querySelectorAll('option[data-type]');
+        
+        // إزالة النصائح السابقة
+        const hints = document.querySelectorAll('.category-type-hint');
+        hints.forEach(hint => hint.remove());
+        
+        // إخفاء جميع الخيارات أولاً
+        parentOptions.forEach(option => {
+            option.style.display = 'none';
+            option.selected = false;
+        });
+        
+        // إظهار الخيارات المناسبة
+        if (selectedType) {
+            parentOptions.forEach(option => {
+                if (option.getAttribute('data-type') === selectedType) {
+                    option.style.display = 'block';
+                }
+            });
+            
+            // إضافة نصيحة ملونة
+            let hintClass = '';
+            let hintText = '';
+            
+            switch(selectedType) {
+                case 'ASSET':
+                    hintClass = 'asset';
+                    hintText = '💡 الأصول: كل ما تملكه المدرسة من نقد وممتلكات';
+                    break;
+                case 'LIABILITY':
+                    hintClass = 'liability';
+                    hintText = '⚠️ الخصوم: الديون والالتزامات المالية للمدرسة';
+                    break;
+                case 'REVENUE':
+                    hintClass = 'revenue';
+                    hintText = '💰 الإيرادات: المداخيل والأموال الواردة للمدرسة';
+                    break;
+                case 'EXPENSE':
+                    hintClass = 'expense';
+                    hintText = '💸 المصروفات: النفقات والتكاليف التشغيلية';
+                    break;
+            }
+            
+            if (hintText) {
+                const hintHtml = `<div class="category-type-hint ${hintClass}">
+                    <small><strong>${hintText}</strong></small>
+                </div>`;
+                categoryType.parentNode.insertAdjacentHTML('afterend', hintHtml);
+            }
+        }
+        
+        // إعادة تعيين الاختيار
+        parentSelect.value = '';
+    });
+    
+    // تحويل الكود للأحرف الكبيرة
+    codeInput.addEventListener('input', function() {
+        this.value = this.value.toUpperCase().replace(/[^A-Z0-9_]/g, '');
+    });
+    
+    // التحقق من النموذج
+    form.addEventListener('submit', function(e) {
+        const code = codeInput.value;
+        const name = document.querySelector('[name="name"]').value;
+        const categoryTypeName = categoryType.options[categoryType.selectedIndex].text;
+        
+        if (code.length < 2) {
+            alert('❌ كود التصنيف يجب أن يكون حرفين على الأقل');
+            e.preventDefault();
+            return false;
+        }
+        
+        if (!/^[A-Z][A-Z0-9_]*$/.test(code)) {
+            alert('❌ كود التصنيف يجب أن يبدأ بحرف ويحتوي على أحرف وأرقام و _ فقط');
+            e.preventDefault();
+            return false;
+        }
+        
+        // تأكيد الحفظ
+        const confirmed = confirm(`هل أنت متأكد من حفظ هذا التصنيف؟
+
+📋 التفاصيل:
+• الاسم: ${name}
+• الكود: ${code}
+• النوع: ${categoryTypeName}
+
+⚠️ لا يمكن تغيير الكود بعد الحفظ`);
+        
+        if (!confirmed) {
+            e.preventDefault();
+        } else {
+            // إظهار مؤشر التحميل
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>جاري الحفظ...';
+            submitBtn.disabled = true;
+        }
+    });
+    
+    // تحديث المعاينة في البداية
+    updatePreview();
+    
+    console.log('✅ نموذج تصنيفات الحسابات مع المعاينة الجانبية جاهز');
+});
+</script>
+{% endblock %}

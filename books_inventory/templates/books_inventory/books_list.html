@@ -1,0 +1,365 @@
+{% extends 'books_inventory/base.html' %}
+{% load static %}
+
+{% block title %}قائمة الكتب - مخزن الكتب{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-search text-primary"></i> البحث والفلترة</h5>
+            </div>
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">البحث</label>
+                        <input type="text" class="form-control" name="search" value="{{ search_query }}" placeholder="اسم الكتاب أو الوصف...">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">المادة</label>
+                        <select class="form-select" name="subject">
+                            <option value="">جميع المواد</option>
+                            {% for subject in subjects %}
+                            <option value="{{ subject.id }}" {% if subject_filter == subject.id|slugify %}selected{% endif %}>
+                                {{ subject.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">نوع الكتاب</label>
+                        <select class="form-select" name="book_type">
+                            <option value="">جميع الأنواع</option>
+                            <optgroup label="كتب وزارية">
+                                <option value="MINISTRY" {% if book_type_filter == 'MINISTRY' %}selected{% endif %}>كتاب وزاري</option>
+                                <option value="WORKBOOK" {% if book_type_filter == 'WORKBOOK' %}selected{% endif %}>كتاب تمارين وزاري</option>
+                            </optgroup>
+                            <optgroup label="مواد المنار">
+                                <option value="MANAR_BOOK" {% if book_type_filter == 'MANAR_BOOK' %}selected{% endif %}>كتاب المنار</option>
+                                <option value="MANAR_SUMMARY" {% if book_type_filter == 'MANAR_SUMMARY' %}selected{% endif %}>ملخص المنار</option>
+                                <option value="MANAR_EXERCISES" {% if book_type_filter == 'MANAR_EXERCISES' %}selected{% endif %}>تمارين المنار</option>
+                            </optgroup>
+                            <optgroup label="أخرى">
+                                <option value="REFERENCE" {% if book_type_filter == 'REFERENCE' %}selected{% endif %}>كتاب مرجعي</option>
+                                <option value="DICTIONARY" {% if book_type_filter == 'DICTIONARY' %}selected{% endif %}>قاموس</option>
+                                <option value="ATLAS" {% if book_type_filter == 'ATLAS' %}selected{% endif %}>أطلس</option>
+                                <option value="OTHER" {% if book_type_filter == 'OTHER' %}selected{% endif %}>أخرى</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">الفترة الدراسية</label>
+                        <select class="form-select" name="term">
+                            <option value="">جميع الفترات</option>
+                            <option value="FIRST" {% if term_filter == 'FIRST' %}selected{% endif %}>الترم الأول</option>
+                            <option value="SECOND" {% if term_filter == 'SECOND' %}selected{% endif %}>الترم الثاني</option>
+                            <option value="FULL_YEAR" {% if term_filter == 'FULL_YEAR' %}selected{% endif %}>السنة كاملة</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">حالة المخزون</label>
+                        <select class="form-select" name="stock_status">
+                            <option value="">جميع الحالات</option>
+                            <option value="available" {% if stock_status_filter == 'available' %}selected{% endif %}>متوفر</option>
+                            <option value="low_stock" {% if stock_status_filter == 'low_stock' %}selected{% endif %}>مخزون منخفض</option>
+                            <option value="out_of_stock" {% if stock_status_filter == 'out_of_stock' %}selected{% endif %}>نفد المخزون</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- عرض إحصائيات سريعة -->
+<div class="row mb-3">
+    <div class="col-md-3">
+        <div class="card text-center bg-primary text-white">
+            <div class="card-body py-3">
+                <h6><i class="fas fa-university"></i> كتب وزارية</h6>
+                <h4>{{ ministry_books_count|default:0 }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-warning text-white">
+            <div class="card-body py-3">
+                <h6><i class="fas fa-star"></i> مواد المنار</h6>
+                <h4>{{ manar_books_count|default:0 }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-success text-white">
+            <div class="card-body py-3">
+                <h6><i class="fas fa-boxes"></i> متوفر</h6>
+                <h4>{{ available_books_count|default:0 }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-danger text-white">
+            <div class="card-body py-3">
+                <h6><i class="fas fa-exclamation-triangle"></i> مخزون منخفض</h6>
+                <h4>{{ low_stock_books_count|default:0 }}</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-book text-primary"></i> قائمة الكتب والملخصات</h5>
+                <div>
+                    <span class="badge bg-info">{{ books.paginator.count }} عنصر</span>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if books %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>الكتاب/الملخص</th>
+                                <th>المادة</th>
+                                <th>النوع والفترة</th>
+                                <th>المخزون</th>
+                                <th>الحالة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for book in books %}
+                            <tr>
+                                <td>
+                                    <div>
+                                        <strong class="{% if book.is_manar_material %}text-warning{% endif %}">
+                                            {% if book.is_manar_material %}
+                                                <i class="fas fa-star text-warning me-1"></i>
+                                            {% endif %}
+                                            {{ book.title }}
+                                        </strong>
+                                        {% if book.academic_year %}
+                                        <br><small class="text-muted">العام الدراسي: {{ book.academic_year }}</small>
+                                        {% endif %}
+                                        {% if book.pages_count %}
+                                        <br><small class="text-muted">{{ book.pages_count }} صفحة</small>
+                                        {% endif %}
+                                        {% if book.description %}
+                                        <br><small class="text-muted">{{ book.description|truncatechars:100 }}</small>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">{{ book.subject.name }}</span>
+                                </td>
+                                <td>
+                                    <div>
+                                        {% if book.book_type == 'MINISTRY' %}
+                                            <span class="badge bg-primary">
+                                                <i class="fas fa-university"></i> وزاري
+                                            </span>
+                                        {% elif book.book_type == 'WORKBOOK' %}
+                                            <span class="badge bg-info">
+                                                <i class="fas fa-edit"></i> تمارين وزاري
+                                            </span>
+                                        {% elif book.book_type == 'MANAR_BOOK' %}
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-star"></i> كتاب المنار
+                                            </span>
+                                        {% elif book.book_type == 'MANAR_SUMMARY' %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-clipboard-list"></i> ملخص المنار
+                                            </span>
+                                        {% elif book.book_type == 'MANAR_EXERCISES' %}
+                                            <span class="badge bg-info">
+                                                <i class="fas fa-pencil-alt"></i> تمارين المنار
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ book.get_book_type_display }}</span>
+                                        {% endif %}
+                                        
+                                        <br><small class="text-muted mt-1">{{ book.get_term_display }}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="stock-info">
+                                        <strong>الإجمالي:</strong> {{ book.total_stock }}<br>
+                                        <strong>المتاح:</strong> <span class="text-success">{{ book.available_stock }}</span><br>
+                                        <strong>الموزع:</strong> <span class="text-info">{{ book.distributed_count }}</span>
+                                        {% if book.damaged_count > 0 %}
+                                        <br><strong>التالف:</strong> <span class="text-danger">{{ book.damaged_count }}</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if book.available_stock == 0 %}
+                                        <span class="status-badge stock-out">نفد المخزون</span>
+                                    {% elif book.is_low_stock %}
+                                        <span class="status-badge stock-low">مخزون منخفض</span>
+                                    {% else %}
+                                        <span class="status-badge stock-available">متوفر</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'books_inventory:book_detail' book.pk %}" class="btn btn-outline-primary" title="عرض التفاصيل">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if book.is_low_stock or book.available_stock == 0 %}
+                                        <button class="btn btn-outline-warning" title="الإبلاغ عن نقص" onclick="reportShortage('BOOK', {{ book.pk }}, '{{ book.title }}')">
+                                            <i class="fas fa-exclamation-triangle"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                {% if books.has_other_pages %}
+                <nav aria-label="صفحات النتائج">
+                    <ul class="pagination justify-content-center">
+                        {% if books.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if subject_filter %}subject={{ subject_filter }}&{% endif %}page={{ books.previous_page_number }}">السابق</a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for num in books.paginator.page_range %}
+                        {% if books.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > books.number|add:'-3' and num < books.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if subject_filter %}subject={{ subject_filter }}&{% endif %}page={{ num }}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+                        
+                        {% if books.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if subject_filter %}subject={{ subject_filter }}&{% endif %}page={{ books.next_page_number }}">التالي</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">لا توجد كتب أو ملخصات</h5>
+                    {% if search_query %}
+                    <p class="text-muted">لم يتم العثور على نتائج للبحث "{{ search_query }}"</p>
+                    <a href="{% url 'books_inventory:books_list' %}" class="btn btn-outline-primary">عرض جميع المواد</a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal للإبلاغ عن نقص -->
+<div class="modal fade" id="shortageModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">الإبلاغ عن نقص في المخزون</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="shortageForm">
+                <div class="modal-body">
+                    <input type="hidden" id="item_type" name="item_type">
+                    <input type="hidden" id="item_id" name="item_id">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">اسم العنصر</label>
+                        <input type="text" class="form-control" id="item_name" readonly>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">الكمية المطلوبة</label>
+                        <input type="number" class="form-control" name="required_quantity" min="1" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">الأولوية</label>
+                        <select class="form-select" name="priority">
+                            <option value="MEDIUM">متوسط</option>
+                            <option value="HIGH">عالي</option>
+                            <option value="LOW">منخفض</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">ملاحظات</label>
+                        <textarea class="form-control" name="notes" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-warning">إرسال البلاغ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// الإبلاغ عن نقص
+function reportShortage(itemType, itemId, itemName) {
+    document.getElementById('item_type').value = itemType;
+    document.getElementById('item_id').value = itemId;
+    document.getElementById('item_name').value = itemName;
+    
+    const modal = new bootstrap.Modal(document.getElementById('shortageModal'));
+    modal.show();
+}
+
+// إرسال تقرير النقص
+document.getElementById('shortageForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('{% url "books_inventory:report_shortage_api" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('تم إرسال البلاغ بنجاح!');
+            bootstrap.Modal.getInstance(document.getElementById('shortageModal')).hide();
+            location.reload();
+        } else {
+            alert('حدث خطأ: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('حدث خطأ في الإرسال');
+        console.error('Error:', error);
+    });
+});
+</script>
+{% endblock %}

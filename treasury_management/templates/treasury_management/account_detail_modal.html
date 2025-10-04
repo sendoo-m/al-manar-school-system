@@ -1,0 +1,122 @@
+<!-- treasury_management/templates/treasury_management/account_detail_modal.html -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>معلومات الحساب</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <td><strong>كود الحساب:</strong></td>
+                        <td><span class="account-code">{{ account.code }}</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>اسم الحساب:</strong></td>
+                        <td>{{ account.name }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>التصنيف:</strong></td>
+                        <td>
+                            <span class="badge bg-{{ account.category.category_type|lower }}">
+                                {{ account.category.get_category_type_display }}
+                            </span>
+                            <br>{{ account.category.name }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>الوصف:</strong></td>
+                        <td>{{ account.description|default:"غير محدد" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>الحالة:</strong></td>
+                        <td>
+                            {% if account.is_active %}
+                            <span class="badge bg-success">نشط</span>
+                            {% else %}
+                            <span class="badge bg-secondary">غير نشط</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card border-success">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0"><i class="fas fa-chart-line me-2"></i>الأرصدة والإحصائيات</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="h5 text-info">{{ account.opening_balance|floatformat:2 }}</div>
+                        <small class="text-muted">الرصيد الافتتاحي</small>
+                    </div>
+                    <div class="col-6">
+                        <div class="h5 text-primary">{{ account.current_balance|floatformat:2 }}</div>
+                        <small class="text-muted">الرصيد الحالي</small>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="h6 text-success">{{ total_income|floatformat:2 }}</div>
+                        <small class="text-muted">إجمالي الإيرادات</small>
+                    </div>
+                    <div class="col-6">
+                        <div class="h6 text-danger">{{ total_expenses|floatformat:2 }}</div>
+                        <small class="text-muted">إجمالي المصروفات</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if recent_transactions %}
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-history me-2"></i>آخر العمليات</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>النوع</th>
+                                <th>المبلغ</th>
+                                <th>الوصف</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for transaction in recent_transactions %}
+                            <tr>
+                                <td>{{ transaction.created_at|date:"Y-m-d H:i" }}</td>
+                                <td>
+                                    {% if transaction.transaction_type == 'INCOME' %}
+                                    <span class="badge bg-success">إيراد</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">مصروف</span>
+                                    {% endif %}
+                                </td>
+                                <td class="{% if transaction.transaction_type == 'INCOME' %}text-success{% else %}text-danger{% endif %}">
+                                    {{ transaction.amount|floatformat:2 }}
+                                </td>
+                                <td>{{ transaction.description|truncatechars:50 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}

@@ -1,0 +1,930 @@
+{% extends 'school_settings/base.html' %}
+
+{% block title %}إضافة مرحلة تعليمية جديدة - {{ system_settings.school_name }}{% endblock %}
+{% block header_title %}إضافة مرحلة تعليمية جديدة{% endblock %}
+{% block header_icon %}<i class="fas fa-plus-circle"></i>{% endblock %}
+{% block page_description %}إنشاء مرحلة تعليمية جديدة وتحديد الأعمار والخصائص{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item">
+    <a href="{% url 'school_settings:education_levels_list' %}">المراحل التعليمية</a>
+</li>
+<li class="breadcrumb-item active">إضافة مرحلة تعليمية جديدة</li>
+{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'school_settings:education_levels_list' %}" class="btn btn-outline-secondary btn-custom">
+    <i class="fas fa-arrow-right me-2"></i>العودة للقائمة
+</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* إصلاح مشكلة العرض والحركة */
+    body {
+        overflow-x: hidden !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+    }
+    
+    .container-fluid,
+    .row,
+    .col-lg-8,
+    .col-lg-4,
+    .col-md-6,
+    .col-md-4,
+    .col-md-3 {
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box !important;
+    }
+    
+    .form-header {
+        background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%); /* ألوان بنفسجية تعليمية */
+        color: white;
+        border-radius: 20px;
+        padding: 30px 20px;
+        margin-bottom: 25px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 25px rgba(142, 68, 173, 0.3);
+    }
+
+    .form-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+        animation: float 20s linear infinite;
+    }
+
+    @keyframes float {
+        0% { transform: translateX(-50px) translateY(-50px); }
+        100% { transform: translateX(50px) translateY(50px); }
+    }
+
+    .form-header-content {
+        position: relative;
+        z-index: 2;
+        text-align: center;
+    }
+
+    .form-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px;
+        font-size: 2rem;
+        backdrop-filter: blur(10px);
+        border: 3px solid rgba(255,255,255,0.3);
+    }
+
+    .form-container {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .form-section {
+        margin-bottom: 25px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 15px;
+        border-right: 4px solid #8e44ad; /* لون بنفسجي تعليمي */
+        transition: all 0.3s ease;
+    }
+
+    .form-section:hover {
+        background: rgba(142, 68, 173, 0.03);
+        transform: translateX(-3px);
+    }
+
+    .section-title {
+        color: #8e44ad; /* لون بنفسجي تعليمي */
+        font-weight: 700;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        font-size: 1rem;
+    }
+
+    .section-icon {
+        width: 35px;
+        height: 35px;
+        border-radius: 8px;
+        background: #8e44ad; /* لون بنفسجي تعليمي */
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 10px;
+        font-size: 1rem;
+    }
+
+    .section-icon.success {
+        background: #27ae60;
+    }
+
+    .section-icon.info {
+        background: #3498db;
+    }
+
+    .section-icon.warning {
+        background: #f39c12;
+        color: #000;
+    }
+
+    .form-control-custom,
+    .form-select-custom {
+        border-radius: 12px;
+        border: 2px solid #e9ecef;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+        background: white;
+        font-size: 0.95rem;
+    }
+
+    .form-control-custom:focus,
+    .form-select-custom:focus {
+        border-color: #8e44ad; /* لون بنفسجي تعليمي */
+        box-shadow: 0 0 0 0.2rem rgba(142, 68, 173, 0.15);
+        background: white;
+    }
+
+    .form-check-input:focus {
+        border-color: #8e44ad;
+        box-shadow: 0 0 0 0.2rem rgba(142, 68, 173, 0.15);
+    }
+
+    .form-check-input:checked {
+        background-color: #8e44ad;
+        border-color: #8e44ad;
+    }
+
+    .preview-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        border: 2px solid #e9ecef;
+        transition: all 0.3s ease;
+        position: sticky;
+        top: 20px;
+    }
+
+    .preview-card.active {
+        border-color: #8e44ad; /* لون بنفسجي تعليمي */
+        box-shadow: 0 8px 25px rgba(142, 68, 173, 0.2);
+    }
+
+    .preview-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .preview-avatar {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, #8e44ad, #9b59b6); /* ألوان بنفسجية تعليمية */
+        color: white;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 15px;
+        font-size: 1.2rem;
+        font-weight: 800;
+    }
+
+    .preview-value {
+        background: linear-gradient(135deg, rgba(142, 68, 173, 0.1), rgba(155, 89, 182, 0.05));
+        border-radius: 12px;
+        padding: 15px;
+        text-align: center;
+        border: 2px solid rgba(142, 68, 173, 0.2);
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #8e44ad;
+        margin-bottom: 15px;
+    }
+
+    .age-range-display {
+        background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(52, 152, 219, 0.05));
+        border-radius: 12px;
+        padding: 15px;
+        border: 2px solid rgba(52, 152, 219, 0.2);
+        margin-top: 15px;
+    }
+
+    .age-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        background: white;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        border-right: 3px solid #3498db;
+    }
+
+    .age-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .level-examples {
+        background: linear-gradient(135deg, rgba(39, 174, 96, 0.1), rgba(39, 174, 96, 0.05));
+        border-radius: 10px;
+        padding: 15px;
+        margin-top: 15px;
+        border: 2px solid rgba(39, 174, 96, 0.2);
+    }
+
+    .example-item {
+        display: flex;
+        align-items: center;
+        padding: 8px 12px;
+        background: white;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border-right: 3px solid #27ae60;
+    }
+
+    .example-item:hover {
+        background: rgba(39, 174, 96, 0.1);
+        transform: translateX(-3px);
+    }
+
+    .example-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .example-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: #27ae60;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 10px;
+        font-size: 0.9rem;
+    }
+
+    .help-text {
+        background: #f3e5f5; /* لون فاتح مناسب للثيم البنفسجي */
+        border: 1px solid #e1bee7;
+        border-radius: 10px;
+        padding: 15px;
+        margin-top: 15px;
+    }
+
+    .help-text .help-icon {
+        color: #8e44ad; /* لون بنفسجي تعليمي */
+        margin-left: 8px;
+    }
+
+    .btn-save {
+        background: linear-gradient(135deg, #8e44ad, #9b59b6); /* ألوان بنفسجية تعليمية */
+        border: none;
+        border-radius: 12px;
+        padding: 12px 30px;
+        color: white;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(142, 68, 173, 0.4);
+        color: white;
+        background: linear-gradient(135deg, #9b59b6, #8e44ad);
+    }
+
+    .order-helper {
+        background: linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(243, 156, 18, 0.05));
+        border-radius: 10px;
+        padding: 12px;
+        margin-top: 10px;
+        border: 1px solid rgba(243, 156, 18, 0.2);
+    }
+
+    .order-examples {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+    }
+
+    .order-example {
+        background: white;
+        border: 1px solid #f39c12;
+        border-radius: 6px;
+        padding: 4px 8px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .order-example:hover {
+        background: #f39c12;
+        color: white;
+    }
+
+    .preview-section {
+        margin-bottom: 20px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        border-right: 4px solid #8e44ad;
+    }
+
+    .preview-section h6 {
+        color: #8e44ad;
+        font-weight: 700;
+        margin-bottom: 10px;
+        font-size: 0.9rem;
+    }
+
+    .badge-custom {
+        padding: 6px 12px;
+        border-radius: 15px;
+        font-weight: 600;
+        font-size: 0.8rem;
+    }
+
+    .badge-active {
+        background: linear-gradient(135deg, #27ae60, #2ecc71);
+        color: white;
+    }
+
+    .badge-inactive {
+        background: #95a5a6;
+        color: white;
+    }
+
+    .required-asterisk {
+        color: #dc3545;
+        margin-left: 3px;
+    }
+
+    .age-validator {
+        background: white;
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 12px;
+        margin-top: 10px;
+        transition: all 0.3s ease;
+    }
+
+    .age-validator.valid {
+        border-color: #27ae60;
+        background: rgba(39, 174, 96, 0.05);
+    }
+
+    .age-validator.invalid {
+        border-color: #e74c3c;
+        background: rgba(231, 76, 60, 0.05);
+    }
+
+    /* إصلاح responsive */
+    @media (max-width: 768px) {
+        .form-header {
+            padding: 20px 15px;
+            margin-bottom: 20px;
+        }
+        
+        .form-icon {
+            width: 60px;
+            height: 60px;
+            font-size: 1.5rem;
+        }
+        
+        .form-container {
+            padding: 20px;
+        }
+        
+        .form-section {
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .section-icon {
+            width: 30px;
+            height: 30px;
+            font-size: 0.9rem;
+        }
+        
+        .preview-card {
+            margin-top: 20px;
+            position: static;
+        }
+        
+        .order-examples,
+        .pattern-examples {
+            justify-content: center;
+        }
+        
+        .example-item {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .example-icon {
+            margin-bottom: 8px;
+            margin-left: 0;
+        }
+    }
+
+    /* إصلاح مشاكل الـ overflow النهائية */
+    * {
+        box-sizing: border-box;
+    }
+    
+    .row {
+        margin-right: 0 !important;
+        margin-left: 0 !important;
+    }
+    
+    [class*="col-"] {
+        padding-right: 12px !important;
+        padding-left: 12px !important;
+    }
+
+    .page-footer {
+        margin-top: 15px;
+        margin-bottom: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Form Header -->
+<div class="form-header">
+    <div class="form-header-content">
+        <div class="form-icon">
+            <i class="fas fa-graduation-cap"></i>
+        </div>
+        <h4 class="mb-2">إضافة مرحلة تعليمية جديدة</h4>
+        <p class="mb-0 opacity-90">أدخل معلومات المرحلة التعليمية وحدد الأعمار والخصائص</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="form-container">
+            <form method="post" id="educationLevelForm">
+                {% csrf_token %}
+                
+                <!-- المعلومات الأساسية -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <div class="section-icon">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <span>المعلومات الأساسية</span>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-tag me-2"></i>اسم المرحلة التعليمية <span class="required-asterisk">*</span>
+                            </label>
+                            <input type="text" class="form-control form-control-custom" name="name" id="levelName" required 
+                                   placeholder="مثال: المرحلة الابتدائية">
+                            <div class="help-text">
+                                <i class="fas fa-lightbulb help-icon"></i>
+                                <small>أدخل اسماً واضحاً ومفهوماً للمرحلة</small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-globe me-2"></i>الاسم بالإنجليزية
+                            </label>
+                            <input type="text" class="form-control form-control-custom" name="name_en" id="levelNameEn"
+                                   placeholder="Primary School">
+                            <div class="help-text">
+                                <i class="fas fa-info-circle help-icon"></i>
+                                <small>اختياري - للاستخدام في التقارير الرسمية</small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-comment-alt me-2"></i>وصف المرحلة
+                            </label>
+                            <textarea class="form-control form-control-custom" name="description" id="levelDescription"
+                                      rows="3" placeholder="وصف مختصر للمرحلة التعليمية..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- الأعمار والترتيب -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <div class="section-icon success">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <span>الفئة العمرية والترتيب</span>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-child me-2"></i>العمر الأدنى <span class="required-asterisk">*</span>
+                            </label>
+                            <input type="number" class="form-control form-control-custom" name="min_age" id="minAge"
+                                   min="3" max="25" placeholder="6" required>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-user me-2"></i>العمر الأقصى <span class="required-asterisk">*</span>
+                            </label>
+                            <input type="number" class="form-control form-control-custom" name="max_age" id="maxAge"
+                                   min="3" max="25" placeholder="12" required>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-sort-numeric-up me-2"></i>ترتيب العرض <span class="required-asterisk">*</span>
+                            </label>
+                            <input type="number" class="form-control form-control-custom" name="order" id="levelOrder"
+                                   min="1" placeholder="1" required>
+                            <div class="order-helper">
+                                <small><i class="fas fa-info-circle me-1"></i>لترتيب المراحل في القوائم</small>
+                                <div class="order-examples">
+                                    <span class="order-example" onclick="setOrder(1)">1 - أولى</span>
+                                    <span class="order-example" onclick="setOrder(2)">2 - ثانية</span>
+                                    <span class="order-example" onclick="setOrder(3)">3 - ثالثة</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="age-validator" id="ageValidator">
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <span id="ageValidatorText">أدخل الأعمار لرؤية التحقق</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- الإعدادات الإضافية -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <div class="section-icon info">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                        <span>الإعدادات الإضافية</span>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_active" id="isActive" checked>
+                                <label class="form-check-label fw-bold" for="isActive">
+                                    المرحلة نشطة
+                                </label>
+                            </div>
+                            <div class="help-text">
+                                <i class="fas fa-info-circle help-icon"></i>
+                                <small>يمكن استخدام هذه المرحلة في النظام</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- أزرار الإجراءات -->
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="{% url 'school_settings:education_levels_list' %}" 
+                       class="btn btn-outline-secondary btn-lg px-4">
+                        <i class="fas fa-times me-2"></i>إلغاء
+                    </a>
+                    <button type="submit" class="btn btn-save btn-lg px-4">
+                        <i class="fas fa-save me-2"></i>حفظ المرحلة التعليمية
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- معاينة -->
+    <div class="col-lg-4">
+        <div class="preview-card" id="previewCard">
+            <h6 style="color: #8e44ad;" class="mb-3">
+                <i class="fas fa-eye me-2"></i>معاينة المرحلة التعليمية
+            </h6>
+            
+            <div class="preview-header">
+                <div class="preview-avatar" id="previewAvatar">🎓</div>
+                <div>
+                    <h6 class="mb-1" id="previewName">مرحلة تعليمية جديدة</h6>
+                    <small class="text-muted" id="previewNameEn">New Education Level</small>
+                </div>
+            </div>
+            
+            <div class="preview-value" id="previewOrder">
+                ترتيب العرض: --
+            </div>
+            
+            <!-- الفئة العمرية -->
+            <div class="age-range-display" id="ageRangeDisplay" style="display: none;">
+                <h6 style="color: #3498db; margin-bottom: 10px;">
+                    <i class="fas fa-users me-2"></i>الفئة العمرية
+                </h6>
+                <div class="age-item">
+                    <span>العمر الأدنى:</span>
+                    <strong id="previewMinAge">-- سنة</strong>
+                </div>
+                <div class="age-item">
+                    <span>العمر الأقصى:</span>
+                    <strong id="previewMaxAge">-- سنة</strong>
+                </div>
+                <div class="age-item" style="border-right-color: #9b59b6;">
+                    <span>المدى العمري:</span>
+                    <strong id="previewAgeRange">-- سنة</strong>
+                </div>
+            </div>
+            
+            <!-- إعدادات المرحلة -->
+            <div class="preview-section">
+                <h6>إعدادات المرحلة</h6>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>حالة المرحلة:</span>
+                    <span class="badge-custom badge-active" id="previewStatus">نشطة</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- أمثلة شائعة -->
+        <div class="level-examples">
+            <h6 style="color: #27ae60; margin-bottom: 10px;">
+                <i class="fas fa-lightbulb me-2"></i>أمثلة شائعة
+            </h6>
+            <div class="example-item" onclick="fillExample('رياض الأطفال', 'Kindergarten', 3, 5, 1)">
+                <div class="example-icon">🧒</div>
+                <div>
+                    <strong>رياض الأطفال</strong>
+                    <div class="small text-muted">3-5 سنوات</div>
+                </div>
+            </div>
+            <div class="example-item" onclick="fillExample('المرحلة الابتدائية', 'Primary School', 6, 12, 2)">
+                <div class="example-icon">📚</div>
+                <div>
+                    <strong>المرحلة الابتدائية</strong>
+                    <div class="small text-muted">6-12 سنة</div>
+                </div>
+            </div>
+            <div class="example-item" onclick="fillExample('المرحلة الإعدادية', 'Middle School', 13, 15, 3)">
+                <div class="example-icon">🔬</div>
+                <div>
+                    <strong>المرحلة الإعدادية</strong>
+                    <div class="small text-muted">13-15 سنة</div>
+                </div>
+            </div>
+            <div class="example-item" onclick="fillExample('المرحلة الثانوية', 'High School', 16, 18, 4)">
+                <div class="example-icon">🎓</div>
+                <div>
+                    <strong>المرحلة الثانوية</strong>
+                    <div class="small text-muted">16-18 سنة</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- نصائح مفيدة -->
+        <div class="alert alert-info mt-3 border-0" style="background: rgba(142, 68, 173, 0.1); border-right: 4px solid #8e44ad !important;">
+            <h6 style="color: #8e44ad;">
+                <i class="fas fa-info-circle me-2"></i>نصائح مفيدة
+            </h6>
+            <ul class="mb-0 small">
+                <li>اختر أسماء واضحة للمراحل التعليمية</li>
+                <li>حدد الأعمار بدقة حسب المناهج</li>
+                <li>رتب المراحل منطقياً (من الأصغر للأكبر)</li>
+                <li>يمكن تعديل جميع الإعدادات لاحقاً</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="page-footer"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    setupFormPreview();
+    setupFormEvents();
+    updatePreview();
+});
+
+function setupFormPreview() {
+    // ربط أحداث التحديث
+    ['levelName', 'levelNameEn', 'minAge', 'maxAge', 'levelOrder', 'isActive'].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            if (element.type === 'checkbox') {
+                element.addEventListener('change', updatePreview);
+            } else {
+                element.addEventListener('input', updatePreview);
+            }
+        }
+    });
+}
+
+function updatePreview() {
+    // تحديث الاسم
+    const name = document.getElementById('levelName').value || 'مرحلة تعليمية جديدة';
+    document.getElementById('previewName').textContent = name;
+    
+    // تحديث الاسم الإنجليزي
+    const nameEn = document.getElementById('levelNameEn').value || 'New Education Level';
+    document.getElementById('previewNameEn').textContent = nameEn;
+    
+    // تحديث الترتيب
+    const order = document.getElementById('levelOrder').value;
+    document.getElementById('previewOrder').textContent = order ? `ترتيب العرض: ${order}` : 'ترتيب العرض: --';
+    
+    // تحديث الأعمار
+    const minAge = document.getElementById('minAge').value;
+    const maxAge = document.getElementById('maxAge').value;
+    const ageRangeDisplay = document.getElementById('ageRangeDisplay');
+    
+    if (minAge || maxAge) {
+        ageRangeDisplay.style.display = 'block';
+        document.getElementById('previewMinAge').textContent = minAge ? minAge + ' سنة' : '-- سنة';
+        document.getElementById('previewMaxAge').textContent = maxAge ? maxAge + ' سنة' : '-- سنة';
+        
+        if (minAge && maxAge) {
+            const range = maxAge - minAge;
+            document.getElementById('previewAgeRange').textContent = range + ' سنة';
+        } else {
+            document.getElementById('previewAgeRange').textContent = '-- سنة';
+        }
+    } else {
+        ageRangeDisplay.style.display = 'none';
+    }
+    
+    // تحديث الحالة
+    const isActive = document.getElementById('isActive').checked;
+    document.getElementById('previewStatus').textContent = isActive ? 'نشطة' : 'غير نشطة';
+    document.getElementById('previewStatus').className = isActive ? 'badge-custom badge-active' : 'badge-custom badge-inactive';
+    
+    // تحديث الأفاتار
+    document.getElementById('previewAvatar').textContent = getStageEmoji(name);
+    
+    // تفعيل المعاينة
+    if (name !== 'مرحلة تعليمية جديدة' || minAge || maxAge) {
+        document.getElementById('previewCard').classList.add('active');
+    } else {
+        document.getElementById('previewCard').classList.remove('active');
+    }
+    
+    // تحديث مُدقق الأعمار
+    validateAges();
+}
+
+function getStageEmoji(name) {
+    if (name.includes('رياض') || name.includes('KG')) return '🧒';
+    if (name.includes('ابتدائي') || name.includes('Primary')) return '📚';
+    if (name.includes('إعدادي') || name.includes('Middle')) return '🔬';
+    if (name.includes('ثانوي') || name.includes('High')) return '🎓';
+    return '🎓';
+}
+
+function validateAges() {
+    const minAge = parseInt(document.getElementById('minAge').value);
+    const maxAge = parseInt(document.getElementById('maxAge').value);
+    const validator = document.getElementById('ageValidator');
+    const validatorText = document.getElementById('ageValidatorText');
+    
+    if (minAge && maxAge) {
+        if (maxAge > minAge) {
+            validator.className = 'age-validator valid';
+            validatorText.innerHTML = '<i class="fas fa-check-circle me-2"></i>الأعمار صحيحة - المدى: ' + (maxAge - minAge) + ' سنة';
+        } else {
+            validator.className = 'age-validator invalid';
+            validatorText.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i>العمر الأقصى يجب أن يكون أكبر من العمر الأدنى';
+        }
+    } else if (minAge || maxAge) {
+        validator.className = 'age-validator';
+        validatorText.innerHTML = '<i class="fas fa-info-circle me-2"></i>أدخل كلا العمرين للتحقق';
+    } else {
+        validator.className = 'age-validator';
+        validatorText.innerHTML = '<i class="fas fa-info-circle me-2"></i>أدخل الأعمار لرؤية التحقق';
+    }
+}
+
+function setOrder(orderValue) {
+    document.getElementById('levelOrder').value = orderValue;
+    updatePreview();
+}
+
+function fillExample(name, nameEn, minAge, maxAge, order) {
+    document.getElementById('levelName').value = name;
+    document.getElementById('levelNameEn').value = nameEn;
+    document.getElementById('minAge').value = minAge;
+    document.getElementById('maxAge').value = maxAge;
+    document.getElementById('levelOrder').value = order;
+    updatePreview();
+}
+
+function setupFormEvents() {
+    const form = document.getElementById('educationLevelForm');
+    
+    // التحقق من الأعمار (فقط للتحذير، بدون منع الإرسال)
+    document.getElementById('maxAge').addEventListener('change', function() {
+        const minAge = parseInt(document.getElementById('minAge').value);
+        const maxAge = parseInt(this.value);
+        
+        if (minAge && maxAge && maxAge <= minAge) {
+            this.setCustomValidity('العمر الأقصى يجب أن يكون أكبر من العمر الأدنى');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+    
+    form.addEventListener('submit', function(e) {
+        // التحقق من صحة البيانات قبل الإرسال
+        const minAge = parseInt(document.getElementById('minAge').value);
+        const maxAge = parseInt(document.getElementById('maxAge').value);
+        const name = document.getElementById('levelName').value.trim();
+        const order = document.getElementById('levelOrder').value;
+        
+        // منع الإرسال فقط لو في أخطاء
+        if (!name) {
+            e.preventDefault();
+            showMessage('error', 'اسم المرحلة التعليمية مطلوب');
+            return false;
+        }
+        
+        if (!minAge || !maxAge) {
+            e.preventDefault();
+            showMessage('error', 'الأعمار مطلوبة');
+            return false;
+        }
+        
+        if (minAge >= maxAge) {
+            e.preventDefault();
+            showMessage('error', 'العمر الأقصى يجب أن يكون أكبر من العمر الأدنى');
+            return false;
+        }
+        
+        if (!order) {
+            e.preventDefault();
+            showMessage('error', 'ترتيب العرض مطلوب');
+            return false;
+        }
+        
+        // إذا كل شيء صحيح، اعرض رسالة التحميل واترك الـ form يرسل
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        submitBtn.innerHTML = '<div class="spinner-border spinner-border-sm me-2"></div>جاري الحفظ...';
+        submitBtn.disabled = true;
+        
+        // لا تمنع الإرسال - اتركه يحدث طبيعياً
+        return true;
+    });
+}
+
+
+function showMessage(type, message) {
+    const colors = { success: 'success', error: 'danger', warning: 'warning', info: 'info' };
+    const icons = { success: 'fas fa-check-circle', error: 'fas fa-exclamation-circle', warning: 'fas fa-exclamation-triangle', info: 'fas fa-info-circle' };
+    
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${colors[type]} alert-dismissible fade show`;
+    alertDiv.style.cssText = `position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 350px; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); border-radius: 10px;`;
+    
+    alertDiv.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="${icons[type]} me-3"></i>
+            <div class="flex-grow-1">${message}</div>
+            <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    setTimeout(() => { if (alertDiv.parentNode) alertDiv.remove(); }, 6000);
+}
+</script>
+{% endblock %}

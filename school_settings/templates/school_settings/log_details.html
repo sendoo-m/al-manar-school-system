@@ -1,0 +1,791 @@
+{% extends 'school_settings/base.html' %}
+
+{% block title %}تفاصيل السجل #{{ log.id }} - {{ system_settings.school_name }}{% endblock %}
+{% block header_title %}تفاصيل السجل{% endblock %}
+{% block header_icon %}<i class="fas fa-info-circle"></i>{% endblock %}
+{% block page_description %}عرض تفصيلي لسجل العمليات رقم {{ log.id }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item">
+    <a href="{% url 'school_settings:settings_logs' %}">سجل الإعدادات</a>
+</li>
+<li class="breadcrumb-item active">تفاصيل السجل #{{ log.id }}</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'school_settings:settings_logs' %}" class="btn btn-outline-secondary btn-custom">
+        <i class="fas fa-arrow-right me-2"></i>العودة للسجلات
+    </a>
+    <button class="btn btn-outline-primary btn-custom" onclick="printLogDetails()">
+        <i class="fas fa-print me-2"></i>طباعة
+    </button>
+    <button class="btn btn-outline-success btn-custom" onclick="copyLogDetails()">
+        <i class="fas fa-copy me-2"></i>نسخ
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* إصلاح مشكلة العرض والحركة */
+    body {
+        overflow-x: hidden !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+    }
+    
+    .container-fluid,
+    .row,
+    .col-lg-6,
+    .col-md-6 {
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+    }
+    
+    /* إزالة المسافات الزائدة */
+    .log-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 20px;
+        padding: 30px 20px; /* تقليل padding */
+        margin-bottom: 20px; /* تقليل margin */
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .log-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+        animation: float 20s linear infinite;
+    }
+
+    @keyframes float {
+        0% { transform: translateX(-50px) translateY(-50px); }
+        100% { transform: translateX(50px) translateY(50px); }
+    }
+
+    .log-header-content {
+        position: relative;
+        z-index: 2;
+        text-align: center;
+    }
+
+    .log-id-badge {
+        display: inline-block;
+        background: rgba(255,255,255,0.2);
+        border: 2px solid rgba(255,255,255,0.3);
+        border-radius: 50px;
+        padding: 10px 25px; /* تقليل padding */
+        font-size: 1.5rem; /* تقليل الخط */
+        font-weight: 700;
+        margin-bottom: 15px; /* تقليل margin */
+        backdrop-filter: blur(10px);
+    }
+
+    .log-action-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 80px; /* تقليل الحجم */
+        height: 80px; /* تقليل الحجم */
+        border-radius: 50%;
+        font-size: 2rem; /* تقليل الخط */
+        margin: 0 auto 15px; /* تقليل margin */
+        backdrop-filter: blur(10px);
+        border: 3px solid rgba(255,255,255,0.3);
+    }
+
+    .log-action-badge.create {
+        background: rgba(40, 167, 69, 0.8);
+        color: white;
+    }
+
+    .log-action-badge.update {
+        background: rgba(255, 193, 7, 0.8);
+        color: white;
+    }
+
+    .log-action-badge.delete {
+        background: rgba(220, 53, 69, 0.8);
+        color: white;
+    }
+
+    .details-section {
+        background: white;
+        border-radius: 15px; /* تقليل border radius */
+        padding: 20px; /* تقليل padding */
+        margin-bottom: 15px; /* تقليل margin */
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        border: 1px solid rgba(0,0,0,0.05);
+        width: 100%; /* تثبيت العرض */
+        max-width: 100%; /* منع التمدد */
+        box-sizing: border-box; /* حساب الـ padding ضمن العرض */
+    }
+
+    .details-section:hover {
+        transform: translateY(-3px); /* تقليل الحركة */
+        box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+    }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px; /* تقليل margin */
+        padding-bottom: 12px; /* تقليل padding */
+        border-bottom: 2px solid #f8f9fa;
+    }
+
+    .section-icon {
+        width: 45px; /* تقليل الحجم */
+        height: 45px; /* تقليل الحجم */
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 12px; /* تقليل margin */
+        font-size: 1.3rem; /* تقليل الخط */
+        color: white;
+    }
+
+    .section-icon.user {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+    }
+
+    .section-icon.operation {
+        background: linear-gradient(135deg, #36d1dc, #5b86e5);
+    }
+
+    .section-icon.changes {
+        background: linear-gradient(135deg, #f093fb, #f5576c);
+    }
+
+    .section-icon.system {
+        background: linear-gradient(135deg, #4facfe, #00f2fe);
+    }
+
+    .info-table {
+        background: transparent;
+        margin: 0;
+        width: 100%;
+        table-layout: fixed; /* تثبيت تخطيط الجدول */
+    }
+
+    .info-table td {
+        border: none;
+        padding: 12px 15px; /* تقليل padding */
+        vertical-align: middle;
+        word-wrap: break-word; /* كسر الكلمات الطويلة */
+        overflow-wrap: break-word;
+    }
+
+    .info-table tr:nth-child(even) {
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+
+    .info-label {
+        font-weight: 700;
+        color: #495057;
+        width: 35%; /* تحديد عرض ثابت */
+        text-align: right;
+    }
+
+    .info-value {
+        color: #212529;
+        width: 65%; /* باقي العرض */
+    }
+
+    .user-avatar-large {
+        width: 50px; /* تقليل الحجم */
+        height: 50px; /* تقليل الحجم */
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 1.3rem; /* تقليل الخط */
+        margin-left: 12px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        flex-shrink: 0; /* منع التقلص */
+    }
+
+    .value-box {
+        background: #f8f9fa;
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        padding: 15px; /* تقليل padding */
+        margin: 10px 0; /* تقليل margin */
+        position: relative;
+        transition: all 0.3s ease;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+
+    .value-box:hover {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.1);
+    }
+
+    .value-box.old-value {
+        border-color: #ffc107;
+        background: #fff3cd;
+    }
+
+    .value-box.new-value {
+        border-color: #28a745;
+        background: #d4edda;
+    }
+
+    .value-box.deleted-value {
+        border-color: #dc3545;
+        background: #f8d7da;
+    }
+
+    .value-label {
+        position: absolute;
+        top: -10px; /* تقليل المسافة */
+        right: 15px; /* تقليل المسافة */
+        background: white;
+        padding: 4px 12px; /* تقليل padding */
+        font-weight: 600;
+        font-size: 0.85rem; /* تقليل الخط */
+        border-radius: 15px;
+        border: 2px solid;
+    }
+
+    .value-label.old {
+        color: #856404;
+        border-color: #ffc107;
+    }
+
+    .value-label.new {
+        color: #155724;
+        border-color: #28a745;
+    }
+
+    .value-label.deleted {
+        color: #721c24;
+        border-color: #dc3545;
+    }
+
+    .timeline-indicator {
+        text-align: center;
+        margin: 20px 0; /* تقليل margin */
+        position: relative;
+    }
+
+    .timeline-indicator::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        transform: translateY(-50%);
+        z-index: 1;
+    }
+
+    .timeline-arrow {
+        display: inline-block;
+        background: white;
+        padding: 8px 16px; /* تقليل padding */
+        border-radius: 20px;
+        border: 3px solid #667eea;
+        color: #667eea;
+        font-weight: 700;
+        position: relative;
+        z-index: 2;
+        font-size: 0.9rem; /* تقليل الخط */
+    }
+
+    .timestamp-display {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 15px; /* تقليل padding */
+        border-radius: 12px;
+        text-align: center;
+        margin: 15px 0; /* تقليل margin */
+        box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .code-block {
+        background: #2d3748;
+        color: #e2e8f0;
+        padding: 15px; /* تقليل padding */
+        border-radius: 8px;
+        font-family: 'Monaco', 'Consolas', monospace;
+        direction: ltr;
+        text-align: left;
+        overflow-x: auto;
+        margin: 10px 0; /* تقليل margin */
+        border: 2px solid #4a5568;
+        font-size: 0.9rem; /* تقليل الخط */
+        max-width: 100%;
+        word-wrap: break-word;
+    }
+
+    /* إصلاح نهاية الصفحة */
+    .page-footer {
+        margin-top: 30px; /* بدلاً من مسافة كبيرة */
+        margin-bottom: 20px; /* تقليل المسافة السفلية */
+    }
+
+    .alert {
+        margin-bottom: 15px; /* تقليل margin */
+    }
+
+    /* تحسين الاستجابة للشاشات الصغيرة */
+    @media (max-width: 768px) {
+        .log-header {
+            padding: 20px 15px;
+            margin-bottom: 15px;
+        }
+        
+        .log-id-badge {
+            font-size: 1.3rem;
+            padding: 8px 20px;
+        }
+        
+        .log-action-badge {
+            width: 70px;
+            height: 70px;
+            font-size: 1.8rem;
+        }
+        
+        .details-section {
+            padding: 15px;
+            margin-bottom: 12px;
+        }
+        
+        .info-table td {
+            padding: 8px 12px;
+        }
+        
+        .info-label {
+            width: 40%;
+            font-size: 0.9rem;
+        }
+        
+        .info-value {
+            width: 60%;
+        }
+        
+        .user-avatar-large {
+            width: 40px;
+            height: 40px;
+            font-size: 1.1rem;
+            margin-left: 8px;
+        }
+        
+        .section-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 1.1rem;
+            margin-left: 8px;
+        }
+    }
+
+    /* إصلاح مشاكل الـ overflow */
+    * {
+        box-sizing: border-box;
+    }
+    
+    .row {
+        margin-right: 0 !important;
+        margin-left: 0 !important;
+    }
+    
+    .col-lg-6 {
+        padding-right: 15px !important;
+        padding-left: 15px !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header للسجل -->
+<div class="log-header">
+    <div class="log-header-content">
+        <div class="log-id-badge">
+            السجل #{{ log.id }}
+        </div>
+        
+        <div class="log-action-badge {% if log.action == 'CREATE' %}create{% elif log.action == 'UPDATE' %}update{% elif log.action == 'DELETE' %}delete{% endif %}">
+            {% if log.action == 'CREATE' %}
+                <i class="fas fa-plus"></i>
+            {% elif log.action == 'UPDATE' %}
+                <i class="fas fa-edit"></i>
+            {% elif log.action == 'DELETE' %}
+                <i class="fas fa-trash"></i>
+            {% else %}
+                <i class="fas fa-question"></i>
+            {% endif %}
+        </div>
+        
+        <h4 class="mb-2"> <!-- تقليل حجم العنوان -->
+            {% if log.action == 'CREATE' %}
+                عملية إنشاء جديدة
+            {% elif log.action == 'UPDATE' %}
+                عملية تحديث
+            {% elif log.action == 'DELETE' %}
+                عملية حذف
+            {% else %}
+                {{ log.get_action_display }}
+            {% endif %}
+        </h4>
+        
+        <p class="mb-0 opacity-90">
+            تم تنفيذ العملية في {{ log.timestamp|date:"d/m/Y" }} الساعة {{ log.timestamp|date:"H:i:s" }}
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- معلومات المستخدم -->
+    <div class="col-lg-6 mb-3">
+        <div class="details-section">
+            <div class="section-header">
+                <div class="section-icon user">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div>
+                    <h6 class="mb-1">معلومات المستخدم</h6> <!-- تقليل حجم العنوان -->
+                    <small class="text-muted">تفاصيل من قام بالعملية</small>
+                </div>
+            </div>
+            
+            <div class="d-flex align-items-center mb-3">
+                <div class="user-avatar-large">
+                    {{ log.user.first_name.0|default:log.user.username.0|upper }}
+                </div>
+                <div style="flex: 1; min-width: 0;"> <!-- منع overflow -->
+                    <h6 class="mb-1" style="word-wrap: break-word;">{{ log.user.get_full_name|default:log.user.username }}</h6>
+                    <small class="text-muted" style="word-wrap: break-word;">{{ log.user.email|default:"لا يوجد بريد إلكتروني" }}</small>
+                </div>
+            </div>
+            
+            <table class="table info-table">
+                <tr>
+                    <td class="info-label">اسم المستخدم:</td>
+                    <td class="info-value">
+                        <strong>{{ log.user.username }}</strong>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="info-label">الاسم الكامل:</td>
+                    <td class="info-value">{{ log.user.get_full_name|default:"غير محدد" }}</td>
+                </tr>
+                <tr>
+                    <td class="info-label">البريد الإلكتروني:</td>
+                    <td class="info-value" style="word-break: break-all;">{{ log.user.email|default:"غير محدد" }}</td>
+                </tr>
+                <tr>
+                    <td class="info-label">حالة المستخدم:</td>
+                    <td class="info-value">
+                        {% if log.user.is_active %}
+                        <span class="badge bg-success">نشط</span>
+                        {% else %}
+                        <span class="badge bg-secondary">غير نشط</span>
+                        {% endif %}
+                        
+                        {% if log.user.is_staff %}
+                        <span class="badge bg-primary ms-2">موظف</span>
+                        {% endif %}
+                        
+                        {% if log.user.is_superuser %}
+                        <span class="badge bg-warning ms-2">مدير عام</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="info-label">آخر تسجيل دخول:</td>
+                    <td class="info-value">
+                        {% if log.user.last_login %}
+                        {{ log.user.last_login|date:"d/m/Y H:i" }}
+                        {% else %}
+                        <span class="text-muted">لم يسجل دخول من قبل</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    
+    <!-- معلومات العملية -->
+    <div class="col-lg-6 mb-3">
+        <div class="details-section">
+            <div class="section-header">
+                <div class="section-icon operation">
+                    <i class="fas fa-cogs"></i>
+                </div>
+                <div>
+                    <h6 class="mb-1">معلومات العملية</h6>
+                    <small class="text-muted">تفاصيل نوع العملية المنفذة</small>
+                </div>
+            </div>
+            
+            <table class="table info-table">
+                <tr>
+                    <td class="info-label">نوع العملية:</td>
+                    <td class="info-value">
+                        {% if log.action == 'CREATE' %}
+                        <span class="badge bg-success">
+                            <i class="fas fa-plus me-1"></i>إنشاء جديد
+                        </span>
+                        {% elif log.action == 'UPDATE' %}
+                        <span class="badge bg-warning">
+                            <i class="fas fa-edit me-1"></i>تحديث
+                        </span>
+                        {% elif log.action == 'DELETE' %}
+                        <span class="badge bg-danger">
+                            <i class="fas fa-trash me-1"></i>حذف
+                        </span>
+                        {% else %}
+                        <span class="badge bg-secondary">{{ log.action }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="info-label">نوع الإعداد:</td>
+                    <td class="info-value">
+                        <i class="fas fa-cog me-2 text-primary"></i>
+                        <strong>{{ log.get_setting_type_display }}</strong>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="info-label">معرف العنصر:</td>
+                    <td class="info-value">
+                        {% if log.object_id %}
+                        <code>#{{ log.object_id }}</code>
+                        {% else %}
+                        <span class="text-muted">غير محدد</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="info-label">اسم العنصر:</td>
+                    <td class="info-value">
+                        {% if log.object_name %}
+                        <strong>{{ log.object_name|truncatechars:30 }}</strong>
+                        {% else %}
+                        <span class="text-muted">غير متوفر</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="info-label">وصف العملية:</td>
+                    <td class="info-value">
+                        {% if log.description %}
+                        {{ log.description|truncatechars:50 }}
+                        {% else %}
+                        <span class="text-muted">لا يوجد وصف إضافي</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- تفاصيل التغييرات -->
+{% if log.old_value or log.new_value %}
+<div class="details-section">
+    <div class="section-header">
+        <div class="section-icon changes">
+            <i class="fas fa-exchange-alt"></i>
+        </div>
+        <div>
+            <h6 class="mb-1">تفاصيل التغييرات</h6>
+            <small class="text-muted">القيم السابقة والجديدة للعملية</small>
+        </div>
+    </div>
+    
+    {% if log.action == 'UPDATE' and log.old_value %}
+    <div class="value-box old-value">
+        <div class="value-label old">القيمة السابقة</div>
+        <div class="mt-3">
+            {% if log.old_value|length > 150 %}
+            <div class="code-block">{{ log.old_value|truncatechars:500 }}</div>
+            {% else %}
+            <p class="mb-0">{{ log.old_value|linebreaksbr }}</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    {% if log.new_value %}
+    <div class="timeline-indicator">
+        <div class="timeline-arrow">
+            <i class="fas fa-arrow-down"></i>
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+    
+    {% if log.new_value %}
+    <div class="value-box {% if log.action == 'CREATE' %}new-value{% elif log.action == 'UPDATE' %}new-value{% elif log.action == 'DELETE' %}deleted-value{% endif %}">
+        <div class="value-label {% if log.action == 'CREATE' %}new{% elif log.action == 'UPDATE' %}new{% elif log.action == 'DELETE' %}deleted{% endif %}">
+            {% if log.action == 'CREATE' %}
+                القيمة المُنشأة
+            {% elif log.action == 'UPDATE' %}
+                القيمة الجديدة
+            {% elif log.action == 'DELETE' %}
+                القيمة المحذوفة
+            {% else %}
+                القيمة
+            {% endif %}
+        </div>
+        <div class="mt-3">
+            {% if log.new_value|length > 150 %}
+            <div class="code-block">{{ log.new_value|truncatechars:500 }}</div>
+            {% else %}
+            <p class="mb-0">{{ log.new_value|linebreaksbr }}</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if not log.old_value and not log.new_value %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        <strong>ملاحظة:</strong> لا توجد تفاصيل إضافية متاحة لهذه العملية.
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- معلومات النظام -->
+<div class="details-section">
+    <div class="section-header">
+        <div class="section-icon system">
+            <i class="fas fa-server"></i>
+        </div>
+        <div>
+            <h6 class="mb-1">معلومات النظام</h6>
+            <small class="text-muted">تفاصيل تقنية حول العملية</small>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <table class="table info-table">
+                <tr>
+                    <td class="info-label">التوقيت الدقيق:</td>
+                    <td class="info-value">
+                        <div class="timestamp-display">
+                            <i class="fas fa-clock me-2"></i>
+                            <strong>{{ log.timestamp|date:"d F Y" }}</strong>
+                            <br>
+                            <span style="font-size: 1.1rem;">{{ log.timestamp|date:"H:i:s" }}</span>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div class="col-md-6">
+            <table class="table info-table">
+                <tr>
+                    <td class="info-label">عنوان IP:</td>
+                    <td class="info-value">
+                        {% if log.ip_address %}
+                        <code class="small">{{ log.ip_address }}</code>
+                        {% else %}
+                        <span class="text-muted">غير محدد</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="info-label">معرف السجل:</td>
+                    <td class="info-value">
+                        <span class="badge bg-dark">#{{ log.id }}</span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- أزرار الإجراءات -->
+<div class="text-center page-footer">
+    <div class="btn-group">
+        <a href="{% url 'school_settings:settings_logs' %}" class="btn btn-outline-secondary btn-lg px-4">
+            <i class="fas fa-arrow-right me-2"></i>العودة للسجلات
+        </a>
+        
+        <button class="btn btn-outline-info btn-lg px-4" onclick="viewRelatedObject()">
+            <i class="fas fa-external-link-alt me-2"></i>عرض العنصر المرتبط
+        </button>
+        
+        <button class="btn btn-outline-warning btn-lg px-4" onclick="reportProblem()">
+            <i class="fas fa-exclamation-triangle me-2"></i>الإبلاغ عن مشكلة
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function printLogDetails() {
+    window.print();
+}
+
+function copyLogDetails() {
+    const logInfo = `سجل النظام #{{ log.id }}
+المستخدم: {{ log.user.get_full_name|default:log.user.username }}
+العملية: {{ log.get_action_display }}
+نوع الإعداد: {{ log.get_setting_type_display }}
+التوقيت: {{ log.timestamp|date:"d/m/Y H:i:s" }}
+{% if log.ip_address %}عنوان IP: {{ log.ip_address }}{% endif %}
+{% if log.description %}الوصف: {{ log.description }}{% endif %}`;
+
+    navigator.clipboard.writeText(logInfo).then(() => {
+        showMessage('success', 'تم نسخ معلومات السجل بنجاح');
+    }).catch(() => {
+        showMessage('error', 'فشل في نسخ المعلومات');
+    });
+}
+
+function viewRelatedObject() {
+    showMessage('info', 'ميزة عرض العنصر المرتبط قيد التطوير');
+}
+
+function reportProblem() {
+    if (confirm('هل تريد الإبلاغ عن مشكلة في هذا السجل؟')) {
+        showMessage('info', 'تم إرسال التقرير للمطورين. شكراً لك!');
+    }
+}
+
+function showMessage(type, message) {
+    const colors = { success: 'success', error: 'danger', warning: 'warning', info: 'info' };
+    const icons = { success: 'fas fa-check-circle', error: 'fas fa-exclamation-circle', warning: 'fas fa-exclamation-triangle', info: 'fas fa-info-circle' };
+    
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${colors[type]} alert-dismissible fade show`;
+    alertDiv.style.cssText = `position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 350px; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); border-radius: 10px;`;
+    
+    alertDiv.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="${icons[type]} me-3"></i>
+            <div class="flex-grow-1">${message}</div>
+            <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    setTimeout(() => { if (alertDiv.parentNode) alertDiv.remove(); }, 5000);
+}
+</script>
+{% endblock %}

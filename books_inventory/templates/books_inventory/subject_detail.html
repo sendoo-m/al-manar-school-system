@@ -1,0 +1,220 @@
+{% extends 'books_inventory/base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:inventory_home' %}">الرئيسية</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:subjects_list' %}">المواد الدراسية</a></li>
+                <li class="breadcrumb-item active">{{ subject.name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <!-- معلومات المادة -->
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header" style="background-color: {{ subject.color }}; color: white;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0">{{ subject.name }}</h4>
+                        {% if subject.name_en %}
+                        <small class="opacity-75">{{ subject.name_en }}</small>
+                        {% endif %}
+                    </div>
+                    <div class="text-end">
+                        {% if subject.subject_code %}
+                        <span class="badge bg-light text-dark">{{ subject.subject_code }}</span>
+                        {% endif %}
+                        {% if subject.is_active %}
+                        <span class="badge bg-success">نشط</span>
+                        {% else %}
+                        <span class="badge bg-danger">غير نشط</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if subject.description %}
+                <p class="text-muted mb-3">{{ subject.description }}</p>
+                {% endif %}
+                
+                <!-- معلومات أساسية -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <strong>نوع المادة:</strong>
+                        {% if subject.is_core_subject %}
+                        <span class="badge bg-primary">أساسية</span>
+                        {% else %}
+                        <span class="badge bg-secondary">اختيارية</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>الحصص الأسبوعية:</strong> {{ subject.weekly_hours }} حصة
+                    </div>
+                    <div class="col-md-6">
+                        <strong>تاريخ الإضافة:</strong> {{ subject.created_at|date:"Y-m-d" }}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>آخر تحديث:</strong> {{ subject.updated_at|date:"Y-m-d H:i" }}
+                    </div>
+                </div>
+                
+                <!-- المراحل والصفوف -->
+                {% if subject.education_levels.exists or subject.grade_levels.exists %}
+                <div class="mb-4">
+                    <h6 class="text-primary border-bottom pb-2">المراحل والصفوف الدراسية</h6>
+                    
+                    {% if subject.education_levels.exists %}
+                    <div class="mb-3">
+                        <strong>المراحل التعليمية:</strong>
+                        <div class="mt-2">
+                            {% for education_level in subject.education_levels.all %}
+                            <span class="badge bg-info me-1">{{ education_level.name }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if subject.grade_levels.exists %}
+                    <div>
+                        <strong>الصفوف الدراسية:</strong>
+                        <div class="mt-2">
+                            {% for grade_level in subject.grade_levels.all %}
+                            <span class="badge bg-success me-1">{{ grade_level.name }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                <!-- الكتب حسب الصفوف -->
+                {% if books_by_grade %}
+                <div class="mb-4">
+                    <h6 class="text-success border-bottom pb-2">توزيع الكتب حسب الصفوف</h6>
+                    <div class="row g-2">
+                        {% for grade, count in books_by_grade.items %}
+                        <div class="col-md-4">
+                            <div class="small bg-light p-2 rounded">
+                                <strong>{{ grade.name }}:</strong> {{ count }} كتاب
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- الإحصائيات والإجراءات -->
+    <div class="col-lg-4">
+        <!-- الإحصائيات -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="fas fa-chart-bar me-1"></i>الإحصائيات</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center g-3">
+                    <div class="col-6">
+                        <h4 class="text-primary mb-1">{{ books_count }}</h4>
+                        <small class="text-muted">إجمالي الكتب</small>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="text-success mb-1">{{ active_books }}</h4>
+                        <small class="text-muted">الكتب النشطة</small>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="text-info mb-1">{{ grade_levels_count }}</h4>
+                        <small class="text-muted">الصفوف</small>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="text-warning mb-1">{{ total_books_stock }}</h4>
+                        <small class="text-muted">المخزون</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- الإجراءات -->
+        <div class="card shadow">
+            <div class="card-header bg-secondary text-white">
+                <h6 class="mb-0"><i class="fas fa-cogs me-1"></i>الإجراءات</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'books_inventory:edit_subject' subject.pk %}" class="btn btn-warning">
+                        <i class="fas fa-edit me-1"></i>تعديل المادة
+                    </a>
+                    <a href="{% url 'books_inventory:add_book' %}?subject={{ subject.pk }}" class="btn btn-success">
+                        <i class="fas fa-plus me-1"></i>إضافة كتاب جديد
+                    </a>
+                    <a href="{% url 'books_inventory:books_list' %}?subject={{ subject.pk }}" class="btn btn-primary">
+                        <i class="fas fa-book me-1"></i>عرض الكتب
+                    </a>
+                    <hr>
+                    <a href="{% url 'books_inventory:delete_subject' subject.pk %}" class="btn btn-outline-danger">
+                        <i class="fas fa-trash me-1"></i>حذف المادة
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- أحدث الكتب -->
+{% if recent_books %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-books me-1"></i>أحدث الكتب المضافة</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th>العنوان</th>
+                                <th>النوع</th>
+                                <th>المخزون</th>
+                                <th>تاريخ الإضافة</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for book in recent_books %}
+                            <tr>
+                                <td><a href="{% url 'books_inventory:book_detail' book.pk %}">{{ book.title }}</a></td>
+                                <td><small>{{ book.get_book_type_display }}</small></td>
+                                <td>
+                                    <span class="badge bg-{% if book.available_stock > 10 %}success{% elif book.available_stock > 0 %}warning{% else %}danger{% endif %}">
+                                        {{ book.available_stock }}
+                                    </span>
+                                </td>
+                                <td>{{ book.created_at|date:"Y-m-d" }}</td>
+                                <td>
+                                    {% if book.is_active %}
+                                    <span class="badge bg-success">نشط</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">غير نشط</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

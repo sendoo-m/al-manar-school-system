@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block title %}نظام إدارة مدرسة المنار{% endblock %}
+
+{% block body_content %}
+<div class="d-flex align-items-center justify-content-center min-vh-100">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="card border-0 shadow-lg">
+                    <div class="card-body text-center p-5">
+                        <!-- Alert Icon -->
+                        <div class="mb-4">
+                            <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                                <i class="fas fa-exclamation-triangle fa-2x text-warning"></i>
+                            </div>
+                        </div>
+
+                        <!-- Main Message -->
+                        <h2 class="h4 mb-3 text-dark">مرحباً بك في نظام إدارة المدرسة</h2>
+                        
+                        <div class="alert alert-warning border-0 mb-4">
+                            <h5 class="alert-heading">
+                                <i class="fas fa-info-circle me-2"></i>
+                                تنبيه هام
+                            </h5>
+                            <p class="mb-0">{{ message|default:"لم يتم تحديد دور لحسابك حتى الآن. يرجى التواصل مع الإدارة لتفعيل صلاحياتك." }}</p>
+                        </div>
+
+                        <!-- User Info -->
+                        <div class="bg-light rounded p-3 mb-4">
+                            <div class="row text-start">
+                                <div class="col-sm-4">
+                                    <small class="text-muted">اسم المستخدم:</small>
+                                    <div class="fw-bold">{{ user.username }}</div>
+                                </div>
+                                <div class="col-sm-4">
+                                    <small class="text-muted">الاسم الكامل:</small>
+                                    <div class="fw-bold">{{ user.get_full_name|default:"غير محدد" }}</div>
+                                </div>
+                                <div class="col-sm-4">
+                                    <small class="text-muted">الدور الحالي:</small>
+                                    <div class="fw-bold text-warning">{{ user_role|default:"غير محدد" }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contact Information -->
+                        <div class="card bg-primary bg-opacity-10 border-primary border-opacity-25 mb-4">
+                            <div class="card-body">
+                                <h6 class="card-title text-primary">
+                                    <i class="fas fa-phone me-2"></i>
+                                    للحصول على الصلاحيات اللازمة
+                                </h6>
+                                <p class="card-text mb-2">يرجى التواصل مع إدارة النظام على:</p>
+                                <div class="row text-start">
+                                    <div class="col-md-6">
+                                        <small class="text-muted">الهاتف:</small><br>
+                                        <span class="fw-bold">01000000000</span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <small class="text-muted">البريد الإلكتروني:</small><br>
+                                        <span class="fw-bold">admin@almanar-school.com</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Available Actions -->
+                        <div class="row g-2 mb-4">
+                            <div class="col-md-6">
+                                <a href="/admin/" class="btn btn-outline-primary w-100" target="_blank">
+                                    <i class="fas fa-cogs me-2"></i>
+                                    لوحة الإدارة
+                                </a>
+                            </div>
+                            <div class="col-md-6">
+                                <a href="{% url 'account:view_profile' %}" class="btn btn-outline-info w-100">
+                                    <i class="fas fa-user me-2"></i>
+                                    عرض الملف الشخصي
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Logout Button -->
+                        <div class="border-top pt-3">
+                            <a href="{% url 'account:logout' %}" class="btn btn-danger">
+                                <i class="fas fa-sign-out-alt me-2"></i>
+                                تسجيل الخروج
+                            </a>
+                        </div>
+
+                        <!-- School Info Footer -->
+                        <div class="mt-4 pt-3 border-top">
+                            <div class="d-flex align-items-center justify-content-center text-muted">
+                                <i class="fas fa-school me-2"></i>
+                                <small>© 2025 مدرسة المنار - نظام إدارة المدرسة</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,666 @@
+{% extends 'students/base.html' %}
+
+{% block title %}لوحة تحكم شؤون الطلاب{% endblock %}
+{% block page_title %}لوحة تحكم شؤون الطلاب{% endblock %}
+{% block page_subtitle %}إدارة شاملة لبيانات الطلاب والتقارير الأكاديمية{% endblock %}
+
+{% block content %}
+<!-- إحصائيات سريعة -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="stats-card primary">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-1">{{ total_students|default:0 }}</h3>
+                    <p class="mb-0">إجمالي الطلاب</p>
+                </div>
+                <i class="fas fa-users fa-2x opacity-75"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stats-card success">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-1">{{ male_students|default:0 }}</h3>
+                    <p class="mb-0">طلاب ذكور</p>
+                </div>
+                <i class="fas fa-male fa-2x opacity-75"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stats-card warning">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-1">{{ female_students|default:0 }}</h3>
+                    <p class="mb-0">طالبات إناث</p>
+                </div>
+                <i class="fas fa-female fa-2x opacity-75"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stats-card info">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-1">{{ total_classrooms|default:0 }}</h3>
+                    <p class="mb-0">الفصول الدراسية</p>
+                </div>
+                <i class="fas fa-chalkboard-teacher fa-2x opacity-75"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- إجراءات سريعة -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bolt me-2 text-primary"></i>
+                    إجراءات سريعة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-primary text-white h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-user-plus fa-2x mb-3"></i>
+                                <h6>إضافة طالب جديد</h6>
+                                <a href="{% url 'students:add_student' %}" class="btn btn-light btn-sm">
+                                    إضافة الآن
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-success text-white h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-search fa-2x mb-3"></i>
+                                <h6>البحث عن طالب</h6>
+                                <a href="{% url 'students:search_student' %}" class="btn btn-light btn-sm">
+                                    بحث
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-warning text-white h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-file-alt fa-2x mb-3"></i>
+                                <h6>تقارير الطلاب</h6>
+                                <a href="{% url 'students:report' %}" class="btn btn-light btn-sm">
+                                    عرض التقارير
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-info text-white h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-file-excel fa-2x mb-3"></i>
+                                <h6>تصدير البيانات</h6>
+                                <a href="{% url 'students:export_students' %}" class="btn btn-light btn-sm">
+                                    تصدير Excel
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- الطلاب الجدد والأنشطة الحديثة -->
+<div class="row">
+    <div class="col-lg-8 mb-4">
+        <div class="card table-custom">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-user-graduate me-2 text-primary"></i>
+                    الطلاب المضافون مؤخراً
+                </h5>
+                <a href="{% url 'students:student_list' %}" class="btn btn-outline-primary btn-sm">
+                    عرض الكل
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>اسم الطالب</th>
+                                <th>الرقم القومي</th>
+                                <th>النوع</th>
+                                <th>الفصل الدراسي</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in recent_students %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-primary rounded-circle p-2 me-2">
+                                            <i class="fas fa-user text-white"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0">{{ student.name }}</h6>
+                                            <small class="text-muted">عمر {{ student.age }} سنة</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ student.national_number }}</td>
+                                <td>
+                                    <span class="badge bg-{% if student.gender == 'M' %}primary{% else %}pink{% endif %}">
+                                        {% if student.gender == 'M' %}ذكر{% else %}أنثى{% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% for classroom in student.classroom.all %}
+                                        <span class="badge bg-secondary me-1">{{ classroom.name }}</span>
+                                    {% empty %}
+                                        <span class="text-muted">غير محدد</span>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'students:student_detail' pk=student.pk %}" class="btn btn-outline-info">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'students:edit_student' pk=student.pk %}" class="btn btn-outline-warning">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4">
+                                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted">لا توجد بيانات طلاب حالياً</p>
+                                    <a href="{% url 'students:add_student' %}" class="btn btn-primary">
+                                        <i class="fas fa-plus me-1"></i>إضافة أول طالب
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <!-- توزيع الطلاب حسب المراحل -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-pie me-2 text-success"></i>
+                    توزيع الطلاب حسب المراحل
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for stage in educational_stages %}
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h6 class="mb-1">{{ stage.name }}</h6>
+                        <small class="text-muted">{{ stage.student_count }} طالب</small>
+                    </div>
+                    <span class="badge bg-primary rounded-pill">{{ stage.student_count }}</span>
+                </div>
+                {% empty %}
+                <div class="text-center py-3">
+                    <i class="fas fa-chart-pie fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">لا توجد بيانات</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- إجراءات إدارية -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-cogs me-2 text-warning"></i>
+                    إجراءات إدارية
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'students:upgrade_students' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-level-up-alt me-1"></i>ترقية الطلاب للصف التالي
+                    </a>
+                    <a href="{% url 'students:generate_student_report' %}" class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-chart-line me-1"></i>تقرير مفصل
+                    </a>
+                    <a href="{% url 'students:export_students' %}" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-download me-1"></i>تصدير جميع البيانات
+                    </a>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="printReport()">
+                        <i class="fas fa-print me-1"></i>طباعة التقرير
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function printReport() {
+    window.open('{% url "students:report" %}?print=1', '_blank');
+}
+
+// تحديث الإحصائيات كل 30 ثانية
+setInterval(function() {
+    // يمكن إضافة AJAX لتحديث الإحصائيات
+}, 30000);
+</script>
+{% endblock %}
+
+{% comment %} {% extends 'dashboard_base.html' %}
+
+{% block title %}لوحة تحكم شؤون الطلاب{% endblock %}
+{% block page_title %}لوحة تحكم شؤون الطلاب{% endblock %}
+{% block page_subtitle %}إدارة بيانات الطلاب والعمليات الأكاديمية{% endblock %}
+{% block user_role %}موظف شؤون الطلاب{% endblock %}
+
+{% block sidebar_nav %}
+    <a href="{% url 'home:student_affairs_dashboard' %}" class="nav-link active">
+        <i class="fas fa-home me-2"></i>الرئيسية
+    </a>
+    <a href="/admin/students/student/" class="nav-link" target="_blank">
+        <i class="fas fa-user-graduate me-2"></i>إدارة الطلاب
+    </a>
+    <a href="/admin/students/student/add/" class="nav-link" target="_blank">
+        <i class="fas fa-user-plus me-2"></i>تسجيل طالب جديد
+    </a>
+    <a href="#" class="nav-link">
+        <i class="fas fa-exchange-alt me-2"></i>نقل الطلاب
+    </a>
+    <a href="/admin/students/archivestudent/" class="nav-link" target="_blank">
+        <i class="fas fa-archive me-2"></i>أرشيف الطلاب
+    </a>
+    <a href="/admin/students/classroom/" class="nav-link" target="_blank">
+        <i class="fas fa-chalkboard me-2"></i>الفصول الدراسية
+    </a>
+    <div class="nav-link text-white-50 mt-3">
+        <small>التقارير</small>
+    </div>
+    <a href="#" class="nav-link">
+        <i class="fas fa-file-alt me-2"></i>تقارير الطلاب
+    </a>
+    <a href="#" class="nav-link">
+        <i class="fas fa-calendar-check me-2"></i>تقارير الحضور
+    </a>
+    <a href="#" class="nav-link">
+        <i class="fas fa-graduation-cap me-2"></i>تقارير التخرج
+    </a>
+{% endblock %}
+
+{% block dashboard_content %}
+<!-- Student Statistics -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="stats-card success">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-1">1,250</h3>
+                    <p class="mb-0">إجمالي الطلاب</p>
+                </div>
+                <i class="fas fa-users fa-2x opacity-75"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-1">85</h3>
+                    <p class="mb-0">تسجيلات جديدة</p>
+                </div>
+                <i class="fas fa-user-plus fa-2x opacity-75"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stats-card warning">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-1">12</h3>
+                    <p class="mb-0">طلبات نقل</p>
+                </div>
+                <i class="fas fa-exchange-alt fa-2x opacity-75"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stats-card danger">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-1">5</h3>
+                    <p class="mb-0">ملفات ناقصة</p>
+                </div>
+                <i class="fas fa-exclamation-triangle fa-2x opacity-75"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Student Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bolt me-2 text-primary"></i>
+                    إجراءات سريعة للطلاب
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="card bg-success text-white h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-user-plus fa-2x mb-3"></i>
+                                <h6>تسجيل طالب جديد</h6>
+                                <p class="small mb-3">إضافة طالب للنظام</p>
+                                <a href="/admin/students/student/add/" class="btn btn-light btn-sm" target="_blank">
+                                    تسجيل الآن
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card bg-primary text-white h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-search fa-2x mb-3"></i>
+                                <h6>البحث عن طالب</h6>
+                                <p class="small mb-3">البحث بالاسم أو الرقم</p>
+                                <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#searchStudentModal">
+                                    بحث سريع
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card bg-info text-white h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-exchange-alt fa-2x mb-3"></i>
+                                <h6>نقل طالب</h6>
+                                <p class="small mb-3">نقل بين الفصول</p>
+                                <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#transferModal">
+                                    نقل طالب
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Students & Pending Tasks -->
+<div class="row">
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-user-graduate me-2 text-success"></i>
+                    الطلاب المسجلون حديثاً
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>اسم الطالب</th>
+                                <th>الفصل المخصص</th>
+                                <th>تاريخ التسجيل</th>
+                                <th>حالة الملف</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-success rounded-circle p-2 me-2">
+                                            <i class="fas fa-user text-white"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0">أحمد محمد علي</h6>
+                                            <small class="text-muted">رقم قومي: 12345678</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-primary">الصف الأول الابتدائي</span></td>
+                                <td>اليوم - 09:30 ص</td>
+                                <td><span class="badge bg-success">مكتمل</span></td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary">عرض</button>
+                                        <button class="btn btn-outline-secondary">طباعة</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-primary rounded-circle p-2 me-2">
+                                            <i class="fas fa-user text-white"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0">فاطمة أحمد سعد</h6>
+                                            <small class="text-muted">رقم قومي: 87654321</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-success">الصف الثاني الابتدائي</span></td>
+                                <td>أمس - 11:45 ص</td>
+                                <td><span class="badge bg-warning">ناقص وثائق</span></td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-warning">مراجعة</button>
+                                        <button class="btn btn-outline-info">تواصل</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-info rounded-circle p-2 me-2">
+                                            <i class="fas fa-user text-white"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0">محمد سعد محمود</h6>
+                                            <small class="text-muted">رقم قومي: 11223344</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-warning">الصف الثالث الابتدائي</span></td>
+                                <td>منذ يومين</td>
+                                <td><span class="badge bg-info">قيد المراجعة</span></td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-success">قبول</button>
+                                        <button class="btn btn-outline-danger">رفض</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 mb-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-tasks me-2 text-warning"></i>
+                    مهام عاجلة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item px-0 d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1">مراجعة الملفات الناقصة</h6>
+                            <small class="text-muted">5 طلاب بحاجة لمتابعة</small>
+                        </div>
+                        <span class="badge bg-danger rounded-pill">5</span>
+                    </div>
+                    <div class="list-group-item px-0 d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1">طلبات النقل المعلقة</h6>
+                            <small class="text-muted">طلبات نقل بين الفصول</small>
+                        </div>
+                        <span class="badge bg-warning rounded-pill">12</span>
+                    </div>
+                    <div class="list-group-item px-0 d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1">تحديث بيانات الطلاب</h6>
+                            <small class="text-muted">بيانات تحتاج تحديث</small>
+                        </div>
+                        <span class="badge bg-info rounded-pill">8</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Class Statistics -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-pie me-2 text-info"></i>
+                    إحصائيات الفصول
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small>الصف الأول</small>
+                        <small>120/150</small>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar bg-success" style="width: 80%"></div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small>الصف الثاني</small>
+                        <small>95/120</small>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar bg-info" style="width: 79%"></div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small>الصف الثالث</small>
+                        <small>110/130</small>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar bg-warning" style="width: 85%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Search Student Modal -->
+<div class="modal fade" id="searchStudentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">البحث عن طالب</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">اسم الطالب</label>
+                        <input type="text" class="form-control" placeholder="البحث بالاسم">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">الرقم القومي</label>
+                        <input type="text" class="form-control" placeholder="البحث بالرقم القومي">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">الفصل</label>
+                        <select class="form-select">
+                            <option value="">جميع الفصول</option>
+                            <option>الصف الأول الابتدائي</option>
+                            <option>الصف الثاني الابتدائي</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">العام الدراسي</label>
+                        <select class="form-select">
+                            <option>2025</option>
+                            <option>2024</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary">بحث</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transfer Student Modal -->
+<div class="modal fade" id="transferModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">نقل طالب</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">البحث عن الطالب</label>
+                    <input type="text" class="form-control" placeholder="اكتب اسم الطالب">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">الفصل الحالي</label>
+                    <input type="text" class="form-control" readonly placeholder="سيظهر تلقائياً">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">الفصل الجديد</label>
+                    <select class="form-select">
+                        <option>اختر الفصل الجديد</option>
+                        <option>الصف الأول الابتدائي</option>
+                        <option>الصف الثاني الابتدائي</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">سبب النقل</label>
+                    <textarea class="form-control" rows="3" placeholder="اكتب سبب النقل"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-warning">تنفيذ النقل</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} {% endcomment %}

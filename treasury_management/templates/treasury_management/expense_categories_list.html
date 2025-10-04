@@ -1,0 +1,356 @@
+<!-- treasury_management/templates/treasury_management/expense_categories_list.html -->
+{% extends 'treasury_management/base.html' %}
+{% load static %}
+
+{% block title %}تصنيفات المصروفات{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">تصنيفات المصروفات</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2><i class="fas fa-tags me-2"></i>تصنيفات المصروفات</h2>
+                <p class="text-muted mb-0">إدارة تصنيفات المصروفات اليومية والميزانيات</p>
+            </div>
+            <div>
+                <a href="{% url 'treasury_management:setup_expense_categories' %}" class="btn btn-success me-2">
+                    <i class="fas fa-magic me-1"></i>إنشاء التصنيفات الأساسية
+                </a>
+                <a href="{% url 'treasury_management:add_expense_category' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>إضافة تصنيف جديد
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- إحصائيات سريعة -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <div class="h4 mb-1">{{ stats.total_categories }}</div>
+                <div class="opacity-75">إجمالي التصنيفات</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <div class="h4 mb-1">{{ stats.active_categories }}</div>
+                <div class="opacity-75">تصنيفات نشطة</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="card bg-warning text-dark">
+            <div class="card-body text-center">
+                <div class="h4 mb-1">{{ stats.total_budget|floatformat:0 }}</div>
+                <div class="opacity-75">إجمالي الميزانيات</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <div class="h4 mb-1">{{ stats.categories_with_budget }}</div>
+                <div class="opacity-75">لها ميزانيات</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if not categories %}
+<!-- رسالة عدم وجود تصنيفات -->
+<div class="alert alert-info text-center">
+    <i class="fas fa-tags fa-2x mb-2"></i>
+    <h5>لا توجد تصنيفات للمصروفات</h5>
+    <p class="mb-3">ابدأ بإنشاء تصنيفات المصروفات لتنظيم النفقات اليومية</p>
+    <a href="{% url 'treasury_management:setup_expense_categories' %}" class="btn btn-success me-2">
+        <i class="fas fa-magic me-1"></i>إنشاء التصنيفات الأساسية تلقائياً
+    </a>
+    <a href="{% url 'treasury_management:add_expense_category' %}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i>إضافة تصنيف يدوياً
+    </a>
+</div>
+{% else %}
+
+<!-- جدول التصنيفات -->
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>الكود</th>
+                    <th>اسم التصنيف</th>
+                    <th>الحساب المرتبط</th>
+                    <th>الميزانية الشهرية</th>
+                    <th>الإنفاق الحالي</th>
+                    <th>النسبة المستخدمة</th>
+                    <th>الحالة</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for category in categories %}
+                <tr>
+                    <td><strong>{{ category.code }}</strong></td>
+                    <td>
+                        {{ category.name }}
+                        {% if category.description %}
+                        <br><small class="text-muted">{{ category.description|truncatechars:40 }}</small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <strong>{{ category.account.code }}</strong>
+                        <br><small class="text-muted">{{ category.account.name }}</small>
+                    </td>
+                    <td class="text-center">
+                        {% if category.monthly_budget %}
+                        <span class="fw-bold">{{ category.monthly_budget|floatformat:2 }}</span>
+                        {% else %}
+                        <span class="text-muted">غير محدد</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <!-- هنا يمكن إضافة حساب الإنفاق الحالي -->
+                        <span class="text-muted">0.00</span>
+                    </td>
+                    <td class="text-center">
+                        {% if category.monthly_budget %}
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-info" style="width: 25%;"></div>
+                        </div>
+                        <small>25%</small>
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if category.is_active %}
+                        <span class="badge bg-success">نشط</span>
+                        {% else %}
+                        <span class="badge bg-secondary">غير نشط</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-outline-info" 
+                                    onclick="showCategoryDetails({{ category.id }})"
+                                    title="تفاصيل">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <a href="{% url 'treasury_management:edit_expense_category' category.id %}" 
+                               class="btn btn-sm btn-outline-warning"
+                               title="تحرير">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                    onclick="deleteCategory({{ category.id }}, '{{ category.name }}')"
+                                    title="حذف">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- معلومات مساعدة -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>أمثلة لتصنيفات المصروفات</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <h6 class="text-primary">المرتبات والأجور</h6>
+                        <ul class="list-unstyled">
+                            <li><small>• مرتبات المعلمين</small></li>
+                            <li><small>• مرتبات الإدارة</small></li>
+                            <li><small>• مكافآت وحوافز</small></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <h6 class="text-success">المرافق والخدمات</h6>
+                        <ul class="list-unstyled">
+                            <li><small>• فواتير الكهرباء</small></li>
+                            <li><small>• فواتير المياه</small></li>
+                            <li><small>• خدمات الإنترنت</small></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <h6 class="text-warning">المستلزمات</h6>
+                        <ul class="list-unstyled">
+                            <li><small>• القرطاسية والكتب</small></li>
+                            <li><small>• مواد التنظيف</small></li>
+                            <li><small>• المستلزمات الطبية</small></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <h6 class="text-danger">الصيانة</h6>
+                        <ul class="list-unstyled">
+                            <li><small>• صيانة المباني</small></li>
+                            <li><small>• صيانة المعدات</small></li>
+                            <li><small>• صيانة الحافلات</small></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal لتفاصيل التصنيف -->
+<div class="modal fade" id="categoryModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تفاصيل تصنيف المصروفات</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="categoryDetails">
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">جاري التحميل...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal للحذف -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تأكيد الحذف</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    هل أنت متأكد من حذف تصنيف المصروفات "<strong id="categoryNameToDelete"></strong>"؟
+                </div>
+                <p class="text-muted">هذا الإجراء لا يمكن التراجع عنه.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <form method="POST" id="deleteForm" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">تأكيد الحذف</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+<!-- تحديث الـ JavaScript في expense_categories_list.html -->
+{% block extra_js %}
+<script>
+function showCategoryDetails(categoryId) {
+    const modal = new bootstrap.Modal(document.getElementById('categoryModal'));
+    const detailsContainer = document.getElementById('categoryDetails');
+    
+    // إظهار شاشة التحميل
+    detailsContainer.innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">جاري التحميل...</span>
+            </div>
+            <div class="text-muted">جاري تحميل تفاصيل التصنيف...</div>
+        </div>
+    `;
+    
+    modal.show();
+    
+    // جلب التفاصيل عبر AJAX
+    fetch(`/treasury/expense-category-detail/${categoryId}/`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            detailsContainer.innerHTML = data.html;
+            
+            // تفعيل tooltips إذا كانت موجودة
+            const tooltipTriggerList = [].slice.call(detailsContainer.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        } else {
+            detailsContainer.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    حدث خطأ في تحميل التفاصيل: ${data.error || 'خطأ غير معروف'}
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching category details:', error);
+        detailsContainer.innerHTML = `
+            <div class="alert alert-warning">
+                <h6><i class="fas fa-wifi me-2"></i>تعذر الاتصال بالخادم</h6>
+                <p class="mb-2">يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.</p>
+                <button class="btn btn-sm btn-outline-primary" onclick="showCategoryDetails(${categoryId})">
+                    <i class="fas fa-refresh me-1"></i>إعادة المحاولة
+                </button>
+            </div>
+        `;
+    });
+}
+
+function deleteCategory(categoryId, categoryName) {
+    // إظهار مربع تأكيد مخصص
+    if (confirm(`هل أنت متأكد من حذف تصنيف المصروفات "${categoryName}"؟\n\nهذا الإجراء لا يمكن التراجع عنه.`)) {
+        // إنشاء نموذج مخفي للحذف
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/treasury/delete-expense-category/${categoryId}/`;
+        
+        // إضافة CSRF token
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        form.appendChild(csrfInput);
+        
+        // إضافة النموذج للصفحة وإرساله
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// تحديث الصفحة كل 5 دقائق لتحديث الإحصائيات
+setInterval(function() {
+    location.reload();
+}, 300000);
+</script>
+{% endblock %}

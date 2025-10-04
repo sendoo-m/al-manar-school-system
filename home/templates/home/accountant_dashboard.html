@@ -1,0 +1,731 @@
+{% extends 'dashboard_base.html' %}
+
+{% block title %}لوحة تحكم موظف الحسابات{% endblock %}
+{% block page_title %}لوحة تحكم الحسابات{% endblock %}
+{% block page_subtitle %}إدارة الشؤون المالية والأقساط{% endblock %}
+{% block user_role %}موظف الحسابات{% endblock %}
+
+{% block sidebar_nav %}
+    <a href="{% url 'home:accountant_dashboard' %}" class="nav-link active">
+        <i class="fas fa-home me-2"></i>الرئيسية
+    </a>
+    <a href="{% url 'students:student_list' %}" class="nav-link">
+        <i class="fas fa-user-graduate me-2"></i>قائمة الطلاب
+    </a>
+    <a href="{% url 'students:search_student' %}" class="nav-link">
+        <i class="fas fa-search me-2"></i>البحث عن طالب
+    </a>
+    <a href="{% url 'students:daily_report' %}" class="nav-link">
+        <i class="fas fa-credit-card me-2"></i>المدفوعات اليومية
+    </a>
+    <a href="/admin/students/expense/" class="nav-link" target="_blank">
+        <i class="fas fa-receipt me-2"></i>المصروفات
+    </a>
+    <a href="#" class="nav-link">
+        <i class="fas fa-percentage me-2"></i>الخصومات والعروض
+    </a>
+    <div class="nav-link text-white-50 mt-3">
+        <small>التقارير المالية</small>
+    </div>
+    <a href="{% url 'students:generate_installment_report' %}" class="nav-link">
+        <i class="fas fa-chart-line me-2"></i>تقرير الأقساط
+    </a>
+    <a href="{% url 'students:all_reports' %}" class="nav-link">
+        <i class="fas fa-chart-bar me-2"></i>جميع التقارير
+    </a>
+    <a href="{% url 'students:export_students' %}" class="nav-link">
+        <i class="fas fa-file-excel me-2"></i>تصدير الحسابات
+    </a>
+    <a href="{% url 'students:g_reports' %}" class="nav-link">
+        <i class="fas fa-exclamation-triangle me-2"></i>المتأخرات
+    </a>
+{% endblock %}
+
+{% block dashboard_content %}
+<!-- Financial Statistics -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="stats-card success">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-1">250,000</h3>
+                    <p class="mb-0">إيرادات الشهر (ج.م)</p>
+                </div>
+                <i class="fas fa-arrow-up fa-2x opacity-75"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-1">1,180</h3>
+                    <p class="mb-0">أقساط محصلة</p>
+                </div>
+                <i class="fas fa-check-circle fa-2x opacity-75"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stats-card warning">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-1">70</h3>
+                    <p class="mb-0">أقساط متأخرة</p>
+                </div>
+                <i class="fas fa-clock fa-2x opacity-75"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stats-card danger">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-1">45,000</h3>
+                    <p class="mb-0">متأخرات (ج.م)</p>
+                </div>
+                <i class="fas fa-exclamation-triangle fa-2x opacity-75"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-credit-card me-2 text-primary"></i>
+                    إجراءات مالية سريعة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-primary text-white h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-plus-circle fa-2x mb-3"></i>
+                                <h6>تسجيل دفع قسط</h6>
+                                <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#paymentModal">
+                                    دفع الآن
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-success text-white h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-search fa-2x mb-3"></i>
+                                <h6>البحث عن طالب</h6>
+                                <a href="{% url 'students:search_student' %}" class="btn btn-light btn-sm">
+                                    بحث
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-warning text-white h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-percentage fa-2x mb-3"></i>
+                                <h6>تطبيق خصم</h6>
+                                <button class="btn btn-light btn-sm" onclick="applyDiscount()">
+                                    خصم جديد
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-info text-white h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-file-export fa-2x mb-3"></i>
+                                <h6>تصدير التقارير</h6>
+                                <a href="{% url 'students:export_students' %}" class="btn btn-light btn-sm">
+                                    تصدير Excel
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Today's Payments & Overdue -->
+<div class="row">
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-money-bill-wave me-2 text-success"></i>
+                    مدفوعات اليوم
+                </h5>
+                <a href="{% url 'students:daily_report' %}" class="btn btn-outline-primary btn-sm">
+                    عرض التفاصيل
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>اسم الطالب</th>
+                                <th>المبلغ</th>
+                                <th>نوع القسط</th>
+                                <th>الوقت</th>
+                                <th>الحالة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-primary rounded-circle p-2 me-2">
+                                            <i class="fas fa-user text-white"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0">أحمد محمد علي</h6>
+                                            <small class="text-muted">الصف الثالث الابتدائي</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><strong class="text-success">1,500 ج.م</strong></td>
+                                <td><span class="badge bg-info">قسط شهري</span></td>
+                                <td>09:30 ص</td>
+                                <td><span class="badge bg-success">مكتمل</span></td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-info" onclick="viewStudentDetails(1)">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-outline-success" onclick="printReceipt(1)">
+                                            <i class="fas fa-print"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-success rounded-circle p-2 me-2">
+                                            <i class="fas fa-user text-white"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0">فاطمة أحمد</h6>
+                                            <small class="text-muted">الصف الثاني الابتدائي</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><strong class="text-success">1,200 ج.م</strong></td>
+                                <td><span class="badge bg-warning">رسوم كتب</span></td>
+                                <td>11:15 ص</td>
+                                <td><span class="badge bg-success">مكتمل</span></td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-info" onclick="viewStudentDetails(2)">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-outline-success" onclick="printReceipt(2)">
+                                            <i class="fas fa-print"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-warning rounded-circle p-2 me-2">
+                                            <i class="fas fa-user text-white"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0">محمد سعد</h6>
+                                            <small class="text-muted">الصف الأول الإعدادي</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><strong class="text-success">2,000 ج.م</strong></td>
+                                <td><span class="badge bg-primary">قسط شهري</span></td>
+                                <td>13:45 م</td>
+                                <td><span class="badge bg-success">مكتمل</span></td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-info" onclick="viewStudentDetails(3)">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-outline-success" onclick="printReceipt(3)">
+                                            <i class="fas fa-print"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-center mt-3">
+                    <a href="{% url 'students:all_reports' %}" class="btn btn-primary">
+                        <i class="fas fa-chart-bar me-2"></i>عرض جميع التقارير
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-exclamation-triangle me-2 text-danger"></i>
+                    متأخرات تحتاج متابعة
+                </h5>
+                <a href="{% url 'students:g_reports' %}" class="btn btn-outline-danger btn-sm">
+                    عرض الكل
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item px-0 border-start border-danger border-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">سارة محمد</h6>
+                                <small class="text-muted">متأخر 30 يوم</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="text-danger fw-bold d-block">3,000 ج.م</span>
+                                <button class="btn btn-outline-danger btn-sm mt-1" onclick="contactStudent('sara')">
+                                    <i class="fas fa-phone"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="list-group-item px-0 border-start border-warning border-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">يوسف أحمد</h6>
+                                <small class="text-muted">متأخر 15 يوم</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="text-warning fw-bold d-block">1,500 ج.م</span>
+                                <button class="btn btn-outline-warning btn-sm mt-1" onclick="contactStudent('youssef')">
+                                    <i class="fas fa-phone"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="list-group-item px-0 border-start border-info border-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">مريم علي</h6>
+                                <small class="text-muted">متأخر 7 أيام</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="text-info fw-bold d-block">2,200 ج.م</span>
+                                <button class="btn btn-outline-info btn-sm mt-1" onclick="contactStudent('mariam')">
+                                    <i class="fas fa-phone"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a href="{% url 'students:g_reports' %}" class="btn btn-danger btn-sm w-100">
+                        <i class="fas fa-list me-1"></i>عرض جميع المتأخرات
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Stats Card -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-calculator me-2 text-primary"></i>
+                    إحصائيات سريعة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border-end">
+                            <h4 class="text-success mb-1">85%</h4>
+                            <small class="text-muted">نسبة التحصيل</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="text-warning mb-1">15%</h4>
+                        <small class="text-muted">متأخرات</small>
+                    </div>
+                </div>
+                <hr>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'students:generate_installment_report' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-chart-pie me-1"></i>تقرير مفصل
+                    </a>
+                    <a href="{% url 'students:export_students' %}" class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-download me-1"></i>تصدير البيانات
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تسجيل دفع قسط</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="paymentForm">
+                    {% csrf_token %}
+                    
+                    <!-- البحث عن الطالب -->
+                    <div class="mb-3">
+                        <label class="form-label">البحث عن الطالب</label>
+                        <div class="position-relative">
+                            <input type="text" class="form-control" id="studentSearch" 
+                                   placeholder="اكتب اسم الطالب أو الرقم القومي" autocomplete="off">
+                            <input type="hidden" id="selectedStudentId">
+                            <div id="searchResults" class="position-absolute w-100 bg-white border border-top-0 rounded-bottom shadow-sm" 
+                                 style="z-index: 1050; max-height: 200px; overflow-y: auto; display: none;"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- معلومات الطالب المحدد -->
+                    <div id="selectedStudentInfo" class="alert alert-info" style="display: none;">
+                        <h6 class="alert-heading mb-2">معلومات الطالب:</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <small><strong>الاسم:</strong> <span id="studentName"></span></small><br>
+                                <small><strong>الرقم القومي:</strong> <span id="studentNational"></span></small>
+                            </div>
+                            <div class="col-md-6">
+                                <small><strong>الفصل:</strong> <span id="studentClass"></span></small><br>
+                                <small><strong>المبلغ المستحق:</strong> <span id="studentOwed" class="text-danger fw-bold"></span> ج.م</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- تفاصيل الدفع -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">المبلغ المدفوع *</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="paidAmount" 
+                                       placeholder="0.00" step="0.01" min="0.01" required>
+                                <span class="input-group-text">ج.م</span>
+                            </div>
+                            <small class="text-muted">أدخل المبلغ الذي دفعه الطالب</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">طريقة الدفع *</label>
+                            <select class="form-select" id="paymentMethod" required>
+                                <option value="cash">نقدي</option>
+                                <option value="transfer">تحويل بنكي</option>
+                                <option value="check">شيك</option>
+                                <option value="card">بطاقة ائتمان</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- معلومات الموظف -->
+                    <div class="mb-3">
+                        <label class="form-label">الموظف المسؤول</label>
+                        <input type="text" class="form-control" 
+                               value="{{ user.get_full_name|default:user.username }}" readonly>
+                        <small class="text-muted">سيظهر هذا الاسم في إيصال الاستلام</small>
+                    </div>
+                    
+                    <!-- ملاحظات -->
+                    <div class="mb-3">
+                        <label class="form-label">ملاحظات</label>
+                        <textarea class="form-control" id="paymentNotes" rows="2" 
+                                  placeholder="ملاحظات إضافية (اختيارية)"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" id="submitPaymentBtn" onclick="submitPayment()" disabled>
+                    <i class="fas fa-credit-card me-1"></i>تسجيل الدفع
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-check-circle me-2"></i>تم تسجيل الدفع بنجاح
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="paymentSummary"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                <button type="button" class="btn btn-success" onclick="printReceipt()">
+                    <i class="fas fa-print me-1"></i>طباعة الإيصال
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let selectedStudent = null;
+let searchTimeout = null;
+
+// البحث عن الطلاب
+document.getElementById('studentSearch').addEventListener('input', function(e) {
+    const query = e.target.value.trim();
+    const resultsDiv = document.getElementById('searchResults');
+    
+    // إلغاء البحث السابق
+    if (searchTimeout) {
+        clearTimeout(searchTimeout);
+    }
+    
+    if (query.length < 2) {
+        resultsDiv.style.display = 'none';
+        return;
+    }
+    
+    // تأخير البحث لتحسين الأداء
+    searchTimeout = setTimeout(() => {
+        searchStudents(query);
+    }, 300);
+});
+
+function searchStudents(query) {
+    const resultsDiv = document.getElementById('searchResults');
+    resultsDiv.innerHTML = '<div class="p-2 text-center"><i class="fas fa-spinner fa-spin"></i> جاري البحث...</div>';
+    resultsDiv.style.display = 'block';
+    
+    fetch(`{% url 'students:student_search_ajax' %}?q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.students && data.students.length > 0) {
+                let html = '';
+                data.students.forEach(student => {
+                    html += `
+                        <div class="search-result-item p-2 border-bottom" style="cursor: pointer;" 
+                             onclick="selectStudent(${student.id}, '${student.name}', '${student.national_number}', '${student.classroom}', ${student.total_owed})">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>${student.name}</strong><br>
+                                    <small class="text-muted">رقم قومي: ${student.national_number}</small><br>
+                                    <small class="text-info">${student.classroom}</small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-danger">${student.total_owed} ج.م</span><br>
+                                    <small class="text-muted">${student.phone_number}</small>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                resultsDiv.innerHTML = html;
+            } else {
+                resultsDiv.innerHTML = '<div class="p-2 text-center text-muted">لا توجد نتائج</div>';
+            }
+        })
+        .catch(error => {
+            console.error('خطأ في البحث:', error);
+            resultsDiv.innerHTML = '<div class="p-2 text-center text-danger">حدث خطأ في البحث</div>';
+        });
+}
+
+function selectStudent(id, name, nationalNumber, classroom, totalOwed) {
+    selectedStudent = {
+        id: id,
+        name: name,
+        national_number: nationalNumber,
+        classroom: classroom,
+        total_owed: totalOwed
+    };
+    
+    // إخفاء نتائج البحث
+    document.getElementById('searchResults').style.display = 'none';
+    
+    // تحديث حقل البحث
+    document.getElementById('studentSearch').value = name;
+    document.getElementById('selectedStudentId').value = id;
+    
+    // إظهار معلومات الطالب
+    document.getElementById('studentName').textContent = name;
+    document.getElementById('studentNational').textContent = nationalNumber;
+    document.getElementById('studentClass').textContent = classroom;
+    document.getElementById('studentOwed').textContent = totalOwed.toLocaleString();
+    document.getElementById('selectedStudentInfo').style.display = 'block';
+    
+    // تفعيل زر التسجيل
+    document.getElementById('submitPaymentBtn').disabled = false;
+    
+    // تحديد المبلغ المقترح
+    document.getElementById('paidAmount').placeholder = `المبلغ المستحق: ${totalOwed} ج.م`;
+}
+
+// إخفاء نتائج البحث عند النقر خارجها
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('#studentSearch') && !e.target.closest('#searchResults')) {
+        document.getElementById('searchResults').style.display = 'none';
+    }
+});
+
+function submitPayment() {
+    if (!selectedStudent) {
+        alert('يرجى اختيار طالب أولاً');
+        return;
+    }
+    
+    const amount = parseFloat(document.getElementById('paidAmount').value);
+    const method = document.getElementById('paymentMethod').value;
+    const notes = document.getElementById('paymentNotes').value;
+    
+    if (!amount || amount <= 0) {
+        alert('يرجى إدخال مبلغ صحيح');
+        return;
+    }
+    
+    // تعطيل الزر أثناء الإرسال
+    const submitBtn = document.getElementById('submitPaymentBtn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>جاري التسجيل...';
+    
+    // إرسال البيانات
+    const formData = new FormData();
+    formData.append('student_id', selectedStudent.id);
+    formData.append('amount_paid', amount);
+    formData.append('payment_method', method);
+    formData.append('notes', notes);
+
+    // Get CSRF token from the form input (fallback) or from cookie
+    const csrftokenInput = document.querySelector('[name=csrfmiddlewaretoken]');
+    let csrftoken = csrftokenInput ? csrftokenInput.value : null;
+    if (!csrftoken) {
+        // try reading from cookie (Django default name: csrftoken)
+        const match = document.cookie.match(new RegExp('(^|; )' + 'csrftoken' + '=([^;]+)'));
+        if (match) csrftoken = match[2];
+    }
+
+    fetch('{% url "students:record_payment_ajax" %}', {
+        method: 'POST',
+        credentials: 'same-origin', // include cookies
+        headers: {
+            'X-CSRFToken': csrftoken || '',
+        },
+        body: formData
+    })
+    .then(async response => {
+        let data;
+        try {
+            data = await response.json();
+        } catch (err) {
+            throw new Error('Invalid JSON response');
+        }
+        if (!response.ok) {
+            // server returned 4xx/5xx
+            const msg = data && data.message ? data.message : response.statusText;
+            throw new Error(msg || 'Server error');
+        }
+        return data;
+    })
+    .then(data => {
+        if (data.success) {
+            // إخفاء نافذة الدفع
+            $('#paymentModal').modal('hide');
+
+            // إظهار نافذة النجاح
+            showSuccessModal(data);
+
+            // إعادة تعيين النموذج
+            resetPaymentForm();
+        } else {
+            alert('خطأ: ' + (data.message || 'حدث خطأ غير متوقع'));
+        }
+    })
+    .catch(error => {
+        console.error('خطأ:', error);
+        alert('حدث خطأ في تسجيل الدفع: ' + error.message);
+    })
+    .finally(() => {
+        // إعادة تفعيل الزر
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-credit-card me-1"></i>تسجيل الدفع';
+    });
+}
+
+function showSuccessModal(data) {
+    const summary = `
+        <div class="text-center mb-3">
+            <i class="fas fa-check-circle text-success fa-3x mb-3"></i>
+            <h5>تم تسجيل الدفع بنجاح</h5>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <strong>اسم الطالب:</strong> ${data.student_name}<br>
+                <strong>المبلغ المدفوع:</strong> ${data.total_paid} ج.م<br>
+                <strong>الموظف المسؤول:</strong> ${data.payment_user}
+            </div>
+            <div class="col-md-6">
+                <strong>التاريخ:</strong> ${new Date().toLocaleDateString('ar-EG')}<br>
+                <strong>الوقت:</strong> ${new Date().toLocaleTimeString('ar-EG')}
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('paymentSummary').innerHTML = summary;
+    $('#successModal').modal('show');
+    
+    // تحديث الصفحة بعد 3 ثواني
+    setTimeout(() => {
+        location.reload();
+    }, 3000);
+}
+
+function resetPaymentForm() {
+    selectedStudent = null;
+    document.getElementById('paymentForm').reset();
+    document.getElementById('selectedStudentInfo').style.display = 'none';
+    document.getElementById('submitPaymentBtn').disabled = true;
+    document.getElementById('selectedStudentId').value = '';
+}
+
+function printReceipt() {
+    if (selectedStudent) {
+        window.open(`/students/receipt/${selectedStudent.id}/`, '_blank');
+    }
+}
+
+// إعادة تعيين النموذج عند إغلاق النافذة
+document.getElementById('paymentModal').addEventListener('hidden.bs.modal', function() {
+    resetPaymentForm();
+});
+</script>
+
+<style>
+.search-result-item:hover {
+    background-color: #f8f9fa;
+}
+
+#searchResults {
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.search-result-item {
+    transition: background-color 0.2s;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,247 @@
+{% extends 'books_inventory/base.html' %}
+{% load static %}
+
+{% block title %}{{ notebook.name }} - تفاصيل الكراسة{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:inventory_home' %}">الرئيسية</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:notebooks_list' %}">الكراسات</a></li>
+                <li class="breadcrumb-item active">{{ notebook.name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- معلومات الكراسة الأساسية -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="fas fa-book-open text-info"></i> {{ notebook.name }}</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">نوع الكراسة:</th>
+                                <td><span class="badge bg-info">{{ notebook.get_notebook_type_display }}</span></td>
+                            </tr>
+                            <tr>
+                                <th>الحجم:</th>
+                                <td>{{ notebook.get_size_display }}</td>
+                            </tr>
+                            <tr>
+                                <th>عدد الصفحات:</th>
+                                <td>{{ notebook.pages_count }} صفحة</td>
+                            </tr>
+                            <tr>
+                                <th>سعر التكلفة:</th>
+                                <td>{{ notebook.cost_price }} ج.م</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted">الصفوف الدراسية المرتبطة:</h6>
+                        {% if associated_grades %}
+                            <div class="mb-3">
+                                {% for grade in associated_grades %}
+                                <span class="badge bg-secondary me-1 mb-1">{{ grade.education_level.name }} - {{ grade.name }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted">لا توجد صفوف مرتبطة</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- معلومات المخزون -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-boxes text-primary"></i> معلومات المخزون</h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="row">
+                    <div class="col-6">
+                        <h4 class="text-primary">{{ notebook.total_stock }}</h4>
+                        <small class="text-muted">إجمالي المخزون</small>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="text-success">{{ notebook.available_stock }}</h4>
+                        <small class="text-muted">المتاح للتوزيع</small>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-6">
+                        <h5 class="text-info">{{ notebook.distributed_count }}</h5>
+                        <small class="text-muted">الموزع</small>
+                    </div>
+                    <div class="col-6">
+                        <h5 class="text-danger">{{ notebook.damaged_count }}</h5>
+                        <small class="text-muted">التالف</small>
+                    </div>
+                </div>
+                <hr>
+                <div class="mb-2">
+                    <strong>حالة المخزون:</strong>
+                    {% if notebook.available_stock == 0 %}
+                        <span class="badge bg-danger">نفد المخزون</span>
+                    {% elif notebook.is_low_stock %}
+                        <span class="badge bg-warning">مخزون منخفض</span>
+                    {% else %}
+                        <span class="badge bg-success">متوفر</span>
+                    {% endif %}
+                </div>
+                <small class="text-muted">الحد الأدنى: {{ notebook.minimum_stock_level }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- أحدث الاستلامات والتوزيعات -->
+<div class="row">
+    <!-- أحدث الاستلامات -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-truck text-primary"></i> أحدث الاستلامات</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_receipts %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>رقم الإيصال</th>
+                                <th>المورد</th>
+                                <th>الكمية</th>
+                                <th>التاريخ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in recent_receipts %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'books_inventory:receipt_detail' item.receipt.pk %}">
+                                        {{ item.receipt.receipt_number }}
+                                    </a>
+                                </td>
+                                <td>{{ item.receipt.supplier.name }}</td>
+                                <td>
+                                    <span class="badge bg-success">{{ item.quantity_received }}</span>
+                                    {% if item.quantity_damaged > 0 %}
+                                    <span class="badge bg-danger ms-1">{{ item.quantity_damaged }} تالف</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ item.receipt.receipt_date|date:"Y-m-d" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center">لا توجد استلامات سابقة</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- أحدث التوزيعات -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-share text-success"></i> أحدث التوزيعات</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_distributions %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>الطالب</th>
+                                <th>الكمية</th>
+                                <th>التاريخ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in recent_distributions %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'books_inventory:distribution_detail' item.distribution.pk %}">
+                                        {{ item.distribution.student.name }}
+                                    </a>
+                                    <br><small class="text-muted">{{ item.distribution.student.grade_name }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-success">{{ item.quantity_distributed }}</span>
+                                </td>
+                                <td>{{ item.distribution_date|date:"Y-m-d" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center">لا توجد توزيعات سابقة</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- النواقص المُبلغ عنها -->
+{% if shortages %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5><i class="fas fa-exclamation-triangle"></i> النواقص المُبلغ عنها</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>المخزون الحالي</th>
+                                <th>الكمية المطلوبة</th>
+                                <th>كمية النقص</th>
+                                <th>الأولوية</th>
+                                <th>الحالة</th>
+                                <th>تاريخ البلاغ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for shortage in shortages %}
+                            <tr>
+                                <td>{{ shortage.current_stock }}</td>
+                                <td>{{ shortage.required_quantity }}</td>
+                                <td><strong class="text-danger">{{ shortage.shortage_quantity }}</strong></td>
+                                <td>
+                                    <span class="badge bg-{% if shortage.priority == 'HIGH' %}danger{% elif shortage.priority == 'MEDIUM' %}warning{% else %}info{% endif %}">
+                                        {{ shortage.get_priority_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">{{ shortage.get_status_display }}</span>
+                                </td>
+                                <td>{{ shortage.reported_date|date:"Y-m-d" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -37,14 +37,20 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',  # ← أضف هذا السطر
     'account',
     'students',
     'report',
+    'payments',
     'django_extensions',
     'crispy_forms',
     'crispy_bootstrap5',
     'import_export',
-
+    'school_settings',
+    'home',
+    'books_inventory',
+    # 'uniforms_inventory',
+    'treasury_management',
 ]
 
 MIDDLEWARE = [
@@ -59,6 +65,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'LYS_schoolapp.urls'
 
+# LYS_schoolapp/settings.py
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -70,10 +77,32 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'treasury_management.context_processors.treasury_permissions',  # إضافة هذا
             ],
         },
     },
 ]
+
+# Logging للصلاحيات
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'treasury_permissions.log',
+        },
+    },
+    'loggers': {
+        'treasury_management.decorators': {
+            'handlers': ['file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}
+
 
 WSGI_APPLICATION = 'LYS_schoolapp.wsgi.application'
 

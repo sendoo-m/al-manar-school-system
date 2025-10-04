@@ -1,0 +1,146 @@
+<!-- school_settings/templates/school_settings/modals/edit_grade_level.html -->
+<!-- Modal تعديل الصف الدراسي -->
+<div class="modal fade" id="editGradeLevelModal" tabindex="-1" aria-labelledby="editGradeLevelModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editGradeLevelModalLabel">
+                    <i class="fas fa-edit me-2"></i>تعديل الصف الدراسي
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <form id="editGradeLevelForm" method="post">
+                {% csrf_token %}
+                <input type="hidden" id="editGradeId" name="grade_id">
+                
+                <div class="modal-body">
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="editGradeEducationLevel" class="form-label">المرحلة التعليمية *</label>
+                            <select class="form-select" id="editGradeEducationLevel" name="education_level" required>
+                                <option value="">اختر المرحلة التعليمية</option>
+                                {% for level in education_levels %}
+                                <option value="{{ level.id }}">{{ level.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="editGradeName" class="form-label">اسم الصف *</label>
+                            <input type="text" class="form-control" id="editGradeName" name="name" required>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="editGradeNameEn" class="form-label">الاسم بالإنجليزية</label>
+                            <input type="text" class="form-control" id="editGradeNameEn" name="name_en">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="editGradeNumber" class="form-label">رقم الصف *</label>
+                            <input type="number" class="form-control" id="editGradeNumber" name="grade_number" 
+                                   min="1" max="20" required>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="editTypicalAge" class="form-label">العمر المعتاد *</label>
+                            <input type="number" class="form-control" id="editTypicalAge" name="typical_age" 
+                                   min="3" max="25" required>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="editGradeOrder" class="form-label">ترتيب العرض *</label>
+                            <input type="number" class="form-control" id="editGradeOrder" name="order" 
+                                   min="1" required>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="editGradeIsActive" name="is_active">
+                                <label class="form-check-label" for="editGradeIsActive">
+                                    الصف نشط
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-save me-1"></i>حفظ التغييرات
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// تحميل بيانات الصف الدراسي للتعديل
+function loadGradeLevelForEdit(gradeId) {
+    fetch(`/settings/grade-level/${gradeId}/json/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const grade = data.grade;
+                document.getElementById('editGradeId').value = grade.id;
+                document.getElementById('editGradeEducationLevel').value = grade.education_level_id;
+                document.getElementById('editGradeName').value = grade.name;
+                document.getElementById('editGradeNameEn').value = grade.name_en || '';
+                document.getElementById('editGradeNumber').value = grade.grade_number;
+                document.getElementById('editTypicalAge').value = grade.typical_age;
+                document.getElementById('editGradeOrder').value = grade.order;
+                document.getElementById('editGradeIsActive').checked = grade.is_active;
+                
+                document.getElementById('editGradeLevelModalLabel').innerHTML = 
+                    '<i class="fas fa-edit me-2"></i>تعديل الصف الدراسي: ' + grade.name;
+                
+                new bootstrap.Modal(document.getElementById('editGradeLevelModal')).show();
+            } else {
+                showMessage('error', 'لا يمكن تحميل بيانات الصف الدراسي');
+            }
+        })
+        .catch(error => {
+            showMessage('error', 'حدث خطأ في تحميل البيانات');
+        });
+}
+
+// إرسال نموذج التعديل
+document.getElementById('editGradeLevelForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const gradeId = document.getElementById('editGradeId').value;
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>جاري الحفظ...';
+    submitBtn.disabled = true;
+    
+    fetch(`/settings/edit-grade-level/${gradeId}/`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage('success', data.message);
+            bootstrap.Modal.getInstance(document.getElementById('editGradeLevelModal')).hide();
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showMessage('error', data.message);
+        }
+    })
+    .catch(error => {
+        showMessage('error', 'حدث خطأ في الاتصال');
+    })
+    .finally(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+});
+</script>

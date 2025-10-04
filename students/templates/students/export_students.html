@@ -1,0 +1,324 @@
+<!-- students/templates/students/export_students.html -->
+{% extends 'students/base.html' %}
+
+{% block title %}تصدير بيانات الطلاب - نظام إدارة الطلاب{% endblock %}
+{% block page_title %}تصدير بيانات الطلاب{% endblock %}
+{% block page_icon %}<i class="fas fa-download"></i>{% endblock %}
+{% block page_subtitle %}تصدير بيانات الطلاب بصيغ متعددة{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'students:home' %}">الرئيسية</a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:student_list' %}">قائمة الطلاب</a></li>
+<li class="breadcrumb-item active">تصدير البيانات</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .export-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        text-align: center;
+        transition: all 0.3s ease;
+        border: none;
+    }
+    
+    .export-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    
+    .export-icon {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        opacity: 0.9;
+    }
+    
+    .format-option {
+        background: white;
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        margin-bottom: 15px;
+    }
+    
+    .format-option:hover {
+        border-color: #3498db;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(52, 152, 219, 0.2);
+    }
+    
+    .format-option input[type="radio"] {
+        display: none;
+    }
+    
+    .format-option input[type="radio"]:checked + .format-content {
+        color: #3498db;
+        font-weight: bold;
+    }
+    
+    .format-option input[type="radio"]:checked {
+        border-color: #3498db;
+    }
+    
+    .format-icon {
+        font-size: 2rem;
+        margin-bottom: 10px;
+        color: #6c757d;
+    }
+    
+    .format-option input[type="radio"]:checked ~ .format-icon {
+        color: #3498db;
+    }
+    
+    .filter-section {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .stats-box {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        border-radius: 10px;
+        padding: 15px;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    
+    .export-btn {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        border: none;
+        border-radius: 25px;
+        padding: 15px 40px;
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: white;
+        transition: all 0.3s ease;
+    }
+    
+    .export-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- إحصائيات سريعة -->
+<div class="row g-4 mb-4">
+    <div class="col-md-12">
+        <div class="export-card">
+            <div class="export-icon">
+                <i class="fas fa-database"></i>
+            </div>
+            <h3>إجمالي الطلاب المتاحين للتصدير</h3>
+            <h2 class="mt-3">{{ total_students }} طالب</h2>
+        </div>
+    </div>
+</div>
+
+<!-- نموذج التصدير -->
+<div class="content-card">
+    <div class="content-card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-cog me-2"></i>إعدادات التصدير
+        </h5>
+    </div>
+    <div class="content-card-body">
+        <form method="post" action="{% url 'students:export_students' %}">
+            {% csrf_token %}
+            
+            <!-- صيغة التصدير -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h6 class="mb-3">
+                        <i class="fas fa-file-export me-2"></i>اختر صيغة التصدير
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="format-option">
+                                <input type="radio" name="export_format" value="csv" checked>
+                                <div class="format-content">
+                                    <div class="format-icon">
+                                        <i class="fas fa-file-csv"></i>
+                                    </div>
+                                    <h6>ملف CSV</h6>
+                                    <small class="text-muted">مناسب للاستيراد في Excel</small>
+                                </div>
+                            </label>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="format-option">
+                                <input type="radio" name="export_format" value="excel">
+                                <div class="format-content">
+                                    <div class="format-icon">
+                                        <i class="fas fa-file-excel"></i>
+                                    </div>
+                                    <h6>ملف Excel</h6>
+                                    <small class="text-muted">مع تنسيق وإحصائيات</small>
+                                </div>
+                            </label>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="format-option">
+                                <input type="radio" name="export_format" value="json">
+                                <div class="format-content">
+                                    <div class="format-icon">
+                                        <i class="fas fa-file-code"></i>
+                                    </div>
+                                    <h6>ملف JSON</h6>
+                                    <small class="text-muted">للنسخ الاحتياطي</small>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- خيارات التصفية -->
+            <div class="filter-section">
+                <h6 class="mb-3">
+                    <i class="fas fa-filter me-2"></i>خيارات التصفية
+                </h6>
+                
+                <div class="row">
+                    <!-- تضمين الطلاب المحذوفين -->
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="include_inactive" id="include_inactive">
+                            <label class="form-check-label" for="include_inactive">
+                                تضمين الطلاب غير النشطين
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- فلتر الصفوف الدراسية -->
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <label class="form-label">الصفوف الدراسية (اترك فارغاً لتصدير الكل)</label>
+                        <div class="row">
+                            {% for grade in grade_levels %}
+                            <div class="col-md-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="grade_levels" value="{{ grade.id }}" id="grade_{{ grade.id }}">
+                                    <label class="form-check-label" for="grade_{{ grade.id }}">
+                                        {{ grade.education_level.name }} - {{ grade.name }}
+                                    </label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- إحصائيات التصدير -->
+            <div class="stats-box">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <h4>{{ total_students }}</h4>
+                        <small>إجمالي الطلاب</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h4>{{ grade_levels.count }}</h4>
+                        <small>الصفوف الدراسية</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 id="selected-count">0</h4>
+                        <small>المختار للتصدير</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 id="file-size">~</h4>
+                        <small>الحجم المتوقع</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- أزرار العمل -->
+            <div class="text-center">
+                <button type="submit" class="btn export-btn">
+                    <i class="fas fa-download me-2"></i>بدء التصدير
+                </button>
+                <a href="{% url 'students:student_list' %}" class="btn btn-outline-secondary me-3">
+                    <i class="fas fa-arrow-left me-2"></i>العودة
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- تحذيرات مهمة -->
+<div class="alert alert-info">
+    <h6><i class="fas fa-info-circle me-2"></i>ملاحظات مهمة:</h6>
+    <ul class="mb-0">
+        <li>تأكد من اختيار الصيغة المناسبة لاستخدامك</li>
+        <li>ملف Excel يحتوي على إحصائيات إضافية</li>
+        <li>ملف JSON مناسب للنسخ الاحتياطي والاستيراد المتقدم</li>
+        <li>العملية قد تستغرق وقتاً مع البيانات الكبيرة</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// تحديث الإحصائيات عند تغيير الاختيارات
+function updateStats() {
+    const selectedGrades = document.querySelectorAll('input[name="grade_levels"]:checked').length;
+    const includeInactive = document.getElementById('include_inactive').checked;
+    const format = document.querySelector('input[name="export_format"]:checked').value;
+    
+    // تقدير عدد الطلاب المختارين
+    let selectedCount = {{ total_students }};
+    if (selectedGrades > 0) {
+        // تقدير تقريبي
+        selectedCount = Math.round(selectedCount * (selectedGrades / {{ grade_levels.count }}));
+    }
+    
+    // تقدير حجم الملف
+    let estimatedSize = selectedCount * 0.5; // KB تقريباً
+    let sizeText = estimatedSize < 1024 ? `${Math.round(estimatedSize)} KB` : `${Math.round(estimatedSize/1024)} MB`;
+    
+    document.getElementById('selected-count').textContent = selectedCount;
+    document.getElementById('file-size').textContent = sizeText;
+}
+
+// إضافة مستمعين للأحداث
+document.addEventListener('DOMContentLoaded', function() {
+    // تحديث الإحصائيات عند تغيير أي اختيار
+    document.querySelectorAll('input[type="checkbox"], input[type="radio"]').forEach(input => {
+        input.addEventListener('change', updateStats);
+    });
+    
+    // تحديث أولي
+    updateStats();
+    
+    // تحديد/إلغاء تحديد جميع الصفوف
+    const selectAllBtn = document.createElement('button');
+    selectAllBtn.type = 'button';
+    selectAllBtn.className = 'btn btn-outline-primary btn-sm mb-3';
+    selectAllBtn.innerHTML = '<i class="fas fa-check-square me-1"></i>تحديد الكل';
+    selectAllBtn.onclick = function() {
+        const checkboxes = document.querySelectorAll('input[name="grade_levels"]');
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        
+        checkboxes.forEach(cb => cb.checked = !allChecked);
+        this.innerHTML = allChecked ? 
+            '<i class="fas fa-check-square me-1"></i>تحديد الكل' : 
+            '<i class="fas fa-square me-1"></i>إلغاء التحديد';
+        updateStats();
+    };
+    
+    // إضافة زر تحديد الكل
+    document.querySelector('.row.mt-3 .col-12 label').after(selectAllBtn);
+});
+</script>
+{% endblock %}

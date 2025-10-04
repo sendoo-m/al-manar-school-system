@@ -1,0 +1,311 @@
+<!-- treasury_management/templates/treasury_management/treasuries_list.html -->
+{% extends 'treasury_management/base.html' %}
+{% load static %}
+
+{% block title %}قائمة الخزائن{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">الخزائن</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2><i class="fas fa-vault me-2"></i>إدارة الخزائن</h2>
+                <p class="text-muted mb-0">جميع خزائن المدرسة وأرصدتها</p>
+            </div>
+            <div>
+                <a href="{% url 'treasury_management:add_treasury' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>إضافة خزنة جديدة
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- إحصائيات سريعة -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <div class="h4 mb-1">{{ stats.total_treasuries }}</div>
+                <div class="opacity-75">إجمالي الخزائن</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <div class="h4 mb-1">{{ stats.active_treasuries }}</div>
+                <div class="opacity-75">خزائن نشطة</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="card bg-warning text-white">
+            <div class="card-body text-center">
+                <div class="h4 mb-1">{{ stats.total_balance|floatformat:2 }}</div>
+                <div class="opacity-75">إجمالي الأرصدة</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <div class="h4 mb-1">{{ stats.treasuries_with_responsible }}</div>
+                <div class="opacity-75">لها مسؤولين</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- قائمة الخزائن -->
+<div class="row">
+    {% for treasury in treasuries %}
+    <div class="col-lg-4 col-md-6">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ treasury.name }}</h5>
+                {% if treasury.is_active %}
+                <span class="badge bg-success">نشطة</span>
+                {% else %}
+                <span class="badge bg-secondary">غير نشطة</span>
+                {% endif %}
+            </div>
+            
+            <div class="card-body">
+                <div class="row text-center mb-3">
+                    <div class="col-12">
+                        <div class="h3 text-primary mb-1">{{ treasury.current_balance|floatformat:2 }}</div>
+                        <small class="text-muted">الرصيد الحالي (ج.م)</small>
+                    </div>
+                </div>
+                
+                <div class="mb-2">
+                    <strong>الكود:</strong> {{ treasury.code }}
+                </div>
+                
+                {% if treasury.location %}
+                <div class="mb-2">
+                    <strong>الموقع:</strong> {{ treasury.location }}
+                </div>
+                {% endif %}
+                
+                {% if treasury.responsible_person %}
+                <div class="mb-2">
+                    <strong>المسؤول:</strong> {{ treasury.responsible_person.get_full_name }}
+                </div>
+                {% endif %}
+                
+                <div class="mb-2">
+                    <strong>الحدود:</strong>
+                    <small class="text-muted">
+                        أدنى: {{ treasury.min_limit|floatformat:2 }}
+                        {% if treasury.max_limit %}
+                        | أقصى: {{ treasury.max_limit|floatformat:2 }}
+                        {% endif %}
+                    </small>
+                </div>
+                
+                <div class="mb-3">
+                    <strong>الحساب المرتبط:</strong>
+                    <br><small class="text-muted">{{ treasury.account.code }} - {{ treasury.account.name }}</small>
+                </div>
+                
+                <!-- تنبيهات الرصيد -->
+                {% if treasury.current_balance < treasury.min_limit %}
+                <div class="bg-warning text-dark p-2 rounded mb-2">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    <small>الرصيد أقل من الحد الأدنى</small>
+                </div>
+                {% endif %}
+                
+                {% if treasury.max_limit and treasury.current_balance > treasury.max_limit %}
+                <div class="bg-info text-white p-2 rounded mb-2">
+                    <i class="fas fa-info-circle me-1"></i>
+                    <small>الرصيد أعلى من الحد الأقصى</small>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="card-footer">
+                <div class="btn-group w-100" role="group">
+                    <a href="{% url 'treasury_management:treasury_detail' treasury.id %}" 
+                       class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-eye"></i> تفاصيل
+                    </a>
+                    <a href="{% url 'treasury_management:edit_treasury' treasury.id %}" 
+                       class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-edit"></i> تحرير
+                    </a>
+                    <a href="{% url 'treasury_management:add_transaction' %}?treasury={{ treasury.id }}" 
+                       class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-plus"></i> عملية
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <!-- محتوى عادي بدون alert عند عدم وجود خزائن -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center py-5">
+                <div class="mb-4">
+                    <i class="fas fa-vault fa-5x text-muted mb-3"></i>
+                    <h3 class="text-muted">لا توجد خزائن مسجلة</h3>
+                    <p class="lead text-muted">ابدأ بإضافة خزنة جديدة لإدارة الأموال والعمليات المالية</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- كارت الإجراءات -->
+    <div class="col-12 mt-3">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-rocket me-2"></i>ابدأ بإنشاء خزنتك الأولى</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h6>لماذا تحتاج إلى خزنة؟</h6>
+                        <ul class="mb-3">
+                            <li>لتتبع الأموال النقدية اليومية</li>
+                            <li>لإدارة المدفوعات والإيصالات</li>
+                            <li>لفصل الأموال حسب المصادر</li>
+                            <li>لمراقبة التدفق النقدي</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <a href="{% url 'treasury_management:add_treasury' %}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-plus me-2"></i>إضافة خزنة جديدة
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- نصائح للبدء -->
+    <div class="col-12 mt-3">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card border-success">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0"><i class="fas fa-lightbulb me-2"></i>أمثلة لأنواع الخزائن</h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-2"><i class="fas fa-school text-primary me-2"></i><strong>خزنة الإدارة:</strong> للمدفوعات اليومية</li>
+                            <li class="mb-2"><i class="fas fa-graduation-cap text-success me-2"></i><strong>خزنة الرسوم:</strong> لرسوم الطلاب</li>
+                            <li class="mb-2"><i class="fas fa-bus text-warning me-2"></i><strong>خزنة النقل:</strong> لرسوم المواصلات</li>
+                            <li class="mb-0"><i class="fas fa-utensils text-info me-2"></i><strong>خزنة الكافيتيريا:</strong> للمبيعات</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card border-warning">
+                    <div class="card-header bg-warning text-dark">
+                        <h6 class="mb-0"><i class="fas fa-star me-2"></i>نصائح مهمة</h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>ابدأ بخزنة واحدة رئيسية</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>حدد مسؤول لكل خزنة</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>ضع حدود دنيا وعليا</li>
+                            <li class="mb-0"><i class="fas fa-check text-success me-2"></i>استخدم أكواد واضحة</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- معلومات إضافية -->
+{% if treasuries %}
+<div class="row mt-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>نصائح مهمة</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul class="mb-0">
+                            <li>تأكد من مراجعة أرصدة الخزائن بانتظام</li>
+                            <li>حدد حدود دنيا وعليا مناسبة لكل خزنة</li>
+                            <li>اربط كل خزنة بمسؤول محدد للمساءلة</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="mb-0">
+                            <li>استخدم الرموز المميزة لسهولة التعرف</li>
+                            <li>راقب التنبيهات والإشعارات</li>
+                            <li>قم بتحديث المواقع والمسؤولين</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>ملخص الأرصدة</h6>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <div class="h4 text-primary">{{ stats.total_balance|floatformat:2 }}</div>
+                    <small class="text-muted">إجمالي الأرصدة (ج.م)</small>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <a href="{% url 'treasury_management:reports' %}" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-chart-bar me-1"></i>تقارير مفصلة
+                    </a>
+                    <a href="{% url 'treasury_management:daily_summary' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-calendar-day me-1"></i>الملخص اليومي
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // تأثيرات الحركة للبطاقات
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+    
+    // تحديث البيانات كل دقيقتين
+    setInterval(function() {
+        location.reload();
+    }, 120000);
+});
+</script>
+{% endblock %}

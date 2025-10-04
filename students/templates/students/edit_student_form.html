@@ -1,88 +1,1456 @@
-{% extends 'students/base/administration_navbar.html' %}
-{% comment %} {% extends 'students/base.html' %} {% endcomment %}
-{% load crispy_forms_tags %}
-{% block content %}
-    {% comment %} <h1>{{ title }}</h1>
-    
-    
-    <form method="post" novalidate>
-        {% csrf_token %}
-        
-        <div class="row">
-          <div class="col-md-4">{{ form.name|as_crispy_field }}</div>
-          <div class="col-md-4">{{ form.national_number|as_crispy_field }}</div>
-          <div class="col-md-4">{{ form.date_of_birth|as_crispy_field }}</div>
-        </div>
-        <div><hr style="border: 1px solid #007bff;"></div>
-        <div class="row">
-          <div class="col-3">{{ form.age|as_crispy_field }}</div>
-          <div class="col-3">{{ form.gender|as_crispy_field }}</div>
-          {% comment %} <div class="col-3">{{ form.academic_year|as_crispy_field }}</div> 
-          <div class="col-3">{{ form.classroom|as_crispy_field }}</div>
-          
-          
-          <div><hr style="border: 1px solid #007bff;"></div>
-      </div>
-         <button type="submit">Add</button> deleted
-        <div class="row">
-          <div>
-              <button type="submit" class="btn btn-primary mt-3 my-btn" >حفظ</button>
-              
-            </div>
-        </div>
-      </form>     {% endcomment %}
-      <div class="container mt-5">
-        <div class="row justify-content-center">
-          <div class="col-md-8">
-            <div class="card border-white rounded-0 shadow">
-              <div class="card-header bg-light rounded-top">
-                <h4 class="mb-0">edit Student</h4>
-              </div>
-              <div class="card-body bg-light rounded-bottom">
-                {% if messages %}
-                  {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-                  {% endfor %}
-                {% endif %}
-                <form method="post" novalidate style="width: 60%;">
-                  {% csrf_token %}
-                  <div class="form-group">
-                    {{ form.name|as_crispy_field }}
-                  </div>
-                  <div class="form-group">
-                    {{ form.national_number|as_crispy_field }}
-                    <small class="form-text text-muted">
-                      Enter National number must be a 14-digit number.
-                    </small>
-                  </div>
-                  <div class="form-group">
-                    {{ form.phone_number|as_crispy_field }}
-                  </div>
-                  <div class="form-group">
-                    {{ form.date_of_birth|as_crispy_field }}
-                  </div>
-                  <div class="form-group">
-                    {{ form.age|as_crispy_field }}
-                    <small class="form-text text-muted">
-                      Age must be between 4 and 17 years.
-                    </small>
-                  </div>
-                  <div class="form-group">
-                    {{ form.gender|as_crispy_field }}
-                  </div>
-                  <div class="form-group">
-                    {{ form.classroom|as_crispy_field }}
-                  </div>
-                  <div class="form-group text-right">
-                    {% comment %} <button type="submit" class="btn btn-primary btn-lg">Save</button> {% endcomment %}
-                    <button type="submit" class="btn btn-primary mt-3 my-btn" >Save</button>
-                    {% comment %} <a href="{% url 'students:edit_student' %}" class="btn btn-secondary btn-lg ml-2">Cancel</a> {% endcomment %}
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    
+<!-- students/templates/students/edit_student_form.html -->
+{% extends 'students/base.html' %}
+
+{% block title %}تعديل بيانات الطالب - {{ student.name }} - نظام إدارة الطلاب{% endblock %}
+{% block page_title %}تعديل بيانات الطالب{% endblock %}
+{% block page_icon %}<i class="fas fa-user-edit"></i>{% endblock %}
+{% block page_subtitle %}تحديث وتعديل بيانات الطالب {{ student.name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'students:home' %}">الرئيسية</a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:student_list' %}">قائمة الطلاب</a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:student_detail' student.pk %}">{{ student.name }}</a></li>
+<li class="breadcrumb-item active">تعديل البيانات</li>
 {% endblock %}
+
+{% block extra_css %}
+<style>
+    /* إصلاح مشكلة العرض والحركة */
+    body {
+        overflow-x: hidden !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+    }
+    
+    .container-fluid,
+    .row,
+    .col-lg-8,
+    .col-lg-4,
+    .col-md-6,
+    .col-md-4,
+    .col-md-3 {
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box !important;
+    }
+    
+    .form-header {
+        background: linear-gradient(135deg, #e67e22 0%, #d35400 100%); /* ألوان برتقالية للتعديل */
+        color: white;
+        border-radius: 20px;
+        padding: 30px 20px;
+        margin-bottom: 25px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 25px rgba(230, 126, 34, 0.3);
+    }
+
+    .form-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+        animation: float 20s linear infinite;
+    }
+
+    @keyframes float {
+        0% { transform: translateX(-50px) translateY(-50px); }
+        100% { transform: translateX(50px) translateY(50px); }
+    }
+
+    .form-header-content {
+        position: relative;
+        z-index: 2;
+        text-align: center;
+    }
+
+    .form-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px;
+        font-size: 2rem;
+        backdrop-filter: blur(10px);
+        border: 3px solid rgba(255,255,255,0.3);
+    }
+
+    .form-container {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .form-section {
+        margin-bottom: 25px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 15px;
+        border-right: 4px solid #e67e22; /* لون برتقالي */
+        transition: all 0.3s ease;
+    }
+
+    .form-section:hover {
+        background: rgba(230, 126, 34, 0.03);
+        transform: translateX(-3px);
+    }
+
+    .section-title {
+        color: #e67e22; /* لون برتقالي */
+        font-weight: 700;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        font-size: 1rem;
+    }
+
+    .section-icon {
+        width: 35px;
+        height: 35px;
+        border-radius: 8px;
+        background: #e67e22; /* لون برتقالي */
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 10px;
+        font-size: 1rem;
+    }
+
+    .section-icon.success {
+        background: #28a745;
+    }
+
+    .section-icon.info {
+        background: #17a2b8;
+    }
+
+    .section-icon.warning {
+        background: #ffc107;
+        color: #000;
+    }
+
+    .section-icon.academic {
+        background: #2196f3;
+    }
+
+    .form-control-custom,
+    .form-select-custom {
+        border-radius: 12px;
+        border: 2px solid #e9ecef;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+        background: white;
+        font-size: 0.95rem;
+        position: relative;
+    }
+
+    .form-control-custom:focus,
+    .form-select-custom:focus,
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #e67e22; /* لون برتقالي */
+        box-shadow: 0 0 0 0.2rem rgba(230, 126, 34, 0.15);
+        background: white;
+        transform: translateY(-1px);
+    }
+
+    .form-control:valid {
+        border-color: #28a745;
+        background: #f8fff8;
+    }
+
+    .form-control.modified {
+        border-color: #e67e22;
+        background: #fff9f3;
+        position: relative;
+    }
+
+    .form-control.modified::after {
+        content: '✓';
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #e67e22;
+        font-weight: bold;
+    }
+
+    .preview-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        border: 2px solid #e9ecef;
+        transition: all 0.3s ease;
+        position: sticky;
+        top: 20px;
+    }
+
+    .preview-card.active {
+        border-color: #e67e22; /* لون برتقالي */
+        box-shadow: 0 8px 25px rgba(230, 126, 34, 0.2);
+    }
+
+    .preview-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .preview-avatar {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, #e67e22, #d35400); /* ألوان برتقالية */
+        color: white;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 15px;
+        font-size: 1.2rem;
+        font-weight: 800;
+    }
+
+    .preview-value {
+        background: linear-gradient(135deg, rgba(230, 126, 34, 0.1), rgba(211, 84, 0, 0.05));
+        border-radius: 12px;
+        padding: 15px;
+        text-align: center;
+        border: 2px solid rgba(230, 126, 34, 0.2);
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #e67e22;
+        margin-bottom: 15px;
+    }
+
+    .current-data-display {
+        background: linear-gradient(135deg, #d4edda, #c3e6cb);
+        border: 2px solid #28a745;
+        border-radius: 15px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+
+    .current-data-title {
+        color: #155724;
+        font-weight: 700;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+    }
+
+    .data-comparison {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 12px;
+        background: white;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        border-right: 3px solid #28a745;
+    }
+
+    .original-value {
+        color: #6c757d;
+        font-style: italic;
+    }
+
+    .modified-value {
+        color: #e67e22;
+        font-weight: bold;
+    }
+
+    .help-text {
+        background: #fff3cd; /* لون فاتح مناسب للثيم البرتقالي */
+        border: 1px solid #ffeaa7;
+        border-radius: 10px;
+        padding: 15px;
+        margin-top: 15px;
+    }
+
+    .help-text .help-icon {
+        color: #e67e22; /* لون برتقالي */
+        margin-left: 8px;
+    }
+
+    .btn-save {
+        background: linear-gradient(135deg, #28a745, #20c997); /* ألوان خضراء للحفظ */
+        border: none;
+        border-radius: 12px;
+        padding: 12px 30px;
+        color: white;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-save::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s;
+    }
+
+    .btn-save:hover::before {
+        left: 100%;
+    }
+
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+        color: white;
+        background: linear-gradient(135deg, #20c997, #28a745);
+    }
+
+    .btn-custom {
+        padding: 12px 30px;
+        border-radius: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border: none;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .btn-custom::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s;
+    }
+
+    .btn-custom:hover::before {
+        left: 100%;
+    }
+
+    .btn-custom:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    }
+
+    .btn-warning.btn-custom {
+        background: linear-gradient(135deg, #ffc107, #e0a800);
+        color: #212529;
+    }
+
+    .btn-secondary.btn-custom {
+        background: linear-gradient(135deg, #6c757d, #5a6268);
+        color: white;
+    }
+
+    .btn-info.btn-custom {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+    }
+
+    .required-asterisk {
+        color: #dc3545;
+        margin-left: 3px;
+    }
+
+    .input-group-icon {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+        transition: all 0.3s ease;
+        pointer-events: none;
+        z-index: 5;
+    }
+
+    .form-control:focus ~ .input-group-icon {
+        color: #e67e22;
+        transform: translateY(-50%) scale(1.1);
+    }
+
+    .changes-indicator {
+        position: fixed;
+        top: 100px;
+        right: 20px;
+        background: #e67e22;
+        color: white;
+        padding: 10px 15px;
+        border-radius: 25px;
+        display: none;
+        z-index: 1000;
+        box-shadow: 0 4px 15px rgba(230, 126, 34, 0.3);
+    }
+
+    .changes-indicator.show {
+        display: block;
+        animation: slideInRight 0.3s ease;
+    }
+
+    @keyframes slideInRight {
+        from { transform: translateX(100%); }
+        to { transform: translateX(0); }
+    }
+
+    /* أنيميشن الدخول */
+    .slide-in {
+        opacity: 0;
+        transform: translateY(30px);
+        animation: slideInUp 0.6s ease forwards;
+    }
+
+    .slide-in:nth-child(1) { animation-delay: 0.1s; }
+    .slide-in:nth-child(2) { animation-delay: 0.2s; }
+    .slide-in:nth-child(3) { animation-delay: 0.3s; }
+    .slide-in:nth-child(4) { animation-delay: 0.4s; }
+
+    @keyframes slideInUp {
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* تحسين شريط التقدم */
+    .progress-indicator {
+        position: sticky;
+        top: 80px;
+        background: white;
+        padding: 15px;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+        z-index: 100;
+    }
+
+    .progress {
+        height: 8px;
+        border-radius: 4px;
+        background: #e9ecef;
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        background: linear-gradient(135deg, #e67e22, #d35400);
+        transition: width 0.3s ease;
+    }
+
+    /* تحسينات responsive */
+    @media (max-width: 768px) {
+        .form-header {
+            padding: 20px 15px;
+            margin-bottom: 20px;
+        }
+        
+        .form-icon {
+            width: 60px;
+            height: 60px;
+            font-size: 1.5rem;
+        }
+        
+        .form-container {
+            padding: 20px;
+        }
+        
+        .form-section {
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .section-icon {
+            width: 30px;
+            height: 30px;
+            font-size: 0.9rem;
+        }
+        
+        .preview-card {
+            margin-top: 20px;
+            position: static;
+        }
+        
+        .btn-custom {
+            padding: 10px 20px;
+            font-size: 0.9rem;
+        }
+        
+        .btn-group {
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .changes-indicator {
+            right: 10px;
+            top: 90px;
+        }
+    }
+
+    /* إصلاح مشاكل الـ overflow النهائية */
+    * {
+        box-sizing: border-box;
+    }
+    
+    .row {
+        margin-right: 0 !important;
+        margin-left: 0 !important;
+    }
+    
+    [class*="col-"] {
+        padding-right: 12px !important;
+        padding-left: 12px !important;
+    }
+
+    .page-footer {
+        margin-top: 15px;
+        margin-bottom: 10px;
+    }
+
+    /* تأثير Loading */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.9);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+
+    .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid #fff3cd;
+        border-top: 5px solid #e67e22;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* إضافة هذا للـ CSS */
+.extracted-data-alert {
+    background: linear-gradient(135deg, #d4edda, #c3e6cb);
+    border: 2px solid #28a745;
+    border-radius: 15px;
+    padding: 20px;
+    margin-top: 15px;
+    animation: slideInUp 0.5s ease, pulse 2s infinite;
+    position: relative;
+    overflow: hidden;
+}
+
+.extracted-data-alert::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: shine 3s infinite;
+    pointer-events: none;
+}
+
+@keyframes shine {
+    0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+    50% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+    100% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+}
+
+.alert-heading {
+    color: #155724;
+    font-weight: 700;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+}
+
+.extracted-value {
+    background: rgba(255, 255, 255, 0.7);
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(40, 167, 69, 0.3);
+    text-align: center;
+    font-weight: 700;
+    color: #155724;
+    position: relative;
+}
+
+.original-value {
+    color: #6c757d;
+    font-style: italic;
+    font-size: 0.9rem;
+}
+
+.modified-value {
+    color: #e67e22;
+    font-weight: bold;
+}
+
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Form Header -->
+<div class="form-header">
+    <div class="form-header-content">
+        <div class="form-icon">
+            <i class="fas fa-user-edit"></i>
+        </div>
+        <h4 class="mb-2">تعديل بيانات الطالب</h4>
+        <p class="mb-0 opacity-90">تحديث وتعديل معلومات الطالب {{ student.name }}</p>
+    </div>
+</div>
+
+<!-- مؤشر التغييرات -->
+<div class="changes-indicator" id="changesIndicator">
+    <i class="fas fa-edit me-2"></i>تم إجراء تغييرات
+</div>
+
+<!-- شريط التقدم -->
+<div class="progress-indicator">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <small class="text-muted">تقدم التعديل</small>
+        <small class="text-muted" id="progressText">جاهز للتعديل</small>
+    </div>
+    <div class="progress">
+        <div class="progress-bar" id="formProgress" style="width: 100%"></div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="text-center">
+        <div class="loading-spinner mb-3"></div>
+        <h5>جاري حفظ التعديلات...</h5>
+        <p class="text-muted">يرجى الانتظار</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="form-container">
+            <form method="post" id="editStudentForm">
+                {% csrf_token %}
+                
+                <!-- البيانات الأساسية -->
+                <div class="form-section slide-in">
+                    <div class="section-title">
+                        <div class="section-icon">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <span>البيانات الأساسية</span>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="position-relative">
+                                <label for="id_name" class="form-label fw-bold">
+                                    <i class="fas fa-user me-2"></i>اسم الطالب <span class="required-asterisk">*</span>
+                                </label>
+                                <input type="text" class="form-control form-control-custom" id="id_name" name="name" 
+                                       value="{{ student.name }}" required data-original="{{ student.name }}">
+                                <i class="fas fa-user input-group-icon"></i>
+                            </div>
+                        </div>
+                        
+                        
+                        <!-- إضافة هذا بعد input الرقم القومي في form التعديل -->
+<div class="col-md-6">
+    <div class="position-relative">
+        <label for="id_national_number" class="form-label fw-bold">
+            <i class="fas fa-id-card me-2"></i>الرقم القومي <span class="required-asterisk">*</span>
+        </label>
+        <input type="text" class="form-control form-control-custom" id="id_national_number" name="national_number" 
+               value="{{ student.national_number }}" maxlength="14" required data-original="{{ student.national_number }}">
+        <i class="fas fa-id-card input-group-icon"></i>
+        <div class="help-text">
+            <i class="fas fa-info-circle help-icon"></i>
+            <small>تعديل الرقم القومي سيؤدي إلى تحديث العمر وتاريخ الميلاد والجنس تلقائياً</small>
+        </div>
+        
+        <!-- عرض البيانات المستخرجة -->
+        <div class="extracted-data-alert" id="extractedDataAlert" style="display: none;">
+            <h6 class="alert-heading">
+                <i class="fas fa-magic me-2"></i>تم تحديث البيانات المستخرجة!
+            </h6>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <small class="text-muted d-block mb-2">تاريخ الميلاد</small>
+                    <div class="extracted-value">
+                        <i class="fas fa-calendar me-2"></i>
+                        <span id="extractedBirthDate"></span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <small class="text-muted d-block mb-2">العمر الجديد</small>
+                    <div class="extracted-value">
+                        <i class="fas fa-clock me-2"></i>
+                        <span id="extractedAge"></span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <small class="text-muted d-block mb-2">الجنس</small>
+                    <div class="extracted-value">
+                        <i class="fas fa-venus-mars me-2"></i>
+                        <span id="extractedGender"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- مقارنة مع البيانات الحالية -->
+            <div class="mt-3 pt-3 border-top">
+                <h6 class="text-warning mb-2">
+                    <i class="fas fa-exchange-alt me-2"></i>مقارنة التغييرات:
+                </h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <small class="text-muted d-block">العمر الحالي:</small>
+                        <span class="original-value">{{ student.age|default:"غير محدد" }} سنة</span>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted d-block">العمر الجديد:</small>
+                        <span class="modified-value" id="newAgeDisplay">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+                        <div class="col-md-6">
+                            <div class="position-relative">
+                                <label for="id_phone_number" class="form-label fw-bold">
+                                    <i class="fas fa-phone me-2"></i>رقم الهاتف
+                                </label>
+                                <input type="text" class="form-control form-control-custom" id="id_phone_number" name="phone_number"
+                                       value="{{ student.phone_number|default:'' }}" data-original="{{ student.phone_number|default:'' }}">
+                                <i class="fas fa-phone input-group-icon"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="position-relative">
+                                <label for="id_address" class="form-label fw-bold">
+                                    <i class="fas fa-map-marker-alt me-2"></i>العنوان
+                                </label>
+                                <input type="text" class="form-control form-control-custom" id="id_address" name="address"
+                                       value="{{ student.address|default:'' }}" data-original="{{ student.address|default:'' }}">
+                                <i class="fas fa-map-marker-alt input-group-icon"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- البيانات الأكاديمية -->
+                <div class="form-section slide-in" style="background: linear-gradient(135deg, #e3f2fd, #bbdefb); border-right-color: #2196f3;">
+                    <div class="section-title" style="color: #2196f3;">
+                        <div class="section-icon academic">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <span>البيانات الأكاديمية</span>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="position-relative">
+                                <label for="education_level" class="form-label fw-bold">
+                                    <i class="fas fa-layer-group me-2"></i>المرحلة التعليمية <span class="required-asterisk">*</span>
+                                </label>
+                                <select class="form-select form-select-custom" id="education_level" name="education_level" required>
+                                    <option value="">اختر المرحلة التعليمية</option>
+                                    {% for level in education_levels %}
+                                        <option value="{{ level.id }}" 
+                                                {% if student.grade_level and student.grade_level.education_level.id == level.id %}selected{% endif %}
+                                                data-min-age="{{ level.min_age }}" data-max-age="{{ level.max_age }}">
+                                            {{ level.name }} ({{ level.min_age }}-{{ level.max_age }} سنة)
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <i class="fas fa-layer-group input-group-icon"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="position-relative">
+                                <label for="grade_level" class="form-label fw-bold">
+                                    <i class="fas fa-chalkboard me-2"></i>الصف الدراسي <span class="required-asterisk">*</span>
+                                </label>
+                                <select class="form-select form-select-custom" id="grade_level" name="grade_level" required
+                                        data-original="{{ student.grade_level.id|default:'' }}">
+                                    <option value="">اختر الصف الدراسي</option>
+                                    {% if student.grade_level %}
+                                        <option value="{{ student.grade_level.id }}" selected>{{ student.grade_level.name }}</option>
+                                    {% endif %}
+                                </select>
+                                <i class="fas fa-chalkboard input-group-icon"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- بيانات ولي الأمر -->
+                <div class="form-section slide-in">
+                    <div class="section-title">
+                        <div class="section-icon warning">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <span>بيانات ولي الأمر</span>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="position-relative">
+                                <label for="id_parent_name" class="form-label fw-bold">
+                                    <i class="fas fa-user-tie me-2"></i>اسم ولي الأمر
+                                </label>
+                                <input type="text" class="form-control form-control-custom" id="id_parent_name" name="parent_name"
+                                       value="{{ student.parent_name|default:'' }}" data-original="{{ student.parent_name|default:'' }}">
+                                <i class="fas fa-user-tie input-group-icon"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="position-relative">
+                                <label for="id_parent_phone" class="form-label fw-bold">
+                                    <i class="fas fa-mobile-alt me-2"></i>هاتف ولي الأمر
+                                </label>
+                                <input type="text" class="form-control form-control-custom" id="id_parent_phone" name="parent_phone"
+                                       value="{{ student.parent_phone|default:'' }}" data-original="{{ student.parent_phone|default:'' }}">
+                                <i class="fas fa-mobile-alt input-group-icon"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="position-relative">
+                                <label for="id_parent_email" class="form-label fw-bold">
+                                    <i class="fas fa-envelope me-2"></i>بريد ولي الأمر
+                                </label>
+                                <input type="email" class="form-control form-control-custom" id="id_parent_email" name="parent_email"
+                                       value="{{ student.parent_email|default:'' }}" data-original="{{ student.parent_email|default:'' }}">
+                                <i class="fas fa-envelope input-group-icon"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- أزرار الإجراءات -->
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="{% url 'students:student_detail' student.pk %}" 
+                       class="btn btn-secondary btn-custom">
+                        <i class="fas fa-times me-2"></i>إلغاء التعديل
+                    </a>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-info btn-custom" onclick="resetForm()">
+                            <i class="fas fa-undo me-2"></i>التراجع عن التغييرات
+                        </button>
+                        <button type="submit" class="btn btn-save" id="saveBtn" disabled>
+                            <i class="fas fa-save me-2"></i>حفظ التعديلات
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- معاينة التغييرات -->
+    <div class="col-lg-4">
+        <div class="preview-card" id="previewCard">
+            <h6 class="text-warning mb-3">
+                <i class="fas fa-eye me-2"></i>معاينة التعديلات
+            </h6>
+            
+            <div class="preview-header">
+                <div class="preview-avatar" id="previewAvatar">{{ student.name.0|upper }}</div>
+                <div>
+                    <h6 class="mb-1" id="previewName">{{ student.name }}</h6>
+                    <small class="text-muted" id="previewGrade">{{ student.grade_name }}</small>
+                </div>
+            </div>
+            
+            <div class="preview-value" id="previewInfo">
+                لم يتم إجراء تعديلات بعد
+            </div>
+            
+            <!-- عرض البيانات الحالية -->
+            <div class="current-data-display">
+                <div class="current-data-title">
+                    <i class="fas fa-info-circle me-2"></i>البيانات الحالية
+                </div>
+                <div class="data-comparison">
+                    <span>الرقم القومي:</span>
+                    <span class="original-value">{{ student.national_number }}</span>
+                </div>
+                <div class="data-comparison">
+                    <span>العمر:</span>
+                    <span class="original-value">{{ student.age|default:"غير محدد" }} سنة</span>
+                </div>
+                <div class="data-comparison">
+                    <span>الجنس:</span>
+                    <span class="original-value">{{ student.get_gender_display_arabic }}</span>
+                </div>
+                <div class="data-comparison">
+                    <span>المرحلة التعليمية:</span>
+                    <span class="original-value">{{ student.education_level_name }}</span>
+                </div>
+            </div>
+            
+            <!-- التغييرات المعلقة -->
+            <div class="preview-section" id="changesSection" style="display: none;">
+                <h6 style="color: #e67e22;">التغييرات المعلقة</h6>
+                <div id="changesList"></div>
+            </div>
+            
+            <!-- إحصائيات التعديل -->
+            <div class="preview-section">
+                <h6 style="color: #17a2b8;">إحصائيات التعديل</h6>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>الحقول المعدلة:</span>
+                    <span id="modifiedFieldsCount">0</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>آخر تعديل:</span>
+                    <span>{{ student.updated_at|date:"d/m/Y H:i" }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- نصائح التعديل -->
+        <div class="alert alert-info mt-3 border-0" style="background: rgba(230, 126, 34, 0.1); border-right: 4px solid #e67e22 !important;">
+            <h6 style="color: #e67e22;">
+                <i class="fas fa-lightbulb me-2"></i>نصائح التعديل
+            </h6>
+            <ul class="mb-0 small">
+                <li>تأكد من صحة البيانات قبل الحفظ</li>
+                <li>تعديل الرقم القومي يتطلب دقة عالية</li>
+                <li>يمكن التراجع عن التغييرات قبل الحفظ</li>
+                <li>سيتم حفظ تاريخ آخر تعديل تلقائياً</li>
+            </ul>
+        </div>
+        
+        <!-- معلومات إضافية -->
+        <div class="alert alert-light mt-3 border">
+            <h6 class="text-dark mb-2">
+                <i class="fas fa-user me-2"></i>معلومات الطالب
+            </h6>
+            <div class="small">
+                <div class="mb-2">
+                    <strong>تاريخ التسجيل:</strong> {{ student.created_at|date:"d/m/Y" }}
+                </div>
+                <div class="mb-2">
+                    <strong>العام الدراسي:</strong> {{ student.academic_year.name|default:"غير محدد" }}
+                </div>
+                <div>
+                    <strong>الحالة:</strong> 
+                    {% if student.is_active %}
+                        <span class="badge bg-success">نشط</span>
+                    {% else %}
+                        <span class="badge bg-secondary">غير نشط</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="page-footer"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// متغيرات عامة
+let originalData = {};
+let hasChanges = false;
+let extractedAge = 0;
+let extractedGender = '';
+let extractedBirthDate = '';
+
+// تحميل البيانات الأصلية
+document.addEventListener('DOMContentLoaded', function() {
+    collectOriginalData();
+    setupChangeDetection();
+    loadCurrentGrades();
+    setupNationalNumberExtraction(); // إضافة جديدة
+    
+    console.log('تم تحميل صفحة تعديل الطالب');
+});
+
+// إعداد استخراج البيانات من الرقم القومي
+function setupNationalNumberExtraction() {
+    const nationalInput = document.getElementById('id_national_number');
+    if (nationalInput) {
+        nationalInput.addEventListener('input', function() {
+            const nationalId = this.value.trim();
+            if (nationalId.length === 14) {
+                extractDataFromNationalId(nationalId);
+            } else {
+                hideExtractedData();
+            }
+        });
+        
+        // فحص الرقم القومي الحالي عند التحميل
+        if (nationalInput.value.trim().length === 14) {
+            extractDataFromNationalId(nationalInput.value.trim());
+        }
+    }
+}
+
+// استخراج البيانات من الرقم القومي
+function extractDataFromNationalId(nationalId) {
+    if (!/^\d{14}$/.test(nationalId)) {
+        hideExtractedData();
+        return;
+    }
+    
+    try {
+        const centuryIndicator = parseInt(nationalId[0]);
+        const yearPart = nationalId.substring(1, 3);
+        const month = nationalId.substring(3, 5);
+        const day = nationalId.substring(5, 7);
+        
+        let fullYear;
+        if (centuryIndicator === 2) {
+            fullYear = '19' + yearPart;
+        } else if (centuryIndicator === 3) {
+            fullYear = '20' + yearPart;
+        } else {
+            hideExtractedData();
+            return;
+        }
+        
+        const birthDate = new Date(fullYear, month - 1, day);
+        
+        if (birthDate.getFullYear() == fullYear && 
+            birthDate.getMonth() == (month - 1) && 
+            birthDate.getDate() == day) {
+            
+            // تاريخ الميلاد
+            const formattedDate = `${day}/${month}/${fullYear}`;
+            extractedBirthDate = formattedDate;
+            document.getElementById('extractedBirthDate').textContent = formattedDate;
+            
+            // حساب العمر
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            
+            extractedAge = age;
+            document.getElementById('extractedAge').textContent = age + ' سنة';
+            document.getElementById('newAgeDisplay').textContent = age + ' سنة';
+            
+            // تحديد الجنس
+            const genderDigit = parseInt(nationalId[12]);
+            const gender = (genderDigit % 2 === 0) ? 'أنثى' : 'ذكر';
+            extractedGender = gender;
+            document.getElementById('extractedGender').textContent = gender;
+            
+            // إظهار البيانات المستخرجة
+            showExtractedData();
+            
+            // تحديث معاينة التغييرات
+            updateExtractedDataInPreview();
+            
+            console.log('تم استخراج البيانات:', {
+                age: age,
+                gender: gender,
+                birthDate: formattedDate
+            });
+            
+        } else {
+            hideExtractedData();
+        }
+        
+    } catch (error) {
+        console.error('خطأ في استخراج البيانات:', error);
+        hideExtractedData();
+    }
+}
+
+function showExtractedData() {
+    const alert = document.getElementById('extractedDataAlert');
+    if (alert) {
+        alert.style.display = 'block';
+        alert.style.opacity = '0';
+        alert.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            alert.style.transition = 'all 0.3s ease';
+            alert.style.opacity = '1';
+            alert.style.transform = 'translateY(0)';
+        }, 100);
+    }
+}
+
+function hideExtractedData() {
+    const alert = document.getElementById('extractedDataAlert');
+    if (alert) {
+        alert.style.display = 'none';
+    }
+    
+    // إعادة تعيين المتغيرات
+    extractedAge = 0;
+    extractedGender = '';
+    extractedBirthDate = '';
+    
+    // إخفاء من المعاينة
+    removeExtractedDataFromPreview();
+}
+
+// تحديث المعاينة بالبيانات المستخرجة
+function updateExtractedDataInPreview() {
+    // تحديث القسم الحالي أو إنشاء قسم جديد للبيانات المستخرجة
+    let extractedSection = document.getElementById('extractedDataSection');
+    
+    if (!extractedSection) {
+        // إنشاء قسم جديد للبيانات المستخرجة
+        extractedSection = document.createElement('div');
+        extractedSection.id = 'extractedDataSection';
+        extractedSection.className = 'preview-section';
+        extractedSection.innerHTML = `
+            <h6 style="color: #28a745;">
+                <i class="fas fa-magic me-2"></i>البيانات المستخرجة الجديدة
+            </h6>
+            <div id="extractedDataContent"></div>
+        `;
+        
+        // إدراج قبل قسم التغييرات المعلقة
+        const changesSection = document.getElementById('changesSection');
+        changesSection.parentNode.insertBefore(extractedSection, changesSection);
+    }
+    
+    // تحديث المحتوى
+    const content = document.getElementById('extractedDataContent');
+    content.innerHTML = `
+        <div class="data-comparison">
+            <span>العمر المحدث:</span>
+            <span class="modified-value">${extractedAge} سنة</span>
+        </div>
+        <div class="data-comparison">
+            <span>الجنس:</span>
+            <span class="modified-value">${extractedGender}</span>
+        </div>
+        <div class="data-comparison">
+            <span>تاريخ الميلاد:</span>
+            <span class="modified-value">${extractedBirthDate}</span>
+        </div>
+    `;
+    
+    extractedSection.style.display = 'block';
+}
+
+// إزالة البيانات المستخرجة من المعاينة
+function removeExtractedDataFromPreview() {
+    const extractedSection = document.getElementById('extractedDataSection');
+    if (extractedSection) {
+        extractedSection.style.display = 'none';
+    }
+}
+
+// تحديث دالة كشف التغييرات لتشمل البيانات المستخرجة
+function detectChanges() {
+    hasChanges = false;
+    let modifiedCount = 0;
+    const changesList = document.getElementById('changesList');
+    changesList.innerHTML = '';
+    
+    const inputs = document.querySelectorAll('input, select');
+    inputs.forEach(input => {
+        const currentValue = input.value.trim();
+        const originalValue = originalData[input.name] || '';
+        
+        if (currentValue !== originalValue) {
+            hasChanges = true;
+            modifiedCount++;
+            
+            // تمييز الحقل المعدل
+            input.classList.add('modified');
+            
+            // إضافة التغيير للقائمة
+            const changeItem = document.createElement('div');
+            changeItem.className = 'data-comparison';
+            changeItem.innerHTML = `
+                <span>${getFieldLabel(input.name)}:</span>
+                <span class="modified-value">${currentValue || 'فارغ'}</span>
+            `;
+            changesList.appendChild(changeItem);
+            
+            // إضافة خاصة للرقم القومي
+            if (input.name === 'national_number' && extractedAge > 0) {
+                const ageItem = document.createElement('div');
+                ageItem.className = 'data-comparison';
+                ageItem.innerHTML = `
+                    <span>العمر الجديد (محسوب):</span>
+                    <span class="modified-value">${extractedAge} سنة</span>
+                `;
+                changesList.appendChild(ageItem);
+                
+                const genderItem = document.createElement('div');
+                genderItem.className = 'data-comparison';
+                genderItem.innerHTML = `
+                    <span>الجنس (محسوب):</span>
+                    <span class="modified-value">${extractedGender}</span>
+                `;
+                changesList.appendChild(genderItem);
+            }
+        } else {
+            input.classList.remove('modified');
+        }
+    });
+    
+    // تحديث واجهة المستخدم
+    updateUI(modifiedCount);
+}
+
+
+// جمع البيانات الأصلية
+function collectOriginalData() {
+    const inputs = document.querySelectorAll('input[data-original], select[data-original]');
+    inputs.forEach(input => {
+        originalData[input.name] = input.getAttribute('data-original') || '';
+    });
+    console.log('البيانات الأصلية:', originalData);
+}
+
+// إعداد كشف التغييرات
+function setupChangeDetection() {
+    const inputs = document.querySelectorAll('input, select');
+    inputs.forEach(input => {
+        input.addEventListener('input', detectChanges);
+        input.addEventListener('change', detectChanges);
+    });
+}
+
+// تحديث واجهة المستخدم
+function updateUI(modifiedCount) {
+    const saveBtn = document.getElementById('saveBtn');
+    const changesIndicator = document.getElementById('changesIndicator');
+    const changesSection = document.getElementById('changesSection');
+    const previewCard = document.getElementById('previewCard');
+    const previewInfo = document.getElementById('previewInfo');
+    const progressText = document.getElementById('progressText');
+    const modifiedFieldsCount = document.getElementById('modifiedFieldsCount');
+    
+    // حساب التغييرات الإضافية للبيانات المستخرجة
+    let totalChanges = modifiedCount;
+    const nationalInput = document.getElementById('id_national_number');
+    if (nationalInput && nationalInput.value !== originalData['national_number'] && extractedAge > 0) {
+        totalChanges += 2; // عمر وجنس مستخرجان
+    }
+    
+    // تحديث زر الحفظ
+    saveBtn.disabled = !hasChanges;
+    saveBtn.innerHTML = hasChanges ? 
+        '<i class="fas fa-save me-2"></i>حفظ التعديلات' : 
+        '<i class="fas fa-save me-2"></i>لا توجد تغييرات';
+    
+    // تحديث مؤشر التغييرات
+    if (hasChanges) {
+        changesIndicator.classList.add('show');
+        changesSection.style.display = 'block';
+        previewCard.classList.add('active');
+        previewInfo.textContent = totalChanges > modifiedCount ? 
+            `تم تعديل ${modifiedCount} حقل + بيانات مستخرجة` : 
+            `تم تعديل ${modifiedCount} حقل`;
+        progressText.textContent = `${totalChanges} تعديل معلق`;
+    } else {
+        changesIndicator.classList.remove('show');
+        changesSection.style.display = 'none';
+        previewCard.classList.remove('active');
+        previewInfo.textContent = 'لم يتم إجراء تعديلات بعد';
+        progressText.textContent = 'جاهز للتعديل';
+    }
+    
+    // تحديث عداد الحقول المعدلة
+    modifiedFieldsCount.textContent = totalChanges;
+    
+    // تحديث شريط التقدم
+    const progressBar = document.getElementById('formProgress');
+    if (hasChanges) {
+        progressBar.style.width = '75%';
+        progressBar.className = 'progress-bar bg-warning';
+    } else {
+        progressBar.style.width = '100%';
+        progressBar.className = 'progress-bar bg-success';
+    }
+}
+
+// الحصول على تسمية الحقل
+function getFieldLabel(fieldName) {
+    const labels = {
+        'name': 'الاسم',
+        'national_number': 'الرقم القومي',
+        'phone_number': 'رقم الهاتف',
+        'address': 'العنوان',
+        'education_level': 'المرحلة التعليمية',
+        'grade_level': 'الصف الدراسي',
+        'parent_name': 'اسم ولي الأمر',
+        'parent_phone': 'هاتف ولي الأمر',
+        'parent_email': 'بريد ولي الأمر'
+    };
+    return labels[fieldName] || fieldName;
+}
+
+// تحميل الصفوف الحالية
+function loadCurrentGrades() {
+    const educationSelect = document.getElementById('education_level');
+    if (educationSelect.value) {
+        loadGradesByLevel(educationSelect.value);
+    }
+}
+
+// تحميل الصفوف حسب المرحلة
+document.getElementById('education_level').addEventListener('change', function() {
+    const levelId = this.value;
+    if (levelId) {
+        loadGradesByLevel(levelId);
+    } else {
+        clearGrades();
+    }
+});
+
+function loadGradesByLevel(levelId) {
+    const gradeSelect = document.getElementById('grade_level');
+    const currentGrade = gradeSelect.getAttribute('data-original');
+    
+    gradeSelect.innerHTML = '<option value="">جاري التحميل...</option>';
+    gradeSelect.disabled = true;
+    
+    fetch(`/students/get-grades-by-level/${levelId}/`)
+        .then(response => response.json())
+        .then(data => {
+            gradeSelect.disabled = false;
+            if (data.success && data.grades) {
+                gradeSelect.innerHTML = '<option value="">اختر الصف الدراسي</option>';
+                data.grades.forEach(grade => {
+                    const option = document.createElement('option');
+                    option.value = grade.id;
+                    option.textContent = grade.name;
+                    if (grade.id == currentGrade) {
+                        option.selected = true;
+                    }
+                    gradeSelect.appendChild(option);
+                });
+                
+                gradeSelect.style.borderColor = '#28a745';
+                gradeSelect.style.background = '#f8fff8';
+            } else {
+                gradeSelect.innerHTML = '<option value="">لا توجد صفوف متاحة</option>';
+            }
+        })
+        .catch(error => {
+            console.error('خطأ في تحميل الصفوف:', error);
+            gradeSelect.disabled = false;
+            gradeSelect.innerHTML = '<option value="">خطأ في تحميل الصفوف</option>';
+        });
+}
+
+function clearGrades() {
+    const gradeSelect = document.getElementById('grade_level');
+    gradeSelect.innerHTML = '<option value="">اختر المرحلة التعليمية أولاً</option>';
+    gradeSelect.disabled = false;
+}
+
+// إعادة تعيين النموذج
+function resetForm() {
+    if (!hasChanges) {
+        return;
+    }
+    
+    if (confirm('هل أنت متأكد من التراجع عن جميع التغييرات؟')) {
+        const inputs = document.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            const originalValue = originalData[input.name] || '';
+            input.value = originalValue;
+            input.classList.remove('modified');
+        });
+        
+        // إخفاء البيانات المستخرجة
+        hideExtractedData();
+        
+        // إعادة تحميل الصفوف
+        loadCurrentGrades();
+        
+        // إعادة فحص التغييرات
+        detectChanges();
+        
+        console.log('تم التراجع عن التغييرات');
+    }
+}
+
+// إرسال النموذج
+document.getElementById('editStudentForm').addEventListener('submit', function(e) {
+    if (!hasChanges) {
+        e.preventDefault();
+        alert('لا توجد تغييرات لحفظها!');
+        return;
+    }
+    
+    console.log('تم إرسال نموذج التعديل مع البيانات المستخرجة:', {
+        extractedAge: extractedAge,
+        extractedGender: extractedGender,
+        extractedBirthDate: extractedBirthDate
+    });
+    
+    // إظهار Loading
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    if (loadingOverlay) {
+        loadingOverlay.style.display = 'flex';
+    }
+    
+    // تعطيل الزر
+    const submitBtn = this.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>جاري الحفظ...';
+    }
+});
+
+// تحذير عند مغادرة الصفحة مع وجود تغييرات
+window.addEventListener('beforeunload', function(e) {
+    if (hasChanges) {
+        const message = 'لديك تغييرات غير محفوظة. هل أنت متأكد من مغادرة الصفحة؟';
+        e.returnValue = message;
+        return message;
+    }
+});
+
+
+
+</script>
+{% endblock %}
+

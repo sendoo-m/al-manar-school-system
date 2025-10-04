@@ -1,0 +1,763 @@
+{% extends 'books_inventory/base.html' %}
+{% load static %}
+
+{% block title %}مخزن الكتب - الصفحة الرئيسية{% endblock %}
+
+{% block content %}
+<!-- إضافة الـ CSS مباشرة في بداية المحتوى -->
+<style>
+    /* الخلفية المتدرجة */
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+    }
+
+    /* Header الرئيسي */
+    .dashboard-header {
+        background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.9));
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        backdrop-filter: blur(10px);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .dashboard-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="1" fill="rgba(102,126,234,0.1)"/></svg>') repeat;
+        animation: float 20s linear infinite;
+    }
+
+    .dashboard-header-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .page-title {
+        color: #2c3e50;
+        font-weight: 700;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        font-size: 2.2rem;
+    }
+
+    .page-subtitle {
+        color: #6c757d;
+        font-size: 1.1rem;
+        margin-bottom: 0;
+    }
+
+    /* البطاقات الإحصائية المحسنة */
+    .stats-card {
+        background: white;
+        border-radius: 20px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        border: none;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stats-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+    }
+
+    .stats-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 5px;
+        background: linear-gradient(135deg, var(--card-color), var(--card-color-dark));
+    }
+
+    .stats-card.books { --card-color: #3498db; --card-color-dark: #2980b9; }
+    .stats-card.notebooks { --card-color: #e74c3c; --card-color-dark: #c0392b; }
+    .stats-card.supplies { --card-color: #2ecc71; --card-color-dark: #27ae60; }
+    .stats-card.alerts { --card-color: #f39c12; --card-color-dark: #e67e22; }
+
+    .stats-icon {
+        width: 70px;
+        height: 70px;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        margin-bottom: 20px;
+        background: linear-gradient(135deg, var(--card-color), var(--card-color-dark));
+        color: white;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    .stats-number {
+        font-size: 3rem;
+        font-weight: 700;
+        color: var(--card-color);
+        margin-bottom: 10px;
+        line-height: 1;
+    }
+
+    .stats-label {
+        color: #2c3e50;
+        font-weight: 600;
+        margin-bottom: 10px;
+        font-size: 1.1rem;
+    }
+
+    .stats-detail {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .stats-progress {
+        height: 8px;
+        background: #e9ecef;
+        border-radius: 4px;
+        overflow: hidden;
+        margin: 15px 0;
+    }
+
+    .stats-progress-bar {
+        height: 100%;
+        background: linear-gradient(135deg, var(--card-color), var(--card-color-dark));
+        transition: width 1s ease;
+        border-radius: 4px;
+    }
+
+    /* بطاقات المحتوى */
+    .content-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        border: none;
+        margin-bottom: 25px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .content-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 35px rgba(0,0,0,0.12);
+    }
+
+    .content-card-header {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        padding: 20px 25px;
+        border-bottom: none;
+        position: relative;
+    }
+
+    .content-card-header h5 {
+        color: #2c3e50;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        font-size: 1.2rem;
+    }
+
+    .content-card-body {
+        padding: 25px;
+    }
+
+    /* أزرار الإجراءات السريعة */
+    .quick-action-btn {
+        background: white;
+        border: none;
+        border-radius: 15px;
+        padding: 25px 20px;
+        text-align: center;
+        text-decoration: none;
+        color: #2c3e50;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 140px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .quick-action-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: var(--btn-color);
+        transform: scaleX(0);
+        transition: transform 0.3s ease;
+    }
+
+    .quick-action-btn:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        color: var(--btn-color);
+        text-decoration: none;
+    }
+
+    .quick-action-btn:hover::before {
+        transform: scaleX(1);
+    }
+
+    .quick-action-btn.receipt { --btn-color: #3498db; }
+    .quick-action-btn.distribution { --btn-color: #2ecc71; }
+    .quick-action-btn.reports { --btn-color: #e74c3c; }
+    .quick-action-btn.suppliers { --btn-color: #9b59b6; }
+
+    .quick-action-icon {
+        font-size: 2.5rem;
+        margin-bottom: 15px;
+        opacity: 0.8;
+        transition: all 0.3s ease;
+    }
+
+    .quick-action-btn:hover .quick-action-icon {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+
+    .quick-action-text {
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    /* قوائم الأنشطة */
+    .activity-item {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        margin-bottom: 10px;
+        background: #f8f9fa;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        border-left: 4px solid transparent;
+    }
+
+    .activity-item:hover {
+        background: #e3f2fd;
+        border-left-color: #2196f3;
+        transform: translateX(5px);
+    }
+
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 15px;
+        font-size: 1rem;
+    }
+
+    .activity-icon.receipt { 
+        background: linear-gradient(135deg, #3498db, #2980b9); 
+        color: white; 
+    }
+    .activity-icon.distribution { 
+        background: linear-gradient(135deg, #2ecc71, #27ae60); 
+        color: white; 
+    }
+
+    .activity-content {
+        flex: 1;
+    }
+
+    .activity-title {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 5px;
+    }
+
+    .activity-subtitle {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .activity-meta {
+        text-align: left;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+    }
+
+    .activity-badge {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+
+    .activity-date {
+        color: #6c757d;
+        font-size: 0.8rem;
+    }
+
+    /* العناصر الحرجة */
+    .critical-item {
+        background: linear-gradient(135deg, #fff5f5, #fef2f2);
+        border: 1px solid #fca5a5;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 10px;
+        position: relative;
+    }
+
+    .critical-item.high-priority {
+        background: linear-gradient(135deg, #fef2f2, #fee2e2);
+        border-color: #ef4444;
+    }
+
+    .critical-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .critical-item-title {
+        font-weight: 600;
+        color: #dc2626;
+        flex: 1;
+    }
+
+    .critical-priority {
+        background: #dc2626;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+
+    .critical-priority.medium {
+        background: #f59e0b;
+    }
+
+    .critical-item-details {
+        color: #6b7280;
+        font-size: 0.9rem;
+    }
+
+    /* تحسينات الاستجابة */
+    @media (max-width: 768px) {
+        .dashboard-header {
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .page-title {
+            font-size: 1.8rem;
+        }
+        
+        .stats-card {
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stats-number {
+            font-size: 2.2rem;
+        }
+        
+        .quick-action-btn {
+            padding: 20px 15px;
+            min-height: 120px;
+        }
+        
+        .quick-action-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .quick-action-text {
+            font-size: 0.9rem;
+        }
+    }
+
+    /* تحسين التحريك */
+    @keyframes float {
+        0%, 100% { transform: translateX(0) translateY(0); }
+        25% { transform: translateX(10px) translateY(-10px); }
+        50% { transform: translateX(-5px) translateY(5px); }
+        75% { transform: translateX(-10px) translateY(-5px); }
+    }
+
+    .fade-in {
+        animation: fadeInUp 0.8s ease-out;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+
+<!-- Header الرئيسي -->
+<div class="dashboard-header fade-in">
+    <div class="dashboard-header-content">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">
+                    <i class="fas fa-warehouse me-3"></i>مخزن الكتب والأدوات المدرسية
+                </h1>
+                <p class="page-subtitle">لوحة التحكم الشاملة لإدارة المخزون والتوزيع</p>
+            </div>
+            <div class="text-end">
+                <div class="badge bg-primary fs-6 p-2">
+                    <i class="fas fa-calendar-alt me-2"></i>{{ today|date:"d F Y" }}
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">آخر تحديث: الآن</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- الإحصائيات الرئيسية -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6">
+        <div class="stats-card books fade-in">
+            <div class="stats-icon">
+                <i class="fas fa-book"></i>
+            </div>
+            <div class="stats-number">{{ total_books }}</div>
+            <div class="stats-label">إجمالي الكتب</div>
+            <div class="stats-detail">المتاح: {{ books_stock.available_stock|default:0 }}</div>
+            <div class="stats-progress">
+                <div class="stats-progress-bar" style="width: {{ books_percentage }}%"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="stats-card notebooks fade-in" style="animation-delay: 0.1s;">
+            <div class="stats-icon">
+                <i class="fas fa-book-open"></i>
+            </div>
+            <div class="stats-number">{{ total_notebooks }}</div>
+            <div class="stats-label">إجمالي الكراسات</div>
+            <div class="stats-detail">المتاح: {{ notebooks_stock.available_stock|default:0 }}</div>
+            <div class="stats-progress">
+                <div class="stats-progress-bar" style="width: {{ notebooks_percentage }}%"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="stats-card supplies fade-in" style="animation-delay: 0.2s;">
+            <div class="stats-icon">
+                <i class="fas fa-pencil-alt"></i>
+            </div>
+            <div class="stats-number">{{ total_supplies }}</div>
+            <div class="stats-label">الأدوات المدرسية</div>
+            <div class="stats-detail">المتاح: {{ supplies_stock.available_stock|default:0 }}</div>
+            <div class="stats-progress">
+                <div class="stats-progress-bar" style="width: {{ supplies_percentage }}%"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="stats-card alerts fade-in" style="animation-delay: 0.3s;">
+            <div class="stats-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="stats-number">{{ low_stock_books|add:low_stock_notebooks|add:low_stock_supplies }}</div>
+            <div class="stats-label">تنبيهات المخزون</div>
+            <div class="stats-detail">عناصر تحتاج إعادة طلب</div>
+            <div class="mt-3">
+                <a href="#" class="btn btn-outline-warning btn-sm">
+                    <i class="fas fa-eye me-1"></i>عرض التفاصيل
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- الإجراءات السريعة -->
+<div class="content-card fade-in" style="animation-delay: 0.4s;">
+    <div class="content-card-header">
+        <h5><i class="fas fa-bolt text-warning me-2"></i>الإجراءات السريعة</h5>
+    </div>
+    <div class="content-card-body">
+        <div class="row">
+            <div class="col-lg-3 col-md-6 mb-3">
+                <a href="#" class="quick-action-btn receipt">
+                    <div class="quick-action-icon">
+                        <i class="fas fa-truck-loading"></i>
+                    </div>
+                    <div class="quick-action-text">استلام جديد</div>
+                </a>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <a href="#" class="quick-action-btn distribution">
+                    <div class="quick-action-icon">
+                        <i class="fas fa-share-alt"></i>
+                    </div>
+                    <div class="quick-action-text">توزيع على طالب</div>
+                </a>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <a href="#" class="quick-action-btn reports">
+                    <div class="quick-action-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="quick-action-text">التقارير المتقدمة</div>
+                </a>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <a href="#" class="quick-action-btn suppliers">
+                    <div class="quick-action-icon">
+                        <i class="fas fa-handshake"></i>
+                    </div>
+                    <div class="quick-action-text">إدارة الموردين</div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- إحصائيات الأنشطة والقيمة -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="content-card fade-in" style="animation-delay: 0.5s;">
+            <div class="content-card-header">
+                <h5><i class="fas fa-chart-pie text-info me-2"></i>إحصائيات الأنشطة</h5>
+            </div>
+            <div class="content-card-body text-center">
+                <div class="row">
+                    <div class="col-4">
+                        <div class="stats-number text-primary" style="font-size: 2rem;">{{ distributions_today }}</div>
+                        <div class="stats-detail">توزيعات اليوم</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stats-number text-success" style="font-size: 2rem;">{{ receipts_this_week }}</div>
+                        <div class="stats-detail">استلامات الأسبوع</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stats-number text-info" style="font-size: 2rem;">{{ monthly_stats.shortages_reported }}</div>
+                        <div class="stats-detail">نواقص مُبلغة</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="content-card fade-in" style="animation-delay: 0.6s;">
+            <div class="content-card-header">
+                <h5><i class="fas fa-dollar-sign text-success me-2"></i>قيمة المخزون</h5>
+            </div>
+            <div class="content-card-body text-center">
+                <div class="stats-number text-success" style="font-size: 2.5rem;">
+                    {{ total_value|floatformat:0 }}
+                </div>
+                <div class="stats-label">جنيه مصري</div>
+                <div class="stats-detail">القيمة الإجمالية للمخزون المتاح</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="content-card fade-in" style="animation-delay: 0.7s;">
+            <div class="content-card-header">
+                <h5><i class="fas fa-trending-up text-primary me-2"></i>أداء الشهر</h5>
+            </div>
+            <div class="content-card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span>الاستلامات:</span>
+                    <span class="badge bg-primary">{{ monthly_stats.receipts }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span>التوزيعات:</span>
+                    <span class="badge bg-success">{{ monthly_stats.distributions }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>النواقص:</span>
+                    <span class="badge bg-warning">{{ monthly_stats.shortages_reported }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- أحدث الأنشطة -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="content-card fade-in" style="animation-delay: 0.8s;">
+            <div class="content-card-header">
+                <h5><i class="fas fa-clock text-primary me-2"></i>أحدث الاستلامات</h5>
+            </div>
+            <div class="content-card-body">
+                {% if recent_receipts %}
+                    {% for receipt in recent_receipts %}
+                    <div class="activity-item">
+                        <div class="activity-icon receipt">
+                            <i class="fas fa-truck"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">{{ receipt.receipt_number }}</div>
+                            <div class="activity-subtitle">{{ receipt.supplier.name }} - {{ receipt.get_receipt_type_display }}</div>
+                        </div>
+                        <div class="activity-meta">
+                            <div class="activity-badge">{{ receipt.total_items }} قطعة</div>
+                            <div class="activity-date">{{ receipt.receipt_date|date:"d/m" }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-inbox fa-3x mb-3 opacity-50"></i>
+                        <p>لا توجد استلامات حديثة</p>
+                    </div>
+                {% endif %}
+                
+                <div class="text-center mt-3">
+                    <a href="#" class="btn btn-outline-primary">
+                        <i class="fas fa-list me-2"></i>جميع الاستلامات
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="content-card fade-in" style="animation-delay: 0.9s;">
+            <div class="content-card-header">
+                <h5><i class="fas fa-share text-success me-2"></i>أحدث التوزيعات</h5>
+            </div>
+            <div class="content-card-body">
+                {% if recent_distributions %}
+                    {% for distribution in recent_distributions %}
+                    <div class="activity-item">
+                        <div class="activity-icon distribution">
+                            <i class="fas fa-user-graduate"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">{{ distribution.student.name }}</div>
+                            <div class="activity-subtitle">{{ distribution.student.grade_name|default:"غير محدد" }}</div>
+                        </div>
+                        <div class="activity-meta">
+                            <div class="activity-badge">{{ distribution.total_items }} قطعة</div>
+                            <div class="activity-date">{{ distribution.distribution_date|date:"d/m" }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-user-graduate fa-3x mb-3 opacity-50"></i>
+                        <p>لا توجد توزيعات حديثة</p>
+                    </div>
+                {% endif %}
+                
+                <div class="text-center mt-3">
+                    <a href="#" class="btn btn-outline-success">
+                        <i class="fas fa-list me-2"></i>جميع التوزيعات
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- العناصر الحرجة -->
+{% if critical_items %}
+<div class="content-card fade-in mt-4" style="animation-delay: 1s;">
+    <div class="content-card-header bg-warning text-dark">
+        <h5><i class="fas fa-exclamation-triangle me-2"></i>تنبيهات هامة - عناصر تحتاج انتباه فوري</h5>
+    </div>
+    <div class="content-card-body">
+        <div class="row">
+            {% for item in critical_items %}
+            <div class="col-lg-6 mb-3">
+                <div class="critical-item {% if item.priority == 'عالية' %}high-priority{% endif %}">
+                    <div class="critical-item-header">
+                        <div class="critical-item-title">
+                            <i class="fas fa-book me-2"></i>{{ item.name }}
+                        </div>
+                        <div class="critical-priority {% if item.priority == 'متوسطة' %}medium{% endif %}">
+                            {{ item.priority }}
+                        </div>
+                    </div>
+                    <div class="critical-item-details">
+                        الحالة: {{ item.status }} | الموضوع: {{ item.subject }}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="text-center mt-4">
+            <a href="#" class="btn btn-warning btn-lg">
+                <i class="fas fa-exclamation-triangle me-2"></i>معالجة جميع النواقص
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- JavaScript للتحريك -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // تحريك شرائط التقدم
+    const progressBars = document.querySelectorAll('.stats-progress-bar');
+    progressBars.forEach(bar => {
+        const width = bar.style.width;
+        bar.style.width = '0%';
+        setTimeout(() => {
+            bar.style.width = width;
+        }, 500);
+    });
+    
+    // تحريك الأرقام
+    const numbers = document.querySelectorAll('.stats-number');
+    numbers.forEach(number => {
+        const target = parseInt(number.textContent);
+        if (target > 0) {
+            let current = 0;
+            const increment = target / 30;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    number.textContent = target;
+                    clearInterval(timer);
+                } else {
+                    number.textContent = Math.floor(current);
+                }
+            }, 50);
+        }
+    });
+    
+    console.log('✅ تم تحميل لوحة تحكم المخزن بنجاح');
+});
+</script>
+
+{% endblock %}

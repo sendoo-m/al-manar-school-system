@@ -1,0 +1,240 @@
+{% extends 'dashboard_base.html' %}
+
+{% block title %}لوحة تحكم مدير المدرسة{% endblock %}
+{% block page_title %}لوحة تحكم مدير المدرسة{% endblock %}
+{% block page_subtitle %}إدارة العمليات اليومية للمدرسة{% endblock %}
+{% block user_role %}مدير المدرسة{% endblock %}
+
+{% block sidebar_nav %}
+    <a href="{% url 'home:manager_dashboard' %}" class="nav-link active">
+        <i class="fas fa-home me-2"></i>الرئيسية
+    </a>
+    <a href="/admin/students/student/" class="nav-link" target="_blank">
+        <i class="fas fa-user-graduate me-2"></i>إدارة الطلاب
+    </a>
+    <a href="/admin/students/classroom/" class="nav-link" target="_blank">
+        <i class="fas fa-chalkboard me-2"></i>الفصول الدراسية
+    </a>
+    <a href="/admin/students/tuition/" class="nav-link" target="_blank">
+        <i class="fas fa-money-check me-2"></i>الأقساط المالية
+    </a>
+    <a href="/admin/students/expense/" class="nav-link" target="_blank">
+        <i class="fas fa-receipt me-2"></i>المصروفات
+    </a>
+    <div class="nav-link text-white-50 mt-3">
+        <small>التقارير</small>
+    </div>
+    <a href="#" class="nav-link">
+        <i class="fas fa-chart-line me-2"></i>التقارير المالية
+    </a>
+    <a href="#" class="nav-link">
+        <i class="fas fa-users me-2"></i>تقارير الطلاب
+    </a>
+    <a href="/admin/school_settings/systemsettings/" class="nav-link" target="_blank">
+        <i class="fas fa-school me-2"></i>إعدادات المدرسة
+    </a>
+{% endblock %}
+
+{% block dashboard_content %}
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="stats-card success">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-1">1,250</h3>
+                    <p class="mb-0">إجمالي الطلاب</p>
+                </div>
+                <i class="fas fa-user-graduate fa-2x opacity-75"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-1">24</h3>
+                    <p class="mb-0">الفصول النشطة</p>
+                </div>
+                <i class="fas fa-chalkboard fa-2x opacity-75"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stats-card warning">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-1">85%</h3>
+                    <p class="mb-0">نسبة الحضور</p>
+                </div>
+                <i class="fas fa-calendar-check fa-2x opacity-75"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stats-card danger">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-1">15</h3>
+                    <p class="mb-0">أقساط متأخرة</p>
+                </div>
+                <i class="fas fa-exclamation-triangle fa-2x opacity-75"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Financial Overview -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-area me-2 text-primary"></i>
+                    نظرة عامة على الوضع المالي
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="bg-light rounded p-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-muted mb-1">الإيرادات الشهرية</h6>
+                                    <h4 class="text-success mb-0">250,000 ج.م</h4>
+                                </div>
+                                <i class="fas fa-arrow-up text-success fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="bg-light rounded p-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-muted mb-1">المصروفات الشهرية</h6>
+                                    <h4 class="text-danger mb-0">180,000 ج.م</h4>
+                                </div>
+                                <i class="fas fa-arrow-down text-danger fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="progress mb-3" style="height: 10px;">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: 70%"></div>
+                    <div class="progress-bar bg-danger" role="progressbar" style="width: 30%"></div>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <small class="text-success">إيرادات: 70%</small>
+                    <small class="text-danger">مصروفات: 30%</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-tasks me-2 text-info"></i>
+                    مهام اليوم
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">مراجعة الحضور</h6>
+                            <small class="text-muted">جميع الفصول</small>
+                        </div>
+                        <span class="badge bg-primary rounded-pill">5</span>
+                    </div>
+                    <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">متابعة المتأخرات</h6>
+                            <small class="text-muted">الأقساط المستحقة</small>
+                        </div>
+                        <span class="badge bg-warning rounded-pill">15</span>
+                    </div>
+                    <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">اجتماع المدرسين</h6>
+                            <small class="text-muted">الساعة 3:00 ظ</small>
+                        </div>
+                        <span class="badge bg-info rounded-pill">اليوم</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Students & Notifications -->
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-user-plus me-2 text-success"></i>
+                    الطلاب الجدد
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>اسم الطالب</th>
+                                <th>الفصل</th>
+                                <th>تاريخ التسجيل</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>أحمد محمد علي</td>
+                                <td><span class="badge bg-primary">الصف الأول</span></td>
+                                <td>اليوم</td>
+                            </tr>
+                            <tr>
+                                <td>فاطمة أحمد</td>
+                                <td><span class="badge bg-success">الصف الثاني</span></td>
+                                <td>أمس</td>
+                            </tr>
+                            <tr>
+                                <td>محمد سعد</td>
+                                <td><span class="badge bg-warning">الصف الثالث</span></td>
+                                <td>منذ يومين</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bell me-2 text-warning"></i>
+                    تنبيهات مهمة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-danger border-0">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <strong>15 طالب</strong> لديهم أقساط متأخرة تحتاج متابعة
+                    <div class="mt-2">
+                        <button class="btn btn-sm btn-outline-danger">عرض التفاصيل</button>
+                    </div>
+                </div>
+                <div class="alert alert-warning border-0">
+                    <i class="fas fa-users me-2"></i>
+                    فصل الصف الثالث (أ) يحتاج مدرس بديل غداً
+                </div>
+                <div class="alert alert-info border-0">
+                    <i class="fas fa-calendar me-2"></i>
+                    موعد اجتماع أولياء الأمور الأسبوع القادم
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

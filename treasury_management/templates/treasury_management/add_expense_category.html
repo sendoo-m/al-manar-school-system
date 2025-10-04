@@ -1,0 +1,1591 @@
+<!-- treasury_management/templates/treasury_management/add_expense_category.html -->
+{% extends 'treasury_management/base.html' %}
+{% load static %}
+
+{% block title %}إضافة تصنيف مصروفات - نظام الخزينة{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'treasury_management:expense_categories_list' %}">تصنيفات المصروفات</a></li>
+<li class="breadcrumb-item active">إضافة تصنيف جديد</li>
+{% endblock %}
+
+{% block content %}
+<style>
+    /* ===================================
+       🎨 EXPENSE CATEGORY FORM STYLES WITH PREVIEW
+    =================================== */
+    .expense-category-container {
+        background: linear-gradient(135deg, rgba(255, 193, 7, 0.02), rgba(255, 159, 28, 0.02));
+        border-radius: 20px;
+        padding: 25px;
+        margin: -10px;
+        min-height: calc(100vh - 200px);
+    }
+
+    /* التخطيط الجانبي */
+    .expense-category-layout {
+        display: flex;
+        gap: 25px;
+        margin-bottom: 30px;
+    }
+
+    .form-wrapper { flex: 0 0 65%; }
+    .preview-wrapper { flex: 0 0 35%; }
+
+    .expense-category-card {
+        background: white;
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(255, 193, 7, 0.1);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        margin-bottom: 25px;
+    }
+
+    .expense-category-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(255, 193, 7, 0.15);
+    }
+
+    .expense-category-header {
+        background: linear-gradient(135deg, #ffc107, #ff9f1c);
+        color: #212529;
+        padding: 25px 30px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .expense-category-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="1" fill="rgba(0,0,0,0.1)"/></svg>') repeat;
+        animation: float 20s linear infinite;
+    }
+
+    .expense-category-header-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .expense-category-header h4 {
+        margin: 0 0 8px 0;
+        font-weight: 700;
+        font-size: 1.6rem;
+        display: flex;
+        align-items: center;
+        color: #212529;
+    }
+
+    .expense-category-header i {
+        background: rgba(0, 0, 0, 0.1);
+        padding: 12px;
+        border-radius: 12px;
+        margin-left: 15px;
+        font-size: 1.3rem;
+    }
+
+    .expense-category-header p {
+        margin: 0;
+        opacity: 0.8;
+        font-size: 1rem;
+        color: #212529;
+    }
+
+    /* أقسام النموذج */
+    .form-section {
+        background: rgba(248, 249, 250, 0.8);
+        border: 2px solid rgba(255, 193, 7, 0.1);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .form-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(135deg, #ffc107, #ff9f1c);
+        border-radius: 15px 15px 0 0;
+    }
+
+    .form-section:hover {
+        background: rgba(255, 255, 255, 0.9);
+        border-color: rgba(255, 193, 7, 0.2);
+        transform: translateY(-2px);
+    }
+
+    .section-title {
+        color: var(--text-primary);
+        font-weight: 700;
+        font-size: 1.1rem;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        padding-bottom: 10px;
+        border-bottom: 2px solid rgba(255, 193, 7, 0.1);
+    }
+
+    .section-icon {
+        width: 35px;
+        height: 35px;
+        background: linear-gradient(135deg, #ffc107, #ff9f1c);
+        color: #212529;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 10px;
+        font-size: 1rem;
+        box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
+    }
+
+    .section-icon.success { background: linear-gradient(135deg, #28a745, #20c997); color: white; }
+    .section-icon.info { background: linear-gradient(135deg, #17a2b8, #138496); color: white; }
+    .section-icon.primary { background: linear-gradient(135deg, #007bff, #0056b3); color: white; }
+
+    /* الحقول */
+    .form-label {
+        color: var(--text-primary);
+        font-weight: 600;
+        margin-bottom: 8px;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .form-label .text-danger {
+        margin-right: 5px;
+        font-size: 1.1rem;
+    }
+
+    .form-control, .form-select {
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 12px 15px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        background: white;
+        color: var(--text-primary);
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #ffc107;
+        box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.15);
+        background: white;
+        transform: translateY(-1px);
+    }
+
+    .form-control:hover, .form-select:hover {
+        border-color: #bdc3c7;
+        background: white;
+    }
+
+    .form-text {
+        color: #6c757d;
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-top: 5px;
+    }
+
+    .form-text::before {
+        content: '\f05a';
+        font-family: 'Font Awesome 6 Free';
+        font-weight: 900;
+        margin-left: 6px;
+        color: #ffc107;
+    }
+
+    /* اقتراحات الميزانية */
+    .budget-suggestions {
+        margin-top: 10px;
+        padding: 10px;
+        background: rgba(255, 193, 7, 0.05);
+        border-radius: 8px;
+        border: 1px dashed #ffc107;
+    }
+
+    .budget-suggestions .btn {
+        margin: 2px;
+        font-size: 0.8rem;
+        padding: 4px 8px;
+    }
+
+    /* ===================================
+       🎨 ENHANCED PREVIEW STYLES
+    =================================== */
+    .preview-card {
+        background: white;
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(255, 87, 34, 0.15);
+        overflow: hidden;
+        position: sticky;
+        top: 20px;
+        max-height: calc(100vh - 40px);
+        overflow-y: auto;
+        transition: all 0.3s ease;
+    }
+
+    .preview-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 35px rgba(255, 87, 34, 0.2);
+    }
+
+    .preview-header {
+        background: linear-gradient(135deg, #ff5722, #e64a19);
+        color: white;
+        padding: 25px 20px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .preview-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+        background-size: 20px 20px;
+        animation: drift 25s linear infinite;
+    }
+
+    .preview-header-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .preview-icon {
+        width: 60px;
+        height: 60px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px;
+        font-size: 1.5rem;
+        backdrop-filter: blur(10px);
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        animation: pulse 2s infinite;
+    }
+
+    .preview-header h5 {
+        margin: 0 0 5px 0;
+        font-weight: 700;
+        font-size: 1.3rem;
+        color: white;
+    }
+
+    .preview-header p {
+        margin: 0;
+        opacity: 0.9;
+        font-size: 0.9rem;
+        color: white;
+    }
+
+    .preview-content {
+        padding: 25px 20px;
+    }
+
+    /* مؤشر حالة النموذج */
+    .preview-status {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-radius: 15px;
+        padding: 15px;
+        margin-bottom: 20px;
+        text-align: center;
+        border: 2px dashed #dee2e6;
+        transition: all 0.3s ease;
+    }
+
+    .preview-status.active {
+        background: linear-gradient(135deg, rgba(255, 87, 34, 0.1), rgba(233, 69, 96, 0.05));
+        border-color: #ff5722;
+        border-style: solid;
+    }
+
+    .status-text {
+        font-weight: 600;
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .status-text.active {
+        color: #ff5722;
+    }
+
+    .completion-bar {
+        width: 100%;
+        height: 4px;
+        background: #e9ecef;
+        border-radius: 2px;
+        overflow: hidden;
+        margin-top: 10px;
+    }
+
+    .completion-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #ff5722, #e64a19);
+        border-radius: 2px;
+        transition: width 0.5s ease;
+        width: 0%;
+    }
+
+    /* أقسام المعاينة */
+    .preview-section {
+        margin-bottom: 20px;
+    }
+
+    .preview-section-title {
+        font-weight: 700;
+        color: #2c3e50;
+        font-size: 0.95rem;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #f1f3f4;
+    }
+
+    .preview-section-icon {
+        width: 25px;
+        height: 25px;
+        background: linear-gradient(135deg, #ff5722, #e64a19);
+        color: white;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 8px;
+        font-size: 0.8rem;
+    }
+
+    .preview-item {
+        background: white;
+        border: 2px solid #f1f3f4;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 12px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .preview-item::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 3px;
+        background: #f1f3f4;
+        transition: all 0.3s ease;
+    }
+
+    .preview-item.filled {
+        background: linear-gradient(135deg, rgba(255, 87, 34, 0.08), rgba(255, 255, 255, 0.9));
+        border-color: rgba(255, 87, 34, 0.3);
+        transform: translateX(-3px);
+        box-shadow: 0 3px 10px rgba(255, 87, 34, 0.1);
+    }
+
+    .preview-item.filled::before {
+        background: linear-gradient(135deg, #ff5722, #e64a19);
+    }
+
+    .preview-item.critical {
+        background: linear-gradient(135deg, rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.9));
+        border-color: rgba(0, 0, 0, 0.3);
+    }
+
+    .preview-item.critical::before {
+        background: linear-gradient(135deg, #000, #333);
+    }
+
+    .preview-item.high {
+        background: linear-gradient(135deg, rgba(220, 53, 69, 0.08), rgba(255, 255, 255, 0.9));
+        border-color: rgba(220, 53, 69, 0.3);
+    }
+
+    .preview-item.high::before {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+    }
+
+    .preview-item.medium {
+        background: linear-gradient(135deg, rgba(255, 193, 7, 0.08), rgba(255, 255, 255, 0.9));
+        border-color: rgba(255, 193, 7, 0.3);
+    }
+
+    .preview-item.medium::before {
+        background: linear-gradient(135deg, #ffc107, #e0a800);
+    }
+
+    .preview-item.low {
+        background: linear-gradient(135deg, rgba(40, 167, 69, 0.08), rgba(255, 255, 255, 0.9));
+        border-color: rgba(40, 167, 69, 0.3);
+    }
+
+    .preview-item.low::before {
+        background: linear-gradient(135deg, #28a745, #20c997);
+    }
+
+    .preview-label {
+        font-weight: 700;
+        color: #495057;
+        font-size: 0.8rem;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .preview-label-icon {
+        width: 16px;
+        height: 16px;
+        background: #6c757d;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 6px;
+        font-size: 0.6rem;
+        color: white;
+    }
+
+    .preview-value {
+        color: #2c3e50;
+        font-size: 1rem;
+        line-height: 1.4;
+        font-weight: 500;
+    }
+
+    .preview-value.empty {
+        color: #adb5bd;
+        font-style: italic;
+        font-weight: 400;
+    }
+
+    .preview-value.code {
+        font-weight: 800;
+        color: #ff5722;
+        font-size: 1.1rem;
+        font-family: 'Courier New', monospace;
+    }
+
+    .preview-value.budget {
+        font-weight: 700;
+        color: #28a745;
+        font-size: 1.1rem;
+        font-family: 'Courier New', monospace;
+    }
+
+    /* مؤشر الميزانية */
+    .budget-indicator {
+        background: rgba(255, 193, 7, 0.05);
+        border: 1px dashed #ffc107;
+        border-radius: 8px;
+        padding: 10px;
+        margin-top: 15px;
+        text-align: center;
+    }
+
+    .budget-indicator.set {
+        background: rgba(40, 167, 69, 0.05);
+        border-color: #28a745;
+        border-style: solid;
+    }
+
+    .budget-text {
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin: 0;
+        color: #ffc107;
+    }
+
+    .budget-text.set {
+        color: #28a745;
+    }
+
+    /* رسائل التحذير */
+    .alert {
+        border: none;
+        border-radius: 12px;
+        padding: 15px 20px;
+        font-weight: 500;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    /* الأزرار */
+    .form-footer {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        padding: 20px 30px;
+        border-top: 1px solid rgba(0,0,0,0.05);
+        border-radius: 0 0 20px 20px;
+    }
+
+    .btn {
+        font-weight: 600;
+        padding: 10px 20px;
+        border-radius: 10px;
+        border: none;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+    }
+
+    .btn-warning {
+        background: linear-gradient(135deg, #ffc107, #ff9f1c);
+        color: #212529;
+    }
+
+    .btn-warning:hover {
+        background: linear-gradient(135deg, #ff9f1c, #ff8c00);
+        color: #212529;
+    }
+
+    .btn-outline-info {
+        border: 2px solid #17a2b8;
+        color: #17a2b8;
+        background: transparent;
+    }
+
+    .btn-outline-info:hover {
+        background: #17a2b8;
+        color: white;
+        border-color: #17a2b8;
+    }
+
+    .btn-secondary {
+        background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: linear-gradient(135deg, #7f8c8d, #95a5a6);
+        color: white;
+    }
+
+    /* بطاقات الدليل */
+    .guide-card {
+        border: none;
+        border-radius: 15px;
+        overflow: hidden;
+        margin-bottom: 20px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+    }
+
+    .guide-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    }
+
+    .guide-card .card-header {
+        font-weight: 700;
+        padding: 15px 20px;
+        border-bottom: none;
+    }
+
+    .guide-card .card-header h5 {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        color: white;
+    }
+
+    .guide-card .card-header i {
+        margin-left: 10px;
+        font-size: 1.1rem;
+    }
+
+    .border-warning .card-header {
+        background: linear-gradient(135deg, #ffc107, #ff9f1c);
+        color: #212529;
+    }
+
+    .border-success .card-header {
+        background: linear-gradient(135deg, #28a745, #218838);
+        color: white;
+    }
+
+    .border-info .card-header {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+    }
+
+    .border-primary .card-header {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+    }
+
+    /* الجداول */
+    .table {
+        font-size: 0.9rem;
+        margin-bottom: 0;
+    }
+
+    .table th {
+        background-color: #f8f9fa;
+        color: var(--text-primary);
+        font-weight: 600;
+        border-bottom: 2px solid #e9ecef;
+        padding: 10px 12px;
+    }
+
+    .table td {
+        padding: 8px 12px;
+        vertical-align: middle;
+        color: var(--text-primary);
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(255, 193, 7, 0.05);
+    }
+
+    /* الانيميشن */
+    @keyframes float {
+        0%, 100% { transform: translateX(0) translateY(0); }
+        25% { transform: translateX(3px) translateY(-3px); }
+        50% { transform: translateX(-2px) translateY(2px); }
+        75% { transform: translateX(-3px) translateY(-2px); }
+    }
+
+    @keyframes drift {
+        0% { transform: rotate(0deg) translateX(0); }
+        100% { transform: rotate(360deg) translateX(20px); }
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    .fade-in {
+        animation: fadeInUp 0.8s ease-out;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* الاستجابة */
+    @media (max-width: 1200px) {
+        .expense-category-layout {
+            flex-direction: column;
+        }
+        
+        .form-wrapper,
+        .preview-wrapper {
+            flex: none;
+        }
+        
+        .preview-card {
+            position: static;
+            max-height: none;
+            margin-top: 20px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .expense-category-container {
+            padding: 15px;
+            margin: -5px;
+        }
+
+        .expense-category-header {
+            padding: 20px 25px;
+        }
+
+        .expense-category-header h4 {
+            font-size: 1.4rem;
+        }
+
+        .form-section {
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .section-icon {
+            width: 30px;
+            height: 30px;
+            font-size: 0.9rem;
+        }
+
+        .form-footer {
+            padding: 15px 20px;
+        }
+
+        .btn {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .preview-content {
+            padding: 20px 15px;
+        }
+        
+        .preview-icon {
+            width: 50px;
+            height: 50px;
+            font-size: 1.2rem;
+        }
+        
+        .preview-item {
+            padding: 12px;
+        }
+
+        .budget-suggestions .btn {
+            width: 100%;
+            margin-bottom: 5px;
+        }
+    }
+</style>
+
+<!-- محتوى الصفحة -->
+<div class="expense-category-container">
+    <div class="expense-category-layout">
+        <!-- النموذج -->
+        <div class="form-wrapper">
+            <div class="expense-category-card fade-in">
+                <div class="expense-category-header">
+                    <div class="expense-category-header-content">
+                        <h4>
+                            <i class="fas fa-tag"></i>
+                            إضافة تصنيف مصروفات جديد
+                        </h4>
+                        <p>إنشاء تصنيف لتنظيم وإدارة المصروفات اليومية</p>
+                    </div>
+                </div>
+                
+                <form method="POST" id="categoryForm">
+                    {% csrf_token %}
+                    <div class="card-body" style="padding: 30px;">
+                        
+                        <!-- قسم المعلومات الأساسية -->
+                        <div class="form-section">
+                            <div class="section-title">
+                                <div class="section-icon">
+                                    <i class="fas fa-info-circle"></i>
+                                </div>
+                                <span>المعلومات الأساسية</span>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">
+                                            <span class="text-danger">*</span>
+                                            اسم التصنيف
+                                        </label>
+                                        <input type="text" class="form-control" name="name" required 
+                                               placeholder="مثال: مرتبات المعلمين">
+                                        <div class="form-text">اسم وصفي وواضح لتصنيف المصروفات</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">
+                                            <span class="text-danger">*</span>
+                                            كود التصنيف
+                                        </label>
+                                        <input type="text" class="form-control" name="code" id="codeInput" required 
+                                               placeholder="مثال: EXP_TEACHER_SAL" maxlength="20">
+                                        <div class="form-text" id="codeHint">كود فريد باللغة الإنجليزية</div>
+                                        <div class="invalid-feedback" id="codeError"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- قسم الربط المحاسبي -->
+                        <div class="form-section">
+                            <div class="section-title">
+                                <div class="section-icon success">
+                                    <i class="fas fa-link"></i>
+                                </div>
+                                <span>الربط المحاسبي</span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <span class="text-danger">*</span>
+                                    الحساب المرتبط
+                                </label>
+                                <select class="form-select" name="account" id="accountSelect" required>
+                                    <option value="">اختر الحساب المحاسبي</option>
+                                    {% for account in accounts %}
+                                    <option value="{{ account.id }}" data-balance="{{ account.current_balance }}">
+                                        📊 {{ account.code }} - {{ account.name }}
+                                        (الرصيد: {{ account.current_balance|floatformat:2 }} ج.م)
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text" id="accountInfo">الحساب المحاسبي الذي سيتم ربط المصروفات به</div>
+                            </div>
+                        </div>
+
+                        <!-- قسم الميزانية والأولوية -->
+                        <div class="form-section">
+                            <div class="section-title">
+                                <div class="section-icon info">
+                                    <i class="fas fa-cogs"></i>
+                                </div>
+                                <span>الميزانية والأولوية</span>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">الميزانية الشهرية</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" name="monthly_budget" id="budgetInput"
+                                                   min="0" step="0.01" placeholder="0.00">
+                                            <span class="input-group-text">ج.م</span>
+                                        </div>
+                                        <div class="form-text">الحد الأقصى المخطط للإنفاق شهرياً (اختياري)</div>
+                                        <div class="budget-suggestions d-none">
+                                            <small class="text-muted">اقتراحات:</small>
+                                            <div class="btn-group" role="group">
+                                                <button type="button" class="btn btn-sm btn-outline-warning" onclick="setBudget(5000)">5,000</button>
+                                                <button type="button" class="btn btn-sm btn-outline-warning" onclick="setBudget(10000)">10,000</button>
+                                                <button type="button" class="btn btn-sm btn-outline-warning" onclick="setBudget(20000)">20,000</button>
+                                                <button type="button" class="btn btn-sm btn-outline-warning" onclick="setBudget(50000)">50,000</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">أولوية التصنيف</label>
+                                        <select class="form-select" name="priority">
+                                            <option value="MEDIUM">🟡 متوسطة (عادي)</option>
+                                            <option value="HIGH">🔴 عالية (مهم)</option>
+                                            <option value="LOW">🟢 منخفضة (يمكن تأجيله)</option>
+                                            <option value="CRITICAL">⚫ حرجة (ضروري)</option>
+                                        </select>
+                                        <div class="form-text">أولوية هذا النوع من المصروفات</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- قسم الوصف -->
+                        <div class="form-section">
+                            <div class="section-title">
+                                <div class="section-icon primary">
+                                    <i class="fas fa-align-left"></i>
+                                </div>
+                                <span>الوصف التفصيلي</span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">وصف التصنيف</label>
+                                <textarea class="form-control" name="description" rows="3" 
+                                          placeholder="وصف مفصل لهذا التصنيف، ما يشمله، وأمثلة على المصروفات المرتبطة به"></textarea>
+                                <div class="form-text">وصف تفصيلي يساعد في فهم نوع المصروفات المشمولة</div>
+                            </div>
+                        </div>
+
+                        <!-- معاينة التصنيف -->
+                        <div class="alert alert-light border d-none" id="categoryPreview">
+                            <h6><i class="fas fa-eye me-2"></i>معاينة التصنيف:</h6>
+                            <div id="previewContent"></div>
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="form-footer">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{% url 'treasury_management:expense_categories_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>إلغاء والعودة
+                            </a>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-info" id="previewBtn">
+                                    <i class="fas fa-eye me-1"></i>معاينة
+                                </button>
+                                <button type="submit" class="btn btn-warning text-dark" id="submitBtn">
+                                    <i class="fas fa-save me-1"></i>حفظ التصنيف
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- المعاينة المحسنة -->
+        <div class="preview-wrapper">
+            <div class="preview-card fade-in" style="animation-delay: 0.2s;">
+                <div class="preview-header">
+                    <div class="preview-header-content">
+                        <div class="preview-icon">
+                            <i class="fas fa-tags"></i>
+                        </div>
+                        <h5>معاينة التصنيف</h5>
+                        <p>متابعة حية للبيانات المدخلة</p>
+                    </div>
+                </div>
+                
+                <div class="preview-content">
+                    <!-- مؤشر حالة النموذج -->
+                    <div class="preview-status" id="previewStatus">
+                        <div class="status-text" id="statusText">ابدأ بملء البيانات</div>
+                        <div class="completion-bar">
+                            <div class="completion-fill" id="completionFill"></div>
+                        </div>
+                    </div>
+
+                    <!-- القسم الأساسي -->
+                    <div class="preview-section">
+                        <div class="preview-section-title">
+                            <div class="preview-section-icon">
+                                <i class="fas fa-info"></i>
+                            </div>
+                            البيانات الأساسية
+                        </div>
+                        
+                        <div class="preview-item" id="previewName">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-tag"></i>
+                                </div>
+                                اسم التصنيف
+                            </div>
+                            <div class="preview-value empty">لم يتم إدخال الاسم</div>
+                        </div>
+                        
+                        <div class="preview-item" id="previewCode">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-code"></i>
+                                </div>
+                                كود التصنيف
+                            </div>
+                            <div class="preview-value code empty">لم يتم إدخال الكود</div>
+                        </div>
+                        
+                        <div class="preview-item" id="previewAccount">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-link"></i>
+                                </div>
+                                الحساب المرتبط
+                            </div>
+                            <div class="preview-value empty">لم يتم اختيار الحساب</div>
+                        </div>
+                    </div>
+
+                    <!-- القسم المالي -->
+                    <div class="preview-section">
+                        <div class="preview-section-title">
+                            <div class="preview-section-icon">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </div>
+                            التفاصيل المالية
+                        </div>
+                        
+                        <div class="preview-item" id="previewBudget">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-dollar-sign"></i>
+                                </div>
+                                الميزانية الشهرية
+                            </div>
+                            <div class="preview-value budget">غير محدد</div>
+                        </div>
+                        
+                        <div class="preview-item" id="previewPriority">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-star"></i>
+                                </div>
+                                مستوى الأولوية
+                            </div>
+                            <div class="preview-value">🟡 متوسطة (عادي)</div>
+                        </div>
+
+                        <!-- مؤشر الميزانية -->
+                        <div class="budget-indicator" id="budgetIndicator">
+                            <p class="budget-text" id="budgetText">
+                                <i class="fas fa-info-circle me-1"></i>
+                                لم يتم تحديد ميزانية
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- القسم الإضافي -->
+                    <div class="preview-section">
+                        <div class="preview-section-title">
+                            <div class="preview-section-icon">
+                                <i class="fas fa-plus"></i>
+                            </div>
+                            معلومات إضافية
+                        </div>
+                        
+                        <div class="preview-item" id="previewDescription">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-file-alt"></i>
+                                </div>
+                                وصف التصنيف
+                            </div>
+                            <div class="preview-value empty">لا يوجد وصف</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- دليل تصنيفات المصروفات -->
+    <div class="row mt-4">
+        <div class="col-lg-10 mx-auto">
+            <!-- تعليمات الاستخدام -->
+            <div class="guide-card border-warning fade-in" style="animation-delay: 0.4s;">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i>دليل إنشاء تصنيفات المصروفات</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary"><i class="fas fa-list-ol me-2"></i>خطوات الإنشاء:</h6>
+                            <ol class="mb-3">
+                                <li><strong>اكتب الاسم:</strong> اسم واضح ومفهوم للتصنيف</li>
+                                <li><strong>أدخل الكود:</strong> رمز فريد بالإنجليزية</li>
+                                <li><strong>اختر الحساب:</strong> الحساب المحاسبي المرتبط</li>
+                                <li><strong>حدد الميزانية:</strong> الحد الأقصى الشهري (اختياري)</li>
+                                <li><strong>اختر الأولوية:</strong> مستوى أهمية التصنيف</li>
+                                <li><strong>أضف الوصف:</strong> شرح تفصيلي للتصنيف</li>
+                                <li><strong>احفظ التصنيف:</strong> راجع البيانات واحفظ</li>
+                            </ol>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6 class="text-success"><i class="fas fa-lightbulb me-2"></i>نصائح مهمة:</h6>
+                            <ul class="mb-3">
+                                <li>استخدم أسماء واضحة وقصيرة</li>
+                                <li>الكود يجب أن يبدأ بـ EXP_</li>
+                                <li>اربط بالحساب المحاسبي الصحيح</li>
+                                <li>حدد ميزانية واقعية</li>
+                                <li>اكتب وصفاً مفيداً للمراجعة</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- أمثلة التصنيفات -->
+            <div class="guide-card border-success fade-in" style="animation-delay: 0.6s;">
+                <div class="card-header">
+                    <h5><i class="fas fa-lightbulb"></i>أمثلة شاملة للتصنيفات</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary"><i class="fas fa-users me-2"></i>تصنيفات الموارد البشرية:</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>الاسم</th>
+                                            <th>الكود</th>
+                                            <th>الميزانية</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>مرتبات المعلمين</td>
+                                            <td><code>EXP_TEACHER_SAL</code></td>
+                                            <td>80,000 ج.م</td>
+                                        </tr>
+                                        <tr>
+                                            <td>مرتبات الإدارة</td>
+                                            <td><code>EXP_ADMIN_SAL</code></td>
+                                            <td>25,000 ج.م</td>
+                                        </tr>
+                                        <tr>
+                                            <td>مكافآت وحوافز</td>
+                                            <td><code>EXP_BONUSES</code></td>
+                                            <td>10,000 ج.م</td>
+                                        </tr>
+                                        <tr>
+                                            <td>تأمينات اجتماعية</td>
+                                            <td><code>EXP_INSURANCE</code></td>
+                                            <td>15,000 ج.م</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6 class="text-info"><i class="fas fa-bolt me-2"></i>تصنيفات المرافق والخدمات:</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>الاسم</th>
+                                            <th>الكود</th>
+                                            <th>الميزانية</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>فواتير الكهرباء</td>
+                                            <td><code>EXP_ELECTRICITY</code></td>
+                                            <td>8,000 ج.م</td>
+                                        </tr>
+                                        <tr>
+                                            <td>فواتير المياه</td>
+                                            <td><code>EXP_WATER</code></td>
+                                            <td>3,000 ج.م</td>
+                                        </tr>
+                                        <tr>
+                                            <td>خدمات الإنترنت</td>
+                                            <td><code>EXP_INTERNET</code></td>
+                                            <td>2,000 ج.م</td>
+                                        </tr>
+                                        <tr>
+                                            <td>خدمات التنظيف</td>
+                                            <td><code>EXP_CLEANING_SRV</code></td>
+                                            <td>5,000 ج.م</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <h6 class="text-warning"><i class="fas fa-tools me-2"></i>تصنيفات التشغيل والصيانة:</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>الاسم</th>
+                                            <th>الكود</th>
+                                            <th>الميزانية</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>صيانة المباني</td>
+                                            <td><code>EXP_BUILDING_MAINT</code></td>
+                                            <td>12,000 ج.م</td>
+                                        </tr>
+                                        <tr>
+                                            <td>صيانة المعدات</td>
+                                            <td><code>EXP_EQUIPMENT_MAINT</code></td>
+                                            <td>5,000 ج.م</td>
+                                        </tr>
+                                        <tr>
+                                            <td>مستلزمات النظافة</td>
+                                            <td><code>EXP_CLEANING_SUPP</code></td>
+                                            <td>3,000 ج.م</td>
+                                        </tr>
+                                        <tr>
+                                            <td>مواد الأمن والسلامة</td>
+                                            <td><code>EXP_SAFETY</code></td>
+                                            <td>2,000 ج.م</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6 class="text-success"><i class="fas fa-graduation-cap me-2"></i>تصنيفات تعليمية وإدارية:</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>الاسم</th>
+                                            <th>الكود</th>
+                                            <th>الميزانية</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>مستلزمات تعليمية</td>
+                                            <td><code>EXP_EDU_SUPPLIES</code></td>
+                                            <td>15,000 ج.م</td>
+                                        </tr>
+                                        <tr>
+                                            <td>قرطاسية ومطبوعات</td>
+                                            <td><code>EXP_STATIONERY</code></td>
+                                            <td>5,000 ج.م</td>
+                                        </tr>
+                                        <tr>
+                                            <td>برامج تدريبية</td>
+                                            <td><code>EXP_TRAINING</code></td>
+                                            <td>8,000 ج.م</td>
+                                        </tr>
+                                        <tr>
+                                            <td>مصروفات إدارية</td>
+                                            <td><code>EXP_ADMIN_MISC</code></td>
+                                            <td>4,000 ج.م</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- مستويات الأولوية -->
+            <div class="guide-card border-info fade-in" style="animation-delay: 0.8s;">
+                <div class="card-header">
+                    <h5><i class="fas fa-star"></i>مستويات أولوية المصروفات</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-dark">مستويات الأولوية:</h6>
+                            <ul class="list-unstyled">
+                                <li>⚫ <strong>حرجة:</strong> ضرورية للاستمرار (مرتبات، كهرباء)</li>
+                                <li>🔴 <strong>عالية:</strong> مهمة جداً (صيانة عاجلة، أمن)</li>
+                                <li>🟡 <strong>متوسطة:</strong> عادية (مستلزمات، قرطاسية)</li>
+                                <li>🟢 <strong>منخفضة:</strong> يمكن تأجيلها (تجميل، ترفيه)</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6 class="text-dark">فوائد تحديد الأولوية:</h6>
+                            <ul class="list-unstyled">
+                                <li>📊 تنظيم أفضل للميزانية</li>
+                                <li>⚡ سرعة في اتخاذ القرارات</li>
+                                <li>🎯 تركيز على المهم أولاً</li>
+                                <li>📈 تحسين إدارة التدفق النقدي</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- أفضل الممارسات -->
+            <div class="guide-card border-primary fade-in" style="animation-delay: 1s;">
+                <div class="card-header">
+                    <h5><i class="fas fa-trophy"></i>أفضل الممارسات</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-success"><i class="fas fa-check-circle me-2"></i>افعل:</h6>
+                            <ul class="text-success">
+                                <li>✅ استخدم أسماء واضحة ومختصرة</li>
+                                <li>✅ اتبع نظام ترقيم منطقي للأكواد</li>
+                                <li>✅ حدد ميزانيات واقعية بناء على التاريخ</li>
+                                <li>✅ اربط كل تصنيف بالحساب المناسب</li>
+                                <li>✅ راجع التصنيفات بانتظام</li>
+                                <li>✅ وثق كل تصنيف بوصف مفيد</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6 class="text-danger"><i class="fas fa-times-circle me-2"></i>تجنب:</h6>
+                            <ul class="text-danger">
+                                <li>❌ أسماء غامضة أو مبهمة</li>
+                                <li>❌ تكرار الأكواد</li>
+                                <li>❌ ميزانيات غير واقعية</li>
+                                <li>❌ ربط تصنيفات متعددة بحساب واحد</li>
+                                <li>❌ إنشاء تصنيفات كثيرة جداً</li>
+                                <li>❌ ترك الوصف فارغاً</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info mt-3">
+                        <strong><i class="fas fa-lightbulb me-2"></i>نصيحة ذهبية:</strong> 
+                        ابدأ بتصنيفات قليلة وأساسية، ثم أضف تصنيفات فرعية حسب الحاجة. 
+                        التصنيف الجيد يجعل إدارة المصروفات أسهل وأكثر دقة.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const codeInput = document.getElementById('codeInput');
+    const budgetInput = document.getElementById('budgetInput');
+    const accountSelect = document.getElementById('accountSelect');
+    const previewBtn = document.getElementById('previewBtn');
+    const previewDiv = document.getElementById('categoryPreview');
+    const form = document.getElementById('categoryForm');
+    
+    // تحديث المعاينة عند تغيير أي حقل
+    form.addEventListener('input', updatePreview);
+    form.addEventListener('change', updatePreview);
+    
+    function updatePreview() {
+        let completedFields = 0;
+        const totalRequiredFields = 3; // الاسم، الكود، الحساب
+        
+        // الاسم
+        const name = document.querySelector('input[name="name"]').value;
+        const nameItem = document.getElementById('previewName');
+        if (name.trim()) {
+            nameItem.classList.add('filled');
+            nameItem.querySelector('.preview-value').classList.remove('empty');
+            nameItem.querySelector('.preview-value').textContent = name;
+            completedFields++;
+        } else {
+            nameItem.classList.remove('filled');
+            nameItem.querySelector('.preview-value').classList.add('empty');
+            nameItem.querySelector('.preview-value').textContent = 'لم يتم إدخال الاسم';
+        }
+        
+        // الكود
+        const code = codeInput.value;
+        const codeItem = document.getElementById('previewCode');
+        if (code.trim()) {
+            codeItem.classList.add('filled');
+            codeItem.querySelector('.preview-value').classList.remove('empty');
+            codeItem.querySelector('.preview-value').textContent = code;
+            completedFields++;
+        } else {
+            codeItem.classList.remove('filled');
+            codeItem.querySelector('.preview-value').classList.add('empty');
+            codeItem.querySelector('.preview-value').textContent = 'لم يتم إدخال الكود';
+        }
+        
+        // الحساب
+        const accountOption = accountSelect.selectedOptions[0];
+        const accountItem = document.getElementById('previewAccount');
+        if (accountOption && accountOption.value) {
+            accountItem.classList.add('filled');
+            accountItem.querySelector('.preview-value').classList.remove('empty');
+            accountItem.querySelector('.preview-value').textContent = accountOption.text.replace('📊 ', '').split('(')[0];
+            completedFields++;
+        } else {
+            accountItem.classList.remove('filled');
+            accountItem.querySelector('.preview-value').classList.add('empty');
+            accountItem.querySelector('.preview-value').textContent = 'لم يتم اختيار الحساب';
+        }
+        
+        // الميزانية
+        const budget = parseFloat(budgetInput.value) || 0;
+        const budgetItem = document.getElementById('previewBudget');
+        const budgetIndicator = document.getElementById('budgetIndicator');
+        const budgetText = document.getElementById('budgetText');
+        
+        if (budget > 0) {
+            budgetItem.classList.add('filled');
+            budgetItem.querySelector('.preview-value').classList.remove('empty');
+            budgetItem.querySelector('.preview-value').textContent = budget.toLocaleString() + ' ج.م';
+            
+            budgetIndicator.classList.add('set');
+            budgetText.classList.add('set');
+            budgetText.innerHTML = '<i class="fas fa-check-circle me-1"></i>تم تحديد ميزانية: ' + budget.toLocaleString() + ' ج.م شهرياً';
+        } else {
+            budgetItem.classList.remove('filled');
+            budgetItem.querySelector('.preview-value').textContent = 'غير محدد';
+            
+            budgetIndicator.classList.remove('set');
+            budgetText.classList.remove('set');
+            budgetText.innerHTML = '<i class="fas fa-info-circle me-1"></i>لم يتم تحديد ميزانية';
+        }
+        
+        // الأولوية
+        const priorityOption = document.querySelector('select[name="priority"]').selectedOptions[0];
+        const priorityItem = document.getElementById('previewPriority');
+        if (priorityOption) {
+            const priorityValue = priorityOption.value.toLowerCase();
+            priorityItem.classList.add('filled', priorityValue);
+            priorityItem.querySelector('.preview-value').textContent = priorityOption.text;
+        }
+        
+        // الوصف
+        const description = document.querySelector('textarea[name="description"]').value;
+        const descItem = document.getElementById('previewDescription');
+        if (description.trim()) {
+            descItem.classList.add('filled');
+            descItem.querySelector('.preview-value').classList.remove('empty');
+            const shortDesc = description.length > 50 ? description.substring(0, 50) + '...' : description;
+            descItem.querySelector('.preview-value').textContent = shortDesc;
+        } else {
+            descItem.classList.remove('filled');
+            descItem.querySelector('.preview-value').classList.add('empty');
+            descItem.querySelector('.preview-value').textContent = 'لا يوجد وصف';
+        }
+        
+        // تحديث شريط التقدم
+        const completionPercentage = (completedFields / totalRequiredFields) * 100;
+        document.getElementById('completionFill').style.width = completionPercentage + '%';
+        
+        // تحديث حالة النموذج
+        const statusElement = document.getElementById('previewStatus');
+        const statusText = document.getElementById('statusText');
+        
+        if (completedFields === totalRequiredFields) {
+            statusElement.classList.add('active');
+            statusText.classList.add('active');
+            statusText.textContent = '✅ جميع البيانات المطلوبة مكتملة';
+        } else {
+            statusElement.classList.remove('active');
+            statusText.classList.remove('active');
+            statusText.textContent = `مطلوب ${totalRequiredFields - completedFields} حقل إضافي`;
+        }
+    }
+    
+    // تحويل الكود للأحرف الكبيرة وإضافة بادئة
+    codeInput.addEventListener('input', function() {
+        let value = this.value.toUpperCase().replace(/[^A-Z0-9_]/g, '');
+        
+        // إضافة البادئة تلقائياً إذا لم تكن موجودة
+        if (value && !value.startsWith('EXP_')) {
+            value = 'EXP_' + value.replace(/^EXP_/, '');
+        }
+        
+        this.value = value;
+        
+        // تحديث التلميح
+        if (value.length >= 7) {
+            document.getElementById('codeHint').innerHTML = 
+                '<span class="text-success">✅ الكود مناسب</span>';
+        } else if (value.length > 0) {
+            document.getElementById('codeHint').innerHTML = 
+                '<span class="text-warning">⚠️ الكود قصير، أضف المزيد</span>';
+        }
+    });
+    
+    // إظهار اقتراحات الميزانية عند التركيز
+    budgetInput.addEventListener('focus', function() {
+        document.querySelector('.budget-suggestions').classList.remove('d-none');
+    });
+    
+    // عرض معلومات الحساب المرتبط
+    accountSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const balance = selectedOption.getAttribute('data-balance');
+        
+        if (balance) {
+            document.getElementById('accountInfo').innerHTML = 
+                `الحساب المحاسبي المرتبط - الرصيد الحالي: <strong>${parseFloat(balance).toLocaleString()} جنيه</strong>`;
+        }
+    });
+    
+    // معاينة التصنيف
+    previewBtn.addEventListener('click', function() {
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData);
+        
+        if (!data.name || !data.code || !data.account) {
+            alert('⚠️ يرجى ملء الحقول المطلوبة أولاً');
+            return;
+        }
+        
+        const accountName = accountSelect.options[accountSelect.selectedIndex].text;
+        const priority = document.querySelector('[name="priority"]').options[document.querySelector('[name="priority"]').selectedIndex].text;
+        
+        const previewContent = `
+            <div class="row">
+                <div class="col-md-6">
+                    <strong>الاسم:</strong> ${data.name}<br>
+                    <strong>الكود:</strong> <span class="badge bg-warning text-dark fs-6">${data.code}</span><br>
+                    <strong>الأولوية:</strong> ${priority}<br>
+                </div>
+                <div class="col-md-6">
+                    <strong>الحساب المرتبط:</strong> ${accountName.replace('📊 ', '').split('(')[0]}<br>
+                    <strong>الميزانية الشهرية:</strong> <span class="fw-bold text-success">${data.monthly_budget ? parseFloat(data.monthly_budget).toLocaleString() + ' جنيه' : 'غير محدد'}</span><br>
+                </div>
+            </div>
+            ${data.description ? `<div class="mt-3 p-2 bg-light rounded"><strong>الوصف:</strong> <em>${data.description}</em></div>` : ''}
+        `;
+        
+        document.getElementById('previewContent').innerHTML = previewContent;
+        previewDiv.classList.remove('d-none');
+        previewDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    
+    // التحقق من النموذج
+    form.addEventListener('submit', function(e) {
+        const code = codeInput.value;
+        if (code.length < 7) {
+            alert('❌ كود التصنيف يجب أن يكون 7 أحرف على الأقل (EXP_ + 3 أحرف)');
+            e.preventDefault();
+            codeInput.focus();
+            return false;
+        }
+        
+        if (!code.startsWith('EXP_')) {
+            alert('❌ كود التصنيف يجب أن يبدأ بـ EXP_');
+            e.preventDefault();
+            codeInput.focus();
+            return false;
+        }
+        
+        if (!/^EXP_[A-Z][A-Z0-9_]*$/.test(code)) {
+            alert('❌ كود التصنيف يجب أن يحتوي على أحرف إنجليزية وأرقام و _ فقط');
+            e.preventDefault();
+            codeInput.focus();
+            return false;
+        }
+        
+        // تأكيد الحفظ
+        const name = document.querySelector('[name="name"]').value;
+        const accountName = accountSelect.options[accountSelect.selectedIndex].text.replace('📊 ', '').split('(')[0];
+        const confirmed = confirm(`هل أنت متأكد من حفظ هذا التصنيف؟
+
+📋 التفاصيل:
+• الاسم: ${name}
+• الكود: ${code}
+• الحساب: ${accountName}
+
+⚠️ لا يمكن تغيير الكود بعد الحفظ`);
+        
+        if (!confirmed) {
+            e.preventDefault();
+        } else {
+            // إظهار مؤشر التحميل
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>جاري الحفظ...';
+            submitBtn.disabled = true;
+        }
+    });
+    
+    // تحديث المعاينة في البداية
+    updatePreview();
+    
+    console.log('✅ نموذج تصنيفات المصروفات مع المعاينة الجانبية جاهز');
+});
+
+// دالة لتعيين الميزانية المقترحة
+function setBudget(amount) {
+    document.getElementById('budgetInput').value = amount;
+    document.querySelector('.budget-suggestions').classList.add('d-none');
+    
+    // تحديث المعاينة فوراً
+    document.dispatchEvent(new Event('input', { target: document.getElementById('budgetInput') }));
+}
+</script>
+{% endblock %}

@@ -1,0 +1,506 @@
+<!-- school_settings/templates/school_settings/edit_academic_year.html -->
+{% extends 'school_settings/base.html' %}
+
+{% block title %}تعديل العام الدراسي - {{ academic_year.name }}{% endblock %}
+{% block page_title %}تعديل العام الدراسي{% endblock %}
+{% block page_icon %}<i class="fas fa-edit"></i>{% endblock %}
+{% block current_page %}تعديل العام الدراسي - {{ academic_year.name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-lg border-0">
+            <div class="card-header bg-warning text-dark py-3">
+                <h4 class="mb-0">
+                    <i class="fas fa-calendar-edit me-2"></i>
+                    تعديل العام الدراسي: {{ academic_year.name }}
+                </h4>
+            </div>
+            
+            <form method="POST" id="editAcademicYearForm">
+                {% csrf_token %}
+                <div class="card-body p-4">
+                    
+                    <!-- المعلومات الأساسية -->
+                    <div class="mb-4">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                            <i class="fas fa-info-circle me-1"></i>المعلومات الأساسية
+                        </h6>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label fw-bold">اسم العام الدراسي <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="name" 
+                                       value="{{ academic_year.name }}" required 
+                                       placeholder="مثال: 2025-2026">
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="mt-4">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="is_current" 
+                                               id="isCurrent" {% if academic_year.is_current %}checked{% endif %}>
+                                        <label class="form-check-label fw-bold" for="isCurrent">
+                                            العام الحالي
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">تاريخ البداية <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" name="start_date" 
+                                       value="{{ academic_year.start_date|date:'Y-m-d' }}" required>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">تاريخ النهاية <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" name="end_date" 
+                                       value="{{ academic_year.end_date|date:'Y-m-d' }}" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- الفصول الدراسية -->
+                    <div class="mb-4">
+                        <h6 class="text-success border-bottom pb-2 mb-3">
+                            <i class="fas fa-calendar-week me-1"></i>الفصول الدراسية
+                        </h6>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">بداية الفصل الأول</label>
+                                <input type="date" class="form-control" name="first_term_start" 
+                                       value="{{ academic_year.first_term_start|date:'Y-m-d' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">نهاية الفصل الأول</label>
+                                <input type="date" class="form-control" name="first_term_end" 
+                                       value="{{ academic_year.first_term_end|date:'Y-m-d' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">بداية الفصل الثاني</label>
+                                <input type="date" class="form-control" name="second_term_start" 
+                                       value="{{ academic_year.second_term_start|date:'Y-m-d' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">نهاية الفصل الثاني</label>
+                                <input type="date" class="form-control" name="second_term_end" 
+                                       value="{{ academic_year.second_term_end|date:'Y-m-d' }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- حالة النشاط -->
+                    <div class="mb-4">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="is_active" 
+                                   id="isActive" {% if academic_year.is_active %}checked{% endif %}>
+                            <label class="form-check-label fw-bold" for="isActive">
+                                العام نشط
+                            </label>
+                            <div class="form-text">يمكن استخدام هذا العام في النظام</div>
+                        </div>
+                    </div>
+                    
+                </div>
+                
+                <div class="card-footer bg-light py-3">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'school_settings:academic_years_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-right me-1"></i>العودة للقائمة
+                        </a>
+                        
+                        <div>
+                            <button type="button" class="btn btn-outline-danger me-2" 
+                                    onclick="confirmDelete()">
+                                <i class="fas fa-trash me-1"></i>حذف العام
+                            </button>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-save me-1"></i>حفظ التغييرات
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <!-- معلومات إضافية -->
+        <div class="card mt-4 shadow-sm">
+            <div class="card-body">
+                <h6 class="card-title text-info">
+                    <i class="fas fa-info-circle me-1"></i>معلومات العام الدراسي
+                </h6>
+                <div class="row text-sm">
+                    <div class="col-md-6">
+                        <strong>تاريخ الإضافة:</strong> {{ academic_year.created_date|date:"Y-m-d H:i" }}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>آخر تعديل:</strong> {{ academic_year.updated_date|date:"Y-m-d H:i" }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal تأكيد الحذف -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">تأكيد حذف العام الدراسي</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <i class="fas fa-exclamation-triangle fa-3x text-warning"></i>
+                </div>
+                <p class="text-center"><strong>هل أنت متأكد من حذف العام الدراسي "{{ academic_year.name }}"؟</strong></p>
+                <div class="alert alert-warning">
+                    <small><i class="fas fa-info-circle me-1"></i>سيتم حذف جميع البيانات المرتبطة بهذا العام نهائياً</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <form method="POST" action="{% url 'school_settings:delete_academic_year' academic_year.pk %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i>حذف نهائياً
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmDelete() {
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+document.getElementById('editAcademicYearForm').addEventListener('submit', function(e) {
+    const startDate = new Date(document.querySelector('input[name="start_date"]').value);
+    const endDate = new Date(document.querySelector('input[name="end_date"]').value);
+    
+    if (startDate >= endDate) {
+        e.preventDefault();
+        showMessage('error', 'تاريخ البداية يجب أن يكون قبل تاريخ النهاية');
+        return false;
+    }
+});
+</script>
+{% endblock %}
+
+
+
+
+
+
+
+
+{% comment %} <!-- templates/school_settings/edit_academic_year.html -->
+{% extends 'school_settings/base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'school_settings:comprehensive_settings' %}">الإعدادات</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'school_settings:academic_years_list' %}">الأعوام الدراسية</a></li>
+                <li class="breadcrumb-item active">تعديل {{ academic_year.name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card shadow">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0">
+                    <i class="fas fa-edit me-2"></i>تعديل العام الدراسي: {{ academic_year.name }}
+                </h4>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="card-body">
+                    
+                    <!-- معلومات أساسية -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <label class="form-label fw-bold">اسم العام الدراسي <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="name" value="{{ academic_year.name }}" 
+                                   required placeholder="مثال: 2024-2025">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">تاريخ البداية <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" name="start_date" 
+                                   value="{{ academic_year.start_date|date:'Y-m-d' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">تاريخ النهاية <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" name="end_date" 
+                                   value="{{ academic_year.end_date|date:'Y-m-d' }}" required>
+                        </div>
+                    </div>
+                    
+                    <!-- تواريخ الفصول الدراسية -->
+                    <h6 class="text-primary border-bottom pb-2 mb-3">
+                        <i class="fas fa-calendar-alt me-1"></i>تواريخ الفصول الدراسية
+                    </h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label">بداية الفصل الأول</label>
+                            <input type="date" class="form-control" name="first_term_start" 
+                                   value="{{ academic_year.first_term_start|date:'Y-m-d' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">نهاية الفصل الأول</label>
+                            <input type="date" class="form-control" name="first_term_end" 
+                                   value="{{ academic_year.first_term_end|date:'Y-m-d' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">بداية الفصل الثاني</label>
+                            <input type="date" class="form-control" name="second_term_start" 
+                                   value="{{ academic_year.second_term_start|date:'Y-m-d' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">نهاية الفصل الثاني</label>
+                            <input type="date" class="form-control" name="second_term_end" 
+                                   value="{{ academic_year.second_term_end|date:'Y-m-d' }}">
+                        </div>
+                    </div>
+                    
+                    <!-- الحالة -->
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_current" 
+                                       id="isCurrent" {% if academic_year.is_current %}checked{% endif %}>
+                                <label class="form-check-label fw-bold" for="isCurrent">
+                                    العام الدراسي الحالي
+                                </label>
+                                <div class="form-text">سيتم إلغاء تفعيل العام الحالي السابق تلقائياً</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_active" 
+                                       id="isActive" {% if academic_year.is_active %}checked{% endif %}>
+                                <label class="form-check-label fw-bold" for="isActive">
+                                    العام نشط
+                                </label>
+                                <div class="form-text">يمكن استخدام هذا العام في النظام</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+                
+                <div class="card-footer bg-light">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'school_settings:academic_years_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i>إلغاء
+                        </a>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-save me-1"></i>حفظ التغييرات
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} {% endcomment %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{% comment %} 
+<!-- school_settings/templates/school_settings/modals/edit_academic_year.html -->
+<!-- Modal تعديل العام الدراسي -->
+<div class="modal fade" id="editAcademicYearModal" tabindex="-1" aria-labelledby="editAcademicYearModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editAcademicYearModalLabel">
+                    <i class="fas fa-edit me-2"></i>تعديل العام الدراسي
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <form id="editAcademicYearForm" method="post">
+                {% csrf_token %}
+                <input type="hidden" id="editYearId" name="year_id">
+                
+                <div class="modal-body">
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-8">
+                            <label for="editYearName" class="form-label">اسم العام الدراسي *</label>
+                            <input type="text" class="form-control" id="editYearName" name="name" 
+                                   placeholder="مثال: 2025-2026" required>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="mt-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="editIsCurrent" name="is_current">
+                                    <label class="form-check-label" for="editIsCurrent">
+                                        العام الحالي
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="editStartDate" class="form-label">تاريخ البداية *</label>
+                            <input type="date" class="form-control" id="editStartDate" name="start_date" required>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="editEndDate" class="form-label">تاريخ النهاية *</label>
+                            <input type="date" class="form-control" id="editEndDate" name="end_date" required>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    <h6 class="text-primary mb-3">الفصول الدراسية</h6>
+                    
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="editFirstTermStart" class="form-label">بداية الفصل الأول</label>
+                            <input type="date" class="form-control" id="editFirstTermStart" name="first_term_start">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editFirstTermEnd" class="form-label">نهاية الفصل الأول</label>
+                            <input type="date" class="form-control" id="editFirstTermEnd" name="first_term_end">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editSecondTermStart" class="form-label">بداية الفصل الثاني</label>
+                            <input type="date" class="form-control" id="editSecondTermStart" name="second_term_start">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editSecondTermEnd" class="form-label">نهاية الفصل الثاني</label>
+                            <input type="date" class="form-control" id="editSecondTermEnd" name="second_term_end">
+                        </div>
+                    </div>
+                    
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="editIsActive" name="is_active">
+                        <label class="form-check-label" for="editIsActive">
+                            العام نشط
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-save me-1"></i>حفظ التغييرات
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// تحميل بيانات العام الدراسي للتعديل
+function loadAcademicYearForEdit(yearId) {
+    fetch(`/settings/academic-year/${yearId}/json/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const year = data.year;
+                document.getElementById('editYearId').value = year.id;
+                document.getElementById('editYearName').value = year.name;
+                document.getElementById('editStartDate').value = year.start_date;
+                document.getElementById('editEndDate').value = year.end_date;
+                document.getElementById('editFirstTermStart').value = year.first_term_start || '';
+                document.getElementById('editFirstTermEnd').value = year.first_term_end || '';
+                document.getElementById('editSecondTermStart').value = year.second_term_start || '';
+                document.getElementById('editSecondTermEnd').value = year.second_term_end || '';
+                document.getElementById('editIsCurrent').checked = year.is_current;
+                document.getElementById('editIsActive').checked = year.is_active;
+                
+                document.getElementById('editAcademicYearModalLabel').innerHTML = 
+                    '<i class="fas fa-edit me-2"></i>تعديل العام الدراسي: ' + year.name;
+                
+                new bootstrap.Modal(document.getElementById('editAcademicYearModal')).show();
+            } else {
+                showMessage('error', 'لا يمكن تحميل بيانات العام الدراسي');
+            }
+        })
+        .catch(error => {
+            showMessage('error', 'حدث خطأ في تحميل البيانات');
+        });
+}
+
+// إرسال نموذج التعديل
+document.getElementById('editAcademicYearForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const yearId = document.getElementById('editYearId').value;
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>جاري الحفظ...';
+    submitBtn.disabled = true;
+    
+    fetch(`/settings/edit-academic-year/${yearId}/`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage('success', data.message);
+            bootstrap.Modal.getInstance(document.getElementById('editAcademicYearModal')).hide();
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showMessage('error', data.message);
+        }
+    })
+    .catch(error => {
+        showMessage('error', 'حدث خطأ في الاتصال');
+    })
+    .finally(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+});
+</script> {% endcomment %}

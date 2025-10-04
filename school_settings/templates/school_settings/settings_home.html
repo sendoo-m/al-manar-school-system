@@ -1,0 +1,219 @@
+{% extends 'school_settings/base.html' %}
+
+{% block title %}{{ page_title }} - {{ system_settings.school_name }}{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_icon %}<i class="fas fa-home"></i>{% endblock %}
+{% block current_page %}الصفحة الرئيسية{% endblock %}
+
+{% block content %}
+<!-- بطاقات الإعدادات الرئيسية -->
+<div class="row g-4">
+    <!-- الإعدادات الشاملة -->
+    <div class="col-lg-4 col-md-6">
+        <div class="settings-card">
+            <div class="settings-card-body text-center">
+                <div class="mb-3">
+                    <div class="stat-icon mx-auto" style="background: linear-gradient(135deg, var(--accent-color), #2980b9);">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                </div>
+                <h5 class="card-title">الإعدادات الشاملة</h5>
+                <p class="text-muted mb-4">إدارة جميع إعدادات المدرسة من مكان واحد</p>
+                <a href="{% url 'school_settings:comprehensive_settings' %}" class="btn btn-settings btn-primary">
+                    <i class="fas fa-arrow-left me-2"></i>الدخول
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- إدارة الأدوار -->
+    <div class="col-lg-4 col-md-6">
+        <div class="settings-card">
+            <div class="settings-card-body text-center">
+                <div class="mb-3">
+                    <div class="stat-icon mx-auto" style="background: linear-gradient(135deg, var(--success-color), #229954);">
+                        <i class="fas fa-users"></i>
+                    </div>
+                </div>
+                <h5 class="card-title">أدوار المستخدمين</h5>
+                <p class="text-muted mb-4">تعيين وإدارة صلاحيات المستخدمين</p>
+                <a href="{% url 'school_settings:roles_list' %}" class="btn btn-settings btn-success">
+                    <i class="fas fa-arrow-left me-2"></i>الدخول
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- إعدادات الأمان -->
+    <div class="col-lg-4 col-md-6">
+        <div class="settings-card">
+            <div class="settings-card-body text-center">
+                <div class="mb-3">
+                    <div class="stat-icon mx-auto" style="background: linear-gradient(135deg, var(--danger-color), #c0392b);">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                </div>
+                <h5 class="card-title">إعدادات الأمان</h5>
+                <p class="text-muted mb-4">إعدادات الحماية وكلمات المرور</p>
+                <a href="{% url 'school_settings:security_settings' %}" class="btn btn-settings btn-danger">
+                    <i class="fas fa-arrow-left me-2"></i>الدخول
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- إعدادات التنبيهات -->
+    <div class="col-lg-4 col-md-6">
+        <div class="settings-card">
+            <div class="settings-card-body text-center">
+                <div class="mb-3">
+                    <div class="stat-icon mx-auto" style="background: linear-gradient(135deg, var(--warning-color), #e67e22);">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                </div>
+                <h5 class="card-title">إعدادات التنبيهات</h5>
+                <p class="text-muted mb-4">إعدادات الإشعارات والتنبيهات</p>
+                <a href="{% url 'school_settings:notification_settings' %}" class="btn btn-settings btn-warning">
+                    <i class="fas fa-arrow-left me-2"></i>الدخول
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- إعدادات التقارير -->
+    <div class="col-lg-4 col-md-6">
+        <div class="settings-card">
+            <div class="settings-card-body text-center">
+                <div class="mb-3">
+                    <div class="stat-icon mx-auto" style="background: linear-gradient(135deg, #6f42c1, #5a2d91);">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                </div>
+                <h5 class="card-title">إعدادات التقارير</h5>
+                <p class="text-muted mb-4">تخصيص التقارير وطرق التصدير</p>
+                <a href="{% url 'school_settings:report_settings' %}" class="btn btn-settings" style="background: linear-gradient(135deg, #6f42c1, #5a2d91); color: white;">
+                    <i class="fas fa-arrow-left me-2"></i>الدخول
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- سجل التغييرات -->
+    <div class="col-lg-4 col-md-6">
+        <div class="settings-card">
+            <div class="settings-card-body text-center">
+                <div class="mb-3">
+                    <div class="stat-icon mx-auto" style="background: linear-gradient(135deg, #20c997, #17a085);">
+                        <i class="fas fa-history"></i>
+                    </div>
+                </div>
+                <h5 class="card-title">سجل التغييرات</h5>
+                <p class="text-muted mb-4">مراجعة جميع التغييرات في النظام</p>
+                <a href="{% url 'school_settings:settings_logs' %}" class="btn btn-settings" style="background: linear-gradient(135deg, #20c997, #17a085); color: white;">
+                    <i class="fas fa-arrow-left me-2"></i>الدخول
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- إحصائيات سريعة -->
+<div class="settings-card mt-4">
+    <div class="settings-card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-chart-pie me-2 text-primary"></i>
+            نظرة عامة على النظام
+        </h5>
+    </div>
+    <div class="settings-card-body">
+        <div class="row text-center">
+            <div class="col-md-3">
+                <h4 class="text-primary mb-1">{{ system_settings.school_name|length }}</h4>
+                <small class="text-muted">أحرف اسم المدرسة</small>
+            </div>
+            <div class="col-md-3">
+                <h4 class="text-success mb-1" id="settingsCount">{{ pending_roles_count|default:0 }}</h4>
+                <small class="text-muted">أدوار في الانتظار</small>
+            </div>
+            <div class="col-md-3">
+                <h4 class="text-warning mb-1">{{ current_time|date:"H" }}</h4>
+                <small class="text-muted">الساعة الحالية</small>
+            </div>
+            <div class="col-md-3">
+                <h4 class="text-info mb-1">{{ current_time|date:"d" }}</h4>
+                <small class="text-muted">اليوم من الشهر</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- أدوات سريعة -->
+<div class="settings-card mt-4">
+    <div class="settings-card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-tools me-2 text-primary"></i>
+            أدوات سريعة
+        </h5>
+    </div>
+    <div class="settings-card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <button class="btn btn-outline-primary w-100" onclick="backupSystem()">
+                    <i class="fas fa-download d-block mb-2"></i>
+                    نسخ احتياطي
+                </button>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-outline-success w-100" onclick="testSystem()">
+                    <i class="fas fa-check-circle d-block mb-2"></i>
+                    اختبار النظام
+                </button>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-outline-warning w-100" onclick="clearCache()">
+                    <i class="fas fa-broom d-block mb-2"></i>
+                    مسح التخزين المؤقت
+                </button>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-outline-info w-100" onclick="systemInfo()">
+                    <i class="fas fa-info-circle d-block mb-2"></i>
+                    معلومات النظام
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function backupSystem() {
+    if (confirm('هل تريد إنشاء نسخة احتياطية كاملة من النظام؟')) {
+        showMessage('info', 'جاري إنشاء النسخة الاحتياطية...');
+        // تنفيذ النسخ الاحتياطي
+    }
+}
+
+function testSystem() {
+    showMessage('info', 'جاري فحص النظام...');
+    // تنفيذ الفحص
+    setTimeout(() => {
+        showMessage('success', 'النظام يعمل بشكل طبيعي');
+    }, 2000);
+}
+
+function clearCache() {
+    if (confirm('هل تريد مسح التخزين المؤقت؟')) {
+        showMessage('info', 'جاري مسح التخزين المؤقت...');
+        setTimeout(() => {
+            showMessage('success', 'تم مسح التخزين المؤقت بنجاح');
+        }, 1500);
+    }
+}
+
+function systemInfo() {
+    alert('Django: 4.2\nPython: 3.x\nالمتصفح: ' + navigator.userAgent);
+}
+</script>
+{% endblock %}

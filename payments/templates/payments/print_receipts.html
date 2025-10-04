@@ -1,0 +1,270 @@
+<!-- templates/payments/print_receipts.html -->
+{% extends 'payments/base.html' %}
+
+{% block title %}طباعة الإيصالات - مدرسة المنار{% endblock %}
+{% block page_title %}طباعة الإيصالات{% endblock %}
+{% block page_subtitle %}ابحث عن الإيصالات وأعد طباعتها{% endblock %}
+{% block page_icon %}<i class="fas fa-receipt me-3"></i>{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'payments:payments_home' %}">لوحة التحكم</a></li>
+<li class="breadcrumb-item active">طباعة الإيصالات</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'payments:all_payments' %}" class="btn btn-outline-secondary btn-custom">
+        <i class="fas fa-list me-1"></i>جميع المدفوعات
+    </a>
+    <a href="{% url 'payments:payments_home' %}" class="btn btn-outline-primary btn-custom">
+        <i class="fas fa-home me-1"></i>الرئيسية
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- نموذج البحث -->
+<div class="content-card mb-4">
+    <div class="content-card-header">
+        <h5>
+            <i class="fas fa-search me-2 text-primary"></i>
+            البحث عن الإيصالات
+        </h5>
+    </div>
+    <div class="content-card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label fw-bold">
+                    <i class="fas fa-user me-1"></i>اسم الطالب
+                </label>
+                <input type="text" class="form-control" name="student_name" 
+                       value="{{ request.GET.student_name }}"
+                       placeholder="ابحث باسم الطالب...">
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label fw-bold">
+                    <i class="fas fa-hashtag me-1"></i>رقم الإيصال
+                </label>
+                <input type="text" class="form-control" name="receipt_number" 
+                       value="{{ request.GET.receipt_number }}"
+                       placeholder="رقم الإيصال...">
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label fw-bold">
+                    <i class="fas fa-calendar me-1"></i>تاريخ الدفع
+                </label>
+                <input type="date" class="form-control" name="payment_date" 
+                       value="{{ request.GET.payment_date }}">
+            </div>
+            
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i>بحث
+                    </button>
+                    <a href="{% url 'payments:print_receipts' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-times me-1"></i>مسح
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- نتائج البحث -->
+{% if receipts %}
+<div class="content-card">
+    <div class="content-card-header">
+        <h5>
+            <i class="fas fa-list me-2 text-success"></i>
+            الإيصالات الموجودة ({{ receipts.count }})
+        </h5>
+    </div>
+    <div class="content-card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th>رقم الإيصال</th>
+                        <th>الطالب</th>
+                        <th>رقم القسط</th>
+                        <th>المبلغ</th>
+                        <th>تاريخ الدفع</th>
+                        <th>طريقة الدفع</th>
+                        <th>المحاسب</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for receipt in receipts %}
+                    <tr>
+                        <td>
+                            <strong class="text-primary">{{ receipt.receipt_number|default:"غير محدد" }}</strong>
+                        </td>
+                        <td>
+                            <div>
+                                <strong>{{ receipt.student.name }}</strong>
+                                <br><small class="text-muted">{{ receipt.student.national_number }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-info">قسط #{{ receipt.installment_number }}</span>
+                        </td>
+                        <td>
+                            <div class="payment-amount" style="font-size: 1rem;">
+                                {{ receipt.amount_paid|floatformat:2 }}
+                                <span class="currency-symbol">ج.م</span>
+                            </div>
+                        </td>
+                        <td>
+                            {% if receipt.payment_date %}
+                            <div>
+                                <strong>{{ receipt.payment_date|date:"d M Y" }}</strong>
+                                <br><small class="text-muted">{{ receipt.payment_date|date:"H:i" }}</small>
+                            </div>
+                            {% else %}
+                            <span class="text-muted">غير محدد</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if receipt.payment_method == 'cash' %}
+                            <span class="badge bg-success">
+                                <i class="fas fa-money-bill-wave me-1"></i>نقدي
+                            </span>
+                            {% elif receipt.payment_method == 'transfer' %}
+                            <span class="badge bg-primary">
+                                <i class="fas fa-university me-1"></i>تحويل
+                            </span>
+                            {% elif receipt.payment_method == 'card' %}
+                            <span class="badge bg-info">
+                                <i class="fas fa-credit-card me-1"></i>بطاقة
+                            </span>
+                            {% else %}
+                            <span class="badge bg-warning">
+                                <i class="fas fa-receipt me-1"></i>أخرى
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small class="text-muted">{{ receipt.payment_user|default:"غير محدد" }}</small>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'payments:receipt' receipt.pk %}" 
+                                   class="btn btn-success" title="طباعة الإيصال"
+                                   target="_blank">
+                                    <i class="fas fa-print"></i>
+                                </a>
+                                <a href="{% url 'payments:pay_installment' receipt.student.pk %}" 
+                                   class="btn btn-outline-info" title="عرض تفاصيل الطالب">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination إذا كان هناك عدد كبير -->
+{% if receipts.has_other_pages %}
+<div class="d-flex justify-content-center mt-4">
+    <nav aria-label="تصفح الإيصالات">
+        <ul class="pagination">
+            {% if receipts.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ receipts.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">السابق</a>
+            </li>
+            {% endif %}
+            
+            <li class="page-item active">
+                <span class="page-link">{{ receipts.number }} من {{ receipts.paginator.num_pages }}</span>
+            </li>
+            
+            {% if receipts.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ receipts.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">التالي</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endif %}
+
+{% elif request.GET %}
+<!-- لا توجد نتائج -->
+<div class="content-card">
+    <div class="content-card-body text-center py-5">
+        <i class="fas fa-search fa-4x text-muted mb-3"></i>
+        <h5>لا توجد إيصالات تطابق البحث</h5>
+        <p class="text-muted">جرب تغيير معايير البحث</p>
+        <a href="{% url 'payments:print_receipts' %}" class="btn btn-outline-primary">
+            <i class="fas fa-redo me-2"></i>بحث جديد
+        </a>
+    </div>
+</div>
+
+{% else %}
+<!-- حالة عدم البحث -->
+<div class="content-card">
+    <div class="content-card-body text-center py-5">
+        <i class="fas fa-receipt fa-4x text-info mb-3"></i>
+        <h5>طباعة الإيصالات</h5>
+        <p class="text-muted mb-4">
+            استخدم نموذج البحث أعلاه للعثور على الإيصالات المطلوبة<br>
+            يمكنك البحث باسم الطالب، رقم الإيصال، أو تاريخ الدفع
+        </p>
+        
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="alert alert-info">
+                    <h6 class="alert-heading">
+                        <i class="fas fa-lightbulb me-2"></i>نصائح للبحث:
+                    </h6>
+                    <ul class="mb-0 text-start">
+                        <li>يمكنك البحث بجزء من اسم الطالب</li>
+                        <li>استخدم رقم الإيصال للبحث الدقيق</li>
+                        <li>اختر تاريخ محدد لعرض مدفوعات ذلك اليوم</li>
+                        <li>اتركِ الحقول فارغة لعرض جميع الإيصالات</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.payment-amount {
+    font-weight: 600;
+    color: #28a745;
+}
+
+.currency-symbol {
+    font-size: 0.9em;
+    color: #6c757d;
+}
+
+.table th {
+    font-weight: 600;
+    color: #495057;
+    border-top: none;
+}
+
+.badge {
+    font-size: 0.8rem;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,1345 @@
+{% extends 'school_settings/base.html' %}
+
+{% block title %}إدارة المصروفات المدرسية - {{ system_settings.school_name }}{% endblock %}
+{% block header_title %}إدارة المصروفات المدرسية{% endblock %}
+{% block header_icon %}<i class="fas fa-money-bill-wave"></i>{% endblock %}
+{% block page_description %}تنظيم وإدارة جميع أنواع المصروفات والرسوم الدراسية{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">المصروفات المدرسية</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'school_settings:create_school_fee' %}" class="btn btn-primary-custom btn-custom">
+        <i class="fas fa-plus me-2"></i>إضافة مصروفات جديدة
+    </a>
+    <div class="btn-group ms-2">
+        <button class="view-toggle-btn active" onclick="switchView('cards')" id="cardsViewBtn">
+            <i class="fas fa-th-large me-1"></i>البطاقات
+        </button>
+        <button class="view-toggle-btn" onclick="switchView('table')" id="tableViewBtn">
+            <i class="fas fa-table me-1"></i>الجدول
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* إصلاح مشكلة العرض والحركة */
+    body {
+        overflow-x: hidden !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+    }
+    
+    .container-fluid,
+    .row,
+    .col-lg-6,
+    .col-md-6,
+    .col-md-4,
+    .col-md-3 {
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box !important;
+    }
+
+    .stats-overview {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 20px; /* تقليل border radius */
+        padding: 30px 20px; /* تقليل padding */
+        margin-bottom: 25px; /* تقليل margin */
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    }
+
+    .stats-overview::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.05)"/></svg>') repeat;
+        animation: float 25s linear infinite;
+    }
+
+    @keyframes float {
+        0% { transform: translateX(-50px) translateY(-50px); }
+        100% { transform: translateX(50px) translateY(50px); }
+    }
+
+    .overview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); /* تقليل الحد الأدنى */
+        gap: 20px; /* تقليل gap */
+        position: relative;
+        z-index: 2;
+    }
+
+    .overview-stat {
+        background: rgba(255,255,255,0.15);
+        backdrop-filter: blur(15px);
+        border-radius: 15px; /* تقليل border radius */
+        padding: 20px; /* تقليل padding */
+        text-align: center;
+        transition: all 0.4s ease;
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .overview-stat:hover {
+        transform: translateY(-3px) scale(1.01); /* تقليل الحركة */
+        background: rgba(255,255,255,0.2);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    }
+
+    .overview-stat-icon {
+        width: 50px; /* تقليل الحجم */
+        height: 50px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 12px; /* تقليل margin */
+        font-size: 1.3rem; /* تقليل الخط */
+    }
+
+    .overview-stat-number {
+        font-size: 1.8rem; /* تقليل الخط */
+        font-weight: 800;
+        margin-bottom: 4px; /* تقليل margin */
+        text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+
+    .overview-stat-label {
+        font-size: 0.8rem; /* تقليل الخط */
+        font-weight: 600;
+        opacity: 0.9;
+    }
+
+    {% comment %} .view-toggle-btn {
+        background: rgba(40, 167, 69, 0.1);
+        border: 2px solid #28a745;
+        color: #28a745;
+        border-radius: 10px; /* تقليل border radius */
+        padding: 8px 16px; /* تقليل padding */
+        font-weight: 600;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        font-size: 0.9rem; /* تقليل الخط */
+    }
+
+    .view-toggle-btn:hover,
+    .view-toggle-btn.active {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        transform: translateY(-1px); /* تقليل الحركة */
+        box-shadow: 0 3px 12px rgba(40, 167, 69, 0.3);
+    } {% endcomment %}
+
+    .view-toggle-btn {
+        background: rgba(102, 126, 234, 0.1);
+        border: 2px solid #667eea;
+        color: #667eea;
+        border-radius: 10px; /* تقليل border radius */
+        padding: 8px 16px; /* تقليل padding */
+        font-weight: 600;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        font-size: 0.9rem; /* تقليل الخط */
+    }
+
+    .view-toggle-btn:hover,
+    .view-toggle-btn.active {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        transform: translateY(-1px); /* تقليل الحركة */
+        box-shadow: 0 3px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .level-section {
+        margin-bottom: 25px; /* تقليل margin */
+        opacity: 0;
+        transform: translateY(20px); /* تقليل الحركة */
+        transition: all 0.6s ease; /* تقليل مدة الانيميشن */
+    }
+
+    .level-section.animate-in {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .level-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px 25px; /* تقليل padding */
+        border-radius: 15px 15px 0 0; /* تقليل border radius */
+        position: relative;
+        overflow: hidden;
+    }
+
+    .filters-panel {
+        background: white;
+        border-radius: 15px; /* تقليل border radius */
+        padding: 25px; /* تقليل padding */
+        margin-bottom: 20px; /* تقليل margin */
+        box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+    }
+
+    .filters-panel:hover {
+        transform: translateY(-2px); /* تقليل الحركة */
+        box-shadow: 0 12px 35px rgba(0,0,0,0.12);
+    }
+
+    .filter-header {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        margin: -25px -25px 20px -25px; /* تقليل margin */
+        padding: 15px 25px; /* تقليل padding */
+        border-radius: 15px 15px 0 0;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .filter-input,
+    .filter-select {
+        border-radius: 10px; /* تقليل border radius */
+        border: 2px solid #e9ecef;
+        padding: 10px 12px; /* تقليل padding */
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .filter-input:focus,
+    .filter-select:focus {
+        border-color: #28a745;
+        box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.15);
+        background: white;
+    }
+
+    .fees-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); /* تقليل الحد الأدنى */
+        gap: 20px; /* تقليل gap */
+        margin-bottom: 20px; /* تقليل margin */
+    }
+
+    .fee-card {
+        background: white;
+        border-radius: 15px; /* تقليل border radius */
+        padding: 25px; /* تقليل padding */
+        box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        transition: all 0.4s ease;
+        border: 2px solid transparent;
+        position: relative;
+        overflow: hidden;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .fee-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 4px; /* تقليل العرض */
+        height: 100%;
+        background: linear-gradient(to bottom, #667eea, #764ba2);
+        transform: scaleY(0);
+        transition: transform 0.4s ease;
+    }
+
+    .fee-card:hover {
+        transform: translateY(-5px) scale(1.01); /* تقليل الحركة */
+        box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        border-color: #28a745;
+    }
+
+    .fee-card:hover::before {
+        transform: scaleY(1);
+    }
+
+    .fee-card.mandatory {
+        background: linear-gradient(135deg, rgba(255, 193, 7, 0.03), rgba(255, 193, 7, 0.01));
+        border-color: #ffc107;
+    }
+
+    .fee-card.mandatory::before {
+        background: linear-gradient(to bottom, #ffc107, #fd7e14);
+        transform: scaleY(1);
+    }
+
+    .fee-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px; /* تقليل margin */
+    }
+
+    .fee-icon {
+        width: 60px; /* تقليل الحجم */
+        height: 60px;
+        border-radius: 15px; /* تقليل border radius */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem; /* تقليل الخط */
+        margin-left: 15px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        flex-shrink: 0;
+    }
+
+    .fee-icon.tuition {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+    }
+
+    .fee-icon.transport {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+    }
+
+    .fee-icon.meals {
+        background: linear-gradient(135deg, #ffc107, #fd7e14);
+    }
+
+    .fee-icon.other {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+    }
+
+    .fee-title h5 {
+        font-weight: 700;
+        color: #495057;
+        margin-bottom: 4px; /* تقليل margin */
+        font-size: 1.1rem; /* تقليل الخط */
+        word-wrap: break-word;
+    }
+
+    .fee-subtitle {
+        color: #6c757d;
+        font-weight: 500;
+        font-size: 0.85rem; /* تقليل الخط */
+    }
+
+    .fee-badges {
+        margin-right: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 6px; /* تقليل gap */
+        align-items: flex-end;
+    }
+
+    .fee-badge {
+        padding: 5px 12px; /* تقليل padding */
+        border-radius: 15px; /* تقليل border radius */
+        font-weight: 600;
+        font-size: 0.7rem; /* تقليل الخط */
+        border: 2px solid;
+    }
+
+    .fee-badge.current {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border-color: transparent;
+    }
+
+    .fee-badge.mandatory {
+        background: linear-gradient(135deg, #ffc107, #fd7e14);
+        color: white;
+        border-color: transparent;
+    }
+
+    .fee-badge.optional {
+        background: #f8f9fa;
+        color: #17a2b8;
+        border-color: #17a2b8;
+    }
+
+    .fee-badge.active {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border-color: transparent;
+    }
+
+    .fee-badge.inactive {
+        background: #f8f9fa;
+        color: #6c757d;
+        border-color: #dee2e6;
+    }
+
+    .fee-details {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px; /* تقليل gap */
+        margin-bottom: 20px; /* تقليل margin */
+    }
+
+    .detail-item {
+        background: #f8f9fa;
+        padding: 15px 12px; /* تقليل padding */
+        border-radius: 12px; /* تقليل border radius */
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .detail-item:hover {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        transform: translateY(-2px) scale(1.03); /* تقليل الحركة */
+        box-shadow: 0 6px 20px rgba(40, 167, 69, 0.3);
+    }
+
+    .detail-label {
+        font-size: 0.75rem; /* تقليل الخط */
+        font-weight: 600;
+        opacity: 0.8;
+        margin-bottom: 6px; /* تقليل margin */
+    }
+
+    .detail-value {
+        font-size: 1.1rem; /* تقليل الخط */
+        font-weight: 800;
+    }
+
+    .installments-section {
+        background: linear-gradient(135deg, rgba(40, 167, 69, 0.05), rgba(32, 201, 151, 0.03));
+        border-radius: 12px;
+        padding: 15px; /* تقليل padding */
+        margin-bottom: 20px; /* تقليل margin */
+        border: 1px solid rgba(40, 167, 69, 0.1);
+    }
+
+    .installments-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px; /* تقليل gap */
+        text-align: center;
+    }
+
+    .installment-item h6 {
+        color: #28a745;
+        font-weight: 700;
+        margin-bottom: 6px; /* تقليل margin */
+        font-size: 0.8rem; /* تقليل الخط */
+    }
+
+    .installment-value {
+        font-size: 1.2rem; /* تقليل الخط */
+        font-weight: 800;
+        color: #495057;
+    }
+
+    .fee-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 15px; /* تقليل padding */
+        border-top: 2px solid #f1f3f4;
+    }
+
+    .fee-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 4px; /* تقليل gap */
+        color: #6c757d;
+        font-size: 0.8rem; /* تقليل الخط */
+        font-weight: 500;
+    }
+
+    .fee-actions {
+        display: flex;
+        gap: 8px; /* تقليل gap */
+    }
+
+    .action-btn {
+        width: 40px; /* تقليل الحجم */
+        height: 40px;
+        border-radius: 10px; /* تقليل border radius */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid;
+        background: white;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        font-size: 0.9rem; /* تقليل الخط */
+    }
+
+    .action-btn:hover {
+        transform: translateY(-2px) scale(1.05); /* تقليل الحركة */
+        box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+    }
+
+    .action-btn.edit {
+        color: #667eea;
+        border-color: #667eea;
+    }
+
+    .action-btn.edit:hover {
+        background: #667eea;
+        color: white;
+    }
+
+    .action-btn.delete {
+        color: #dc3545;
+        border-color: #dc3545;
+    }
+
+    .action-btn.delete:hover {
+        background: #dc3545;
+        color: white;
+    }
+
+    .table-container {
+        background: white;
+        border-radius: 15px; /* تقليل border radius */
+        overflow: hidden;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        margin-bottom: 20px; /* تقليل margin */
+        transition: all 0.3s ease;
+    }
+
+    .table-container:hover {
+        transform: translateY(-2px); /* تقليل الحركة */
+        box-shadow: 0 12px 35px rgba(0,0,0,0.12);
+    }
+
+    .table-header {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        padding: 20px 25px; /* تقليل padding */
+        position: relative;
+        overflow: hidden;
+    }
+
+    .table-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.08)"/></svg>') repeat;
+        animation: float 18s linear infinite;
+    }
+
+    .table-header-content {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modern-table {
+        margin: 0;
+        background: white;
+        width: 100%;
+        table-layout: fixed; /* تثبيت تخطيط الجدول */
+    }
+
+    .modern-table thead th {
+        background: #f8f9fa;
+        border: none;
+        padding: 15px 12px; /* تقليل padding */
+        font-weight: 700;
+        color: #495057;
+        font-size: 0.8rem; /* تقليل الخط */
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #e9ecef;
+        word-wrap: break-word;
+    }
+
+    .modern-table tbody tr {
+        transition: all 0.3s ease;
+        border-bottom: 1px solid #f1f3f4;
+    }
+
+    .modern-table tbody tr:hover {
+        background: linear-gradient(135deg, rgba(40, 167, 69, 0.03), rgba(32, 201, 151, 0.03));
+        transform: scale(1.005); /* تقليل الحركة */
+        box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    }
+
+    .modern-table tbody td {
+        padding: 15px 12px; /* تقليل padding */
+        vertical-align: middle;
+        border: none;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+
+    .table-fee-info {
+        display: flex;
+        align-items: center;
+    }
+
+    .table-fee-icon {
+        width: 45px; /* تقليل الحجم */
+        height: 45px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 12px;
+        font-size: 1.1rem; /* تقليل الخط */
+        color: white;
+        flex-shrink: 0;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 30px; /* تقليل padding */
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.05);
+    }
+
+    .empty-icon {
+        width: 100px; /* تقليل الحجم */
+        height: 100px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 25px; /* تقليل margin */
+        color: #adb5bd;
+        font-size: 2.5rem; /* تقليل الخط */
+    }
+
+    .floating-btn {
+        position: fixed;
+        bottom: 25px; /* تقليل المسافة */
+        right: 25px;
+        width: 55px; /* تقليل الحجم */
+        height: 55px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border: none;
+        font-size: 1.3rem; /* تقليل الخط */
+        box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+        transition: all 0.4s ease;
+        z-index: 1000;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .floating-btn:hover {
+        transform: scale(1.1) rotate(5deg); /* تقليل الحركة */
+        box-shadow: 0 12px 35px rgba(40, 167, 69, 0.6);
+        color: white;
+    }
+
+    .delete-modal .modal-content {
+        border-radius: 15px; /* تقليل border radius */
+        border: none;
+        box-shadow: 0 15px 50px rgba(0,0,0,0.2);
+    }
+
+    .delete-modal .modal-header {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+        border-radius: 15px 15px 0 0;
+        padding: 20px 25px; /* تقليل padding */
+    }
+
+    .pagination-wrapper {
+        background: #f8f9fa;
+        padding: 20px; /* تقليل padding */
+        border-radius: 0 0 15px 15px;
+        border-top: 1px solid #e9ecef;
+    }
+
+    /* إصلاح الاستجابة للشاشات الصغيرة */
+    @media (max-width: 768px) {
+        .stats-overview {
+            padding: 20px 15px;
+            margin-bottom: 20px;
+        }
+        
+        .overview-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        
+        .overview-stat {
+            padding: 15px;
+        }
+        
+        .overview-stat-number {
+            font-size: 1.5rem;
+        }
+        
+        .fees-grid {
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        
+        .fee-card {
+            padding: 20px;
+        }
+        
+        .fee-details {
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+        
+        .installments-grid {
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+        
+        .floating-btn {
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            font-size: 1.2rem;
+        }
+        
+        .fee-footer {
+            flex-direction: column;
+            gap: 12px;
+            align-items: stretch;
+            text-align: center;
+        }
+        
+        .filters-panel {
+            padding: 20px;
+        }
+        
+        .filter-header {
+            margin: -20px -20px 15px -20px;
+            padding: 12px 20px;
+        }
+        
+        .fee-icon {
+            width: 50px;
+            height: 50px;
+            margin-left: 12px;
+            font-size: 1.3rem;
+        }
+        
+        .action-btn {
+            width: 35px;
+            height: 35px;
+            font-size: 0.8rem;
+        }
+    }
+
+    /* إصلاح مشاكل الـ overflow النهائية */
+    * {
+        box-sizing: border-box;
+    }
+    
+    .row {
+        margin-right: 0 !important;
+        margin-left: 0 !important;
+    }
+    
+    [class*="col-"] {
+        padding-right: 12px !important;
+        padding-left: 12px !important;
+    }
+
+    /* تقليل المسافة في نهاية الصفحة */
+    .page-footer {
+        margin-top: 15px;
+        margin-bottom: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Statistics Overview -->
+{% if fees %}
+<div class="stats-overview">
+    <div class="text-center mb-3">
+        <h4 class="mb-2">نظرة عامة على المصروفات المدرسية</h4> <!-- تقليل حجم العنوان -->
+        <p class="mb-0 opacity-90">إحصائيات شاملة لجميع أنواع المصروفات والرسوم الدراسية</p>
+    </div>
+    
+    <div class="overview-grid">
+        <div class="overview-stat">
+            <div class="overview-stat-icon">
+                <i class="fas fa-list"></i>
+            </div>
+            <div class="overview-stat-number">{{ fees.paginator.count|default:0 }}</div>
+            <div class="overview-stat-label">إجمالي المصروفات</div>
+        </div>
+        
+        <div class="overview-stat">
+            <div class="overview-stat-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="overview-stat-number">{{ active_fees_count|default:0 }}</div>
+            <div class="overview-stat-label">المصروفات النشطة</div>
+        </div>
+        
+        <div class="overview-stat">
+            <div class="overview-stat-icon">
+                <i class="fas fa-exclamation-circle"></i>
+            </div>
+            <div class="overview-stat-number">{{ mandatory_fees_count|default:0 }}</div>
+            <div class="overview-stat-label">المصروفات الإجبارية</div>
+        </div>
+        
+        <div class="overview-stat">
+            <div class="overview-stat-icon">
+                <i class="fas fa-calculator"></i>
+            </div>
+            <div class="overview-stat-number">{{ total_amount|floatformat:0|default:0 }}</div>
+            <div class="overview-stat-label">إجمالي المبالغ (ج.م)</div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Filters Panel -->
+<div class="filters-panel">
+    <div class="filter-header">
+        <h6 class="mb-0"> <!-- تقليل حجم العنوان -->
+            <i class="fas fa-filter me-2"></i>فلاتر البحث والتصفية
+        </h6>
+    </div>
+    
+    <form method="GET">
+        <div class="row g-3">
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label fw-bold">العام الدراسي</label>
+                <select class="form-select filter-select" name="academic_year">
+                    <option value="">جميع الأعوام</option>
+                    {% for year in academic_years %}
+                    <option value="{{ year.id }}" {% if year.id|stringformat:'i' == academic_year_filter %}selected{% endif %}>
+                        {{ year.name }}
+                        {% if year.is_current %} (الحالي){% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label fw-bold">الصف الدراسي</label>
+                <select class="form-select filter-select" name="grade_level">
+                    <option value="">جميع الصفوف</option>
+                    {% for grade in grade_levels %}
+                    <option value="{{ grade.id }}" {% if grade.id|stringformat:'i' == grade_level_filter %}selected{% endif %}>
+                        {{ grade.education_level.name }} - {{ grade.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label fw-bold">نوع المصروفات</label>
+                <select class="form-select filter-select" name="fee_type">
+                    <option value="">جميع الأنواع</option>
+                    {% for value, display in fee_type_choices %}
+                    <option value="{{ value }}" {% if value == fee_type_filter %}selected{% endif %}>
+                        {{ display }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label fw-bold">إجراءات البحث</label>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary-custom btn-custom flex-fill btn-sm"> <!-- تقليل حجم الزر -->
+                        <i class="fas fa-search me-2"></i>بحث
+                    </button>
+                    <a href="{% url 'school_settings:school_fees_list' %}" class="btn btn-outline-secondary btn-custom btn-sm">
+                        <i class="fas fa-times"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Cards View -->
+<div id="cardsView">
+    {% if fees %}
+    <div class="fees-grid">
+        {% for fee in fees %}
+        <div class="fee-card {% if fee.is_mandatory %}mandatory{% endif %}">
+            <div class="fee-header">
+                <div class="fee-icon {% if fee.fee_type == 'TUITION' %}tuition{% elif fee.fee_type == 'TRANSPORT' %}transport{% elif fee.fee_type == 'MEALS' %}meals{% else %}other{% endif %}">
+                    {% if fee.fee_type == 'TUITION' %}
+                        <i class="fas fa-book"></i>
+                    {% elif fee.fee_type == 'TRANSPORT' %}
+                        <i class="fas fa-bus"></i>
+                    {% elif fee.fee_type == 'MEALS' %}
+                        <i class="fas fa-utensils"></i>
+                    {% else %}
+                        <i class="fas fa-money-bill"></i>
+                    {% endif %}
+                </div>
+                <div class="fee-title" style="flex: 1; min-width: 0;">
+                    <h5>{{ fee.fee_name|truncatechars:30 }}</h5> <!-- تحديد طول النص -->
+                    <div class="fee-subtitle">
+                        {{ fee.grade_level.education_level.name }} - {{ fee.grade_level.name|truncatechars:20 }}
+                    </div>
+                </div>
+                <div class="fee-badges">
+                    {% if fee.academic_year.is_current %}
+                    <span class="fee-badge current">
+                        <i class="fas fa-star me-1"></i>العام الحالي
+                    </span>
+                    {% endif %}
+                    {% if fee.is_mandatory %}
+                    <span class="fee-badge mandatory">
+                        <i class="fas fa-exclamation-circle me-1"></i>إجباري
+                    </span>
+                    {% else %}
+                    <span class="fee-badge optional">
+                        <i class="fas fa-info-circle me-1"></i>اختياري
+                    </span>
+                    {% endif %}
+                    {% if fee.is_active %}
+                    <span class="fee-badge active">
+                        <i class="fas fa-check-circle me-1"></i>نشط
+                    </span>
+                    {% else %}
+                    <span class="fee-badge inactive">
+                        <i class="fas fa-pause-circle me-1"></i>غير نشط
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="fee-details">
+                <div class="detail-item">
+                    <div class="detail-label">العام الدراسي</div>
+                    <div class="detail-value">{{ fee.academic_year.name|truncatechars:10 }}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">نوع المصروفات</div>
+                    <div class="detail-value">{{ fee.get_fee_type_display|truncatechars:12 }}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">المبلغ الإجمالي</div>
+                    <div class="detail-value">{{ fee.total_amount|floatformat:0 }} ج.م</div>
+                </div>
+            </div>
+            
+            <div class="installments-section">
+                <div class="installments-grid">
+                    <div class="installment-item">
+                        <h6>عدد الأقساط</h6>
+                        <div class="installment-value">{{ fee.installments_count|default:"N/A" }}</div>
+                    </div>
+                    <div class="installment-item">
+                        <h6>قيمة القسط</h6>
+                        <div class="installment-value">{{ fee.installment_amount|floatformat:0|default:"N/A" }} ج.م</div>
+                    </div>
+                    <div class="installment-item">
+                        <h6>أول استحقاق</h6>
+                        <div class="installment-value">{{ fee.first_installment_due_date|date:"d/m"|default:"غير محدد" }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="fee-footer">
+                <div class="fee-meta">
+                    <span><i class="fas fa-calendar me-1"></i>{{ fee.academic_year.name }}</span>
+                    <span><i class="fas fa-users me-1"></i>{{ fee.applied_students_count|default:0 }} طالب مطبق عليه</span>
+                </div>
+                <div class="fee-actions">
+                    <a href="{% url 'school_settings:edit_school_fee' fee.pk %}" 
+                       class="action-btn edit" data-bs-toggle="tooltip" title="تعديل">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <button class="action-btn delete" 
+                            onclick="confirmDelete('{{ fee.fee_name }}', '{% url 'school_settings:delete_school_fee' fee.pk %}')"
+                            data-bs-toggle="tooltip" title="حذف">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">
+            <i class="fas fa-money-bill-wave"></i>
+        </div>
+        <h5 class="text-muted mb-3">لا توجد إعدادات مصروفات</h5> <!-- تقليل حجم العنوان -->
+        <p class="text-muted mb-4">ابدأ بإضافة أول إعدادات المصروفات المدرسية لإدارة الرسوم الدراسية</p>
+        <a href="{% url 'school_settings:create_school_fee' %}" class="btn btn-primary-custom btn-custom mb-4"> <!-- تقليل margin -->
+            <i class="fas fa-plus me-2"></i>إضافة أول إعداد مصروفات
+        </a>
+        
+        <!-- أمثلة أنواع المصروفات -->
+        <div class="row justify-content-center">
+            <div class="col-md-3 mb-2"> <!-- تقليل margin -->
+                <div class="text-center p-2"> <!-- تقليل padding -->
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-2" 
+                         style="width: 50px; height: 50px; background: linear-gradient(135deg, #667eea, #764ba2); color: white;"> <!-- تقليل الحجم -->
+                        <i class="fas fa-book"></i>
+                    </div>
+                    <h6>مصروفات دراسية</h6>
+                    <small class="text-muted">الرسوم الأساسية للتعليم</small>
+                </div>
+            </div>
+            <div class="col-md-3 mb-2">
+                <div class="text-center p-2">
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-2" 
+                         style="width: 50px; height: 50px; background: linear-gradient(135deg, #17a2b8, #138496); color: white;">
+                        <i class="fas fa-bus"></i>
+                    </div>
+                    <h6>مصروفات النقل</h6>
+                    <small class="text-muted">رسوم المواصلات المدرسية</small>
+                </div>
+            </div>
+            <div class="col-md-3 mb-2">
+                <div class="text-center p-2">
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-2" 
+                         style="width: 50px; height: 50px; background: linear-gradient(135deg, #ffc107, #fd7e14); color: white;">
+                        <i class="fas fa-utensils"></i>
+                    </div>
+                    <h6>مصروفات الوجبات</h6>
+                    <small class="text-muted">رسوم الكافتيريا والطعام</small>
+                </div>
+            </div>
+            <div class="col-md-3 mb-2">
+                <div class="text-center p-2">
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-2" 
+                         style="width: 50px; height: 50px; background: linear-gradient(135deg, #28a745, #20c997); color: white;">
+                        <i class="fas fa-money-bill"></i>
+                    </div>
+                    <h6>رسوم إضافية</h6>
+                    <small class="text-muted">رسوم الأنشطة والخدمات</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Table View -->
+<div id="tableView" style="display: none;">
+    {% if fees %}
+    <div class="table-container">
+        <div class="table-header">
+            <div class="table-header-content">
+                <div>
+                    <h5 class="mb-1"> <!-- تقليل حجم العنوان -->
+                        <i class="fas fa-table me-2"></i>جدول المصروفات المدرسية
+                    </h5>
+                    <small class="opacity-90">{{ fees.paginator.count }} إعداد مصروفات</small>
+                </div>
+                <span class="badge bg-light bg-opacity-25 text-white px-2 py-1"> <!-- تقليل padding -->
+                    {{ fees.paginator.count }} إعداد
+                </span>
+            </div>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table modern-table">
+                <thead>
+                    <tr>
+                        <th style="width: 20%">اسم المصروفات</th>
+                        <th style="width: 12%">العام الدراسي</th>
+                        <th style="width: 15%">الصف</th>
+                        <th style="width: 10%">النوع</th>
+                        <th style="width: 12%">المبلغ الإجمالي</th>
+                        <th style="width: 13%">الأقساط</th>
+                        <th style="width: 8%">الحالة</th>
+                        <th style="width: 10%" class="text-center">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fee in fees %}
+                    <tr>
+                        <td>
+                            <div class="table-fee-info">
+                                <div class="table-fee-icon {% if fee.fee_type == 'TUITION' %}tuition{% elif fee.fee_type == 'TRANSPORT' %}transport{% elif fee.fee_type == 'MEALS' %}meals{% else %}other{% endif %}"
+                                     style="background: {% if fee.fee_type == 'TUITION' %}linear-gradient(135deg, #667eea, #764ba2){% elif fee.fee_type == 'TRANSPORT' %}linear-gradient(135deg, #17a2b8, #138496){% elif fee.fee_type == 'MEALS' %}linear-gradient(135deg, #ffc107, #fd7e14){% else %}linear-gradient(135deg, #28a745, #20c997){% endif %};">
+                                    {% if fee.fee_type == 'TUITION' %}
+                                        <i class="fas fa-book"></i>
+                                    {% elif fee.fee_type == 'TRANSPORT' %}
+                                        <i class="fas fa-bus"></i>
+                                    {% elif fee.fee_type == 'MEALS' %}
+                                        <i class="fas fa-utensils"></i>
+                                    {% else %}
+                                        <i class="fas fa-money-bill"></i>
+                                    {% endif %}
+                                </div>
+                                <div style="flex: 1; min-width: 0;">
+                                    <strong>{{ fee.fee_name|truncatechars:25 }}</strong>
+                                    <br>
+                                    {% if fee.is_mandatory %}
+                                    <small class="fee-badge mandatory">إجباري</small>
+                                    {% else %}
+                                    <small class="fee-badge optional">اختياري</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <strong>{{ fee.academic_year.name|truncatechars:12 }}</strong>
+                            {% if fee.academic_year.is_current %}
+                            <br><small class="fee-badge current">العام الحالي</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div>
+                                <strong>{{ fee.grade_level.name|truncatechars:15 }}</strong>
+                                <br><small class="text-muted">{{ fee.grade_level.education_level.name|truncatechars:12 }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-primary px-2 py-1">{{ fee.get_fee_type_display }}</span> <!-- تقليل padding -->
+                        </td>
+                        <td>
+                            <strong class="text-success">{{ fee.total_amount|floatformat:0 }}</strong>
+                            <small class="text-muted d-block">ج.م</small>
+                        </td>
+                        <td>
+                            <div>
+                                <strong>{{ fee.installments_count|default:"N/A" }}</strong> قسط
+                                <br><small class="text-muted">{{ fee.installment_amount|floatformat:0|default:"N/A" }} ج.م/قسط</small>
+                            </div>
+                        </td>
+                        <td>
+                            {% if fee.is_active %}
+                            <span class="fee-badge active">نشط</span>
+                            {% else %}
+                            <span class="fee-badge inactive">غير نشط</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <div class="fee-actions justify-content-center">
+                                <a href="{% url 'school_settings:edit_school_fee' fee.pk %}" 
+                                   class="action-btn edit" data-bs-toggle="tooltip" title="تعديل">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button class="action-btn delete" 
+                                        onclick="confirmDelete('{{ fee.fee_name }}', '{% url 'school_settings:delete_school_fee' fee.pk %}')"
+                                        data-bs-toggle="tooltip" title="حذف">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if fees.has_other_pages %}
+        <div class="pagination-wrapper">
+            <nav aria-label="التنقل بين الصفحات">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if fees.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1">
+                            <i class="fas fa-angle-double-right me-1"></i>الأولى
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ fees.previous_page_number }}">
+                            <i class="fas fa-angle-right me-1"></i>السابقة
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">{{ fees.number }} من {{ fees.paginator.num_pages }}</span>
+                    </li>
+                    
+                    {% if fees.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ fees.next_page_number }}">
+                            التالية<i class="fas fa-angle-left ms-1"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ fees.paginator.num_pages }}">
+                            الأخيرة<i class="fas fa-angle-double-left ms-1"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Floating Add Button -->
+<a href="{% url 'school_settings:create_school_fee' %}" class="floating-btn" 
+   data-bs-toggle="tooltip" title="إضافة مصروفات جديدة">
+    <i class="fas fa-plus"></i>
+</a>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade delete-modal" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title"> <!-- تقليل حجم العنوان -->
+                    <i class="fas fa-exclamation-triangle me-2"></i>تأكيد الحذف
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center p-3"> <!-- تقليل padding -->
+                <div class="mb-3"> <!-- تقليل margin -->
+                    <i class="fas fa-trash-alt fa-3x text-danger"></i> <!-- تقليل الحجم -->
+                </div>
+                <h6 class="mb-3">هل أنت متأكد من حذف إعداد المصروفات؟</h6> <!-- تقليل حجم العنوان -->
+                <p class="mb-3">
+                    <strong id="deleteItemName" class="text-danger"></strong>
+                </p>
+                <div class="alert alert-warning border-0">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <strong>تحذير:</strong> قد يؤثر هذا على الطلاب المرتبطين بهذه المصروفات!
+                </div>
+                <p class="small text-muted">هذا الإجراء لا يمكن التراجع عنه</p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center">
+                <button type="button" class="btn btn-light px-3" data-bs-dismiss="modal"> <!-- تقليل padding -->
+                    <i class="fas fa-times me-2"></i>إلغاء
+                </button>
+                <form method="POST" id="deleteForm" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger px-3"> <!-- تقليل padding -->
+                        <i class="fas fa-trash me-2"></i>حذف نهائياً
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="page-footer"></div> <!-- إضافة مسافة نهاية الصفحة -->
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    initializeTooltips();
+    loadViewPreference();
+    animateCards();
+    handleFloatingButton();
+});
+
+function initializeTooltips() {
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+}
+
+function switchView(viewType) {
+    const cardsView = document.getElementById('cardsView');
+    const tableView = document.getElementById('tableView');
+    const cardsBtn = document.getElementById('cardsViewBtn');
+    const tableBtn = document.getElementById('tableViewBtn');
+    
+    if (viewType === 'cards') {
+        cardsView.style.display = 'block';
+        tableView.style.display = 'none';
+        cardsBtn.classList.add('active');
+        tableBtn.classList.remove('active');
+        localStorage.setItem('feesViewPreference', 'cards');
+    } else {
+        cardsView.style.display = 'none';
+        tableView.style.display = 'block';
+        cardsBtn.classList.remove('active');
+        tableBtn.classList.add('active');
+        localStorage.setItem('feesViewPreference', 'table');
+    }
+}
+
+function loadViewPreference() {
+    const preference = localStorage.getItem('feesViewPreference') || 'cards';
+    switchView(preference);
+}
+
+function animateCards() {
+    const cards = document.querySelectorAll('.fee-card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)'; // تقليل الحركة
+        
+        setTimeout(() => {
+            card.style.transition = 'all 0.6s ease'; // تقليل مدة الانيميشن
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100); // تقليل التأخير
+    });
+    
+    // Animate numbers
+    setTimeout(() => {
+        const numbers = document.querySelectorAll('.overview-stat-number');
+        numbers.forEach(number => {
+            const finalValue = parseInt(number.textContent) || 0;
+            if (finalValue === 0) return; // لا تُحرك الصفر
+            
+            const duration = 1500; // تقليل المدة
+            const increment = finalValue / (duration / 50);
+            let current = 0;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= finalValue) {
+                    current = finalValue;
+                    clearInterval(timer);
+                }
+                number.textContent = Math.floor(current);
+            }, 50);
+        });
+    }, 400); // تقليل التأخير
+}
+
+function handleFloatingButton() {
+    let lastScrollTop = 0;
+    const floatingBtn = document.querySelector('.floating-btn');
+    
+    if (floatingBtn && window.innerWidth <= 768) {
+        window.addEventListener('scroll', function() {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            
+            if (scrollTop > lastScrollTop && scrollTop > 100) {
+                floatingBtn.style.transform = 'scale(0)';
+            } else {
+                floatingBtn.style.transform = 'scale(1)';
+            }
+            
+            lastScrollTop = scrollTop;
+        });
+    }
+}
+
+function confirmDelete(itemName, deleteUrl) {
+    document.getElementById('deleteItemName').textContent = itemName;
+    document.getElementById('deleteForm').action = deleteUrl;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+// Enhanced interactions - نسخة مبسطة
+document.querySelectorAll('.detail-item').forEach(item => {
+    item.addEventListener('mouseenter', function() {
+        this.style.zIndex = '10';
+    });
+    
+    item.addEventListener('mouseleave', function() {
+        this.style.zIndex = '1';
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,363 @@
+{% extends 'school_settings/base.html' %}
+{% load static %}
+
+{% block title %}تحديث معلومات المدرسة - {{ system_settings.school_name }}{% endblock %}
+{% block header_title %}تحديث معلومات المدرسة{% endblock %}
+{% block header_icon %}<i class="fas fa-school"></i>{% endblock %}
+{% block page_description %}تحديث المعلومات الأساسية للمدرسة والإعدادات العامة{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item">
+    <a href="{% url 'school_settings:comprehensive_settings' %}">الإعدادات الشاملة</a>
+</li>
+<li class="breadcrumb-item active">تحديث معلومات المدرسة</li>
+{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'school_settings:comprehensive_settings' %}" class="btn btn-outline-secondary btn-custom">
+    <i class="fas fa-arrow-right me-2"></i>العودة للإعدادات
+</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* أنماط مخصصة لصفحة تحديث الإعدادات */
+    .settings-card {
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        margin-bottom: 25px;
+    }
+
+    .settings-card .card-header {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        color: white;
+        border-radius: 15px 15px 0 0;
+        border: none;
+        padding: 20px;
+    }
+
+    .form-section {
+        margin-bottom: 25px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 12px;
+        border-right: 4px solid #3498db;
+    }
+
+    .form-section h6 {
+        color: #2c3e50;
+        font-weight: 700;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        font-size: 1.1rem;
+    }
+
+    .form-section .section-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 6px;
+        background: #3498db;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 10px;
+        font-size: 0.9rem;
+    }
+
+    .form-control-custom {
+        border-radius: 10px;
+        border: 2px solid #e9ecef;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+        font-size: 0.95rem;
+    }
+
+    .form-control-custom:focus {
+        border-color: #3498db;
+        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.15);
+        outline: none;
+    }
+
+    .image-preview {
+        max-height: 120px;
+        border-radius: 8px;
+        border: 2px solid #dee2e6;
+        padding: 5px;
+        background: white;
+    }
+
+    .btn-save {
+        background: linear-gradient(135deg, #27ae60, #2ecc71);
+        border: none;
+        border-radius: 10px;
+        padding: 12px 25px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(39, 174, 96, 0.3);
+    }
+
+    .alert-info-custom {
+        background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(52, 152, 219, 0.05));
+        border: 1px solid rgba(52, 152, 219, 0.3);
+        border-radius: 10px;
+        color: #2980b9;
+    }
+
+    .required-field::after {
+        content: " *";
+        color: #e74c3c;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="settings-card card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-school me-2"></i>تحديث معلومات المدرسة
+                </h4>
+                <p class="mb-0 mt-2 opacity-90">قم بتحديث المعلومات الأساسية للمدرسة والإعدادات العامة</p>
+            </div>
+            
+            <form method="POST" enctype="multipart/form-data" id="schoolSettingsForm">
+                {% csrf_token %}
+                <div class="card-body p-4">
+                    
+                    <!-- المعلومات الأساسية -->
+                    <div class="form-section">
+                        <h6>
+                            <div class="section-icon"><i class="fas fa-info-circle"></i></div>
+                            المعلومات الأساسية
+                        </h6>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold required-field">اسم المدرسة (عربي)</label>
+                                <input type="text" class="form-control form-control-custom" name="school_name" 
+                                       value="{{ system_settings.school_name }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">اسم المدرسة (إنجليزي)</label>
+                                <input type="text" class="form-control form-control-custom" name="school_name_en" 
+                                       value="{{ system_settings.school_name_en }}"
+                                       placeholder="School Name in English">
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mt-2">
+                            <div class="col-12">
+                                <label class="form-label fw-bold">عنوان المدرسة</label>
+                                <textarea class="form-control form-control-custom" name="school_address" 
+                                          rows="3" placeholder="العنوان الكامل للمدرسة">{{ system_settings.school_address }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- معلومات الاتصال -->
+                    <div class="form-section">
+                        <h6>
+                            <div class="section-icon"><i class="fas fa-phone"></i></div>
+                            معلومات الاتصال
+                        </h6>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">هاتف المدرسة</label>
+                                <input type="tel" class="form-control form-control-custom" name="school_phone" 
+                                       value="{{ system_settings.school_phone }}" 
+                                       placeholder="01234567890">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">البريد الإلكتروني</label>
+                                <input type="email" class="form-control form-control-custom" name="school_email" 
+                                       value="{{ system_settings.school_email }}" 
+                                       placeholder="info@school.edu">
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">موقع المدرسة</label>
+                                <input type="url" class="form-control form-control-custom" name="school_website" 
+                                       value="{{ system_settings.school_website }}" 
+                                       placeholder="https://www.school.edu">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">فاكس المدرسة</label>
+                                <input type="tel" class="form-control form-control-custom" name="school_fax" 
+                                       value="{{ system_settings.school_fax }}" 
+                                       placeholder="01234567890">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- الإعدادات المالية -->
+                    <div class="form-section">
+                        <h6>
+                            <div class="section-icon"><i class="fas fa-coins"></i></div>
+                            الإعدادات المالية
+                        </h6>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">اسم العملة</label>
+                                <input type="text" class="form-control form-control-custom" name="currency_name" 
+                                       value="{{ system_settings.currency_name }}" 
+                                       placeholder="جنيه مصري">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">رمز العملة</label>
+                                <input type="text" class="form-control form-control-custom" name="currency_symbol" 
+                                       value="{{ system_settings.currency_symbol }}" 
+                                       placeholder="ج.م" maxlength="10">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- الإعدادات العامة -->
+                    <div class="form-section">
+                        <h6>
+                            <div class="section-icon"><i class="fas fa-cog"></i></div>
+                            الإعدادات العامة
+                        </h6>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">لغة النظام</label>
+                                <select class="form-select form-control-custom" name="system_language">
+                                    <option value="ar" {% if system_settings.system_language == 'ar' %}selected{% endif %}>العربية</option>
+                                    <option value="en" {% if system_settings.system_language == 'en' %}selected{% endif %}>English</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">الحد الأقصى للطلاب بالفصل</label>
+                                <input type="number" class="form-control form-control-custom" name="max_students_per_classroom" 
+                                       value="{{ system_settings.max_students_per_classroom }}" 
+                                       min="10" max="50">
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mt-2">
+                            <div class="col-12">
+                                <label class="form-label fw-bold">نص تذييل الإيصالات</label>
+                                <textarea class="form-control form-control-custom" name="receipt_footer_text" 
+                                          rows="2" placeholder="النص الذي يظهر في أسفل الإيصالات">{{ system_settings.receipt_footer_text }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- الشعار والختم -->
+                    <div class="form-section">
+                        <h6>
+                            <div class="section-icon"><i class="fas fa-image"></i></div>
+                            الشعار والختم
+                        </h6>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">شعار المدرسة</label>
+                                <input type="file" class="form-control form-control-custom" name="school_logo" 
+                                       accept="image/*" onchange="previewImage(this, 'logoPreview')">
+                                {% if system_settings.school_logo %}
+                                <div class="mt-3">
+                                    <p class="text-muted mb-2">الشعار الحالي:</p>
+                                    <img src="{{ system_settings.school_logo.url }}" alt="شعار المدرسة" 
+                                         class="image-preview" id="logoPreview">
+                                </div>
+                                {% else %}
+                                <img id="logoPreview" class="image-preview mt-3" style="display: none;">
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">ختم المدرسة</label>
+                                <input type="file" class="form-control form-control-custom" name="school_stamp" 
+                                       accept="image/*" onchange="previewImage(this, 'stampPreview')">
+                                {% if system_settings.school_stamp %}
+                                <div class="mt-3">
+                                    <p class="text-muted mb-2">الختم الحالي:</p>
+                                    <img src="{{ system_settings.school_stamp.url }}" alt="ختم المدرسة" 
+                                         class="image-preview" id="stampPreview">
+                                </div>
+                                {% else %}
+                                <img id="stampPreview" class="image-preview mt-3" style="display: none;">
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- تنبيه مهم -->
+                    <div class="alert alert-info-custom">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>ملاحظة:</strong> ستظهر هذه المعلومات في جميع التقارير والإيصالات والمراسلات الرسمية.
+                    </div>
+                </div>
+                
+                <div class="card-footer bg-light py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{% url 'school_settings:comprehensive_settings' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>إلغاء
+                        </a>
+                        <button type="submit" class="btn btn-save text-white">
+                            <i class="fas fa-save me-2"></i>حفظ التغييرات
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function previewImage(input, previewId) {
+    const preview = document.getElementById(previewId);
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+        }
+        
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+document.getElementById('schoolSettingsForm').addEventListener('submit', function(e) {
+    const schoolName = document.querySelector('input[name="school_name"]').value.trim();
+    
+    if (!schoolName) {
+        e.preventDefault();
+        alert('اسم المدرسة مطلوب');
+        return false;
+    }
+    
+    // تعطيل الزر لمنع الإرسال المزدوج
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<div class="spinner-border spinner-border-sm me-2" role="status"></div>جاري الحفظ...';
+    submitBtn.disabled = true;
+    
+    // في حالة حدوث خطأ، أعد تفعيل الزر
+    setTimeout(() => {
+        if (submitBtn.disabled) {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    }, 10000);
+});
+</script>
+{% endblock %}

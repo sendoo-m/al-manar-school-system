@@ -1,0 +1,389 @@
+{% extends 'books_inventory/base.html' %}
+{% load static %}
+
+{% block title %}تقارير المخزن - مخزن الكتب{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="fas fa-chart-bar text-primary"></i> تقارير مخزن الكتب والمطبوعات</h2>
+        <p class="text-muted">تقارير شاملة عن حالة المخزون والعمليات والأنشطة</p>
+    </div>
+</div>
+
+<!-- إحصائيات عامة -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card text-center bg-primary text-white">
+            <div class="card-body">
+                <i class="fas fa-book fa-3x mb-3"></i>
+                <h3>{{ books_stats.total_books|default:0 }}</h3>
+                <p class="mb-0">إجمالي الكتب</p>
+                <hr class="my-2">
+                <small>المتاح: {{ books_stats.available_stock|default:0 }}</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card text-center bg-info text-white">
+            <div class="card-body">
+                <i class="fas fa-book-open fa-3x mb-3"></i>
+                <h3>{{ notebooks_stats.total_notebooks|default:0 }}</h3>
+                <p class="mb-0">إجمالي الكراسات</p>
+                <hr class="my-2">
+                <small>المتاح: {{ notebooks_stats.available_stock|default:0 }}</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card text-center bg-success text-white">
+            <div class="card-body">
+                <i class="fas fa-pen fa-3x mb-3"></i>
+                <h3>{{ supplies_stats.total_supplies|default:0 }}</h3>
+                <p class="mb-0">الأدوات المدرسية</p>
+                <hr class="my-2">
+                <small>المتاح: {{ supplies_stats.available_stock|default:0 }}</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card text-center bg-warning text-white">
+            <div class="card-body">
+                <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                <h3>{{ shortage_stats.pending_shortages|default:0 }}</h3>
+                <p class="mb-0">نواقص معلقة</p>
+                <hr class="my-2">
+                <small>عالي الأولوية: {{ shortage_stats.high_priority|default:0 }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- تقارير التوزيع -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-share text-success"></i> إحصائيات التوزيع</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="border rounded p-3">
+                            <h4 class="text-primary">{{ distribution_stats.today|default:0 }}</h4>
+                            <p class="text-muted mb-0">توزيعات اليوم</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3">
+                            <h4 class="text-info">{{ distribution_stats.this_week|default:0 }}</h4>
+                            <p class="text-muted mb-0">توزيعات الأسبوع</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3">
+                            <h4 class="text-success">{{ distribution_stats.completed|default:0 }}</h4>
+                            <p class="text-muted mb-0">توزيعات مكتملة</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3">
+                            <h4 class="text-warning">{{ distribution_stats.pending|default:0 }}</h4>
+                            <p class="text-muted mb-0">توزيعات معلقة</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- تفاصيل المخزون -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-book text-primary"></i> تفاصيل الكتب</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <td>إجمالي المخزون:</td>
+                        <td><strong>{{ books_stats.total_stock|default:0 }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>المتاح للتوزيع:</td>
+                        <td><strong class="text-success">{{ books_stats.available_stock|default:0 }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>الموزع:</td>
+                        <td><strong class="text-info">{{ books_stats.distributed|default:0 }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>التالف:</td>
+                        <td><strong class="text-danger">{{ books_stats.damaged|default:0 }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>مخزون منخفض:</td>
+                        <td><strong class="text-warning">{{ books_stats.low_stock_count|default:0 }}</strong></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-book-open text-info"></i> تفاصيل الكراسات</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <td>إجمالي المخزون:</td>
+                        <td><strong>{{ notebooks_stats.total_stock|default:0 }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>المتاح للتوزيع:</td>
+                        <td><strong class="text-success">{{ notebooks_stats.available_stock|default:0 }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>الموزع:</td>
+                        <td><strong class="text-info">{{ notebooks_stats.distributed|default:0 }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>التالف:</td>
+                        <td><strong class="text-danger">{{ notebooks_stats.damaged|default:0 }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>مخزون منخفض:</td>
+                        <td><strong class="text-warning">{{ notebooks_stats.low_stock_count|default:0 }}</strong></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-pen text-success"></i> تفاصيل الأدوات المدرسية</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <td>إجمالي المخزون:</td>
+                        <td><strong>{{ supplies_stats.total_stock|default:0 }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>المتاح للتوزيع:</td>
+                        <td><strong class="text-success">{{ supplies_stats.available_stock|default:0 }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>الموزع:</td>
+                        <td><strong class="text-info">{{ supplies_stats.distributed|default:0 }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>التالف:</td>
+                        <td><strong class="text-danger">{{ supplies_stats.damaged|default:0 }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>مخزون منخفض:</td>
+                        <td><strong class="text-warning">{{ supplies_stats.low_stock_count|default:0 }}</strong></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- تصدير التقارير -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-download text-primary"></i> تصدير التقارير</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <div class="d-grid">
+                            <a href="{% url 'books_inventory:export_report' 'books' %}" class="btn btn-outline-primary">
+                                <i class="fas fa-book"></i><br>
+                                تقرير الكتب<br>
+                                <small>CSV</small>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="d-grid">
+                            <a href="{% url 'books_inventory:export_report' 'notebooks' %}" class="btn btn-outline-info">
+                                <i class="fas fa-book-open"></i><br>
+                                تقرير الكراسات<br>
+                                <small>CSV</small>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="d-grid">
+                            <a href="{% url 'books_inventory:export_report' 'supplies' %}" class="btn btn-outline-success">
+                                <i class="fas fa-pen"></i><br>
+                                تقرير الأدوات<br>
+                                <small>CSV</small>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="d-grid">
+                            <a href="{% url 'books_inventory:export_report' 'distributions' %}" class="btn btn-outline-warning">
+                                <i class="fas fa-share"></i><br>
+                                تقرير التوزيعات<br>
+                                <small>CSV</small>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="d-grid">
+                            <a href="{% url 'books_inventory:export_report' 'shortages' %}" class="btn btn-outline-danger">
+                                <i class="fas fa-exclamation-triangle"></i> تقرير النواقص (CSV)
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="d-grid">
+                            <a href="{% url 'books_inventory:export_report' 'complete' %}" class="btn btn-primary">
+                                <i class="fas fa-file-export"></i> التقرير الشامل (CSV)
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- أحدث الأنشطة -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-truck text-primary"></i> أحدث الاستلامات</h6>
+            </div>
+            <div class="card-body">
+                {% if recent_receipts %}
+                <div class="list-group list-group-flush">
+                    {% for receipt in recent_receipts %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ receipt.receipt_number }}</strong>
+                            <br><small class="text-muted">{{ receipt.supplier.name }} - {{ receipt.get_receipt_type_display }}</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-info">{{ receipt.total_items }}</span>
+                            <br><small class="text-muted">{{ receipt.receipt_date|date:"m/d" }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="text-center mt-3">
+                    <a href="{% url 'books_inventory:receipts_list' %}" class="btn btn-outline-primary btn-sm">
+                        عرض جميع الاستلامات
+                    </a>
+                </div>
+                {% else %}
+                <p class="text-muted text-center">لا توجد استلامات حديثة</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-share text-success"></i> أحدث التوزيعات</h6>
+            </div>
+            <div class="card-body">
+                {% if recent_distributions %}
+                <div class="list-group list-group-flush">
+                    {% for distribution in recent_distributions %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ distribution.student.name }}</strong>
+                            <br><small class="text-muted">{{ distribution.student.grade_name|default:"غير محدد" }}</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-success">{{ distribution.total_items|default:0 }}</span>
+                            <br><small class="text-muted">{{ distribution.distribution_date|date:"m/d" }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="text-center mt-3">
+                    <a href="{% url 'books_inventory:distributions_list' %}" class="btn btn-outline-success btn-sm">
+                        عرض جميع التوزيعات
+                    </a>
+                </div>
+                {% else %}
+                <p class="text-muted text-center">لا توجد توزيعات حديثة</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- النواقص الحديثة -->
+{% if recent_shortages %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h6><i class="fas fa-exclamation-triangle"></i> أحدث النواقص المُبلغ عنها</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>العنصر</th>
+                                <th>النوع</th>
+                                <th>كمية النقص</th>
+                                <th>الأولوية</th>
+                                <th>الحالة</th>
+                                <th>تاريخ البلاغ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for shortage in recent_shortages %}
+                            <tr>
+                                <td>{{ shortage.item_name }}</td>
+                                <td>{{ shortage.get_item_type_display }}</td>
+                                <td><span class="badge bg-danger">{{ shortage.shortage_quantity }}</span></td>
+                                <td>
+                                    <span class="badge bg-{% if shortage.priority == 'HIGH' %}danger{% elif shortage.priority == 'MEDIUM' %}warning{% else %}info{% endif %}">
+                                        {{ shortage.get_priority_display }}
+                                    </span>
+                                </td>
+                                <td>{{ shortage.get_status_display }}</td>
+                                <td>{{ shortage.reported_date|date:"Y-m-d" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-center mt-3">
+                    <a href="{% url 'books_inventory:shortages_list' %}" class="btn btn-outline-warning">
+                        عرض جميع النواقص
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

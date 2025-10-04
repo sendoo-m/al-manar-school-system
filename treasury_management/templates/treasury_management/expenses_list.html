@@ -1,0 +1,249 @@
+<!-- treasury_management/templates/treasury_management/expenses_list.html -->
+{% extends 'treasury_management/base.html' %}
+{% load static %}
+
+{% block title %}قائمة المصروفات اليومية{% endblock %}
+
+{% block content %}
+<!-- رأس الصفحة -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2><i class="fas fa-receipt me-2"></i>المصروفات اليومية</h2>
+                <p class="text-muted mb-0">جميع المصروفات والنفقات اليومية</p>
+            </div>
+            <div>
+                <a href="{% url 'treasury_management:add_expense' %}" class="btn btn-danger">
+                    <i class="fas fa-plus me-1"></i>إضافة مصروف جديد
+                </a>
+                <a href="{% url 'treasury_management:dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>العودة للوحة التحكم
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- الإحصائيات السريعة -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6">
+        <div class="card bg-danger text-white">
+            <div class="card-body text-center">
+                <div class="h4 mb-1">{{ expenses.paginator.count }}</div>
+                <div class="opacity-75">إجمالي المصروفات</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="card bg-warning text-white">
+            <div class="card-body text-center">
+                <div class="h4 mb-1">{{ total_amount|floatformat:0 }}</div>
+                <div class="opacity-75">إجمالي المبلغ</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <div class="h4 mb-1">{{ expenses|length }}</div>
+                <div class="opacity-75">مصروفات الصفحة</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <div class="h4 mb-1">
+                    {% for expense in expenses %}
+                        {% if expense.is_approved %}{{ forloop.counter }}{% endif %}
+                    {% endfor %}
+                </div>
+                <div class="opacity-75">مصروفات معتمدة</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- فلاتر البحث -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="mb-3"><i class="fas fa-filter me-2"></i>فلترة النتائج</h5>
+        
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">التصنيف</label>
+                <select name="category" class="form-select">
+                    <option value="">جميع التصنيفات</option>
+                    {% for category in expense_categories %}
+                    <option value="{{ category.id }}" {% if filters.category == category.id|slugify %}selected{% endif %}>
+                        {{ category.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label">نوع المصروف</label>
+                <select name="type" class="form-select">
+                    <option value="">جميع الأنواع</option>
+                    <option value="SALARIES" {% if filters.type == 'SALARIES' %}selected{% endif %}>مرتبات</option>
+                    <option value="UTILITIES" {% if filters.type == 'UTILITIES' %}selected{% endif %}>مرافق</option>
+                    <option value="SUPPLIES" {% if filters.type == 'SUPPLIES' %}selected{% endif %}>مستلزمات</option>
+                    <option value="MAINTENANCE" {% if filters.type == 'MAINTENANCE' %}selected{% endif %}>صيانة</option>
+                    <option value="MARKETING" {% if filters.type == 'MARKETING' %}selected{% endif %}>دعاية</option>
+                    <option value="TRANSPORTATION" {% if filters.type == 'TRANSPORTATION' %}selected{% endif %}>نقل</option>
+                    <option value="OTHER" {% if filters.type == 'OTHER' %}selected{% endif %}>أخرى</option>
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label class="form-label">من تاريخ</label>
+                <input type="date" name="from_date" class="form-control" value="{{ filters.from_date }}">
+            </div>
+            
+            <div class="col-md-2">
+                <label class="form-label">إلى تاريخ</label>
+                <input type="date" name="to_date" class="form-control" value="{{ filters.to_date }}">
+            </div>
+            
+            <div class="col-md-2">
+                <label class="form-label">الحالة</label>
+                <select name="approved" class="form-select">
+                    <option value="">جميع الحالات</option>
+                    <option value="true" {% if filters.approved == 'true' %}selected{% endif %}>معتمدة</option>
+                    <option value="false" {% if filters.approved == 'false' %}selected{% endif %}>غير معتمدة</option>
+                </select>
+            </div>
+            
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="fas fa-search me-1"></i>بحث
+                </button>
+                <a href="{% url 'treasury_management:expenses_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-redo me-1"></i>إعادة تعيين
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- قائمة المصروفات -->
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>رقم المصروف</th>
+                    <th>التصنيف</th>
+                    <th>النوع</th>
+                    <th>الوصف</th>
+                    <th>المبلغ</th>
+                    <th>المورد</th>
+                    <th>التاريخ</th>
+                    <th>الحالة</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for expense in expenses %}
+                <tr>
+                    <td>
+                        <strong>{{ expense.expense_number }}</strong>
+                        {% if expense.invoice_number %}
+                        <br><small class="text-muted">فاتورة: {{ expense.invoice_number }}</small>
+                        {% endif %}
+                    </td>
+                    <td>{{ expense.category.name }}</td>
+                    <td>
+                        <span class="badge bg-secondary">{{ expense.get_expense_type_display }}</span>
+                    </td>
+                    <td>
+                        <div style="max-width: 200px;">
+                            {{ expense.description|truncatechars:50 }}
+                        </div>
+                    </td>
+                    <td class="text-danger fw-bold">{{ expense.amount|floatformat:2 }}</td>
+                    <td>{{ expense.vendor_name|default:"-" }}</td>
+                    <td>
+                        {{ expense.expense_date|date:"d M Y" }}
+                        <br><small class="text-muted">{{ expense.created_at|date:"H:i" }}</small>
+                    </td>
+                    <td>
+                        {% if expense.is_approved %}
+                        <span class="badge bg-success">معتمد</span>
+                        {% else %}
+                        <span class="badge bg-warning">معلق</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-outline-info" 
+                                    onclick="showExpenseDetails({{ expense.id }})">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            
+                            {% if not expense.is_approved and perms.treasury_management.approve_expense %}
+                            <a href="{% url 'treasury_management:approve_expense' expense.id %}" 
+                               class="btn btn-sm btn-outline-success" 
+                               onclick="return confirm('هل تريد اعتماد هذا المصروف؟')">
+                                <i class="fas fa-check"></i>
+                            </a>
+                            {% endif %}
+                            
+                            {% if expense.transaction %}
+                            <a href="{% url 'treasury_management:transaction_detail' expense.transaction.id %}" 
+                               class="btn btn-sm btn-outline-primary" title="عرض العملية المالية">
+                                <i class="fas fa-link"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center py-4">
+                        <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
+                        <p class="text-muted">لا توجد مصروفات</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- التصفح -->
+{% if expenses.has_other_pages %}
+<div class="d-flex justify-content-center mt-4">
+    <nav>
+        <ul class="pagination">
+            {% if expenses.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1">الأولى</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ expenses.previous_page_number }}">السابقة</a>
+            </li>
+            {% endif %}
+            
+            <li class="page-item active">
+                <span class="page-link">{{ expenses.number }} من {{ expenses.paginator.num_pages }}</span>
+            </li>
+            
+            {% if expenses.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ expenses.next_page_number }}">التالية</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ expenses.paginator.num_pages }}">الأخيرة</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endif %}
+{% endblock %}

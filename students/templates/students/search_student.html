@@ -1,109 +1,480 @@
-{% extends 'students/base/account_navbar.html' %}
-{% comment %} {% extends 'students/base.html' %}  {% endcomment %}
+<!-- templates/students/search_student.html -->
+{% extends 'students/base.html' %}
 
-{% block title %}Search Students{% endblock %}
+{% block title %}البحث المتقدم - نظام إدارة الطلاب{% endblock %}
+{% block page_title %}البحث المتقدم عن الطلاب{% endblock %}
+{% block page_subtitle %}ابحث في قاعدة بيانات الطلاب باستخدام معايير متعددة{% endblock %}
+{% block page_icon %}<i class="fas fa-search me-3"></i>{% endblock %}
 
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'students:student_affairs_home' %}">لوحة التحكم</a></li>
+<li class="breadcrumb-item active">البحث المتقدم</li>
+{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'students:student_list' %}" class="btn btn-outline-primary btn-custom">
+    <i class="fas fa-list me-1"></i>جميع الطلاب
+</a>
+{% if permissions.can_add %}
+<a href="{% url 'students:add_student' %}" class="btn btn-success btn-custom ms-2">
+    <i class="fas fa-plus me-1"></i>إضافة طالب
+</a>
+{% endif %}
+{% endblock %}
 
 {% block content %}
-  <div class="container my-1">
-    <h1>Search Students</h1>
-    <form method="GET" action="{% url 'students:search_student' %}">
-      <div class="input-group mb-3">
-        <input type="text" class="form-control" name="query" placeholder="Search by name or National ID ">
-        <button type="submit" class="btn btn-primary">Search</button>
-      </div>
-    </form>
+<!-- نموذج البحث -->
+<div class="content-card mb-4">
+    <div class="content-card-header">
+        <h5><i class="fas fa-filter me-2 text-primary"></i>معايير البحث</h5>
+    </div>
+    <div class="content-card-body">
+        <form id="searchForm">
+            <div class="row">
+                <!-- البحث السريع -->
+                <div class="col-md-6 mb-3">
+                    <label for="quickSearch" class="form-label">
+                        <i class="fas fa-search me-1"></i>البحث السريع
+                    </label>
+                    <input type="text" class="form-control" id="quickSearch" 
+                           placeholder="اكتب اسم الطالب أو الرقم القومي...">
+                    <small class="form-text text-muted">ابحث بالاسم أو الرقم القومي أو رقم الهاتف</small>
+                </div>
 
-    {% if students %}
-      <h2>Search Results</h2>
-      <div class="table-responsive">
-        <table> <!--  class="table table-bordered"  -->
-          <thead ><!-- class="bg-primary text-white" -->
-            <tr>
-              <th>Name</th>
-              <th>National Number</th>
-              {% comment %} <th>Status</th> {% endcomment %}
-              <th>Age</th>
-              <th>Classroom</th>
-              <th>Stage</th> 
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for student in students %}
-              <tr>
-                <td>{{ student.name }}</td>
-                <td>{{ student.national_number }}</td>
-                {% comment %} <td> <!-- علامة الدفع باللون الاخضر-->
-                  {% if installment.paid %}
-                      <span class="status-mark status-paid">&#10004;</span>
-                  {% else %}
-                      {% if student.premium %}
-                          <span class="status-mark status-premium">&#9888;</span>
-                      {% else %}
-                          <span class="status-mark status-unpaid">&#10008;</span>
-                      {% endif %}
-                  {% endif %}
-              </td><!-- نهاية علامة الدفع بالالوان --> {% endcomment %}
-                <td>{{ student.age }}</td>
-                <td>
-                  {% for classroom in student.classroom.all %}
-                  {{ classroom.name }}
-                  {% if not forloop.last %}, {% endif %}
-                  {% empty %}
-                  N/A
-                  {% endfor %}
-              </td>
-              <td>
-                {% for classroom in student.classroom.all %}
-                {{ classroom.stage }}
-                {% if not forloop.last %}, {% endif %}
-                {% empty %}
-                N/A
-                {% endfor %}
-            </td>
-                
-                <td>
-                  {% comment %} <a href="{% url 'students:edit_student' pk=student.pk %}" class="btn btn-primary btn-sm">Edit</a> {% endcomment %}
-                  <a href="{% url 'students:student_detail' pk=student.pk %}" class="btn btn-primary btn-sm">تفاصيل ودفع الأقساط</a>
-                  
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      <nav aria-label="Pagination">
-        <ul class="pagination">
-          {% if page_obj.has_previous %}
-            <li class="page-item">
-              <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&query={{ query }}{% endif %}" aria-label="Previous">
-                <span aria-hidden="true">&laquo;</span>
-                <span class="sr-only">Previous</span>
-              </a>
-            </li>
-          {% endif %}
-          {% for page in page_obj.paginator.page_range %}
-            {% if page == page_obj.number %}
-              <li class="page-item active" aria-current="page">
-                <a class="page-link" href="#">{{ page }} <span class="sr-only">(current)</span></a>
-              </li>
-            {% else %}
-              <li class="page-item"><a class="page-link" href="?page={{ page }}{% if query %}&query={{ query }}{% endif %}">{{ page }}</a></li>
-            {% endif %}
-          {% endfor %}
-          {% if page_obj.has_next %}
-            <li class="page-item">
-              <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&query={{ query }}{% endif %}" aria-label="Next">
-                <span aria-hidden="true">&raquo;</span>
-                <span class="sr-only">Next</span>
-              </a>
-            </li>
-          {% endif %}
-        </ul>
-      </nav> 
-    {% else %}
-      <p>No students found.</p>
-    {% endif %}
-  </div>
+                <!-- المرحلة التعليمية -->
+                <div class="col-md-3 mb-3">
+                    <label for="educationLevel" class="form-label">
+                        <i class="fas fa-graduation-cap me-1"></i>المرحلة التعليمية
+                    </label>
+                    <select class="form-select" id="educationLevel">
+                        <option value="">جميع المراحل</option>
+                        {% for level in education_levels %}
+                        <option value="{{ level.id }}">{{ level.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- الجنس -->
+                <div class="col-md-3 mb-3">
+                    <label for="gender" class="form-label">
+                        <i class="fas fa-venus-mars me-1"></i>الجنس
+                    </label>
+                    <select class="form-select" id="gender">
+                        <option value="">الجميع</option>
+                        <option value="M">ذكر</option>
+                        <option value="F">أنثى</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- الصف الدراسي -->
+                <div class="col-md-4 mb-3">
+                    <label for="gradeLevel" class="form-label">
+                        <i class="fas fa-chalkboard me-1"></i>الصف الدراسي
+                    </label>
+                    <select class="form-select" id="gradeLevel" disabled>
+                        <option value="">اختر المرحلة أولاً</option>
+                    </select>
+                </div>
+
+                <!-- العمر من -->
+                <div class="col-md-4 mb-3">
+                    <label for="ageFrom" class="form-label">
+                        <i class="fas fa-calendar me-1"></i>العمر من
+                    </label>
+                    <input type="number" class="form-control" id="ageFrom" min="5" max="25" placeholder="5">
+                </div>
+
+                <!-- العمر إلى -->
+                <div class="col-md-4 mb-3">
+                    <label for="ageTo" class="form-label">
+                        <i class="fas fa-calendar me-1"></i>العمر إلى
+                    </label>
+                    <input type="number" class="form-control" id="ageTo" min="5" max="25" placeholder="18">
+                </div>
+            </div>
+
+            <!-- أزرار البحث -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button type="submit" class="btn btn-primary btn-custom">
+                            <i class="fas fa-search me-2"></i>البحث
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-custom" onclick="clearSearch()">
+                            <i class="fas fa-eraser me-2"></i>مسح البحث
+                        </button>
+                        <button type="button" class="btn btn-outline-info btn-custom" onclick="showQuickTips()">
+                            <i class="fas fa-lightbulb me-2"></i>نصائح البحث
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- نتائج البحث -->
+<div class="content-card" id="resultsCard" style="display: none;">
+    <div class="content-card-header">
+        <h5><i class="fas fa-list me-2 text-success"></i>نتائج البحث</h5>
+    </div>
+    <div class="content-card-body">
+        <div id="searchResults">
+            <!-- النتائج ستظهر هنا -->
+        </div>
+        
+        <!-- حالة التحميل -->
+        <div id="loadingState" class="text-center py-4" style="display: none;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">جاري البحث...</span>
+            </div>
+            <p class="mt-2 text-muted">جاري البحث في قاعدة البيانات...</p>
+        </div>
+
+        <!-- حالة عدم وجود نتائج -->
+        <div id="noResults" class="text-center py-5" style="display: none;">
+            <i class="fas fa-search-minus fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">لم يتم العثور على نتائج</h5>
+            <p class="text-muted">جرب تعديل معايير البحث أو استخدم كلمات مختلفة</p>
+        </div>
+    </div>
+</div>
+
+<!-- نصائح البحث -->
+<div class="content-card" id="tipsCard">
+    <div class="content-card-header">
+        <h5><i class="fas fa-lightbulb me-2 text-warning"></i>نصائح للبحث الفعال</h5>
+    </div>
+    <div class="content-card-body">
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <div class="d-flex align-items-start">
+                    <div class="me-3 text-primary">
+                        <i class="fas fa-keyboard fa-2x"></i>
+                    </div>
+                    <div>
+                        <h6>البحث السريع</h6>
+                        <p class="text-muted small mb-0">
+                            يمكنك كتابة جزء من الاسم أو الرقم القومي للبحث السريع
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-3">
+                <div class="d-flex align-items-start">
+                    <div class="me-3 text-success">
+                        <i class="fas fa-filter fa-2x"></i>
+                    </div>
+                    <div>
+                        <h6>البحث المتقدم</h6>
+                        <p class="text-muted small mb-0">
+                            استخدم الفلاتر لتضييق نطاق البحث حسب المرحلة والجنس
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-3">
+                <div class="d-flex align-items-start">
+                    <div class="me-3 text-info">
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                    <div>
+                        <h6>البحث السريع</h6>
+                        <p class="text-muted small mb-0">
+                            النتائج تظهر أثناء الكتابة للبحث السريع والفوري
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const quickSearch = document.getElementById('quickSearch');
+    const educationLevel = document.getElementById('educationLevel');
+    const gradeLevel = document.getElementById('gradeLevel');
+    const searchForm = document.getElementById('searchForm');
+    const resultsCard = document.getElementById('resultsCard');
+    const searchResults = document.getElementById('searchResults');
+    const loadingState = document.getElementById('loadingState');
+    const noResults = document.getElementById('noResults');
+    
+    let searchTimeout;
+
+    // البحث السريع أثناء الكتابة
+    quickSearch.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const query = this.value.trim();
+        
+        if (query.length >= 2) {
+            searchTimeout = setTimeout(() => {
+                performQuickSearch(query);
+            }, 500);
+        } else if (query.length === 0) {
+            hideResults();
+        }
+    });
+
+    // تحديث الصفوف عند تغيير المرحلة
+    educationLevel.addEventListener('change', function() {
+        updateGradeLevels(this.value);
+    });
+
+    // البحث المتقدم عند إرسال النموذج
+    searchForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        performAdvancedSearch();
+    });
+
+    // البحث السريع
+    function performQuickSearch(query) {
+        showLoading();
+        
+        fetch(`/students/ajax/search/?q=${encodeURIComponent(query)}`, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            displayResults(data.students, `البحث عن: "${query}"`);
+        })
+        .catch(error => {
+            hideLoading();
+            showMessage('error', 'حدث خطأ في البحث');
+            console.error('Search error:', error);
+        });
+    }
+
+    // البحث المتقدم
+    function performAdvancedSearch() {
+        const formData = new FormData(searchForm);
+        const params = new URLSearchParams();
+        
+        // جمع معايير البحث
+        const searchCriteria = {
+            search_query: quickSearch.value,
+            education_level: educationLevel.value,
+            grade_level: gradeLevel.value,
+            gender: document.getElementById('gender').value,
+            age_from: document.getElementById('ageFrom').value,
+            age_to: document.getElementById('ageTo').value,
+        };
+
+        // إزالة القيم الفارغة
+        Object.keys(searchCriteria).forEach(key => {
+            if (searchCriteria[key]) {
+                params.append(key, searchCriteria[key]);
+            }
+        });
+
+        showLoading();
+        
+        fetch(`/students/student_list/?${params.toString()}`)
+        .then(response => response.text())
+        .then(html => {
+            hideLoading();
+            // استخراج نتائج البحث من HTML المُعاد
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const tableBody = doc.querySelector('tbody');
+            
+            if (tableBody && tableBody.children.length > 0) {
+                displayAdvancedResults(tableBody.innerHTML, 'نتائج البحث المتقدم');
+            } else {
+                showNoResults();
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            showMessage('error', 'حدث خطأ في البحث المتقدم');
+            console.error('Advanced search error:', error);
+        });
+    }
+
+    // تحديث قائمة الصفوف
+    function updateGradeLevels(levelId) {
+        gradeLevel.innerHTML = '<option value="">جاري التحميل...</option>';
+        gradeLevel.disabled = true;
+        
+        if (!levelId) {
+            gradeLevel.innerHTML = '<option value="">اختر المرحلة أولاً</option>';
+            return;
+        }
+
+        fetch(`/students/api/grades/${levelId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                gradeLevel.innerHTML = '<option value="">جميع الصفوف</option>';
+                data.grades.forEach(grade => {
+                    gradeLevel.innerHTML += `<option value="${grade.id}">${grade.name}</option>`;
+                });
+                gradeLevel.disabled = false;
+            }
+        })
+        .catch(error => {
+            gradeLevel.innerHTML = '<option value="">خطأ في التحميل</option>';
+            console.error('Grade levels error:', error);
+        });
+    }
+
+    // عرض النتائج السريعة
+    function displayResults(students, title) {
+        if (students && students.length > 0) {
+            let html = `
+                <div class="mb-3">
+                    <h6>${title}</h6>
+                    <small class="text-muted">تم العثور على ${students.length} نتيجة</small>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-custom table-hover">
+                        <thead>
+                            <tr>
+                                <th>الطالب</th>
+                                <th>الرقم القومي</th>
+                                <th>الصف</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            students.forEach(student => {
+                html += `
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-${student.gender_icon} fa-lg text-${student.gender === 'ذكر' ? 'primary' : 'danger'} me-2"></i>
+                                <div>
+                                    <strong>${student.name}</strong>
+                                    <br><small class="text-muted">${student.gender} - ${student.age} سنة</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="font-monospace">${student.national_number}</span></td>
+                        <td>
+                            <span class="badge bg-light text-dark">${student.grade_name}</span>
+                            <br><small class="text-muted">${student.education_level_name}</small>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="${student.detail_url}" class="btn btn-outline-primary" title="عرض التفاصيل">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                ${student.edit_url ? `<a href="${student.edit_url}" class="btn btn-outline-warning" title="تعديل"><i class="fas fa-edit"></i></a>` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table></div>';
+            searchResults.innerHTML = html;
+            showResults();
+        } else {
+            showNoResults();
+        }
+    }
+
+    // عرض النتائج المتقدمة
+    function displayAdvancedResults(tableHTML, title) {
+        const html = `
+            <div class="mb-3">
+                <h6>${title}</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-custom table-hover">
+                    <thead>
+                        <tr>
+                            <th>الطالب</th>
+                            <th>الرقم القومي</th>
+                            <th>الصف</th>
+                            <th>الحالة المالية</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableHTML}
+                    </tbody>
+                </table>
+            </div>
+        `;
+        searchResults.innerHTML = html;
+        showResults();
+    }
+
+    // إظهار حالة التحميل
+    function showLoading() {
+        resultsCard.style.display = 'block';
+        loadingState.style.display = 'block';
+        searchResults.style.display = 'none';
+        noResults.style.display = 'none';
+    }
+
+    // إخفاء حالة التحميل
+    function hideLoading() {
+        loadingState.style.display = 'none';
+    }
+
+    // إظهار النتائج
+    function showResults() {
+        resultsCard.style.display = 'block';
+        searchResults.style.display = 'block';
+        noResults.style.display = 'none';
+    }
+
+    // إظهار عدم وجود نتائج
+    function showNoResults() {
+        resultsCard.style.display = 'block';
+        searchResults.style.display = 'none';
+        noResults.style.display = 'block';
+    }
+
+    // إخفاء النتائج
+    function hideResults() {
+        resultsCard.style.display = 'none';
+    }
+
+    // مسح البحث
+    window.clearSearch = function() {
+        searchForm.reset();
+        hideResults();
+        gradeLevel.innerHTML = '<option value="">اختر المرحلة أولاً</option>';
+        gradeLevel.disabled = true;
+        quickSearch.focus();
+    };
+
+    // إظهار نصائح البحث
+    window.showQuickTips = function() {
+        const tipsCard = document.getElementById('tipsCard');
+        tipsCard.scrollIntoView({ behavior: 'smooth' });
+        tipsCard.style.animation = 'pulse 1s ease-in-out';
+        setTimeout(() => {
+            tipsCard.style.animation = '';
+        }, 1000);
+    };
+});
+
+// إضافة تأثير pulse
+const pulseStyle = document.createElement('style');
+pulseStyle.textContent = `
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.02); }
+        100% { transform: scale(1); }
+    }
+`;
+document.head.appendChild(pulseStyle);
+</script>
 {% endblock %}

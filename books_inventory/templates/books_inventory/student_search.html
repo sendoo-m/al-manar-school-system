@@ -1,0 +1,419 @@
+{% extends 'books_inventory/base.html' %}
+{% load static %}
+
+{% block title %}البحث عن الطلاب - مخزن الكتب{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-search text-primary"></i> البحث عن الطلاب</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-10">
+                        <input type="text" class="form-control" id="studentSearchInput" name="search" value="{{ search_query }}" placeholder="اسم الطالب، الرقم القومي، أو رقم الهاتف..." autocomplete="off">
+                        <div class="form-text">يجب إدخال حرفين على الأقل للبحث</div>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" id="searchBtn" class="btn btn-primary w-100">
+                            <i class="fas fa-search"></i> البحث
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- نتائج البحث المباشر -->
+                <div id="liveSearchResults" class="mt-3" style="display: none;">
+                    <div class="alert alert-info" id="searchStatus">
+                        <i class="fas fa-spinner fa-spin"></i> جاري البحث...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- نتائج البحث الثابتة (إذا كانت موجودة) -->
+{% if search_query %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-users text-success"></i> نتائج البحث</h5>
+                <div>
+                    <span class="badge bg-success">{{ total_results }} طالب</span>
+                    <a href="{% url 'books_inventory:student_search_view' %}" class="btn btn-outline-secondary btn-sm ms-2">
+                        <i class="fas fa-times"></i> مسح البحث
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if students %}
+                <div class="row" id="studentsGrid">
+                    {% for student in students %}
+                    <div class="col-lg-6 col-xl-4 mb-4">
+                        <div class="card h-100 {% if not student.first_installment_status == 'مدفوع' %}border-warning{% else %}border-success{% endif %}">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <h6 class="card-title text-primary">
+                                        <i class="fas fa-user"></i> {{ student.name }}
+                                    </h6>
+                                    {% if student.first_installment_status == 'مدفوع' %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check-circle"></i> مدفوع
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-exclamation-circle"></i> غير مدفوع
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <p class="mb-1">
+                                        <i class="fas fa-id-card text-muted"></i>
+                                        <strong>الرقم القومي:</strong> {{ student.national_number }}
+                                    </p>
+                                    
+                                    <p class="mb-1">
+                                        <i class="fas fa-graduation-cap text-muted"></i>
+                                        <strong>الصف:</strong> {{ student.grade_name|default:"غير محدد" }}
+                                    </p>
+                                    
+                                    {% if student.phone_number %}
+                                    <p class="mb-1">
+                                        <i class="fas fa-phone text-muted"></i>
+                                        <strong>الهاتف:</strong> 
+                                        <a href="tel:{{ student.phone_number }}">{{ student.phone_number }}</a>
+                                    </p>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- معلومات الدفع -->
+                                <div class="mb-3">
+                                    <h6 class="text-muted">المعلومات المالية:</h6>
+                                    <div class="row text-center">
+                                        <div class="col-4">
+                                            <small class="text-primary">{{ student.payment_summary.total_fees|default:0 }}</small>
+                                            <br><small class="text-muted">المصروفات</small>
+                                        </div>
+                                        <div class="col-4">
+                                            <small class="text-success">{{ student.payment_summary.total_payments|default:0 }}</small>
+                                            <br><small class="text-muted">المدفوع</small>
+                                        </div>
+                                        <div class="col-4">
+                                            <small class="text-danger">{{ student.payment_summary.total_owed|default:0 }}</small>
+                                            <br><small class="text-muted">المتبقي</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- معلومات التوزيع الأخير -->
+                                {% if student.latest_distribution %}
+                                <div class="mb-2">
+                                    <small class="text-info">
+                                        <i class="fas fa-share"></i>
+                                        آخر توزيع: {{ student.latest_distribution.distribution_date|date:"Y-m-d" }}
+                                        ({{ student.latest_distribution.total_items|default:0 }} عنصر)
+                                    </small>
+                                </div>
+                                {% else %}
+                                <div class="mb-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle"></i> لا يوجد توزيعات سابقة
+                                    </small>
+                                </div>
+                                {% endif %}
+                                
+                                {% if student.first_installment_date %}
+                                <div class="mb-2">
+                                    <small class="text-success">
+                                        <i class="fas fa-calendar-check"></i>
+                                        تاريخ دفع القسط الأول: {{ student.first_installment_date|date:"Y-m-d" }}
+                                    </small>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="card-footer bg-transparent">
+                                <div class="btn-group w-100">
+                                    <a href="{% url 'books_inventory:student_detail_view' student.pk %}" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-eye"></i> التفاصيل
+                                    </a>
+                                    {% if student.first_installment_status == 'مدفوع' %}
+                                    <a href="{% url 'books_inventory:create_distribution' %}?student={{ student.pk }}" class="btn btn-outline-success btn-sm">
+                                        <i class="fas fa-share"></i> توزيع
+                                    </a>
+                                    {% else %}
+                                    <button class="btn btn-outline-warning btn-sm" disabled title="القسط الأول غير مدفوع">
+                                        <i class="fas fa-ban"></i> غير متاح
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Pagination -->
+                {% if students.has_other_pages %}
+                <nav aria-label="صفحات النتائج">
+                    <ul class="pagination justify-content-center">
+                        {% if students.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?search={{ search_query }}&page={{ students.previous_page_number }}">السابق</a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for num in students.paginator.page_range %}
+                        {% if students.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > students.number|add:'-3' and num < students.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?search={{ search_query }}&page={{ num }}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+                        
+                        {% if students.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?search={{ search_query }}&page={{ students.next_page_number }}">التالي</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">لا توجد نتائج</h5>
+                    <p class="text-muted">لم يتم العثور على طلاب يطابقون البحث "{{ search_query }}"</p>
+                    <p class="text-muted">تأكد من كتابة الاسم أو الرقم القومي بشكل صحيح</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<!-- تعليمات البحث -->
+<div class="row" id="instructionsCard">
+    <div class="col-12">
+        <div class="card text-center">
+            <div class="card-body py-5">
+                <i class="fas fa-search fa-4x text-primary mb-4"></i>
+                <h4>البحث عن الطلاب</h4>
+                <p class="text-muted mb-4">استخدم خانة البحث أعلاه للبحث عن الطلاب باستخدام:</p>
+                
+                <div class="row justify-content-center">
+                    <div class="col-md-8">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-user fa-2x text-primary me-3"></i>
+                                    <div>
+                                        <h6 class="mb-0">اسم الطالب</h6>
+                                        <small class="text-muted">البحث بالاسم الكامل أو جزء منه</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-id-card fa-2x text-info me-3"></i>
+                                    <div>
+                                        <h6 class="mb-0">الرقم القومي</h6>
+                                        <small class="text-muted">البحث بالرقم القومي كاملاً أو جزء منه</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-phone fa-2x text-success me-3"></i>
+                                    <div>
+                                        <h6 class="mb-0">رقم الهاتف</h6>
+                                        <small class="text-muted">البحث برقم هاتف الطالب</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <div class="alert alert-info d-inline-block">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>ملاحظة:</strong> يجب إدخال حرفين على الأقل للبحث
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let searchTimeout;
+
+// البحث المباشر
+function performLiveSearch() {
+    const query = document.getElementById('studentSearchInput').value.trim();
+    const resultsDiv = document.getElementById('liveSearchResults');
+    const statusDiv = document.getElementById('searchStatus');
+    const instructionsCard = document.getElementById('instructionsCard');
+    
+    if (query.length < 2) {
+        resultsDiv.style.display = 'none';
+        if (instructionsCard) {
+            instructionsCard.style.display = 'block';
+        }
+        return;
+    }
+    
+    // إخفاء التعليمات وإظهار النتائج
+    if (instructionsCard) {
+        instructionsCard.style.display = 'none';
+    }
+    resultsDiv.style.display = 'block';
+    statusDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري البحث...';
+    statusDiv.className = 'alert alert-info';
+    
+    // إجراء البحث
+    fetch(`{% url "books_inventory:student_search_api" %}?q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                statusDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${data.error}`;
+                statusDiv.className = 'alert alert-danger';
+                return;
+            }
+            
+            if (data.results.length === 0) {
+                statusDiv.innerHTML = '<i class="fas fa-search"></i> لا توجد نتائج للبحث المدخل';
+                statusDiv.className = 'alert alert-warning';
+                return;
+            }
+            
+            // عرض النتائج
+            displaySearchResults(data.results, statusDiv);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            statusDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> حدث خطأ في البحث';
+            statusDiv.className = 'alert alert-danger';
+        });
+}
+
+// عرض نتائج البحث
+function displaySearchResults(results, statusDiv) {
+    statusDiv.innerHTML = `<i class="fas fa-check"></i> تم العثور على ${results.length} نتيجة`;
+    statusDiv.className = 'alert alert-success';
+    
+    let html = '<div class="row mt-3">';
+    
+    results.forEach(student => {
+        const canDistributeClass = student.can_distribute ? 'border-success' : 'border-warning';
+        const paymentStatus = student.first_installment_paid ? 
+            '<span class="badge bg-success"><i class="fas fa-check"></i> مدفوع</span>' :
+            '<span class="badge bg-warning text-dark"><i class="fas fa-times"></i> غير مدفوع</span>';
+        
+        const distributionButton = student.can_distribute ?
+            `<a href="{% url 'books_inventory:create_distribution' %}?student=${student.id}" class="btn btn-outline-success btn-sm">
+                <i class="fas fa-share"></i> توزيع
+            </a>` :
+            `<button class="btn btn-outline-warning btn-sm" disabled title="القسط الأول غير مدفوع">
+                <i class="fas fa-ban"></i> غير متاح
+            </button>`;
+        
+        html += `
+            <div class="col-lg-6 col-xl-4 mb-4">
+                <div class="card h-100 ${canDistributeClass}">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <h6 class="card-title text-primary">
+                                <i class="fas fa-user"></i> ${student.name}
+                            </h6>
+                            ${paymentStatus}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <p class="mb-1">
+                                <i class="fas fa-id-card text-muted"></i>
+                                <strong>الرقم القومي:</strong> ${student.national_number}
+                            </p>
+                            <p class="mb-1">
+                                <i class="fas fa-graduation-cap text-muted"></i>
+                                <strong>الصف:</strong> ${student.education_level} - ${student.grade_level}
+                            </p>
+                            ${student.phone_number ? `
+                            <p class="mb-1">
+                                <i class="fas fa-phone text-muted"></i>
+                                <strong>الهاتف:</strong> 
+                                <a href="tel:${student.phone_number}">${student.phone_number}</a>
+                            </p>
+                            ` : ''}
+                        </div>
+                        
+                        ${student.has_distribution_today ? 
+                            '<div class="alert alert-warning py-1"><small><i class="fas fa-info-circle"></i> تم إنشاء توزيع اليوم</small></div>' :
+                            ''
+                        }
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <div class="btn-group w-100">
+                            <a href="/inventory/students/${student.id}/" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-eye"></i> التفاصيل
+                            </a>
+                            ${distributionButton}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    
+    // إضافة النتائج بعد الرسالة
+    statusDiv.insertAdjacentHTML('afterend', html);
+}
+
+// Event listeners
+document.getElementById('studentSearchInput').addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    
+    // إزالة النتائج السابقة
+    const existingResults = document.querySelector('#liveSearchResults .row');
+    if (existingResults) {
+        existingResults.remove();
+    }
+    
+    searchTimeout = setTimeout(performLiveSearch, 300);
+});
+
+document.getElementById('searchBtn').addEventListener('click', performLiveSearch);
+
+// البحث عند الضغط على Enter
+document.getElementById('studentSearchInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        clearTimeout(searchTimeout);
+        performLiveSearch();
+    }
+});
+
+// تحميل البحث إذا كان هناك query موجود
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('studentSearchInput');
+    if (searchInput.value && searchInput.value.length >= 2) {
+        performLiveSearch();
+    }
+});
+</script>
+{% endblock %}

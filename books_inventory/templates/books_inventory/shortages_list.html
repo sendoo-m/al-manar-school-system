@@ -1,0 +1,302 @@
+{% extends 'books_inventory/base.html' %}
+{% load static %}
+
+{% block title %}النواقص في المخزون - مخزن الكتب{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-filter text-primary"></i> الفلترة</h5>
+            </div>
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">نوع العنصر</label>
+                        <select class="form-select" name="item_type">
+                            <option value="">جميع الأنواع</option>
+                            {% for type_code, type_name in item_type_choices %}
+                            <option value="{{ type_code }}" {% if item_type_filter == type_code %}selected{% endif %}>
+                                {{ type_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">الحالة</label>
+                        <select class="form-select" name="status">
+                            <option value="">جميع الحالات</option>
+                            {% for status_code, status_name in status_choices %}
+                            <option value="{{ status_code }}" {% if status_filter == status_code %}selected{% endif %}>
+                                {{ status_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">الأولوية</label>
+                        <select class="form-select" name="priority">
+                            <option value="">جميع الأولويات</option>
+                            {% for priority_code, priority_name in priority_choices %}
+                            <option value="{{ priority_code }}" {% if priority_filter == priority_code %}selected{% endif %}>
+                                {{ priority_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-filter"></i> تطبيق
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-exclamation-triangle text-warning"></i> النواقص في المخزون</h5>
+                <div>
+                    <span class="badge bg-warning">{{ shortages.paginator.count }} نقص</span>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if shortages %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>العنصر</th>
+                                <th>النوع</th>
+                                <th>المخزون الحالي</th>
+                                <th>الكمية المطلوبة</th>
+                                <th>كمية النقص</th>
+                                <th>الأولوية</th>
+                                <th>الحالة</th>
+                                <th>مُبلغ بواسطة</th>
+                                <th>تاريخ البلاغ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for shortage in shortages %}
+                            <tr class="{% if shortage.priority == 'HIGH' %}table-danger{% elif shortage.priority == 'MEDIUM' %}table-warning{% endif %}">
+                                <td>
+                                    <div>
+                                        <strong>{{ shortage.item_name }}</strong>
+                                        {% if shortage.book %}
+                                        <br><small class="text-muted">
+                                            <a href="{% url 'books_inventory:book_detail' shortage.book.pk %}">
+                                                عرض الكتاب <i class="fas fa-external-link-alt"></i>
+                                            </a>
+                                        </small>
+                                        {% elif shortage.notebook %}
+                                        <br><small class="text-muted">
+                                            <a href="{% url 'books_inventory:notebook_detail' shortage.notebook.pk %}">
+                                                عرض الكراسة <i class="fas fa-external-link-alt"></i>
+                                            </a>
+                                        </small>
+                                        {% elif shortage.supply %}
+                                        <br><small class="text-muted">
+                                            <a href="{% url 'books_inventory:supply_detail' shortage.supply.pk %}">
+                                                عرض الأداة <i class="fas fa-external-link-alt"></i>
+                                            </a>
+                                        </small>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if shortage.item_type == 'BOOK' %}
+                                        <span class="badge bg-primary">
+                                            <i class="fas fa-book"></i> كتاب
+                                        </span>
+                                    {% elif shortage.item_type == 'NOTEBOOK' %}
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-book-open"></i> كراسة
+                                        </span>
+                                    {% elif shortage.item_type == 'SUPPLY' %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-pen"></i> أداة مدرسية
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ shortage.current_stock }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ shortage.required_quantity }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-danger">{{ shortage.shortage_quantity }}</span>
+                                </td>
+                                <td>
+                                    {% if shortage.priority == 'HIGH' %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-exclamation-triangle"></i> عالي
+                                        </span>
+                                    {% elif shortage.priority == 'MEDIUM' %}
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-exclamation-circle"></i> متوسط
+                                        </span>
+                                    {% elif shortage.priority == 'LOW' %}
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-info-circle"></i> منخفض
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if shortage.status == 'REPORTED' %}
+                                        <span class="badge bg-warning">مُبلغ عنه</span>
+                                    {% elif shortage.status == 'ACKNOWLEDGED' %}
+                                        <span class="badge bg-info">معترف به</span>
+                                    {% elif shortage.status == 'ORDERED' %}
+                                        <span class="badge bg-primary">تم الطلب</span>
+                                    {% elif shortage.status == 'RESOLVED' %}
+                                        <span class="badge bg-success">تم الحل</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small>{{ shortage.reported_by.get_full_name|default:shortage.reported_by.username }}</small>
+                                </td>
+                                <td>
+                                    <strong>{{ shortage.reported_date|date:"Y-m-d" }}</strong>
+                                    <br><small class="text-muted">{{ shortage.reported_date|date:"H:i" }}</small>
+                                </td>
+                            </tr>
+                            {% if shortage.notes %}
+                            <tr>
+                                <td colspan="9">
+                                    <div class="alert alert-light py-2 mb-0">
+                                        <small>
+                                            <i class="fas fa-sticky-note text-muted"></i>
+                                            <strong>ملاحظات:</strong> {{ shortage.notes }}
+                                        </small>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% if shortage.resolution_notes %}
+                            <tr>
+                                <td colspan="9">
+                                    <div class="alert alert-success py-2 mb-0">
+                                        <small>
+                                            <i class="fas fa-check-circle text-success"></i>
+                                            <strong>ملاحظات الحل:</strong> {{ shortage.resolution_notes }}
+                                            {% if shortage.resolved_date %}
+                                            <br><strong>تاريخ الحل:</strong> {{ shortage.resolved_date|date:"Y-m-d H:i" }}
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                {% if shortages.has_other_pages %}
+                <nav aria-label="صفحات النتائج">
+                    <ul class="pagination justify-content-center">
+                        {% if shortages.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if item_type_filter %}item_type={{ item_type_filter }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}page={{ shortages.previous_page_number }}">السابق</a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for num in shortages.paginator.page_range %}
+                        {% if shortages.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > shortages.number|add:'-3' and num < shortages.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if item_type_filter %}item_type={{ item_type_filter }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}page={{ num }}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+                        
+                        {% if shortages.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if item_type_filter %}item_type={{ item_type_filter }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}page={{ shortages.next_page_number }}">التالي</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                    <h5 class="text-success">لا توجد نواقص في المخزون!</h5>
+                    <p class="text-muted">جميع المواد متوفرة في المخزون</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- إحصائيات النواقص -->
+{% if shortages %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-chart-pie text-info"></i> إحصائيات النواقص</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="border rounded p-3">
+                            <h5 class="text-danger">
+                                {% for shortage in shortages %}
+                                    {% if shortage.priority == 'HIGH' %}{{ forloop.counter0|add:1 }}{% endif %}
+                                {% endfor %}
+                            </h5>
+                            <p class="text-muted mb-0">أولوية عالية</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3">
+                            <h5 class="text-warning">
+                                {% for shortage in shortages %}
+                                    {% if shortage.priority == 'MEDIUM' %}{{ forloop.counter0|add:1 }}{% endif %}
+                                {% endfor %}
+                            </h5>
+                            <p class="text-muted mb-0">أولوية متوسطة</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3">
+                            <h5 class="text-primary">
+                                {% for shortage in shortages %}
+                                    {% if shortage.status == 'REPORTED' %}{{ forloop.counter0|add:1 }}{% endif %}
+                                {% endfor %}
+                            </h5>
+                            <p class="text-muted mb-0">مُبلغ عنه</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3">
+                            <h5 class="text-success">
+                                {% for shortage in shortages %}
+                                    {% if shortage.status == 'RESOLVED' %}{{ forloop.counter0|add:1 }}{% endif %}
+                                {% endfor %}
+                            </h5>
+                            <p class="text-muted mb-0">تم الحل</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

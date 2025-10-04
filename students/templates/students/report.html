@@ -1,53 +1,564 @@
-{% extends 'students/base/sub_admin_navbar.html' %}
+{% extends 'students/base.html' %}
 
+{% block title %}التقرير العام - {{ system_settings.school_name }}{% endblock %}
+{% block page_title %}التقرير العام{% endblock %}
+{% block page_icon %}<i class="fas fa-file-alt"></i>{% endblock %}
+{% block page_subtitle %}تقرير شامل عن حالة الطلاب والإحصائيات العامة{% endblock %}
 
-{% block title %}Reports{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'students:home' %}">الرئيسية</a></li>
+<li class="breadcrumb-item active">التقرير العام</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-header {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border-radius: 20px;
+        padding: 30px;
+        text-align: center;
+        margin-bottom: 30px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .report-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+        animation: float 15s linear infinite;
+    }
+
+    .report-header-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .stats-container {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        border-right: 5px solid #28a745;
+    }
+
+    .stats-title {
+        color: #28a745;
+        font-weight: 700;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        font-size: 1.3rem;
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 15px;
+    }
+
+    .stats-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 15px;
+        font-size: 1.1rem;
+    }
+
+    .stat-item {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.3s ease;
+        border-left: 4px solid transparent;
+    }
+
+    .stat-item:hover {
+        background: #e8f5e9;
+        border-left-color: #28a745;
+        transform: translateX(5px);
+    }
+
+    .stat-label {
+        font-weight: 600;
+        color: #495057;
+    }
+
+    .stat-value {
+        font-weight: 700;
+        font-size: 1.2rem;
+        color: #28a745;
+    }
+
+    .stages-section {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        border-right: 5px solid #17a2b8;
+    }
+
+    .stages-title {
+        color: #17a2b8;
+        font-weight: 700;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        font-size: 1.3rem;
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 15px;
+    }
+
+    .stages-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 15px;
+        font-size: 1.1rem;
+    }
+
+    .table-modern {
+        margin-bottom: 0;
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    .table-modern thead th {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+        border: none;
+        font-weight: 600;
+        padding: 20px 15px;
+        vertical-align: middle;
+        text-align: center;
+    }
+
+    .table-modern tbody tr {
+        transition: all 0.3s ease;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .table-modern tbody tr:hover {
+        background: rgba(23, 162, 184, 0.05);
+        transform: scale(1.01);
+    }
+
+    .table-modern tbody tr:last-child {
+        border-bottom: none;
+    }
+
+    .table-modern tbody td {
+        padding: 20px 15px;
+        vertical-align: middle;
+        text-align: center;
+        border: none;
+    }
+
+    .stage-name {
+        font-weight: 600;
+        color: #495057;
+        text-align: right;
+    }
+
+    .student-count {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-weight: 600;
+        display: inline-block;
+        min-width: 60px;
+    }
+
+    .gender-stats {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .gender-badge {
+        padding: 5px 12px;
+        border-radius: 15px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .gender-badge.male {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+    }
+
+    .gender-badge.female {
+        background: linear-gradient(135deg, #e83e8c, #d73384);
+        color: white;
+    }
+
+    .percentage-bar {
+        width: 100px;
+        height: 8px;
+        background: #e9ecef;
+        border-radius: 4px;
+        overflow: hidden;
+        margin: 5px auto;
+    }
+
+    .percentage-fill {
+        height: 100%;
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        border-radius: 4px;
+        transition: width 0.5s ease;
+    }
+
+    .percentage-text {
+        font-size: 0.85rem;
+        color: #6c757d;
+        font-weight: 600;
+    }
+
+    .quick-actions {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-top: 25px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        text-align: center;
+    }
+
+    .action-btn {
+        margin: 5px;
+        padding: 12px 25px;
+        border-radius: 25px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border: none;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .action-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s;
+    }
+
+    .action-btn:hover::before {
+        left: 100%;
+    }
+
+    .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    .btn-primary-custom {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+    }
+
+    .btn-success-custom {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+    }
+
+    .btn-info-custom {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+    }
+
+    .btn-warning-custom {
+        background: linear-gradient(135deg, #ffc107, #e0a800);
+        color: #212529;
+    }
+
+    @media (max-width: 768px) {
+        .report-header {
+            padding: 20px;
+        }
+        
+        .stats-container,
+        .stages-section {
+            padding: 20px;
+        }
+        
+        .gender-stats {
+            flex-direction: column;
+        }
+        
+        .action-btn {
+            display: block;
+            margin: 10px 0;
+        }
+        
+        .table-responsive {
+            font-size: 0.9rem;
+        }
+    }
+
+    @media print {
+        .quick-actions,
+        .breadcrumb-container {
+            display: none !important;
+        }
+        
+        .report-header {
+            background: #28a745 !important;
+            -webkit-print-color-adjust: exact;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-    <h1>Reports</h1>
-    <div class="row">
-        <div class="col-md-6">
-            <h2>Statistics</h2>
-            <div class="bg-light p-3 mb-3">
-                <p class="mb-0">Number of registered students: {{ registered_students }}</p>
-                <p class="mb-0">Total installments that have been paid: {{ total_paid_installments }}</p>
-                <p class="mb-0">Total number of students who did not pay: {{ total_unpaid_students }}</p>
-                <p class="mb-0">Total male students: {{ total_male_students }}</p>
-                <p class="mb-0">Total female students: {{ total_female_students }}</p>
-                <p class="mb-0">Total tuition: {{ total_tuitions }}</p>
-            </div>
+<!-- Header التقرير -->
+<div class="report-header">
+    <div class="report-header-content">
+        <h1 class="display-4 mb-0">
+            <i class="fas fa-file-alt me-3"></i>التقرير العام
+        </h1>
+        <p class="lead mb-3">ملخص شامل لحالة الطلاب والإحصائيات العامة</p>
+        <div class="text-light">
+            <i class="fas fa-calendar me-2"></i>{{ report_date|date:"d F Y" }}
+            <span class="mx-3">|</span>
+            <i class="fas fa-school me-2"></i>{{ system_settings.school_name|default:"المدرسة" }}
         </div>
-        <div class="col-md-6">
-            <h2>Stages</h2>
+    </div>
+</div>
+
+<div class="row">
+    <!-- الإحصائيات العامة -->
+    <div class="col-lg-6">
+        <div class="stats-container">
+            <div class="stats-title">
+                <div class="stats-icon">
+                    <i class="fas fa-chart-bar"></i>
+                </div>
+                <span>الإحصائيات العامة</span>
+            </div>
+            
+            <div class="stat-item">
+                <span class="stat-label">
+                    <i class="fas fa-users me-2"></i>عدد الطلاب المسجلين:
+                </span>
+                <span class="stat-value">{{ stats.registered_students }}</span>
+            </div>
+            
+            <div class="stat-item">
+                <span class="stat-label">
+                    <i class="fas fa-male me-2"></i>إجمالي الطلاب الذكور:
+                </span>
+                <span class="stat-value">{{ stats.total_male_students }}</span>
+            </div>
+            
+            <div class="stat-item">
+                <span class="stat-label">
+                    <i class="fas fa-female me-2"></i>إجمالي الطالبات الإناث:
+                </span>
+                <span class="stat-value">{{ stats.total_female_students }}</span>
+            </div>
+            
+            <div class="stat-item">
+                <span class="stat-label">
+                    <i class="fas fa-calendar-plus me-2"></i>طلاب جدد اليوم:
+                </span>
+                <span class="stat-value">{{ stats.new_today }}</span>
+            </div>
+            
+            <div class="stat-item">
+                <span class="stat-label">
+                    <i class="fas fa-calendar-week me-2"></i>طلاب جدد هذا الأسبوع:
+                </span>
+                <span class="stat-value">{{ stats.new_this_week }}</span>
+            </div>
+            
+            <div class="stat-item">
+                <span class="stat-label">
+                    <i class="fas fa-calendar-alt me-2"></i>طلاب جدد هذا الشهر:
+                </span>
+                <span class="stat-value">{{ stats.new_this_month }}</span>
+            </div>
+            
+            {% if user_role in 'SYSTEM_ADMIN,SCHOOL_MANAGER' %}
+            <div class="stat-item">
+                <span class="stat-label">
+                    <i class="fas fa-coins me-2"></i>إجمالي الأقساط المدفوعة:
+                </span>
+                <span class="stat-value">{{ stats.total_paid_installments|floatformat:0 }}</span>
+            </div>
+            
+            <div class="stat-item">
+                <span class="stat-label">
+                    <i class="fas fa-exclamation-triangle me-2"></i>عدد الطلاب المتأخرين:
+                </span>
+                <span class="stat-value text-warning">{{ stats.total_unpaid_students }}</span>
+            </div>
+            
+            <div class="stat-item">
+                <span class="stat-label">
+                    <i class="fas fa-calculator me-2"></i>إجمالي المصروفات:
+                </span>
+                <span class="stat-value">{{ stats.total_tuitions|floatformat:0 }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    
+
+    <!-- إحصائيات المراحل -->
+    <div class="col-lg-6">
+        <div class="stages-section">
+            <div class="stages-title">
+                <div class="stages-icon">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+                <span>إحصائيات المراحل</span>
+            </div>
+            
             <div class="table-responsive">
-                <table > <!-- class="table table-striped" -->
-                    <thead > <!-- class="table-primary" -->
+                <table class="table table-modern">
+                    <thead>
                         <tr>
-                            <th>Educational Stage</th>
-                            <th>Number of Students</th>
-                            <th>Stage Expenses</th>
+                            <th>المرحلة التعليمية</th>
+                            <th>عدد الطلاب</th>
+                            <th>النسبة</th>
+                            <th>التوزيع</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for stage_stat in stage_stats %}
-                            <tr class="{% cycle 'table-secondary' 'table-white' %}">
-                                <td>{{ stage_stat.stage.name }}</td>
-                                <td>{{ stage_stat.total_stage_students }}</td>
-                                <td>
-                                    {% for expense in stage_stat.expenses %}
-                                        {{ expense.amount }}
-                                    {% empty %}
-                                        No expenses found.
-                                    {% endfor %}
-                                </td>
-                            </tr>
+                        <tr>
+                            <td class="stage-name">{{ stage_stat.stage.name }}</td>
+                            <td>
+                                <span class="student-count">{{ stage_stat.total_stage_students }}</span>
+                            </td>
+                            <td>
+                                <div class="percentage-bar">
+                                    <div class="percentage-fill" style="width: {{ stage_stat.percentage }}%"></div>
+                                </div>
+                                <div class="percentage-text">{{ stage_stat.percentage }}%</div>
+                            </td>
+                            <td>
+                                <div class="gender-stats">
+                                    <span class="gender-badge male">
+                                        <i class="fas fa-male"></i>
+                                        {{ stage_stat.male_students }}
+                                    </span>
+                                    <span class="gender-badge female">
+                                        <i class="fas fa-female"></i>
+                                        {{ stage_stat.female_students }}
+                                    </span>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted">
+                                <i class="fas fa-inbox me-2"></i>لا توجد مراحل تعليمية مسجلة
+                            </td>
+                        </tr>
                         {% endfor %}
                     </tbody>
                 </table>
-                
-                
             </div>
         </div>
     </div>
+</div>
+
+<!-- أزرار الإجراءات السريعة -->
+<div class="quick-actions">
+    <h5 class="mb-4">
+        <i class="fas fa-bolt me-2"></i>إجراءات سريعة
+    </h5>
     
+    <a href="{% url 'students:all_reports' %}" class="action-btn btn-primary-custom">
+        <i class="fas fa-chart-line me-2"></i>التقارير الشاملة
+    </a>
+    
+    <a href="{% url 'students:daily_report' %}" class="action-btn btn-success-custom">
+        <i class="fas fa-calendar-day me-2"></i>التقرير اليومي
+    </a>
+    
+    <a href="{% url 'students:student_dashboard' %}" class="action-btn btn-info-custom">
+        <i class="fas fa-tachometer-alt me-2"></i>لوحة الإحصائيات
+    </a>
+    
+    <button onclick="window.print()" class="action-btn btn-warning-custom">
+        <i class="fas fa-print me-2"></i>طباعة التقرير
+    </button>
+    
+    {% if user_role == 'SYSTEM_ADMIN' %}
+    <a href="{% url 'students:export_students' %}" class="action-btn btn-primary-custom">
+        <i class="fas fa-download me-2"></i>تصدير البيانات
+    </a>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // تحريك شرائط النسب المئوية
+    const progressBars = document.querySelectorAll('.percentage-fill');
+    progressBars.forEach(bar => {
+        const width = bar.style.width;
+        bar.style.width = '0%';
+        setTimeout(() => {
+            bar.style.width = width;
+        }, 500);
+    });
+    
+    // تأثيرات hover للجداول
+    const tableRows = document.querySelectorAll('.table-modern tbody tr');
+    tableRows.forEach(row => {
+        row.addEventListener('mouseenter', function() {
+            this.style.backgroundColor = 'rgba(23, 162, 184, 0.1)';
+        });
+        
+        row.addEventListener('mouseleave', function() {
+            this.style.backgroundColor = '';
+        });
+    });
+    
+    // تحسين تجربة الطباعة
+    window.addEventListener('beforeprint', function() {
+        document.body.classList.add('printing');
+    });
+    
+    window.addEventListener('afterprint', function() {
+        document.body.classList.remove('printing');
+    });
+    
+    console.log('تم تحميل صفحة التقرير العام بنجاح');
+});
+</script>
 {% endblock %}

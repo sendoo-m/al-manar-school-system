@@ -1,0 +1,971 @@
+{% extends 'school_settings/base.html' %}
+
+{% block title %}إضافة مصروفات مدرسية جديدة - {{ system_settings.school_name }}{% endblock %}
+{% block header_title %}إضافة مصروفات مدرسية جديدة{% endblock %}
+{% block header_icon %}<i class="fas fa-plus-circle"></i>{% endblock %}
+{% block page_description %}إنشاء إعداد مصروفات جديد وتحديد المبالغ والأقساط{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item">
+    <a href="{% url 'school_settings:school_fees_list' %}">المصروفات المدرسية</a>
+</li>
+<li class="breadcrumb-item active">إضافة مصروفات جديدة</li>
+{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'school_settings:school_fees_list' %}" class="btn btn-outline-secondary btn-custom">
+    <i class="fas fa-arrow-right me-2"></i>العودة للقائمة
+</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* إصلاح مشكلة العرض والحركة */
+    body {
+        overflow-x: hidden !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+    }
+    
+    .container-fluid,
+    .row,
+    .col-lg-8,
+    .col-lg-4,
+    .col-md-6,
+    .col-md-4,
+    .col-md-3 {
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box !important;
+    }
+    
+    .form-header {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%); /* ألوان خضراء */
+        color: white;
+        border-radius: 20px;
+        padding: 30px 20px;
+        margin-bottom: 25px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 25px rgba(40, 167, 69, 0.3);
+    }
+
+    .form-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+        animation: float 20s linear infinite;
+    }
+
+    @keyframes float {
+        0% { transform: translateX(-50px) translateY(-50px); }
+        100% { transform: translateX(50px) translateY(50px); }
+    }
+
+    .form-header-content {
+        position: relative;
+        z-index: 2;
+        text-align: center;
+    }
+
+    .form-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px;
+        font-size: 2rem;
+        backdrop-filter: blur(10px);
+        border: 3px solid rgba(255,255,255,0.3);
+    }
+
+    .form-container {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .form-section {
+        margin-bottom: 25px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 15px;
+        border-right: 4px solid #28a745; /* لون أخضر */
+        transition: all 0.3s ease;
+    }
+
+    .form-section:hover {
+        background: rgba(40, 167, 69, 0.03);
+        transform: translateX(-3px);
+    }
+
+    .section-title {
+        color: #28a745; /* لون أخضر */
+        font-weight: 700;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        font-size: 1rem;
+    }
+
+    .section-icon {
+        width: 35px;
+        height: 35px;
+        border-radius: 8px;
+        background: #28a745; /* لون أخضر */
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 10px;
+        font-size: 1rem;
+    }
+
+    .section-icon.success {
+        background: #28a745;
+    }
+
+    .section-icon.info {
+        background: #17a2b8;
+    }
+
+    .section-icon.warning {
+        background: #ffc107;
+        color: #000;
+    }
+
+    .form-control-custom,
+    .form-select-custom {
+        border-radius: 12px;
+        border: 2px solid #e9ecef;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+        background: white;
+        font-size: 0.95rem;
+    }
+
+    .form-control-custom:focus,
+    .form-select-custom:focus {
+        border-color: #28a745; /* لون أخضر */
+        box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.15);
+        background: white;
+    }
+
+    .form-check-input:focus {
+        border-color: #28a745;
+        box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.15);
+    }
+
+    .form-check-input:checked {
+        background-color: #28a745;
+        border-color: #28a745;
+    }
+
+    .preview-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        border: 2px solid #e9ecef;
+        transition: all 0.3s ease;
+        position: sticky;
+        top: 20px;
+    }
+
+    .preview-card.active {
+        border-color: #28a745; /* لون أخضر */
+        box-shadow: 0 8px 25px rgba(40, 167, 69, 0.2);
+    }
+
+    .preview-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .preview-avatar {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, #28a745, #20c997); /* ألوان خضراء */
+        color: white;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 15px;
+        font-size: 1.2rem;
+        font-weight: 800;
+    }
+
+    .preview-value {
+        background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(32, 201, 151, 0.05));
+        border-radius: 12px;
+        padding: 15px;
+        text-align: center;
+        border: 2px solid rgba(40, 167, 69, 0.2);
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #28a745;
+        margin-bottom: 15px;
+    }
+
+    .installments-preview {
+        background: linear-gradient(135deg, rgba(23, 162, 184, 0.1), rgba(23, 162, 184, 0.05));
+        border-radius: 12px;
+        padding: 15px;
+        border: 2px solid rgba(23, 162, 184, 0.2);
+        margin-top: 15px;
+    }
+
+    .installment-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 12px;
+        background: white;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        border-right: 3px solid #17a2b8;
+    }
+
+    .installment-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .help-text {
+        background: #e8f5e8; /* لون فاتح مناسب للثيم الأخضر */
+        border: 1px solid #c3e6c3;
+        border-radius: 10px;
+        padding: 15px;
+        margin-top: 15px;
+    }
+
+    .help-text .help-icon {
+        color: #28a745; /* لون أخضر */
+        margin-left: 8px;
+    }
+
+    .btn-save {
+        background: linear-gradient(135deg, #28a745, #20c997); /* ألوان خضراء */
+        border: none;
+        border-radius: 12px;
+        padding: 12px 30px;
+        color: white;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+        color: white;
+        background: linear-gradient(135deg, #20c997, #28a745);
+    }
+
+    .fee-type-selector {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .fee-type-option {
+        padding: 12px 8px;
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: white;
+        font-size: 0.9rem;
+    }
+
+    .fee-type-option.selected {
+        border-color: #28a745;
+        background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(32, 201, 151, 0.05));
+        color: #28a745;
+        font-weight: 600;
+    }
+
+    .fee-type-option:hover {
+        border-color: #28a745;
+        transform: translateY(-2px);
+    }
+
+    .calculator-section {
+        background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 193, 7, 0.05));
+        border-radius: 12px;
+        padding: 15px;
+        margin-top: 15px;
+        border: 2px solid rgba(255, 193, 7, 0.2);
+    }
+
+    .calculator-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        padding: 8px 12px;
+        background: white;
+        border-radius: 8px;
+    }
+
+    .calculator-row:last-child {
+        margin-bottom: 0;
+        font-weight: 700;
+        background: rgba(255, 193, 7, 0.1);
+        border: 1px solid rgba(255, 193, 7, 0.3);
+    }
+
+    .preview-section {
+        margin-bottom: 20px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        border-right: 4px solid #28a745;
+    }
+
+    .preview-section h6 {
+        color: #28a745;
+        font-weight: 700;
+        margin-bottom: 10px;
+        font-size: 0.9rem;
+    }
+
+    .badge-custom {
+        padding: 6px 12px;
+        border-radius: 15px;
+        font-weight: 600;
+        font-size: 0.8rem;
+    }
+
+    .badge-active {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+    }
+
+    .badge-inactive {
+        background: #6c757d;
+        color: white;
+    }
+
+    .required-asterisk {
+        color: #dc3545;
+        margin-left: 3px;
+    }
+
+    .input-group-text {
+        border-radius: 0 12px 12px 0;
+        border: 2px solid #e9ecef;
+        border-left: none;
+        background: #f8f9fa;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .table-preview {
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    .table-preview thead th {
+        background: #28a745;
+        color: white;
+        font-weight: 600;
+        font-size: 0.9rem;
+        padding: 12px;
+        border: none;
+    }
+
+    .table-preview tbody td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #f1f3f4;
+        font-size: 0.9rem;
+    }
+
+    /* إصلاح responsive */
+    @media (max-width: 768px) {
+        .form-header {
+            padding: 20px 15px;
+            margin-bottom: 20px;
+        }
+        
+        .form-icon {
+            width: 60px;
+            height: 60px;
+            font-size: 1.5rem;
+        }
+        
+        .form-container {
+            padding: 20px;
+        }
+        
+        .form-section {
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .section-icon {
+            width: 30px;
+            height: 30px;
+            font-size: 0.9rem;
+        }
+        
+        .preview-card {
+            margin-top: 20px;
+            position: static;
+        }
+        
+        .fee-type-selector {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .preview-value {
+            font-size: 1.3rem;
+        }
+    }
+
+    /* إصلاح مشاكل الـ overflow النهائية */
+    * {
+        box-sizing: border-box;
+    }
+    
+    .row {
+        margin-right: 0 !important;
+        margin-left: 0 !important;
+    }
+    
+    [class*="col-"] {
+        padding-right: 12px !important;
+        padding-left: 12px !important;
+    }
+
+    .page-footer {
+        margin-top: 15px;
+        margin-bottom: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Form Header -->
+<div class="form-header">
+    <div class="form-header-content">
+        <div class="form-icon">
+            <i class="fas fa-money-bill-wave"></i>
+        </div>
+        <h4 class="mb-2">إضافة مصروفات مدرسية جديدة</h4>
+        <p class="mb-0 opacity-90">أدخل معلومات المصروفات وحدد المبالغ والأقساط المناسبة</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="form-container">
+            <form method="post" id="schoolFeeForm">
+                {% csrf_token %}
+                
+                <!-- المعلومات الأساسية -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <div class="section-icon">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <span>المعلومات الأساسية</span>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-calendar-alt me-2"></i>العام الدراسي <span class="required-asterisk">*</span>
+                            </label>
+                            <select class="form-select form-select-custom" name="academic_year" id="academicYear" required>
+                                <option value="">اختر العام الدراسي</option>
+                                {% for year in academic_years %}
+                                <option value="{{ year.id }}" {% if year.is_current %}selected{% endif %}>
+                                    {{ year.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-chalkboard me-2"></i>الصف الدراسي <span class="required-asterisk">*</span>
+                            </label>
+                            <select class="form-select form-select-custom" name="grade_level" id="gradeLevel" required>
+                                <option value="">اختر الصف الدراسي</option>
+                                {% for grade in grade_levels %}
+                                <option value="{{ grade.id }}">
+                                    {{ grade.education_level.name }} - {{ grade.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-list me-2"></i>نوع المصروفات <span class="required-asterisk">*</span>
+                            </label>
+                            <select class="form-select form-select-custom" name="fee_type" id="feeType" required>
+                                <option value="">اختر نوع المصروفات</option>
+                                <option value="TUITION">مصروفات دراسية</option>
+                                <option value="BOOKS">مصروفات كتب</option>
+                                <option value="UNIFORMS">مصروفات ملابس</option>
+                                <option value="TRANSPORT">مصروفات نقل</option>
+                                <option value="MEALS">مصروفات وجبات</option>
+                                <option value="ACTIVITIES">مصروفات أنشطة</option>
+                                <option value="REGISTRATION">رسوم تسجيل</option>
+                                <option value="OTHER">مصروفات أخرى</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-tag me-2"></i>اسم المصروفات <span class="required-asterisk">*</span>
+                            </label>
+                            <input type="text" class="form-control form-control-custom" name="fee_name" id="feeName" required
+                                   placeholder="مثال: مصروفات دراسية للصف الأول الابتدائي">
+                            <div class="help-text">
+                                <i class="fas fa-lightbulb help-icon"></i>
+                                <small>أدخل اسماً واضحاً ومفهوماً للمصروفات</small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-money-bill me-2"></i>المبلغ الإجمالي <span class="required-asterisk">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="number" class="form-control form-control-custom" name="total_amount" 
+                                       id="totalAmount" min="0" step="0.01" placeholder="0.00" required>
+                                <span class="input-group-text">ج.م</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- إعدادات الأقساط -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <div class="section-icon success">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <span>إعدادات الأقساط</span>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-sort-numeric-up me-2"></i>عدد الأقساط <span class="required-asterisk">*</span>
+                            </label>
+                            <input type="number" class="form-control form-control-custom" name="installments_count" 
+                                   id="installmentsCount" min="1" max="12" value="4" required>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-calculator me-2"></i>مبلغ القسط الواحد
+                            </label>
+                            <div class="input-group">
+                                <input type="number" class="form-control form-control-custom" id="installmentAmount" 
+                                       step="0.01" readonly>
+                                <span class="input-group-text">ج.م</span>
+                            </div>
+                            <div class="help-text">
+                                <i class="fas fa-info-circle help-icon"></i>
+                                <small>سيتم حسابه تلقائياً</small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-calendar-day me-2"></i>تاريخ القسط الأول <span class="required-asterisk">*</span>
+                            </label>
+                            <input type="date" class="form-control form-control-custom" name="first_installment_due_date" 
+                                   id="firstDueDate" required>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-clock me-2"></i>الفترة بين الأقساط (أيام)
+                            </label>
+                            <input type="number" class="form-control form-control-custom" name="installment_interval_days" 
+                                   id="intervalDays" value="30" min="1">
+                            <div class="help-text">
+                                <i class="fas fa-info-circle help-icon"></i>
+                                <small>الافتراضي: 30 يوماً (شهرياً)</small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mt-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="is_mandatory" 
+                                           id="isMandatory" checked>
+                                    <label class="form-check-label fw-bold" for="isMandatory">
+                                        مصروفات إجبارية
+                                    </label>
+                                </div>
+                                <div class="help-text">
+                                    <i class="fas fa-exclamation-circle help-icon"></i>
+                                    <small>المصروفات الإجبارية يجب دفعها للطالب</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- الإعدادات الإضافية -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <div class="section-icon info">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                        <span>الإعدادات الإضافية</span>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_active" 
+                                       id="isActive" checked>
+                                <label class="form-check-label fw-bold" for="isActive">
+                                    إعداد المصروفات نشط
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- أزرار الإجراءات -->
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="{% url 'school_settings:school_fees_list' %}" 
+                       class="btn btn-outline-secondary btn-lg px-4">
+                        <i class="fas fa-times me-2"></i>إلغاء
+                    </a>
+                    <button type="submit" class="btn btn-save btn-lg px-4">
+                        <i class="fas fa-save me-2"></i>حفظ المصروفات
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- معاينة -->
+    <div class="col-lg-4">
+        <div class="preview-card" id="previewCard">
+            <h6 class="text-success mb-3">
+                <i class="fas fa-eye me-2"></i>معاينة المصروفات
+            </h6>
+            
+            <div class="preview-header">
+                <div class="preview-avatar" id="previewAvatar">ج.م</div>
+                <div>
+                    <h6 class="mb-1" id="previewName">مصروفات جديدة</h6>
+                    <small class="text-muted" id="previewType">نوع المصروفات</small>
+                </div>
+            </div>
+            
+            <div class="preview-value" id="previewValue">
+                0.00 ج.م
+            </div>
+            
+            <!-- حاسبة الأقساط -->
+            <div class="calculator-section">
+                <h6 style="color: #ffc107; margin-bottom: 10px;">
+                    <i class="fas fa-calculator me-2"></i>حاسبة الأقساط
+                </h6>
+                <div class="calculator-row">
+                    <span>المبلغ الإجمالي:</span>
+                    <strong id="calcTotal">0.00 ج.م</strong>
+                </div>
+                <div class="calculator-row">
+                    <span>عدد الأقساط:</span>
+                    <strong id="calcCount">0</strong>
+                </div>
+                <div class="calculator-row">
+                    <span>قيمة القسط:</span>
+                    <strong id="calcAmount">0.00 ج.م</strong>
+                </div>
+            </div>
+            
+            <!-- معاينة الأقساط -->
+            <div class="installments-preview" id="installmentsPreview" style="display: none;">
+                <h6 style="color: #17a2b8; margin-bottom: 10px;">
+                    <i class="fas fa-list me-2"></i>جدول الأقساط
+                </h6>
+                <div id="installmentsList"></div>
+            </div>
+            
+            <!-- إعدادات المصروفات -->
+            <div class="preview-section">
+                <h6>إعدادات المصروفات</h6>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>نوع المصروفات:</span>
+                    <span class="badge-custom badge-active" id="previewMandatory">إجبارية</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>حالة الإعداد:</span>
+                    <span class="badge-custom badge-active" id="previewStatus">نشط</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                    <span>تاريخ القسط الأول:</span>
+                    <span id="previewFirstDate">--/--/----</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- نصائح مفيدة -->
+        <div class="alert alert-info mt-3 border-0" style="background: rgba(40, 167, 69, 0.1); border-right: 4px solid #28a745 !important;">
+            <h6 style="color: #28a745;">
+                <i class="fas fa-lightbulb me-2"></i>نصائح مفيدة
+            </h6>
+            <ul class="mb-0 small">
+                <li>اختر أسماء واضحة للمصروفات</li>
+                <li>حدد عدد أقساط مناسب للعائلات</li>
+                <li>اجعل تاريخ القسط الأول مناسباً</li>
+                <li>يمكن تعديل جميع الإعدادات لاحقاً</li>
+            </ul>
+        </div>
+        
+        <!-- أمثلة شائعة -->
+        <div class="alert alert-light mt-3 border">
+            <h6 class="text-dark mb-2">
+                <i class="fas fa-list me-2"></i>أمثلة شائعة
+            </h6>
+            <div class="small">
+                <div class="mb-2">
+                    <strong>دراسية:</strong> 4 أقساط شهرية
+                </div>
+                <div class="mb-2">
+                    <strong>النقل:</strong> 10 أقساط شهرية
+                </div>
+                <div class="mb-2">
+                    <strong>الكتب:</strong> قسط واحد في بداية العام
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="page-footer"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    setupFormPreview();
+    setupFormEvents();
+    setDefaultDate();
+    updatePreview();
+});
+
+function setupFormPreview() {
+    // ربط أحداث التحديث
+    ['totalAmount', 'installmentsCount', 'feeName', 'feeType', 'academicYear', 'gradeLevel', 'firstDueDate', 'intervalDays', 'isMandatory', 'isActive'].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            if (element.type === 'checkbox') {
+                element.addEventListener('change', updatePreview);
+            } else {
+                element.addEventListener('input', updatePreview);
+            }
+        }
+    });
+}
+
+function updatePreview() {
+    // تحديث الاسم
+    const name = document.getElementById('feeName').value || 'مصروفات جديدة';
+    document.getElementById('previewName').textContent = name;
+    
+    // تحديث النوع
+    const typeSelect = document.getElementById('feeType');
+    const typeText = typeSelect.options[typeSelect.selectedIndex]?.text || 'نوع المصروفات';
+    document.getElementById('previewType').textContent = typeText;
+    
+    // تحديث المبلغ
+    const totalAmount = parseFloat(document.getElementById('totalAmount').value) || 0;
+    document.getElementById('previewValue').textContent = totalAmount.toFixed(2) + ' ج.م';
+    
+    // تحديث الحاسبة
+    const installmentsCount = parseInt(document.getElementById('installmentsCount').value) || 1;
+    const installmentAmount = totalAmount / installmentsCount;
+    
+    document.getElementById('calcTotal').textContent = totalAmount.toFixed(2) + ' ج.م';
+    document.getElementById('calcCount').textContent = installmentsCount;
+    document.getElementById('calcAmount').textContent = installmentAmount.toFixed(2) + ' ج.م';
+    document.getElementById('installmentAmount').value = installmentAmount.toFixed(2);
+    
+    // تحديث جدول الأقساط
+    updateInstallmentsList();
+    
+    // تحديث الإعدادات
+    const isMandatory = document.getElementById('isMandatory').checked;
+    const isActive = document.getElementById('isActive').checked;
+    const firstDate = document.getElementById('firstDueDate').value;
+    
+    document.getElementById('previewMandatory').textContent = isMandatory ? 'إجبارية' : 'اختيارية';
+    document.getElementById('previewMandatory').className = isMandatory ? 'badge-custom badge-active' : 'badge-custom badge-inactive';
+    
+    document.getElementById('previewStatus').textContent = isActive ? 'نشط' : 'غير نشط';
+    document.getElementById('previewStatus').className = isActive ? 'badge-custom badge-active' : 'badge-custom badge-inactive';
+    
+    document.getElementById('previewFirstDate').textContent = firstDate ? formatDate(firstDate) : '--/--/----';
+    
+    // تفعيل المعاينة
+    if (totalAmount > 0) {
+        document.getElementById('previewCard').classList.add('active');
+    } else {
+        document.getElementById('previewCard').classList.remove('active');
+    }
+}
+
+function updateInstallmentsList() {
+    const totalAmount = parseFloat(document.getElementById('totalAmount').value) || 0;
+    const installmentsCount = parseInt(document.getElementById('installmentsCount').value) || 1;
+    const firstDate = document.getElementById('firstDueDate').value;
+    const intervalDays = parseInt(document.getElementById('intervalDays').value) || 30;
+    
+    const installmentsPreview = document.getElementById('installmentsPreview');
+    const installmentsList = document.getElementById('installmentsList');
+    
+    if (totalAmount > 0 && firstDate && installmentsCount > 0) {
+        installmentsPreview.style.display = 'block';
+        installmentsList.innerHTML = '';
+        
+        const installmentAmount = totalAmount / installmentsCount;
+        let currentDate = new Date(firstDate);
+        
+        for (let i = 1; i <= installmentsCount; i++) {
+            const installmentDiv = document.createElement('div');
+            installmentDiv.className = 'installment-item';
+            installmentDiv.innerHTML = `
+                <span>القسط ${i}</span>
+                <span>${formatDate(currentDate.toISOString().split('T')[0])}</span>
+                <strong>${installmentAmount.toFixed(2)} ج.م</strong>
+            `;
+            installmentsList.appendChild(installmentDiv);
+            
+            currentDate.setDate(currentDate.getDate() + intervalDays);
+        }
+    } else {
+        installmentsPreview.style.display = 'none';
+    }
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ar-EG');
+}
+
+function setDefaultDate() {
+    const today = new Date();
+    const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    document.getElementById('firstDueDate').value = nextMonth.toISOString().split('T')[0];
+}
+
+function setupFormEvents() {
+    const form = document.getElementById('schoolFeeForm');
+    
+    form.addEventListener('submit', function(e) {
+        // التحقق من البيانات
+        const feeName = document.getElementById('feeName').value.trim();
+        const academicYear = document.getElementById('academicYear').value;
+        const gradeLevel = document.getElementById('gradeLevel').value;
+        const feeType = document.getElementById('feeType').value;
+        const totalAmount = parseFloat(document.getElementById('totalAmount').value);
+        const installmentsCount = parseInt(document.getElementById('installmentsCount').value);
+        const firstDueDate = document.getElementById('firstDueDate').value;
+        
+        // منع الإرسال فقط في حالة وجود أخطاء
+        if (!feeName) {
+            e.preventDefault();
+            showMessage('error', 'اسم المصروفات مطلوب');
+            return false;
+        }
+        
+        if (!academicYear) {
+            e.preventDefault();
+            showMessage('error', 'العام الدراسي مطلوب');
+            return false;
+        }
+        
+        if (!gradeLevel) {
+            e.preventDefault();
+            showMessage('error', 'الصف الدراسي مطلوب');
+            return false;
+        }
+        
+        if (!feeType) {
+            e.preventDefault();
+            showMessage('error', 'نوع المصروفات مطلوب');
+            return false;
+        }
+        
+        if (totalAmount <= 0) {
+            e.preventDefault();
+            showMessage('error', 'يجب أن يكون المبلغ الإجمالي أكبر من صفر');
+            return false;
+        }
+        
+        if (installmentsCount < 1) {
+            e.preventDefault();
+            showMessage('error', 'يجب أن يكون عدد الأقساط 1 على الأقل');
+            return false;
+        }
+        
+        if (!firstDueDate) {
+            e.preventDefault();
+            showMessage('error', 'تاريخ القسط الأول مطلوب');
+            return false;
+        }
+        
+        // إذا وصلنا هنا، كل شيء صحيح - اعرض رسالة التحميل واترك الـ form يرسل
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        submitBtn.innerHTML = '<div class="spinner-border spinner-border-sm me-2"></div>جاري الحفظ...';
+        submitBtn.disabled = true;
+        
+        // لا نوقف الإرسال - نتركه يحدث طبيعياً
+        return true;
+    });
+}
+
+function showMessage(type, message) {
+    const colors = { success: 'success', error: 'danger', warning: 'warning', info: 'info' };
+    const icons = { success: 'fas fa-check-circle', error: 'fas fa-exclamation-circle', warning: 'fas fa-exclamation-triangle', info: 'fas fa-info-circle' };
+    
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${colors[type]} alert-dismissible fade show`;
+    alertDiv.style.cssText = `position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 350px; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); border-radius: 10px;`;
+    
+    alertDiv.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="${icons[type]} me-3"></i>
+            <div class="flex-grow-1">${message}</div>
+            <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    setTimeout(() => { if (alertDiv.parentNode) alertDiv.remove(); }, 6000);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,227 @@
+{% extends 'books_inventory/base.html' %}
+{% load static %}
+
+{% block title %}حالة مدفوعات الطلاب - مخزن الكتب{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-filter text-primary"></i> الفلترة</h5>
+            </div>
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">الصف الدراسي</label>
+                        <select class="form-select" name="grade">
+                            <option value="">جميع الصفوف</option>
+                            {% for grade in grade_levels %}
+                            <option value="{{ grade.id }}" {% if grade_filter == grade.id|slugify %}selected{% endif %}>
+                                {{ grade.education_level.name }} - {{ grade.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">حالة الدفع</label>
+                        <select class="form-select" name="payment_status">
+                            <option value="">جميع الحالات</option>
+                            <option value="paid" {% if payment_status_filter == 'paid' %}selected{% endif %}>مدفوع</option>
+                            <option value="unpaid" {% if payment_status_filter == 'unpaid' %}selected{% endif %}>غير مدفوع</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-filter"></i> تطبيق الفلتر
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- إحصائيات سريعة -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-center bg-primary text-white">
+            <div class="card-body py-3">
+                <h4>{{ stats.total }}</h4>
+                <p class="mb-0"><i class="fas fa-users"></i> إجمالي الطلاب</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center bg-success text-white">
+            <div class="card-body py-3">
+                <h4>{{ stats.paid }}</h4>
+                <p class="mb-0"><i class="fas fa-check-circle"></i> مدفوع القسط الأول</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center bg-warning text-white">
+            <div class="card-body py-3">
+                <h4>{{ stats.unpaid }}</h4>
+                <p class="mb-0"><i class="fas fa-exclamation-circle"></i> غير مدفوع</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-money-bill-wave text-success"></i> حالة مدفوعات الطلاب</h5>
+                <div>
+                    {% if students_page %}
+                    <span class="badge bg-success">{{ students_page.paginator.count }} طالب</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                {% if error_message %}
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i> {{ error_message }}
+                </div>
+                {% elif students_page %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>الطالب</th>
+                                <th>الصف الدراسي</th>
+                                <th>حالة القسط الأول</th>
+                                <th>إجمالي المصروفات</th>
+                                <th>المدفوع</th>
+                                <th>المتبقي</th>
+                                <th>نسبة الدفع</th>
+                                <th>إمكانية التوزيع</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student_data in students_page %}
+                            <tr {% if not student_data.first_installment_paid %}class="table-warning"{% endif %}>
+                                <td>
+                                    <div>
+                                        <strong>{{ student_data.student.name }}</strong>
+                                        <br><small class="text-muted">{{ student_data.student.national_number }}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">{{ student_data.student.grade_name|default:"غير محدد" }}</span>
+                                </td>
+                                <td>
+                                    {% if student_data.first_installment_paid %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check-circle"></i> مدفوع
+                                        </span>
+                                        {% if student_data.first_installment_date %}
+                                        <br><small class="text-muted">{{ student_data.first_installment_date|date:"Y-m-d" }}</small>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-times-circle"></i> غير مدفوع
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong class="text-primary">{{ student_data.total_fees|default:0 }} ج.م</strong>
+                                </td>
+                                <td>
+                                    <strong class="text-success">{{ student_data.total_payments|default:0 }} ج.م</strong>
+                                </td>
+                                <td>
+                                    <strong class="text-danger">{{ student_data.total_owed|default:0 }} ج.م</strong>
+                                </td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar bg-success" role="progressbar" 
+                                             style="width: {{ student_data.payment_percentage|floatformat:0 }}%"
+                                             aria-valuenow="{{ student_data.payment_percentage|floatformat:0 }}" 
+                                             aria-valuemin="0" aria-valuemax="100">
+                                            {{ student_data.payment_percentage|floatformat:0 }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if student_data.can_distribute %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check"></i> يمكن التوزيع
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-ban"></i> لا يمكن التوزيع
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'books_inventory:student_detail_view' student_data.student.pk %}" class="btn btn-outline-primary" title="بيانات الطالب">
+                                            <i class="fas fa-user"></i>
+                                        </a>
+                                        {% if student_data.can_distribute %}
+                                        <a href="{% url 'books_inventory:create_distribution' %}?student={{ student_data.student.pk }}" class="btn btn-outline-success" title="إنشاء توزيع">
+                                            <i class="fas fa-share"></i>
+                                        </a>
+                                        {% endif %}
+                                        {% if student_data.latest_distribution %}
+                                        <a href="{% url 'books_inventory:distribution_detail' student_data.latest_distribution.pk %}" class="btn btn-outline-info" title="آخر توزيع">
+                                            <i class="fas fa-history"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                {% if students_page.has_other_pages %}
+                <nav aria-label="صفحات النتائج">
+                    <ul class="pagination justify-content-center">
+                        {% if students_page.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if grade_filter %}grade={{ grade_filter }}&{% endif %}{% if payment_status_filter %}payment_status={{ payment_status_filter }}&{% endif %}page={{ students_page.previous_page_number }}">السابق</a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for num in students_page.paginator.page_range %}
+                        {% if students_page.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > students_page.number|add:'-3' and num < students_page.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if grade_filter %}grade={{ grade_filter }}&{% endif %}{% if payment_status_filter %}payment_status={{ payment_status_filter }}&{% endif %}page={{ num }}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+                        
+                        {% if students_page.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if grade_filter %}grade={{ grade_filter }}&{% endif %}{% if payment_status_filter %}payment_status={{ payment_status_filter }}&{% endif %}page={{ students_page.next_page_number }}">التالي</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-money-bill-wave fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">لا توجد بيانات مدفوعات</h5>
+                    <p class="text-muted">لا توجد بيانات طلاب أو مدفوعات متاحة للعرض</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

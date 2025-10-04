@@ -1,0 +1,187 @@
+{% if distributions %}
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead class="table-light">
+            <tr>
+                <th>الطالب</th>
+                <th>الصف الدراسي</th>
+                <th>تاريخ التوزيع</th>
+                <th>حالة الدفع</th>
+                <th>إجمالي العناصر</th>
+                <th>الحالة</th>
+                <th>موزع بواسطة</th>
+                <th>الإجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for distribution in distributions %}
+            <tr>
+                <td>
+                    <div>
+                        <strong>{{ distribution.student.name }}</strong>
+                        <br><small class="text-muted">{{ distribution.student.national_number|default:"غير محدد" }}</small>
+                    </div>
+                </td>
+                <td>
+                    {% if distribution.student.current_group %}
+                        <span class="badge bg-primary">{{ distribution.student.current_group.name }}</span>
+                    {% else %}
+                        <span class="badge bg-secondary">غير محدد</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <strong>{{ distribution.distribution_date|date:"Y-m-d" }}</strong>
+                    <br><small class="text-muted">{{ distribution.distribution_date|date:"D" }}</small>
+                </td>
+                <td>
+                    {% if distribution.first_installment_verified %}
+                        <span class="badge bg-success">
+                            <i class="fas fa-check-circle"></i> مدفوع
+                        </span>
+                        {% if distribution.verification_date %}
+                        <br><small class="text-muted">{{ distribution.verification_date|date:"Y-m-d" }}</small>
+                        {% endif %}
+                    {% else %}
+                        <span class="badge bg-danger">
+                            <i class="fas fa-times-circle"></i> غير مدفوع
+                        </span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="badge bg-info">{{ distribution.total_items|default:0 }}</span>
+                    
+                    <!-- تفاصيل إضافية -->
+                    {% if distribution.book_items.count > 0 %}
+                    <br><small class="text-muted">
+                        <i class="fas fa-book"></i> {{ distribution.book_items.count }} كتاب
+                    </small>
+                    {% endif %}
+                    
+                    {% if distribution.notebook_items.count > 0 %}
+                    <br><small class="text-muted">
+                        <i class="fas fa-book-open"></i> {{ distribution.notebook_items.count }} كراسة
+                    </small>
+                    {% endif %}
+                    
+                    {% if distribution.supply_items.count > 0 %}
+                    <br><small class="text-muted">
+                        <i class="fas fa-pencil-alt"></i> {{ distribution.supply_items.count }} أداة
+                    </small>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if distribution.status == 'COMPLETED' %}
+                        <span class="badge bg-success">مكتمل</span>
+                    {% elif distribution.status == 'PARTIAL' %}
+                        <span class="badge bg-warning">موزع جزئياً</span>
+                    {% elif distribution.status == 'PENDING' %}
+                        <span class="badge bg-primary">في الانتظار</span>
+                    {% elif distribution.status == 'CANCELLED' %}
+                        <span class="badge bg-danger">ملغي</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <small>{{ distribution.distributed_by.get_full_name|default:distribution.distributed_by.username }}</small>
+                    <br><small class="text-muted">{{ distribution.created_at|date:"Y-m-d H:i" }}</small>
+                </td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <!-- تصحيح URL name -->
+                        <a href="{% url 'books_inventory:student_distribution_detail' distribution.pk %}" class="btn btn-outline-primary" title="عرض التفاصيل">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        
+                        <!-- بيانات الطالب -->
+                        {% if distribution.student.pk %}
+                        <a href="#" onclick="showStudentInfo('{{ distribution.student.name }}', '{{ distribution.student.national_number }}', '{{ distribution.student.current_group.name|default:"غير محدد" }}')" class="btn btn-outline-info" title="بيانات الطالب">
+                            <i class="fas fa-user"></i>
+                        </a>
+                        {% endif %}
+                        
+                        <!-- تأكيد الدفع إذا لم يكن مدفوع -->
+                        {% if not distribution.first_installment_verified %}
+                        <a href="{% url 'books_inventory:verify_payment' distribution.pk %}" class="btn btn-outline-success btn-sm" title="تأكيد الدفع">
+                            <i class="fas fa-check"></i>
+                        </a>
+                        {% endif %}
+                        
+                        <!-- تعديل التوزيع -->
+                        <a href="{% url 'books_inventory:edit_distribution' distribution.pk %}" class="btn btn-outline-warning btn-sm" title="تعديل">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        
+                        <!-- طباعة التوزيع -->
+                        <a href="#" onclick="printDistribution({{ distribution.pk }})" class="btn btn-outline-secondary btn-sm" title="طباعة">
+                            <i class="fas fa-print"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if distributions.has_other_pages %}
+<nav aria-label="صفحات النتائج">
+    <ul class="pagination justify-content-center">
+        {% if distributions.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}{% if verified_filter %}verified={{ verified_filter }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}page={{ distributions.previous_page_number }}">السابق</a>
+        </li>
+        {% endif %}
+        
+        {% for num in distributions.paginator.page_range %}
+        {% if distributions.number == num %}
+        <li class="page-item active">
+            <span class="page-link">{{ num }}</span>
+        </li>
+        {% elif num > distributions.number|add:'-3' and num < distributions.number|add:'3' %}
+        <li class="page-item">
+            <a class="page-link" href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}{% if verified_filter %}verified={{ verified_filter }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}page={{ num }}">{{ num }}</a>
+        </li>
+        {% endif %}
+        {% endfor %}
+        
+        {% if distributions.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}{% if verified_filter %}verified={{ verified_filter }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}page={{ distributions.next_page_number }}">التالي</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-share fa-3x text-muted mb-3"></i>
+    <h5 class="text-muted">لا توجد توزيعات</h5>
+    {% if search_query %}
+    <p class="text-muted">لم يتم العثور على نتائج للبحث "{{ search_query }}"</p>
+    <button type="button" class="btn btn-outline-primary" onclick="clearSearch()">عرض جميع التوزيعات</button>
+    {% else %}
+    <p class="text-muted">لم يتم إنشاء أي توزيعات للطلاب بعد</p>
+    <a href="{% url 'books_inventory:create_distribution' %}" class="btn btn-success">
+        <i class="fas fa-plus"></i> إنشاء توزيع جديد
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- JavaScript لعرض معلومات الطالب -->
+<script>
+function showStudentInfo(name, nationalNumber, gradeLevel) {
+    const info = `
+        الاسم: ${name}
+        الرقم القومي: ${nationalNumber || 'غير محدد'}
+        الصف الدراسي: ${gradeLevel}
+    `;
+    alert(info);
+}
+
+function printDistribution(distributionId) {
+    window.open(`/inventory/distributions/${distributionId}/print/`, '_blank');
+}
+
+</script>

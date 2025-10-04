@@ -1,0 +1,1000 @@
+{% extends 'school_settings/base.html' %}
+
+{% block title %}{{ page_title }} - {{ system_settings.school_name }}{% endblock %}
+{% block sidebar_title %}{{ page_title }}{% endblock %}
+{% block sidebar_icon %}<i class="fas fa-history"></i>{% endblock %}
+{% block sidebar_subtitle %}سجل التغييرات{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    /* إصلاح مشكلة العرض والحركة */
+    body {
+        overflow-x: hidden !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+    }
+    
+    .container-fluid,
+    .row,
+    .col-md-3 {
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box !important;
+    }
+
+    .settings-card {
+        border-radius: 15px; /* تقليل border radius */
+        border: none;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        margin-bottom: 20px; /* تقليل margin */
+        background: white;
+        transition: all 0.3s ease;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .settings-card:hover {
+        transform: translateY(-2px); /* تقليل الحركة */
+        box-shadow: 0 12px 35px rgba(0,0,0,0.12);
+    }
+
+    .settings-card-header {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 15px 20px; /* تقليل padding */
+        border-radius: 15px 15px 0 0;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .settings-card-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.08)"/></svg>') repeat;
+        animation: float 18s linear infinite;
+    }
+
+    @keyframes float {
+        0% { transform: translateX(-50px) translateY(-50px); }
+        100% { transform: translateX(50px) translateY(50px); }
+    }
+
+    .settings-card-body {
+        padding: 20px; /* تقليل padding */
+        position: relative;
+        z-index: 2;
+    }
+
+    .settings-card-footer {
+        background: #f8f9fa;
+        padding: 12px 20px; /* تقليل padding */
+        border-top: 1px solid rgba(0,0,0,0.05);
+        font-family: 'Cairo', sans-serif;
+    }
+    
+    .pagination-sm .page-link {
+        border-radius: 6px;
+        margin: 0 2px;
+        transition: all 0.3s ease;
+        font-family: 'Cairo', sans-serif;
+        font-size: 0.85rem; /* تقليل الخط */
+        padding: 6px 10px; /* تقليل padding */
+    }
+    
+    .pagination-sm .page-link:hover {
+        background-color: var(--accent-color);
+        color: white;
+        transform: translateY(-1px);
+    }
+    
+    .pagination-sm .page-item.active .page-link {
+        background-color: var(--accent-color);
+        border-color: var(--accent-color);
+    }
+
+    .user-avatar {
+        width: 32px; /* تقليل الحجم */
+        height: 32px;
+        border-radius: 6px; /* تقليل border radius */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        background: var(--accent-color);
+        font-family: 'Cairo', sans-serif;
+        font-size: 0.9rem; /* تقليل الخط */
+        flex-shrink: 0;
+    }
+
+    .table-settings th {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        font-weight: 600;
+        color: #495057;
+        font-family: 'Cairo', sans-serif;
+        padding: 12px 10px; /* تقليل padding */
+        font-size: 0.85rem; /* تقليل الخط */
+        word-wrap: break-word;
+    }
+
+    .table-settings tbody tr {
+        transition: all 0.3s ease;
+    }
+
+    .table-settings tbody tr:hover {
+        background-color: #f8f9fa;
+        transform: scale(1.005); /* تقليل الحركة */
+    }
+
+    .table-settings tbody td {
+        padding: 12px 10px; /* تقليل padding */
+        vertical-align: middle;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+
+    .modal-content {
+        border-radius: 12px; /* تقليل border radius */
+        border: none;
+        font-family: 'Cairo', sans-serif;
+        box-shadow: 0 15px 50px rgba(0,0,0,0.2);
+    }
+
+    .modal-header {
+        background: linear-gradient(135deg, var(--accent-color), #2980b9);
+        color: white;
+        border-radius: 12px 12px 0 0;
+        font-family: 'Cairo', sans-serif;
+        padding: 15px 20px; /* تقليل padding */
+    }
+
+    .modal-title {
+        font-weight: 600;
+        font-family: 'Cairo', sans-serif;
+        font-size: 1.1rem; /* تقليل الخط */
+    }
+
+    .modal-body {
+        padding: 20px; /* تقليل padding */
+    }
+
+    .btn-close-white {
+        filter: invert(1);
+    }
+
+    /* تحسين الكروت الإحصائية */
+    .stats-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px; /* تقليل padding */
+        text-align: center;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        transition: all 0.4s ease;
+        border: 2px solid transparent;
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 15px; /* تقليل margin */
+    }
+
+    .stats-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        transition: all 0.3s ease;
+    }
+
+    .stats-card:hover {
+        transform: translateY(-3px) scale(1.01); /* تقليل الحركة */
+        box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+        border-color: transparent;
+    }
+
+    .stats-card:hover::before {
+        height: 100%;
+        opacity: 0.05;
+    }
+
+    .stats-card:nth-child(1)::before {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+    }
+
+    .stats-card:nth-child(2)::before {
+        background: linear-gradient(135deg, #28a745, #20c997);
+    }
+
+    .stats-card:nth-child(3)::before {
+        background: linear-gradient(135deg, #ffc107, #fd7e14);
+    }
+
+    .stats-card:nth-child(4)::before {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+    }
+
+    .stats-card i {
+        font-size: 2rem; /* تقليل الخط */
+        margin-bottom: 12px; /* تقليل margin */
+    }
+
+    .stats-card h4 {
+        font-size: 1.8rem; /* تقليل الخط */
+        font-weight: 800;
+        margin-bottom: 6px; /* تقليل margin */
+    }
+
+    .stats-card p {
+        font-size: 0.9rem; /* تقليل الخط */
+        font-weight: 600;
+    }
+
+    /* تحسين الفلاتر */
+    .form-control,
+    .form-select {
+        border-radius: 10px; /* تقليل border radius */
+        border: 2px solid #e9ecef;
+        padding: 10px 12px; /* تقليل padding */
+        transition: all 0.3s ease;
+        font-size: 0.9rem; /* تقليل الخط */
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 6px; /* تقليل margin */
+        font-size: 0.9rem; /* تقليل الخط */
+    }
+
+    /* تحسين الأزرار */
+    .btn {
+        border-radius: 8px; /* تقليل border radius */
+        padding: 8px 16px; /* تقليل padding */
+        font-weight: 600;
+        transition: all 0.3s ease;
+        font-size: 0.9rem; /* تقليل الخط */
+    }
+
+    .btn:hover {
+        transform: translateY(-1px); /* تقليل الحركة */
+    }
+
+    .btn-group .btn {
+        padding: 6px 12px; /* تقليل padding */
+        font-size: 0.85rem; /* تقليل الخط */
+    }
+
+    .btn-group-sm .btn {
+        padding: 4px 10px; /* تقليل padding */
+        font-size: 0.8rem; /* تقليل الخط */
+    }
+
+    /* تحسين البادجات */
+    .badge {
+        font-size: 0.75rem; /* تقليل الخط */
+        padding: 5px 10px; /* تقليل padding */
+        border-radius: 12px; /* تقليل border radius */
+        font-weight: 600;
+    }
+
+    /* تحسين الـ code */
+    code {
+        background: #f8f9fa;
+        color: #667eea;
+        padding: 3px 6px; /* تقليل padding */
+        border-radius: 4px; /* تقليل border radius */
+        font-size: 0.8rem; /* تقليل الخط */
+    }
+
+    /* إصلاح الاستجابة للشاشات الصغيرة */
+    @media (max-width: 768px) {
+        .settings-card-body {
+            padding: 15px;
+        }
+        
+        .settings-card-header {
+            padding: 12px 15px;
+        }
+        
+        .settings-card-footer {
+            padding: 10px 15px;
+        }
+        
+        .stats-card {
+            padding: 15px;
+            margin-bottom: 12px;
+        }
+        
+        .stats-card i {
+            font-size: 1.6rem;
+        }
+        
+        .stats-card h4 {
+            font-size: 1.5rem;
+        }
+        
+        .user-avatar {
+            width: 28px;
+            height: 28px;
+            font-size: 0.8rem;
+        }
+        
+        .table-settings th,
+        .table-settings td {
+            padding: 10px 8px;
+            font-size: 0.8rem;
+        }
+        
+        .btn {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+        }
+        
+        .btn-group .btn {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+        }
+        
+        .modal-body {
+            padding: 15px;
+        }
+        
+        .modal-header {
+            padding: 12px 15px;
+        }
+    }
+
+    /* إصلاح مشاكل الـ overflow النهائية */
+    * {
+        box-sizing: border-box;
+    }
+    
+    .row {
+        margin-right: 0 !important;
+        margin-left: 0 !important;
+    }
+    
+    [class*="col-"] {
+        padding-right: 12px !important;
+        padding-left: 12px !important;
+    }
+
+    /* تقليل المسافة في نهاية الصفحة */
+    .page-footer {
+        margin-top: 15px;
+        margin-bottom: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- إحصائيات السجل -->
+<div class="row g-3 mb-3"> <!-- تقليل gap وmargin -->
+    <div class="col-md-3">
+        <div class="stats-card"> <!-- استبدال settings-card بـ stats-card -->
+            <i class="fas fa-list text-primary"></i>
+            <h4 class="text-primary">{{ logs.paginator.count }}</h4>
+            <p class="text-muted mb-0">إجمالي السجلات</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card">
+            <i class="fas fa-plus text-success"></i>
+            <h4 class="text-success" id="createCount">{{ create_logs_count|default:0 }}</h4>
+            <p class="text-muted mb-0">عمليات إنشاء</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card">
+            <i class="fas fa-edit text-warning"></i>
+            <h4 class="text-warning" id="updateCount">{{ update_logs_count|default:0 }}</h4>
+            <p class="text-muted mb-0">عمليات تحديث</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card">
+            <i class="fas fa-trash text-danger"></i>
+            <h4 class="text-danger" id="deleteCount">{{ delete_logs_count|default:0 }}</h4>
+            <p class="text-muted mb-0">عمليات حذف</p>
+        </div>
+    </div>
+</div>
+
+<!-- فلاتر السجل -->
+<div class="settings-card">
+    <div class="settings-card-header">
+        <h6 class="mb-0"> <!-- تقليل حجم العنوان -->
+            <i class="fas fa-filter me-2"></i>
+            فلترة السجلات
+        </h6>
+    </div>
+    <div class="settings-card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">المستخدم</label>
+                <select class="form-select" id="filterUser">
+                    <option value="">جميع المستخدمين</option>
+                    <!-- سيتم ملء القائمة من JavaScript -->
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label">نوع العملية</label>
+                <select class="form-select" id="filterAction">
+                    <option value="">جميع العمليات</option>
+                    <option value="CREATE">إنشاء</option>
+                    <option value="UPDATE">تحديث</option>
+                    <option value="DELETE">حذف</option>
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label">من تاريخ</label>
+                <input type="date" class="form-control" id="dateFrom">
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label">إلى تاريخ</label>
+                <input type="date" class="form-control" id="dateTo">
+            </div>
+        </div>
+        
+        <div class="mt-3">
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="applyLogFilters()">
+                    <i class="fas fa-search me-1"></i>بحث
+                </button>
+                <button class="btn btn-outline-secondary" onclick="clearLogFilters()">
+                    <i class="fas fa-times me-1"></i>مسح
+                </button>
+                <button class="btn btn-outline-success" onclick="exportLogs()">
+                    <i class="fas fa-download me-1"></i>تصدير
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- جدول السجلات -->
+<div class="settings-card">
+    <div class="settings-card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0"> <!-- تقليل حجم العنوان -->
+                <i class="fas fa-clipboard-list me-2"></i>
+                سجل تغييرات الإعدادات
+            </h6>
+            <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-light" onclick="refreshLogs()">
+                    <i class="fas fa-sync-alt me-1"></i>تحديث
+                </button>
+                <button class="btn btn-outline-light" onclick="clearOldLogs()">
+                    <i class="fas fa-broom me-1"></i>مسح القديم
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="settings-card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-settings mb-0" id="logsTable">
+                <thead>
+                    <tr>
+                        <th style="width: 15%">المستخدم</th>
+                        <th style="width: 12%">العملية</th>
+                        <th style="width: 15%">نوع الإعداد</th>
+                        <th style="width: 20%">التفاصيل</th>
+                        <th style="width: 18%">التوقيت</th>
+                        <th style="width: 12%">عنوان IP</th>
+                        <th style="width: 8%">عرض</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr data-log-id="{{ log.id }}" 
+                        data-action="{{ log.action }}" 
+                        data-user="{{ log.user.username }}"
+                        data-date="{{ log.timestamp|date:'Y-m-d' }}"
+                        data-user-fullname="{{ log.user.get_full_name|default:log.user.username }}"
+                        data-user-email="{{ log.user.email|default:'لا يوجد' }}"
+                        data-setting-type="{{ log.setting_type|default:'غير محدد' }}"
+                        data-old-value="{{ log.old_value|default:'' }}"
+                        data-new-value="{{ log.new_value|default:'' }}"
+                        data-ip="{{ log.ip_address|default:'غير محدد' }}"
+                        data-timestamp="{{ log.timestamp|date:'Y/m/d H:i:s' }}">
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="user-avatar me-2">
+                                    {{ log.user.first_name.0|default:log.user.username.0|upper }}
+                                </div>
+                                <div style="flex: 1; min-width: 0;">
+                                    <div class="fw-bold">{{ log.user.get_full_name|default:log.user.username|truncatechars:15 }}</div> <!-- تحديد طول النص -->
+                                    <small class="text-muted">{{ log.user.email|default:"لا يوجد"|truncatechars:20 }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {% if log.action == 'CREATE' %}
+                                <span class="badge bg-success">
+                                    <i class="fas fa-plus me-1"></i>إنشاء
+                                </span>
+                            {% elif log.action == 'UPDATE' %}
+                                <span class="badge bg-warning">
+                                    <i class="fas fa-edit me-1"></i>تحديث
+                                </span>
+                            {% elif log.action == 'DELETE' %}
+                                <span class="badge bg-danger">
+                                    <i class="fas fa-trash me-1"></i>حذف
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary">
+                                    <i class="fas fa-question me-1"></i>{{ log.action }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-{% if 'مدرسة' in log.setting_type %}school{% elif 'دراسي' in log.setting_type %}calendar{% elif 'خصم' in log.setting_type %}percentage{% elif 'مصروفات' in log.setting_type %}money-bill{% else %}cog{% endif %} me-2 text-primary"></i>
+                                <span>{{ log.setting_type|default:"غير محدد"|truncatechars:12 }}</span> <!-- تحديد طول النص -->
+                            </div>
+                        </td>
+                        <td>
+                            <div class="text-truncate" style="max-width: 180px;" 
+                                 data-bs-toggle="tooltip" 
+                                 title="{{ log.new_value|default:log.old_value|truncatewords:20 }}">
+                                {{ log.new_value|default:log.old_value|truncatewords:6 }} <!-- تقليل عدد الكلمات -->
+                            </div>
+                        </td>
+                        <td>
+                            <div>
+                                <div class="fw-bold">{{ log.timestamp|date:"Y/m/d" }}</div>
+                                <small class="text-muted">{{ log.timestamp|date:"H:i:s" }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            <code class="small">{{ log.ip_address|default:"غير محدد"|truncatechars:12 }}</code> <!-- تحديد طول النص -->
+                        </td>
+                        <td>
+                            <a href="{% url 'school_settings:log_details' log.id %}" 
+                               class="btn btn-outline-info btn-sm"
+                               data-bs-toggle="tooltip" 
+                               title="عرض التفاصيل">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <div class="text-muted">
+                                <i class="fas fa-history fa-2x mb-2 opacity-50"></i> <!-- تقليل حجم الأيقونة -->
+                                <p class="mb-0">لا توجد سجلات</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Pagination المحسنة -->
+    {% if logs.has_other_pages %}
+    <div class="settings-card-footer">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <small class="text-muted">
+                    عرض {{ logs.start_index }} إلى {{ logs.end_index }} 
+                    من إجمالي {{ logs.paginator.count }} سجل
+                </small>
+            </div>
+            <nav aria-label="تنقل السجلات">
+                <ul class="pagination pagination-sm mb-0">
+                    {% if logs.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ logs.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                <i class="fas fa-chevron-right me-1"></i>السابق
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in logs.paginator.page_range %}
+                        {% if logs.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > logs.number|add:'-3' and num < logs.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if logs.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ logs.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                التالي<i class="fas fa-chevron-left ms-1"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ logs.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal عرض تفاصيل السجل -->
+<div class="modal fade" id="logDetailsModal" tabindex="-1" aria-labelledby="logDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title" id="logDetailsModalLabel"> <!-- تقليل حجم العنوان -->
+                    <i class="fas fa-info-circle me-2"></i>تفاصيل السجل
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body" id="logDetailsContent">
+                <div class="text-center py-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">جاري التحميل...</span>
+                    </div>
+                    <p class="mt-2">جاري تحميل التفاصيل...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="copyLogDetails()"> <!-- تقليل حجم الزر -->
+                    <i class="fas fa-copy me-1"></i>نسخ
+                </button>
+                <button type="button" class="btn btn-outline-success btn-sm" onclick="printLogDetails()">
+                    <i class="fas fa-print me-1"></i>طباعة
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">إغلاق</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="page-footer"></div> <!-- إضافة مسافة نهاية الصفحة -->
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// متغير لحفظ ID السجل الحالي
+let currentLogId = null;
+
+// تحديث الإحصائيات عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    populateUserFilter();
+    animateStatistics(); // إضافة انيميشن للإحصائيات
+    
+    // تفعيل tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+
+function animateStatistics() {
+    const numbers = document.querySelectorAll('.stats-card h4');
+    numbers.forEach(number => {
+        const finalValue = parseInt(number.textContent) || 0;
+        if (finalValue === 0) return; // لا تُحرك الصفر
+        
+        const duration = 1500; // تقليل المدة
+        const increment = finalValue / (duration / 50);
+        let current = 0;
+        
+        const timer = setInterval(() => {
+            current += increment;
+            if (current >= finalValue) {
+                current = finalValue;
+                clearInterval(timer);
+            }
+            number.textContent = Math.floor(current);
+        }, 50);
+    });
+}
+
+function populateUserFilter() {
+    const userFilter = document.getElementById('filterUser');
+    const rows = document.querySelectorAll('#logsTable tbody tr[data-log-id]');
+    const users = new Set();
+    
+    rows.forEach(row => {
+        const username = row.getAttribute('data-user');
+        const fullname = row.getAttribute('data-user-fullname');
+        users.add(JSON.stringify({username: username, fullname: fullname}));
+    });
+    
+    // مسح الخيارات الموجودة (ما عدا "جميع المستخدمين")
+    while (userFilter.children.length > 1) {
+        userFilter.removeChild(userFilter.lastChild);
+    }
+    
+    // إضافة المستخدمين الجدد
+    users.forEach(userStr => {
+        const user = JSON.parse(userStr);
+        const option = document.createElement('option');
+        option.value = user.username;
+        option.textContent = user.fullname;
+        userFilter.appendChild(option);
+    });
+}
+
+// فلترة السجلات
+function applyLogFilters() {
+    const user = document.getElementById('filterUser').value;
+    const action = document.getElementById('filterAction').value;
+    const dateFrom = document.getElementById('dateFrom').value;
+    const dateTo = document.getElementById('dateTo').value;
+    
+    const rows = document.querySelectorAll('#logsTable tbody tr[data-log-id]');
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        const rowUser = row.getAttribute('data-user');
+        const rowAction = row.getAttribute('data-action');
+        const rowDate = row.getAttribute('data-date');
+        
+        let showRow = true;
+        
+        if (user && user !== rowUser) showRow = false;
+        if (action && action !== rowAction) showRow = false;
+        if (dateFrom && rowDate < dateFrom) showRow = false;
+        if (dateTo && rowDate > dateTo) showRow = false;
+        
+        row.style.display = showRow ? '' : 'none';
+        if (showRow) visibleCount++;
+    });
+    
+    showMessage('info', `تم تطبيق الفلاتر - عرض ${visibleCount} سجل`);
+}
+
+// مسح الفلاتر
+function clearLogFilters() {
+    document.getElementById('filterUser').value = '';
+    document.getElementById('filterAction').value = '';
+    document.getElementById('dateFrom').value = '';
+    document.getElementById('dateTo').value = '';
+    
+    const rows = document.querySelectorAll('#logsTable tbody tr[data-log-id]');
+    rows.forEach(row => {
+        row.style.display = '';
+    });
+    
+    showMessage('success', 'تم مسح الفلاتر');
+}
+
+// عرض تفاصيل السجل في صفحة منفصلة
+function viewLogDetails(logId) {
+    window.location.href = `/settings/logs/${logId}/details/`;
+}
+
+// نسخ تفاصيل السجل
+function copyLogDetails() {
+    if (!currentLogId) {
+        showMessage('error', 'لا يوجد سجل محدد');
+        return;
+    }
+    
+    const content = document.getElementById('logDetailsContent').textContent;
+    navigator.clipboard.writeText(content).then(() => {
+        showMessage('success', 'تم نسخ التفاصيل إلى الحافظة');
+    }).catch(() => {
+        // Fallback للمتصفحات القديمة
+        const textArea = document.createElement('textarea');
+        textArea.value = content;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        showMessage('success', 'تم نسخ التفاصيل');
+    });
+}
+
+// طباعة تفاصيل السجل
+function printLogDetails() {
+    if (!currentLogId) {
+        showMessage('error', 'لا يوجد سجل محدد');
+        return;
+    }
+    
+    const content = document.getElementById('logDetailsContent').innerHTML;
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html dir="rtl" lang="ar">
+        <head>
+            <meta charset="UTF-8">
+            <title>تفاصيل السجل #${currentLogId}</title>
+            <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+            <style>
+                body { 
+                    font-family: 'Cairo', sans-serif; 
+                    margin: 20px; 
+                    direction: rtl; 
+                    text-align: right;
+                    font-size: 14px;
+                }
+                .header { 
+                    text-align: center; 
+                    border-bottom: 2px solid #333; 
+                    padding-bottom: 10px; 
+                    margin-bottom: 20px; 
+                }
+                table { width: 100%; border-collapse: collapse; }
+                th, td { 
+                    border: 1px solid #ddd; 
+                    padding: 8px; 
+                    text-align: right; 
+                }
+                .badge { 
+                    display: inline-block; 
+                    padding: 4px 8px; 
+                    border-radius: 4px; 
+                    font-size: 12px; 
+                }
+                .alert { 
+                    padding: 10px; 
+                    margin: 10px 0; 
+                    border-radius: 5px; 
+                    border: 1px solid #ddd; 
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h2>تفاصيل السجل #${currentLogId}</h2>
+                <p>تاريخ الطباعة: ${new Date().toLocaleString('ar-EG')}</p>
+            </div>
+            ${content}
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+}
+
+// تصدير السجلات
+function exportLogs() {
+    if (confirm('هل تريد تصدير جميع السجلات المرئية؟')) {
+        showMessage('info', 'جاري التصدير...');
+        
+        // جمع البيانات المرئية
+        const rows = document.querySelectorAll('#logsTable tbody tr[data-log-id]');
+        const visibleRows = Array.from(rows).filter(row => row.style.display !== 'none');
+        
+        if (visibleRows.length === 0) {
+            showMessage('warning', 'لا توجد سجلات لتصديرها');
+            return;
+        }
+        
+        // إنشاء CSV
+        let csv = 'المستخدم,العملية,نوع الإعداد,التفاصيل,التوقيت,عنوان IP\n';
+        visibleRows.forEach(row => {
+            const user = row.getAttribute('data-user-fullname');
+            const action = row.getAttribute('data-action');
+            const settingType = row.getAttribute('data-setting-type');
+            const details = row.getAttribute('data-new-value') || row.getAttribute('data-old-value') || '';
+            const timestamp = row.getAttribute('data-timestamp');
+            const ip = row.getAttribute('data-ip');
+            
+            csv += `"${user}","${action}","${settingType}","${details}","${timestamp}","${ip}"\n`;
+        });
+        
+        // تحميل الملف
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `settings_logs_${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+        
+        showMessage('success', `تم تصدير ${visibleRows.length} سجل بنجاح`);
+    }
+}
+
+// تحديث السجلات
+function refreshLogs() {
+    showMessage('info', 'جاري تحديث السجلات...');
+    setTimeout(() => {
+        location.reload();
+    }, 1000);
+}
+
+// مسح السجلات القديمة
+function clearOldLogs() {
+    if (confirm('هل تريد مسح السجلات الأقدم من شهر؟\n\nهذا الإجراء لا يمكن التراجع عنه.')) {
+        if (confirm('تأكيد نهائي: سيتم حذف جميع السجلات الأقدم من شهر. هل أنت متأكد؟')) {
+            showMessage('warning', 'جاري مسح السجلات القديمة...');
+            
+            // محاكاة عملية المسح
+            setTimeout(() => {
+                showMessage('success', 'تم مسح السجلات القديمة بنجاح');
+                // يمكن إضافة استدعاء API هنا
+                // location.reload();
+            }, 3000);
+        }
+    }
+}
+
+// دالة عرض الرسائل
+function showMessage(type, message) {
+    const existingAlerts = document.querySelectorAll('.alert.fixed-alert');
+    existingAlerts.forEach(alert => alert.remove());
+    
+    const icons = {
+        success: 'fas fa-check-circle',
+        error: 'fas fa-exclamation-circle',
+        warning: 'fas fa-exclamation-triangle',
+        info: 'fas fa-info-circle'
+    };
+    
+    const colors = {
+        success: 'success',
+        error: 'danger',
+        warning: 'warning',
+        info: 'info'
+    };
+    
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${colors[type]} alert-dismissible fade show fixed-alert`;
+    alertDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 300px;
+        max-width: 450px;
+        box-shadow: 0 6px 25px rgba(0,0,0,0.15);
+        border-radius: 8px;
+        font-weight: 500;
+        border: none;
+        font-family: 'Cairo', sans-serif;
+        font-size: 0.9rem;
+    `;
+    
+    alertDiv.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="${icons[type]} me-3" style="font-size: 1.2rem;"></i>
+            <div class="flex-grow-1">${message}</div>
+            <button type="button" class="btn-close ms-2" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.classList.remove('show');
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 300);
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

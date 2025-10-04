@@ -1,0 +1,411 @@
+{% extends 'books_inventory/base.html' %}
+{% load static %}
+
+{% block title %}توزيعات الطلاب - مخزن الكتب{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-search text-primary"></i> البحث والفلترة</h5>
+            </div>
+            <div class="card-body">
+                <form id="searchForm" class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">البحث</label>
+                        <input type="text" class="form-control" name="search" id="searchInput" value="{{ search_query }}" placeholder="اسم الطالب أو الرقم القومي...">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">الحالة</label>
+                        <select class="form-select" name="status" id="statusFilter">
+                            <option value="">جميع الحالات</option>
+                            {% for status_code, status_name in status_choices %}
+                            <option value="{{ status_code }}" {% if status_filter == status_code %}selected{% endif %}>
+                                {{ status_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">حالة الدفع</label>
+                        <select class="form-select" name="verified" id="verifiedFilter">
+                            <option value="">جميع الحالات</option>
+                            <option value="verified" {% if verified_filter == 'verified' %}selected{% endif %}>مدفوع</option>
+                            <option value="not_verified" {% if verified_filter == 'not_verified' %}selected{% endif %}>غير مدفوع</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">من تاريخ</label>
+                        <input type="date" class="form-control" name="date_from" id="dateFrom" value="{{ date_from }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">إلى تاريخ</label>
+                        <input type="date" class="form-control" name="date_to" id="dateTo" value="{{ date_to }}">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-primary w-100" id="searchBtn">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- زر مسح البحث -->
+                <div class="row mt-2">
+                    <div class="col-12 text-end">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="clearSearch">
+                            <i class="fas fa-times"></i> مسح البحث
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-12 text-end">
+        <a href="{% url 'books_inventory:create_distribution' %}" class="btn btn-success">
+            <i class="fas fa-plus"></i> توزيع جديد
+        </a>
+    </div>
+</div>
+
+<!-- مؤشر التحميل -->
+<div id="loadingIndicator" class="row mb-3" style="display: none;">
+    <div class="col-12 text-center">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">جاري التحميل...</span>
+        </div>
+        <p class="text-muted mt-2">جاري البحث...</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-share text-success"></i> توزيعات الطلاب</h5>
+                <div>
+                    <span class="badge bg-success" id="resultsCount">{{ distributions.paginator.count }} توزيع</span>
+                </div>
+            </div>
+            <div class="card-body" id="resultsContainer">
+                {% include 'books_inventory/partials/distributions_table.html' %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchForm = document.getElementById('searchForm');
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const verifiedFilter = document.getElementById('verifiedFilter');
+    const dateFrom = document.getElementById('dateFrom');
+    const dateTo = document.getElementById('dateTo');
+    const clearSearchBtn = document.getElementById('clearSearch');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const resultsCount = document.getElementById('resultsCount');
+
+    let searchTimeout;
+    
+    // التأكد من وجود العناصر
+    if (!searchForm || !resultsContainer) {
+        console.error('عناصر البحث غير موجودة');
+        return;
+    }
+    
+    // البحث الفوري عند الكتابة
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(performSearch, 500);
+        });
+    }
+    
+    // البحث عند تغيير الفلاتر
+    if (statusFilter) statusFilter.addEventListener('change', performSearch);
+    if (verifiedFilter) verifiedFilter.addEventListener('change', performSearch);
+    if (dateFrom) dateFrom.addEventListener('change', performSearch);
+    if (dateTo) dateTo.addEventListener('change', performSearch);
+    
+    // البحث عند الضغط على زر البحث
+    searchForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        performSearch();
+    });
+    
+    // مسح البحث
+    if (clearSearchBtn) {
+        clearSearchBtn.addEventListener('click', function() {
+            if (searchInput) searchInput.value = '';
+            if (statusFilter) statusFilter.value = '';
+            if (verifiedFilter) verifiedFilter.value = '';
+            if (dateFrom) dateFrom.value = '';
+            if (dateTo) dateTo.value = '';
+            performSearch();
+        });
+    }
+    
+    function performSearch() {
+        console.log('بدء البحث...');
+        
+        // إظهار مؤشر التحميل
+        if (loadingIndicator) loadingIndicator.style.display = 'block';
+        resultsContainer.style.opacity = '0.5';
+        
+        // تجميع بيانات البحث
+        const params = new URLSearchParams();
+        
+        if (searchInput && searchInput.value.trim()) {
+            params.append('search', searchInput.value.trim());
+        }
+        if (statusFilter && statusFilter.value) {
+            params.append('status', statusFilter.value);
+        }
+        if (verifiedFilter && verifiedFilter.value) {
+            params.append('verified', verifiedFilter.value);
+        }
+        if (dateFrom && dateFrom.value) {
+            params.append('date_from', dateFrom.value);
+        }
+        if (dateTo && dateTo.value) {
+            params.append('date_to', dateTo.value);
+        }
+        
+        // إضافة معامل AJAX
+        params.append('ajax', '1');
+        
+        // URL البحث
+        const searchUrl = `${window.location.pathname}?${params.toString()}`;
+        
+        console.log('URL البحث:', searchUrl);
+        
+        // إرسال الطلب
+        fetch(searchUrl, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json, text/html',
+            },
+        })
+        .then(response => {
+            console.log('استجابة الخادم:', response.status);
+            
+            if (!response.ok) {
+                throw new Error(`خطأ في الشبكة: ${response.status}`);
+            }
+            
+            // التحقق من نوع المحتوى
+            const contentType = response.headers.get('content-type');
+            console.log('نوع المحتوى:', contentType);
+            
+            if (contentType && contentType.includes('application/json')) {
+                return response.json();
+            } else {
+                throw new Error('الاستجابة ليست JSON صحيح');
+            }
+        })
+        .then(data => {
+            console.log('البيانات المستلمة:', data);
+            
+            // التحقق من وجود البيانات المطلوبة
+            if (data.html) {
+                // تحديث النتائج
+                resultsContainer.innerHTML = data.html;
+                
+                if (resultsCount) {
+                    resultsCount.textContent = `${data.count || 0} توزيع`;
+                }
+                
+                // تحديث URL في المتصفح (بدون معامل ajax)
+                const newParams = new URLSearchParams(params);
+                newParams.delete('ajax');
+                const newUrl = newParams.toString() ? 
+                    `${window.location.pathname}?${newParams.toString()}` : 
+                    window.location.pathname;
+                
+                if (window.location.href !== newUrl) {
+                    window.history.pushState(null, '', newUrl);
+                }
+                
+                // إضافة listeners للصفحات
+                addPaginationListeners();
+                
+                console.log(`تم العثور على ${data.count || 0} نتيجة`);
+            } else {
+                throw new Error('البيانات المستلمة غير صحيحة');
+            }
+        })
+        .catch(error => {
+            console.error('خطأ في البحث:', error);
+            
+            resultsContainer.innerHTML = `
+                <div class="alert alert-danger text-center">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    حدث خطأ أثناء البحث: ${error.message}
+                    <br><button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="location.reload()">إعادة تحميل الصفحة</button>
+                </div>
+            `;
+        })
+        .finally(() => {
+            // إخفاء مؤشر التحميل
+            if (loadingIndicator) loadingIndicator.style.display = 'none';
+            resultsContainer.style.opacity = '1';
+            
+            // تأثير بصري
+            resultsContainer.classList.add('fade-in');
+            setTimeout(() => {
+                resultsContainer.classList.remove('fade-in');
+            }, 300);
+        });
+    }
+    
+    // إضافة listeners للصفحات
+    function addPaginationListeners() {
+        document.querySelectorAll('.page-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const href = this.getAttribute('href');
+                if (href && href !== '#' && !href.includes('javascript:')) {
+                    loadPage(href);
+                }
+            });
+        });
+    }
+    
+    // تحميل صفحة معينة
+    function loadPage(url) {
+        if (loadingIndicator) loadingIndicator.style.display = 'block';
+        resultsContainer.style.opacity = '0.5';
+        
+        // إضافة معامل AJAX للرابط
+        const separator = url.includes('?') ? '&' : '?';
+        const ajaxUrl = `${url}${separator}ajax=1`;
+        
+        fetch(ajaxUrl, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+            },
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`خطأ في الشبكة: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.html) {
+                resultsContainer.innerHTML = data.html;
+                if (resultsCount) {
+                    resultsCount.textContent = `${data.count || 0} توزيع`;
+                }
+                
+                // تحديث URL
+                window.history.pushState(null, '', url);
+                
+                // التمرير إلى أعلى النتائج
+                resultsContainer.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                });
+                
+                // إضافة listeners للصفحات الجديدة
+                addPaginationListeners();
+            }
+        })
+        .catch(error => {
+            console.error('خطأ في تحميل الصفحة:', error);
+            
+            resultsContainer.innerHTML = `
+                <div class="alert alert-danger text-center">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    حدث خطأ أثناء تحميل الصفحة: ${error.message}
+                </div>
+            `;
+        })
+        .finally(() => {
+            if (loadingIndicator) loadingIndicator.style.display = 'none';
+            resultsContainer.style.opacity = '1';
+        });
+    }
+    
+    // تهيئة listeners للصفحات الموجودة
+    addPaginationListeners();
+    
+    // التعامل مع أزرار المتصفح
+    window.addEventListener('popstate', function(event) {
+        location.reload(); // إعادة تحميل الصفحة عند الرجوع
+    });
+});
+
+// وظيفة مساعدة لمسح البحث
+function clearSearch() {
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const verifiedFilter = document.getElementById('verifiedFilter');
+    const dateFrom = document.getElementById('dateFrom');
+    const dateTo = document.getElementById('dateTo');
+    
+    if (searchInput) searchInput.value = '';
+    if (statusFilter) statusFilter.value = '';
+    if (verifiedFilter) verifiedFilter.value = '';
+    if (dateFrom) dateFrom.value = '';
+    if (dateTo) dateTo.value = '';
+    
+    // تشغيل البحث
+    document.getElementById('searchForm').dispatchEvent(new Event('submit'));
+}
+</script>
+
+<style>
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+#loadingIndicator {
+    transition: all 0.3s ease;
+}
+
+#resultsContainer {
+    transition: opacity 0.3s ease;
+}
+
+/* إخفاء الـ raw JSON في حالة ظهوره */
+pre {
+    display: none;
+}
+</style>
+
+<style>
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+#loadingIndicator {
+    transition: all 0.3s ease;
+}
+
+#resultsContainer {
+    transition: opacity 0.3s ease;
+}
+</style>
+{% endblock %}

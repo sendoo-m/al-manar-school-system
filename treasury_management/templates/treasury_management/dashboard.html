@@ -1,0 +1,652 @@
+<!-- treasury_management/templates/treasury_management/dashboard.html -->
+{% extends 'treasury_management/base.html' %}
+{% load static %}
+
+{% block title %}لوحة تحكم الخزنة{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">لوحة التحكم</li>
+{% endblock %}
+
+{% block content %}
+<!-- رسالة الترحيب والإعداد السريع -->
+{% if not setup_status.categories_exist or not setup_status.accounts_exist %}
+<div class="alert alert-info border-0 shadow-sm mb-4">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h4><i class="fas fa-rocket me-2"></i>مرحباً بك في نظام إدارة الخزنة!</h4>
+            <p class="mb-0">يبدو أن النظام جديد. ابدأ بالإعداد السريع لتهيئة جميع الحسابات والتصنيفات الأساسية.</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'treasury_management:quick_setup' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-magic me-2"></i>الإعداد السريع
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- إحصائيات سريعة -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6">
+        <div class="card bg-gradient text-white" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+            <div class="card-body text-center">
+                <div class="h2 mb-1">{{ stats.total_treasuries }}</div>
+                <div class="opacity-75">الخزائن النشطة</div>
+                <i class="fas fa-vault position-absolute opacity-25" style="font-size: 3rem; top: 10px; right: 10px;"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <div class="h2 mb-1">{{ total_balance|floatformat:0 }}</div>
+                <div class="opacity-75">إجمالي الرصيد</div>
+                <i class="fas fa-coins position-absolute opacity-25" style="font-size: 3rem; top: 10px; right: 10px;"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="card bg-warning text-dark">
+            <div class="card-body text-center">
+                <div class="h2 mb-1">{{ today_income|floatformat:0 }}</div>
+                <div class="opacity-75">إيرادات اليوم</div>
+                <i class="fas fa-arrow-up position-absolute opacity-25" style="font-size: 3rem; top: 10px; right: 10px;"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="card bg-danger text-white">
+            <div class="card-body text-center">
+                <div class="h2 mb-1">{{ today_expenses|floatformat:0 }}</div>
+                <div class="opacity-75">مصروفات اليوم</div>
+                <i class="fas fa-arrow-down position-absolute opacity-25" style="font-size: 3rem; top: 10px; right: 10px;"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- الإجراءات السريعة -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-bolt me-2"></i>الإجراءات السريعة</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-2 col-sm-4 col-6 mb-3">
+                        <a href="{% url 'treasury_management:add_transaction' %}" class="text-decoration-none">
+                            <div class="quick-action text-center p-3 rounded bg-light h-100">
+                                <i class="fas fa-plus-circle fa-2x text-primary mb-2"></i>
+                                <div class="fw-bold">عملية مالية</div>
+                                <small class="text-muted">إيراد أو مصروف</small>
+                            </div>
+                        </a>
+                    </div>
+                    
+                    <div class="col-md-2 col-sm-4 col-6 mb-3">
+                        <a href="{% url 'treasury_management:add_expense' %}" class="text-decoration-none">
+                            <div class="quick-action text-center p-3 rounded bg-light h-100">
+                                <i class="fas fa-receipt fa-2x text-danger mb-2"></i>
+                                <div class="fw-bold">مصروف يومي</div>
+                                <small class="text-muted">تسجيل مصروف</small>
+                            </div>
+                        </a>
+                    </div>
+                    
+                    <div class="col-md-2 col-sm-4 col-6 mb-3">
+                        <a href="{% url 'treasury_management:add_treasury' %}" class="text-decoration-none">
+                            <div class="quick-action text-center p-3 rounded bg-light h-100">
+                                <i class="fas fa-vault fa-2x text-success mb-2"></i>
+                                <div class="fw-bold">خزنة جديدة</div>
+                                <small class="text-muted">إضافة خزنة</small>
+                            </div>
+                        </a>
+                    </div>
+                    
+                    <div class="col-md-2 col-sm-4 col-6 mb-3">
+                        <a href="{% url 'treasury_management:daily_summary' %}" class="text-decoration-none">
+                            <div class="quick-action text-center p-3 rounded bg-light h-100">
+                                <i class="fas fa-calendar-day fa-2x text-info mb-2"></i>
+                                <div class="fw-bold">الملخص اليومي</div>
+                                <small class="text-muted">تقرير شامل</small>
+                            </div>
+                        </a>
+                    </div>
+                    
+                    <div class="col-md-2 col-sm-4 col-6 mb-3">
+                        <a href="{% url 'treasury_management:reports' %}" class="text-decoration-none">
+                            <div class="quick-action text-center p-3 rounded bg-light h-100">
+                                <i class="fas fa-chart-bar fa-2x text-warning mb-2"></i>
+                                <div class="fw-bold">التقارير</div>
+                                <small class="text-muted">تقارير مالية</small>
+                            </div>
+                        </a>
+                    </div>
+                    
+                    <div class="col-md-2 col-sm-4 col-6 mb-3">
+                        <a href="{% url 'treasury_management:quick_setup' %}" class="text-decoration-none">
+                            <div class="quick-action text-center p-3 rounded bg-light h-100">
+                                <i class="fas fa-magic fa-2x text-purple mb-2"></i>
+                                <div class="fw-bold">الإعداد السريع</div>
+                                <small class="text-muted">تهيئة النظام</small>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- العمليات الأخيرة -->
+{% if recent_transactions %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-clock me-2"></i>العمليات المالية الأخيرة</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>رقم العملية</th>
+                                <th>النوع</th>
+                                <th>الخزنة</th>
+                                <th>المبلغ</th>
+                                <th>التاريخ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for transaction in recent_transactions %}
+                            <tr>
+                                <td><strong>{{ transaction.transaction_number }}</strong></td>
+                                <td>
+                                    {% if transaction.transaction_type == 'INCOME' %}
+                                    <span class="badge bg-success">إيراد</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">مصروف</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ transaction.treasury.name }}</td>
+                                <td class="{% if transaction.transaction_type == 'INCOME' %}text-success{% else %}text-danger{% endif %} fw-bold">
+                                    {{ transaction.amount|floatformat:2 }}
+                                </td>
+                                <td>{{ transaction.transaction_date|date:"d M H:i" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer text-center">
+                <a href="{% url 'treasury_management:transactions_list' %}" class="btn btn-outline-primary">
+                    عرض جميع العمليات
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-pie me-2"></i>صافي اليوم</h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="h1 {% if today_net >= 0 %}text-success{% else %}text-danger{% endif %} mb-3">
+                    {{ today_net|floatformat:2 }}
+                </div>
+                <div class="progress mb-3" style="height: 8px;">
+                    {% if today_income > 0 %}
+                        {% widthratio today_income today_income|add:today_expenses 100 as income_percentage %}
+                        <div class="progress-bar bg-success" style="width: {{ income_percentage }}%"></div>
+                        <div class="progress-bar bg-danger" style="width: {% widthratio today_expenses today_income|add:today_expenses 100 %}%"></div>
+                    {% endif %}
+                </div>
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="text-success">الإيرادات</div>
+                        <div class="fw-bold">{{ today_income|floatformat:2 }}</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-danger">المصروفات</div>
+                        <div class="fw-bold">{{ today_expenses|floatformat:2 }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-light text-center">
+    <i class="fas fa-info-circle fa-2x mb-2"></i>
+    <h5>لا توجد عمليات مالية حتى الآن</h5>
+    <p class="mb-3">ابدأ بإضافة أول عملية مالية للنظام</p>
+    <a href="{% url 'treasury_management:add_transaction' %}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i>إضافة عملية مالية
+    </a>
+</div>
+{% endif %}
+
+<style>
+    .quick-action:hover {
+        background-color: #e9ecef !important;
+        transform: translateY(-2px);
+        transition: all 0.3s ease;
+    }
+    
+    .text-purple {
+        color: #6f42c1 !important;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // تحديث البيانات كل دقيقتين
+    setInterval(function() {
+        fetch('{% url "treasury_management:dashboard_api" %}')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // تحديث الأرقام
+                    console.log('تم تحديث البيانات:', data.data);
+                }
+            })
+            .catch(error => console.error('خطأ في التحديث:', error));
+    }, 120000);
+});
+</script>
+{% endblock %}
+
+{% comment %} <!-- treasury_management/templates/treasury_management/dashboard.html -->
+{% extends 'treasury_management/base.html' %}
+{% load static %}
+
+{% block title %}لوحة تحكم الخزنة{% endblock %}
+
+{% block extra_css %}
+<style>
+    .treasury-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        margin-bottom: 1rem;
+        transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .stat-number {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .transaction-item {
+        padding: 1rem;
+        border-bottom: 1px solid #f0f0f0;
+        transition: background 0.3s ease;
+    }
+
+    .transaction-item:hover {
+        background: #f8f9fa;
+    }
+
+    .income { color: #28a745; }
+    .expense { color: #dc3545; }
+    .pending { color: #ffc107; }
+
+    .quick-action {
+        display: block;
+        padding: 1rem;
+        background: white;
+        border-radius: 10px;
+        text-decoration: none;
+        color: inherit;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        margin-bottom: 1rem;
+    }
+
+    .quick-action:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .chart-container {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- رأس الصفحة -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2><i class="fas fa-coins me-2"></i>لوحة تحكم الخزنة</h2>
+                <p class="text-muted mb-0">إدارة شاملة للحسابات والخزائن</p>
+            </div>
+            <div>
+                <span class="badge bg-primary fs-6">{{ treasuries.count }} خزنة نشطة</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- التنبيهات -->
+{% if alerts %}
+<div class="row mb-4">
+    {% for alert in alerts %}
+    <div class="col-12">
+        <div class="alert alert-{{ alert.type }} alert-dismissible fade show">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>{{ alert.title }}</strong> {{ alert.message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- الخزائن النشطة -->
+<div class="row mb-4">
+    {% for treasury in treasuries %}
+    <div class="col-lg-4 col-md-6">
+        <div class="treasury-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-1">{{ treasury.name }}</h5>
+                    <small class="opacity-75">{{ treasury.code }}</small>
+                </div>
+                <div class="text-end">
+                    <div class="h4 mb-0">{{ treasury.current_balance|floatformat:2 }}</div>
+                    <small class="opacity-75">جنيه مصري</small>
+                </div>
+            </div>
+            {% if treasury.responsible_person %}
+            <div class="mt-2">
+                <small class="opacity-75">
+                    <i class="fas fa-user me-1"></i>{{ treasury.responsible_person.get_full_name }}
+                </small>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    
+    <!-- إجمالي الرصيد -->
+    <div class="col-lg-4 col-md-6">
+        <div class="treasury-card" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+            <div class="text-center">
+                <h5 class="mb-2">إجمالي الرصيد</h5>
+                <div class="h3 mb-0">{{ total_balance|floatformat:2 }}</div>
+                <small class="opacity-75">جنيه مصري</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- إحصائيات سريعة -->
+<div class="row mb-4">
+    <div class="col-lg-2 col-md-4 col-6">
+        <div class="stat-card">
+            <div class="stat-number income">{{ today_income|floatformat:0 }}</div>
+            <div class="stat-label">إيرادات اليوم</div>
+        </div>
+    </div>
+    
+    <div class="col-lg-2 col-md-4 col-6">
+        <div class="stat-card">
+            <div class="stat-number expense">{{ today_expenses|floatformat:0 }}</div>
+            <div class="stat-label">مصروفات اليوم</div>
+        </div>
+    </div>
+    
+    <div class="col-lg-2 col-md-4 col-6">
+        <div class="stat-card">
+            <div class="stat-number {% if today_net >= 0 %}income{% else %}expense{% endif %}">
+                {{ today_net|floatformat:0 }}
+            </div>
+            <div class="stat-label">صافي اليوم</div>
+        </div>
+    </div>
+    
+    <div class="col-lg-2 col-md-4 col-6">
+        <div class="stat-card">
+            <div class="stat-number income">{{ month_income|floatformat:0 }}</div>
+            <div class="stat-label">إيرادات الشهر</div>
+        </div>
+    </div>
+    
+    <div class="col-lg-2 col-md-4 col-6">
+        <div class="stat-card">
+            <div class="stat-number expense">{{ month_expenses|floatformat:0 }}</div>
+            <div class="stat-label">مصروفات الشهر</div>
+        </div>
+    </div>
+    
+    <div class="col-lg-2 col-md-4 col-6">
+        <div class="stat-card">
+            <div class="stat-number {% if month_net >= 0 %}income{% else %}expense{% endif %}">
+                {{ month_net|floatformat:0 }}
+            </div>
+            <div class="stat-label">صافي الشهر</div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- الإجراءات السريعة -->
+    <div class="col-lg-3">
+        <h5 class="mb-3">الإجراءات السريعة</h5>
+        
+        <a href="{% url 'treasury_management:add_transaction' %}" class="quick-action">
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <i class="fas fa-plus-circle text-primary fa-2x"></i>
+                </div>
+                <div>
+                    <h6 class="mb-1">إضافة عملية مالية</h6>
+                    <small class="text-muted">إيراد أو مصروف</small>
+                </div>
+            </div>
+        </a>
+        
+        <a href="{% url 'treasury_management:add_expense' %}" class="quick-action">
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <i class="fas fa-receipt text-danger fa-2x"></i>
+                </div>
+                <div>
+                    <h6 class="mb-1">إضافة مصروف</h6>
+                    <small class="text-muted">مصروف يومي جديد</small>
+                </div>
+            </div>
+        </a>
+        
+        <a href="{% url 'treasury_management:daily_summary' %}" class="quick-action">
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <i class="fas fa-calendar-day text-success fa-2x"></i>
+                </div>
+                <div>
+                    <h6 class="mb-1">الملخص اليومي</h6>
+                    <small class="text-muted">تفاصيل اليوم</small>
+                </div>
+            </div>
+        </a>
+        
+        <a href="{% url 'treasury_management:reports' %}" class="quick-action">
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <i class="fas fa-chart-bar text-info fa-2x"></i>
+                </div>
+                <div>
+                    <h6 class="mb-1">التقارير</h6>
+                    <small class="text-muted">تقارير مفصلة</small>
+                </div>
+            </div>
+        </a>
+        
+        {% if pending_transactions %}
+        <div class="alert alert-warning">
+            <i class="fas fa-clock me-2"></i>
+            <strong>{{ pending_transactions.count }} عملية</strong> في انتظار الاعتماد
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- الرسم البياني -->
+    <div class="col-lg-6">
+        <div class="chart-container">
+            <h5 class="mb-3">الحركة المالية الأسبوعية</h5>
+            <canvas id="weeklyChart" height="300"></canvas>
+        </div>
+    </div>
+    
+    <!-- آخر العمليات -->
+    <div class="col-lg-3">
+        <div class="chart-container">
+            <h5 class="mb-3">آخر العمليات</h5>
+            <div class="recent-transactions" style="max-height: 400px; overflow-y: auto;">
+                {% for transaction in recent_transactions %}
+                <div class="transaction-item">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">{{ transaction.account.name }}</h6>
+                            <small class="text-muted">{{ transaction.description|truncatechars:30 }}</small>
+                            <br>
+                            <small class="text-muted">{{ transaction.transaction_date|date:"d M Y" }}</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="{% if transaction.transaction_type == 'INCOME' %}income{% else %}expense{% endif %}">
+                                {% if transaction.transaction_type == 'EXPENSE' %}-{% endif %}{{ transaction.amount|floatformat:0 }}
+                            </span>
+                            <br>
+                            <small class="text-muted">{{ transaction.treasury.name }}</small>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-inbox fa-2x mb-2"></i>
+                    <p>لا توجد عمليات</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- أكثر المصروفات -->
+{% if top_expenses %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="chart-container">
+            <h5 class="mb-3">أكثر المصروفات هذا الشهر</h5>
+            <div class="row">
+                {% for expense in top_expenses %}
+                <div class="col-md-2">
+                    <div class="text-center">
+                        <div class="h5 expense">{{ expense.total|floatformat:0 }}</div>
+                        <small class="text-muted">{{ expense.category__name }}</small>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // الرسم البياني الأسبوعي
+    const weekData = {{ week_data|safe }};
+    
+    const ctx = document.getElementById('weeklyChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: weekData.map(d => d.day_name_ar),
+            datasets: [{
+                label: 'الإيرادات',
+                data: weekData.map(d => d.income),
+                borderColor: '#28a745',
+                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                fill: false,
+                tension: 0.4
+            }, {
+                label: 'المصروفات',
+                data: weekData.map(d => d.expenses),
+                borderColor: '#dc3545',
+                backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                fill: false,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString() + ' ج.م';
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // تحديث البيانات كل 5 دقائق
+    setInterval(function() {
+        location.reload();
+    }, 300000);
+});
+</script>
+{% endblock %} {% endcomment %}

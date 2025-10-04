@@ -1,0 +1,274 @@
+{% extends 'school_settings/base.html' %}
+
+{% block title %}تطبيق خصم - {{ student.name }}{% endblock %}
+{% block page_title %}تطبيق خصم على الطالب{% endblock %}
+{% block page_subtitle %}{{ student.name }} - {{ discount.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .discount-card {
+        background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        border: 1px solid rgba(0,123,255,0.2);
+    }
+    
+    .calculation-row {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    .amount-display {
+        font-size: 1.2rem;
+        font-weight: 600;
+    }
+    
+    .original-amount { color: #6c757d; }
+    .discount-amount { color: #28a745; }
+    .final-amount { color: #007bff; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <!-- معلومات الطالب -->
+        <div class="discount-card">
+            <div class="row align-items-center">
+                <div class="col-md-3 text-center">
+                    <i class="fas fa-user-graduate fa-3x text-primary mb-2"></i>
+                </div>
+                <div class="col-md-6">
+                    <h4 class="mb-1">{{ student.name }}</h4>
+                    <p class="mb-1 text-muted">الرقم القومي: {{ student.national_number }}</p>
+                    <p class="mb-0 text-muted">
+                        الفصل: 
+                        {% for classroom in student.classroom.all %}
+                            {{ classroom.name }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    </p>
+                </div>
+                <div class="col-md-3 text-center">
+                    <span class="badge bg-info fs-6">{{ student.age }} سنة</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- معلومات الخصم -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-percentage me-2"></i>
+                    تفاصيل الخصم
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>اسم الخصم:</h6>
+                        <p class="fw-bold">{{ discount.name }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>فئة الخصم:</h6>
+                        <p class="fw-bold">{{ discount.get_category_display }}</p>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>نوع الخصم:</h6>
+                        <p class="fw-bold">
+                            {% if discount.discount_type == 'PERCENTAGE' %}
+                                نسبة مئوية ({{ discount.percentage_value }}%)
+                            {% else %}
+                                مبلغ ثابت ({{ discount.fixed_amount }} ج.م)
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>صالح حتى:</h6>
+                        <p class="fw-bold">{{ discount.valid_to_date }}</p>
+                    </div>
+                </div>
+                
+                {% if discount.description %}
+                <div class="row">
+                    <div class="col-12">
+                        <h6>وصف الخصم:</h6>
+                        <p class="text-muted">{{ discount.description }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- حسابات الخصم -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-calculator me-2"></i>
+                    حسابات الخصم
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="calculation-row">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>المبلغ الأصلي:</span>
+                        <span class="amount-display original-amount">{{ original_amount }} ج.م</span>
+                    </div>
+                </div>
+                
+                <div class="calculation-row">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>قيمة الخصم:</span>
+                        <span class="amount-display discount-amount">- {{ discount_amount }} ج.م</span>
+                    </div>
+                </div>
+                
+                <div class="calculation-row border-primary">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold">المبلغ النهائي:</span>
+                        <span class="amount-display final-amount">{{ final_amount }} ج.م</span>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-3">
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-success" style="width: {% widthratio discount_amount original_amount 100 %}%"></div>
+                    </div>
+                    <small class="text-muted">
+                        نسبة الخصم: {% widthratio discount_amount original_amount 100 %}%
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- نموذج التطبيق -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-check me-2"></i>
+                    تطبيق الخصم
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">سبب طلب الخصم *</label>
+                        <textarea class="form-control" name="reason" rows="3" required 
+                                  placeholder="اكتب السبب وراء طلب هذا الخصم للطالب..."></textarea>
+                    </div>
+                    
+                    {% if discount.requires_approval %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>تنبيه:</strong> هذا الخصم يتطلب موافقة من الإدارة وسيكون في حالة انتظار حتى يتم اعتماده.
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-flex gap-3">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-check me-2"></i>
+                            {% if discount.requires_approval %}
+                                إرسال طلب الخصم
+                            {% else %}
+                                تطبيق الخصم فوراً
+                            {% endif %}
+                        </button>
+                        <a href="{% url 'students:student_detail' pk=student.pk %}" class="btn btn-secondary btn-lg">
+                            <i class="fas fa-arrow-right me-2"></i>إلغاء
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- معلومات إضافية -->
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0">معلومات إضافية</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <small class="text-muted">العام الدراسي الحالي:</small>
+                    <p class="fw-bold">{{ current_academic_year.name|default:"غير محدد" }}</p>
+                </div>
+                
+                <div class="mb-3">
+                    <small class="text-muted">تاريخ التطبيق:</small>
+                    <p class="fw-bold">{{ today|date:"Y/m/d" }}</p>
+                </div>
+                
+                <div class="mb-3">
+                    <small class="text-muted">بواسطة:</small>
+                    <p class="fw-bold">{{ user.get_full_name|default:user.username }}</p>
+                </div>
+                
+                {% if discount.max_discount_amount %}
+                <div class="alert alert-info">
+                    <small><i class="fas fa-info-circle me-1"></i>
+                    الحد الأقصى للخصم: {{ discount.max_discount_amount }} ج.م</small>
+                </div>
+                {% endif %}
+                
+                {% if discount.min_payment_amount %}
+                <div class="alert alert-warning">
+                    <small><i class="fas fa-exclamation-triangle me-1"></i>
+                    الحد الأدنى للمبلغ: {{ discount.min_payment_amount }} ج.م</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- إجراءات سريعة -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">إجراءات سريعة</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'students:student_detail' pk=student.pk %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-user me-1"></i>عرض بيانات الطالب
+                    </a>
+                    <a href="{% url 'school_settings:comprehensive_settings' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-cogs me-1"></i>إعدادات الخصومات
+                    </a>
+                    <button class="btn btn-outline-info btn-sm" onclick="printDiscount()">
+                        <i class="fas fa-print me-1"></i>طباعة التفاصيل
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function printDiscount() {
+    window.print();
+}
+
+// تأكيد قبل التطبيق
+document.querySelector('form').addEventListener('submit', function(e) {
+    const reason = document.querySelector('textarea[name="reason"]').value.trim();
+    if (reason.length < 10) {
+        e.preventDefault();
+        alert('يرجى كتابة سبب مفصل للخصم (أكثر من 10 أحرف)');
+        return false;
+    }
+    
+    if (!confirm('هل تريد تطبيق هذا الخصم على الطالب؟')) {
+        e.preventDefault();
+        return false;
+    }
+});
+</script>
+{% endblock %}

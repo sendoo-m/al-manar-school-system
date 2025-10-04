@@ -1,0 +1,262 @@
+<!-- school_settings/templates/school_settings/modals/add_school_fee.html -->
+<!-- Modal إضافة مصروفات مدرسية جديدة -->
+<div class="modal fade" id="addSchoolFeeModal" tabindex="-1" aria-labelledby="addSchoolFeeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addSchoolFeeModalLabel">
+                    <i class="fas fa-money-bill me-2"></i>إضافة إعداد مصروفات مدرسية جديد
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <form id="addSchoolFeeForm" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    
+                    <!-- المعلومات الأساسية -->
+                    <h6 class="text-primary border-bottom pb-2 mb-3">
+                        <i class="fas fa-info-circle me-1"></i>المعلومات الأساسية
+                    </h6>
+                    
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label for="academicYear" class="form-label">العام الدراسي *</label>
+                            <select class="form-select" id="academicYear" name="academic_year" required>
+                                <option value="">اختر العام الدراسي</option>
+                                {% for year in academic_years %}
+                                <option value="{{ year.id }}" {% if year.is_current %}selected{% endif %}>{{ year.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="gradeLevel" class="form-label">الصف الدراسي *</label>
+                            <select class="form-select" id="gradeLevel" name="grade_level" required>
+                                <option value="">اختر الصف الدراسي</option>
+                                {% for grade in grade_levels %}
+                                <option value="{{ grade.id }}">{{ grade.education_level.name }} - {{ grade.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="feeType" class="form-label">نوع المصروفات *</label>
+                            <select class="form-select" id="feeType" name="fee_type" required>
+                                <option value="">اختر نوع المصروفات</option>
+                                <option value="TUITION">مصروفات دراسية</option>
+                                <option value="BOOKS">مصروفات كتب</option>
+                                <option value="UNIFORMS">مصروفات ملابس</option>
+                                <option value="TRANSPORT">مصروفات نقل</option>
+                                <option value="MEALS">مصروفات وجبات</option>
+                                <option value="ACTIVITIES">مصروفات أنشطة</option>
+                                <option value="REGISTRATION">رسوم تسجيل</option>
+                                <option value="OTHER">مصروفات أخرى</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="feeName" class="form-label">اسم المصروفات *</label>
+                            <input type="text" class="form-control" id="feeName" name="fee_name" 
+                                   placeholder="مثال: مصروفات دراسية للصف الأول" required>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="totalAmount" class="form-label">المبلغ الإجمالي *</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="totalAmount" name="total_amount" 
+                                       min="0" step="0.01" placeholder="0.00" required>
+                                <span class="input-group-text">ج.م</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- إعدادات الأقساط -->
+                    <h6 class="text-success border-bottom pb-2 mb-3">
+                        <i class="fas fa-calendar-check me-1"></i>إعدادات الأقساط
+                    </h6>
+                    
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label for="installmentsCount" class="form-label">عدد الأقساط *</label>
+                            <input type="number" class="form-control" id="installmentsCount" name="installments_count" 
+                                   min="1" max="12" value="4" required onchange="calculateInstallmentAmount()">
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="installmentAmount" class="form-label">مبلغ القسط</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="installmentAmount" 
+                                       step="0.01" readonly>
+                                <span class="input-group-text">ج.م</span>
+                            </div>
+                            <div class="form-text">سيتم حسابه تلقائياً</div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="firstInstallmentDueDate" class="form-label">تاريخ استحقاق القسط الأول *</label>
+                            <input type="date" class="form-control" id="firstInstallmentDueDate" 
+                                   name="first_installment_due_date" required>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="installmentIntervalDays" class="form-label">الفترة بين الأقساط (أيام)</label>
+                            <input type="number" class="form-control" id="installmentIntervalDays" 
+                                   name="installment_interval_days" value="30" min="1">
+                            <div class="form-text">الافتراضي: 30 يوماً (شهرياً)</div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mt-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="isMandatory" 
+                                           name="is_mandatory" checked>
+                                    <label class="form-check-label" for="isMandatory">
+                                        مصروفات إجبارية
+                                    </label>
+                                </div>
+                                <div class="form-text">المصروفات الإجبارية يجب دفعها للطالب</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- جدول توزيع الأقساط (معاينة) -->
+                    <h6 class="text-info border-bottom pb-2 mb-3">
+                        <i class="fas fa-table me-1"></i>معاينة توزيع الأقساط
+                    </h6>
+                    
+                    <div class="table-responsive mb-4">
+                        <table class="table table-sm table-bordered" id="installmentsPreview">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>رقم القسط</th>
+                                    <th>تاريخ الاستحقاق</th>
+                                    <th>المبلغ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- سيتم ملؤها بـ JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- إعدادات إضافية -->
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="isActive" name="is_active" checked>
+                                <label class="form-check-label" for="isActive">
+                                    إعداد المصروفات نشط
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>حفظ إعداد المصروفات
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// حساب مبلغ القسط تلقائياً
+function calculateInstallmentAmount() {
+    const totalAmount = parseFloat(document.getElementById('totalAmount').value) || 0;
+    const installmentsCount = parseInt(document.getElementById('installmentsCount').value) || 1;
+    
+    if (totalAmount > 0 && installmentsCount > 0) {
+        const installmentAmount = (totalAmount / installmentsCount).toFixed(2);
+        document.getElementById('installmentAmount').value = installmentAmount;
+        updateInstallmentsPreview();
+    }
+}
+
+// تحديث معاينة الأقساط
+function updateInstallmentsPreview() {
+    const installmentsCount = parseInt(document.getElementById('installmentsCount').value) || 1;
+    const installmentAmount = parseFloat(document.getElementById('installmentAmount').value) || 0;
+    const firstDueDate = document.getElementById('firstInstallmentDueDate').value;
+    const intervalDays = parseInt(document.getElementById('installmentIntervalDays').value) || 30;
+    
+    const tbody = document.querySelector('#installmentsPreview tbody');
+    tbody.innerHTML = '';
+    
+    if (firstDueDate && installmentAmount > 0) {
+        let currentDate = new Date(firstDueDate);
+        
+        for (let i = 1; i <= installmentsCount; i++) {
+            const row = document.createElement('tr');
+            
+            const dateStr = currentDate.toLocaleDateString('ar-EG');
+            
+            row.innerHTML = `
+                <td>${i}</td>
+                <td>${dateStr}</td>
+                <td>${installmentAmount.toFixed(2)} ج.م</td>
+            `;
+            
+            tbody.appendChild(row);
+            
+            // إضافة الفترة للقسط التالي
+            currentDate.setDate(currentDate.getDate() + intervalDays);
+        }
+    }
+}
+
+// ربط الأحداث
+document.getElementById('totalAmount').addEventListener('input', calculateInstallmentAmount);
+document.getElementById('installmentsCount').addEventListener('change', calculateInstallmentAmount);
+document.getElementById('firstInstallmentDueDate').addEventListener('change', updateInstallmentsPreview);
+document.getElementById('installmentIntervalDays').addEventListener('change', updateInstallmentsPreview);
+
+// إرسال النموذج
+document.getElementById('addSchoolFeeForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>جاري الحفظ...';
+    submitBtn.disabled = true;
+    
+    fetch('/settings/create-school-fee/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage('success', data.message);
+            bootstrap.Modal.getInstance(document.getElementById('addSchoolFeeModal')).hide();
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showMessage('error', data.message);
+        }
+    })
+    .catch(error => {
+        showMessage('error', 'حدث خطأ في الاتصال');
+    })
+    .finally(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+});
+
+// تحديد التاريخ الافتراضي لأول قسط
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date();
+    const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    document.getElementById('firstInstallmentDueDate').value = nextMonth.toISOString().split('T')[0];
+});
+</script>

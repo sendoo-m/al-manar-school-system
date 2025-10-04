@@ -1,0 +1,538 @@
+{% extends 'school_settings/base.html' %}
+
+{% block title %}إدارة المراحل التعليمية{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-hero {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 20px;
+        padding: 40px;
+        margin-bottom: 30px;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .page-hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 200px;
+        height: 200px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 50%;
+        transform: translate(50px, -50px);
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .stat-card {
+        background: white;
+        padding: 25px;
+        border-radius: 15px;
+        text-align: center;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        border-color: #667eea;
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+        background: linear-gradient(45deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        font-weight: 500;
+        font-size: 0.95rem;
+    }
+    
+    .levels-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 25px;
+    }
+    
+    .level-card {
+        background: white;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        transition: all 0.4s ease;
+        border: 2px solid transparent;
+    }
+    
+    .level-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        border-color: #667eea;
+    }
+    
+    .level-header {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 25px;
+        text-align: center;
+        position: relative;
+    }
+    
+    .level-icon {
+        width: 70px;
+        height: 70px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px;
+        backdrop-filter: blur(10px);
+    }
+    
+    .level-name {
+        font-size: 1.3rem;
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+    
+    .level-name-en {
+        font-size: 0.9rem;
+        opacity: 0.8;
+    }
+    
+    .level-body {
+        padding: 25px;
+    }
+    
+    .level-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .mini-stat {
+        text-align: center;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+    }
+    
+    .mini-stat:hover {
+        background: #e9ecef;
+        transform: scale(1.05);
+    }
+    
+    .mini-stat-number {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+    
+    .mini-stat-label {
+        font-size: 0.85rem;
+        color: #6c757d;
+        font-weight: 500;
+    }
+    
+    .level-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #f1f3f4;
+    }
+    
+    .level-info:last-child {
+        border-bottom: none;
+    }
+    
+    .info-label {
+        font-weight: 500;
+        color: #495057;
+    }
+    
+    .info-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .level-actions {
+        padding: 20px 25px;
+        background: #f8f9fa;
+        display: flex;
+        gap: 10px;
+    }
+    
+    .action-btn {
+        flex: 1;
+        padding: 10px;
+        border-radius: 10px;
+        border: 2px solid;
+        text-decoration: none;
+        text-align: center;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-edit {
+        color: #0d6efd;
+        border-color: #0d6efd;
+        background: white;
+    }
+    
+    .btn-edit:hover {
+        background: #0d6efd;
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    .btn-delete {
+        color: #dc3545;
+        border-color: #dc3545;
+        background: white;
+    }
+    
+    .btn-delete:hover {
+        background: #dc3545;
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 80px 40px;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    
+    .empty-icon {
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 30px;
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        color: #adb5bd;
+    }
+    
+    .empty-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 15px;
+    }
+    
+    .empty-text {
+        color: #6c757d;
+        margin-bottom: 30px;
+        font-size: 1.1rem;
+    }
+    
+    .add-btn {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        padding: 15px 30px;
+        border-radius: 25px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 1.1rem;
+        box-shadow: 0 8px 20px rgba(40, 167, 69, 0.3);
+        transition: all 0.3s ease;
+        border: none;
+    }
+    
+    .add-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 30px rgba(40, 167, 69, 0.4);
+        color: white;
+    }
+    
+    .add-btn i {
+        margin-left: 8px;
+    }
+    
+    @media (max-width: 768px) {
+        .page-hero {
+            padding: 30px 20px;
+        }
+        
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .levels-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+        }
+        
+        .level-actions {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- رأس الصفحة المحسن -->
+    <div class="page-hero">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-2">
+                    <i class="fas fa-graduation-cap me-3"></i>
+                    المراحل التعليمية
+                </h1>
+                <p class="mb-0 opacity-90">إدارة وتنظيم المراحل التعليمية في المدرسة</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'school_settings:create_education_level' %}" class="add-btn">
+                    <i class="fas fa-plus"></i>
+                    إضافة مرحلة جديدة
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- الإحصائيات -->
+    {% if education_levels %}
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number">{{ total_levels|default:0 }}</div>
+            <div class="stat-label">إجمالي المراحل</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ total_grades|default:0 }}</div>
+            <div class="stat-label">إجمالي الصفوف</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ total_students|default:0 }}</div>
+            <div class="stat-label">إجمالي الطلاب</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ active_levels|default:0 }}</div>
+            <div class="stat-label">المراحل النشطة</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- قائمة المراحل -->
+    {% if education_levels %}
+    <div class="levels-grid">
+        {% for level in education_levels %}
+        <div class="level-card">
+            <!-- رأس البطاقة -->
+            <div class="level-header">
+                <div class="level-icon">
+                    <i class="fas fa-graduation-cap fa-2x"></i>
+                </div>
+                <div class="level-name">{{ level.name }}</div>
+                {% if level.name_en %}
+                <div class="level-name-en">{{ level.name_en }}</div>
+                {% endif %}
+            </div>
+            
+            <!-- محتوى البطاقة -->
+            <div class="level-body">
+                <!-- إحصائيات مصغرة -->
+                <div class="level-stats">
+                    <div class="mini-stat">
+                        <div class="mini-stat-number text-primary">{{ level.grades_count|default:0 }}</div>
+                        <div class="mini-stat-label">الصفوف</div>
+                    </div>
+                    <div class="mini-stat">
+                        <div class="mini-stat-number text-success">{{ level.students_count|default:0 }}</div>
+                        <div class="mini-stat-label">الطلاب</div>
+                    </div>
+                </div>
+                
+                <!-- معلومات المرحلة -->
+                <div class="level-info">
+                    <span class="info-label">الفئة العمرية</span>
+                    <span class="info-badge bg-info text-white">
+                        {{ level.min_age|default:6 }} - {{ level.max_age|default:12 }} سنة
+                    </span>
+                </div>
+                
+                <div class="level-info">
+                    <span class="info-label">الحالة</span>
+                    {% if level.is_active %}
+                    <span class="info-badge bg-success text-white">نشط</span>
+                    {% else %}
+                    <span class="info-badge bg-secondary text-white">غير نشط</span>
+                    {% endif %}
+                </div>
+                
+                {% if level.description %}
+                <div class="level-info">
+                    <span class="info-label">الوصف</span>
+                    <span class="text-muted small">{{ level.description|truncatewords:8 }}</span>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- أزرار الإجراءات -->
+            <div class="level-actions">
+                <a href="{% url 'school_settings:edit_education_level' level.pk %}" 
+                   class="action-btn btn-edit">
+                    <i class="fas fa-edit me-2"></i>تعديل
+                </a>
+                <button class="action-btn btn-delete" 
+                        onclick="confirmDelete('{{ level.name }}', '{% url 'school_settings:delete_education_level' level.pk %}')">
+                    <i class="fas fa-trash me-2"></i>حذف
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    {% else %}
+    <!-- حالة عدم وجود بيانات -->
+    <div class="empty-state">
+        <div class="empty-icon">
+            <i class="fas fa-graduation-cap"></i>
+        </div>
+        <h3 class="empty-title">لا توجد مراحل تعليمية</h3>
+        <p class="empty-text">ابدأ بإنشاء أول مرحلة تعليمية لتنظيم صفوف المدرسة</p>
+        <a href="{% url 'school_settings:create_education_level' %}" class="add-btn">
+            <i class="fas fa-plus"></i>
+            إضافة أول مرحلة
+        </a>
+        
+        <!-- أمثلة المراحل -->
+        <div class="row mt-5">
+            <div class="col-md-4 mb-3">
+                <div class="text-center p-3">
+                    <i class="fas fa-seedling fa-2x text-success mb-2"></i>
+                    <h6>رياض الأطفال</h6>
+                    <small class="text-muted">3-5 سنوات</small>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="text-center p-3">
+                    <i class="fas fa-book-open fa-2x text-primary mb-2"></i>
+                    <h6>المرحلة الابتدائية</h6>
+                    <small class="text-muted">6-11 سنة</small>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="text-center p-3">
+                    <i class="fas fa-user-graduate fa-2x text-warning mb-2"></i>
+                    <h6>المرحلة الإعدادية</h6>
+                    <small class="text-muted">12-14 سنة</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal تأكيد الحذف -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-danger text-white border-0">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    تأكيد الحذف
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div class="mb-4">
+                    <i class="fas fa-trash-alt fa-4x text-danger"></i>
+                </div>
+                <h6 class="mb-3">هل تريد حذف المرحلة التعليمية؟</h6>
+                <p class="text-danger fw-bold" id="deleteItemName"></p>
+                <div class="alert alert-warning border-0 mt-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>تحذير:</strong> لا يمكن التراجع عن هذا الإجراء
+                </div>
+            </div>
+            <div class="modal-footer border-0 justify-content-center">
+                <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">
+                    إلغاء
+                </button>
+                <form method="POST" id="deleteForm" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger px-4">
+                        <i class="fas fa-trash me-2"></i>حذف نهائياً
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmDelete(itemName, deleteUrl) {
+    document.getElementById('deleteItemName').textContent = itemName;
+    document.getElementById('deleteForm').action = deleteUrl;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+// تأثيرات التحميل الجميلة
+document.addEventListener('DOMContentLoaded', function() {
+    // تأثير ظهور البطاقات تدريجياً
+    const cards = document.querySelectorAll('.level-card, .stat-card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(30px)';
+        
+        setTimeout(() => {
+            card.style.transition = 'all 0.6s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 150);
+    });
+    
+    // تأثير الأرقام المتحركة
+    const numbers = document.querySelectorAll('.stat-number, .mini-stat-number');
+    numbers.forEach(number => {
+        const finalValue = parseInt(number.textContent);
+        const duration = 2000;
+        const increment = finalValue / (duration / 50);
+        let current = 0;
+        
+        const timer = setInterval(() => {
+            current += increment;
+            if (current >= finalValue) {
+                current = finalValue;
+                clearInterval(timer);
+            }
+            number.textContent = Math.floor(current);
+        }, 50);
+    });
+});
+</script>
+{% endblock %}

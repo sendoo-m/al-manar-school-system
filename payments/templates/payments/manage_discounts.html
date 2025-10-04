@@ -1,0 +1,1383 @@
+<!-- templates/payments/manage_discounts.html -->
+{% extends 'payments/base.html' %}
+{% load humanize %}
+
+{% block title %}إدارة الخصومات - مدرسة المنار{% endblock %}
+{% block page_title %}إدارة الخصومات والتخفيضات{% endblock %}
+{% block page_subtitle %}إدارة وتتبع جميع الخصومات المطبقة على مدفوعات الطلاب{% endblock %}
+{% block page_icon %}<i class="fas fa-percentage me-3"></i>{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'payments:payments_home' %}">لوحة التحكم</a></li>
+<li class="breadcrumb-item"><a href="{% url 'payments:all_payments' %}">جميع المدفوعات</a></li>
+<li class="breadcrumb-item active">إدارة الخصومات</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group me-3">
+    <button class="btn btn-success btn-custom" onclick="showAddDiscountModal()">
+        <i class="fas fa-plus me-1"></i>إضافة خصم جديد
+    </button>
+    <button class="btn btn-outline-info btn-custom" onclick="showDiscountSettings()">
+        <i class="fas fa-cogs me-1"></i>إعدادات الخصم
+    </button>
+</div>
+<div class="btn-group">
+    <button class="btn btn-outline-primary btn-custom" onclick="exportDiscounts()">
+        <i class="fas fa-file-export me-1"></i>تصدير
+    </button>
+    <button class="btn btn-outline-secondary btn-custom" onclick="printDiscounts()">
+        <i class="fas fa-print me-1"></i>طباعة
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- إحصائيات الخصومات -->
+<div class="row mb-4">
+    <!-- إجمالي الخصومات -->
+    <div class="col-xl-3 col-lg-6 mb-4">
+        <div class="discount-stats-card total">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <div class="discount-amount">
+                        {{ discount_stats.total_amount|floatformat:2|default:"0.00" }}
+                        <span class="currency-symbol">ج.م</span>
+                    </div>
+                    <div class="discount-label">إجمالي الخصومات</div>
+                    <div class="discount-change">
+                        <i class="fas fa-percentage"></i>
+                        <span>{{ discount_stats.total_count|default:0 }} خصم</span>
+                    </div>
+                </div>
+                <div class="text-warning opacity-75">
+                    <i class="fas fa-tags fa-3x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- الخصومات المعتمدة -->
+    <div class="col-xl-3 col-lg-6 mb-4">
+        <div class="discount-stats-card active">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <div class="discount-amount text-success">
+                        {{ discount_stats.approved_count|default:0 }}
+                    </div>
+                    <div class="discount-label">خصومات معتمدة</div>
+                    <div class="discount-change positive">
+                        <i class="fas fa-check-circle"></i>
+                        <span>قيد التطبيق</span>
+                    </div>
+                </div>
+                <div class="text-success opacity-75">
+                    <i class="fas fa-check-circle fa-3x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- في الانتظار -->
+    <div class="col-xl-3 col-lg-6 mb-4">
+        <div class="discount-stats-card pending">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <div class="discount-amount text-warning">
+                        {{ discount_stats.pending_count|default:0 }}
+                    </div>
+                    <div class="discount-label">في الانتظار</div>
+                    <div class="discount-change">
+                        <i class="fas fa-clock"></i>
+                        <span>يحتاج موافقة</span>
+                    </div>
+                </div>
+                <div class="text-warning opacity-75">
+                    <i class="fas fa-clock fa-3x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- الطلاب المستفيدين -->
+    <div class="col-xl-3 col-lg-6 mb-4">
+        <div class="discount-stats-card students">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <div class="discount-amount text-primary">
+                        {{ discount_stats.beneficiary_students|default:0 }}
+                    </div>
+                    <div class="discount-label">طلاب مستفيدين</div>
+                    <div class="discount-change">
+                        <i class="fas fa-users"></i>
+                        <span>طالب فريد</span>
+                    </div>
+                </div>
+                <div class="text-primary opacity-75">
+                    <i class="fas fa-graduation-cap fa-3x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- فلاتر البحث -->
+<div class="content-card mb-4">
+    <div class="content-card-header">
+        <h5>
+            <i class="fas fa-filter me-2 text-primary"></i>
+            فلترة وبحث الخصومات
+        </h5>
+    </div>
+    <div class="content-card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label for="search" class="form-label fw-bold">البحث</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       value="{{ request.GET.search }}" 
+                       placeholder="اسم الطالب أو نوع الخصم...">
+            </div>
+            
+            <div class="col-md-2">
+                <label for="status" class="form-label fw-bold">الحالة</label>
+                <select name="status" id="status" class="form-select">
+                    <option value="">جميع الحالات</option>
+                    <option value="PENDING" {% if request.GET.status == 'PENDING' %}selected{% endif %}>في الانتظار</option>
+                    <option value="APPROVED" {% if request.GET.status == 'APPROVED' %}selected{% endif %}>موافق عليه</option>
+                    <option value="REJECTED" {% if request.GET.status == 'REJECTED' %}selected{% endif %}>مرفوض</option>
+                    <option value="EXPIRED" {% if request.GET.status == 'EXPIRED' %}selected{% endif %}>منتهي الصلاحية</option>
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label for="category" class="form-label fw-bold">فئة الخصم</label>
+                <select name="category" id="category" class="form-select">
+                    <option value="">جميع الفئات</option>
+                    {% for category_code, category_name in discount_categories %}
+                    <option value="{{ category_code }}" {% if request.GET.category == category_code %}selected{% endif %}>
+                        {{ category_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label for="date_from" class="form-label fw-bold">من تاريخ</label>
+                <input type="date" class="form-control" id="date_from" name="date_from" 
+                       value="{{ request.GET.date_from }}">
+            </div>
+            
+            <div class="col-md-2">
+                <label for="date_to" class="form-label fw-bold">إلى تاريخ</label>
+                <input type="date" class="form-control" id="date_to" name="date_to" 
+                       value="{{ request.GET.date_to }}">
+            </div>
+            
+            <div class="col-md-1">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- جدول الخصومات -->
+{% if student_discounts %}
+<div class="content-card mb-4">
+    <div class="content-card-header">
+        <h5>
+            <i class="fas fa-list me-2 text-success"></i>
+            قائمة الخصومات ({{ student_discounts.paginator.count }})
+        </h5>
+    </div>
+    <div class="content-card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th>
+                            <input type="checkbox" id="selectAll" onchange="toggleAllDiscounts()">
+                        </th>
+                        <th>الطالب</th>
+                        <th>نوع الخصم</th>
+                        <th>مبلغ الخصم</th>
+                        <th>المبلغ الأصلي</th>
+                        <th>المبلغ النهائي</th>
+                        <th>تاريخ الإنشاء</th>
+                        <th>الحالة</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for discount in student_discounts %}
+                    <tr data-discount-id="{{ discount.id }}">
+                        <td>
+                            <input type="checkbox" class="discount-checkbox" value="{{ discount.id }}">
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="user-avatar me-3" style="width: 35px; height: 35px; font-size: 0.8rem;">
+                                    {{ discount.student.name.0|upper }}
+                                </div>
+                                <div>
+                                    <strong class="d-block">{{ discount.student.name }}</strong>
+                                    <small class="text-muted">{{ discount.student.national_number }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div>
+                                <strong>{{ discount.discount_setting.name }}</strong>
+                                <br><small class="text-info">{{ discount.discount_setting.get_category_display }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="discount-amount-cell">
+                                {{ discount.applied_amount|floatformat:2 }}
+                                <span class="currency-symbol">ج.م</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="text-muted">
+                                {{ discount.original_amount|floatformat:2 }} ج.م
+                            </div>
+                        </td>
+                        <td>
+                            <div class="text-success fw-bold">
+                                {{ discount.final_amount|floatformat:2 }} ج.م
+                            </div>
+                        </td>
+                        <td>
+                            <div>
+                                <strong>{{ discount.created_date|date:"d M Y" }}</strong>
+                                <br><small class="text-muted">{{ discount.created_date|date:"H:i" }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            {% if discount.status == 'PENDING' %}
+                            <span class="badge bg-warning">
+                                <i class="fas fa-clock me-1"></i>في الانتظار
+                            </span>
+                            {% elif discount.status == 'APPROVED' %}
+                            <span class="badge bg-success">
+                                <i class="fas fa-check-circle me-1"></i>معتمد
+                            </span>
+                            {% elif discount.status == 'REJECTED' %}
+                            <span class="badge bg-danger">
+                                <i class="fas fa-times-circle me-1"></i>مرفوض
+                            </span>
+                            {% else %}
+                            <span class="badge bg-secondary">
+                                <i class="fas fa-clock me-1"></i>{{ discount.get_status_display }}
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-info" 
+                                        onclick="viewDiscountDetails({{ discount.id }})" 
+                                        title="عرض التفاصيل">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                
+                                {% if discount.status == 'PENDING' %}
+                                <button class="btn btn-outline-success" 
+                                        onclick="approveDiscount({{ discount.id }})" 
+                                        title="موافقة">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button class="btn btn-outline-danger" 
+                                        onclick="rejectDiscount({{ discount.id }})" 
+                                        title="رفض">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                                {% endif %}
+                                
+                                {% if permissions.can_delete %}
+                                <button class="btn btn-outline-danger" 
+                                        onclick="confirmDeleteDiscount({{ discount.id }}, '{{ discount.student.name }}')" 
+                                        title="حذف">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if student_discounts.has_other_pages %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="text-muted">
+        صفحة {{ student_discounts.number }} من {{ student_discounts.paginator.num_pages }}
+        ({{ student_discounts.paginator.count }} إجمالي)
+    </div>
+    <nav aria-label="تصفح الخصومات">
+        <ul class="pagination mb-0">
+            {% if student_discounts.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ student_discounts.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">السابق</a>
+            </li>
+            {% endif %}
+            
+            <li class="page-item active">
+                <span class="page-link">{{ student_discounts.number }}</span>
+            </li>
+            
+            {% if student_discounts.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ student_discounts.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">التالي</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endif %}
+
+{% else %}
+<!-- حالة عدم وجود خصومات -->
+<div class="content-card">
+    <div class="content-card-body text-center py-5">
+        <i class="fas fa-percentage fa-4x text-muted mb-3"></i>
+        <h5>لا توجد خصومات بعد</h5>
+        <p class="text-muted mb-4">ابدأ بإضافة خصومات للطلاب المستحقين</p>
+        <button class="btn btn-success btn-custom" onclick="showAddDiscountModal()">
+            <i class="fas fa-plus me-2"></i>إضافة أول خصم
+        </button>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal إضافة خصم جديد -->
+<div class="modal fade" id="addDiscountModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus-circle me-2"></i>إضافة خصم جديد
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addDiscountForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- العمود الأيسر - البحث عن الطالب -->
+                        <div class="col-md-6">
+                            <div class="card border-primary">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="mb-0"><i class="fas fa-user me-2"></i>اختيار الطالب</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="studentSearch" class="form-label fw-bold">
+                                            البحث عن الطالب *
+                                        </label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control form-control-lg" id="studentSearch" 
+                                                   placeholder="اكتب اسم الطالب أو الرقم القومي...">
+                                            <button type="button" class="btn btn-outline-info" onclick="testStudentSearch()" title="اختبار البحث">
+                                                <i class="fas fa-flask"></i>
+                                            </button>
+                                        </div>
+                                        <input type="hidden" id="selectedStudentId" name="student_id">
+                                        <div id="studentSearchResults" class="mt-2" style="max-height: 300px; overflow-y: auto;"></div>
+                                    </div>
+                                    
+                                    <!-- عرض الطالب المختار -->
+                                    <div id="selectedStudentInfo" style="display: none;" class="alert alert-success">
+                                        <h6><i class="fas fa-check me-2"></i>الطالب المختار:</h6>
+                                        <div id="studentInfoDisplay"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- العمود الأيمن - اختيار نوع الخصم -->
+                        <div class="col-md-6">
+                            <div class="card border-success">
+                                <div class="card-header bg-success text-white">
+                                    <h6 class="mb-0"><i class="fas fa-tags me-2"></i>تفاصيل الخصم</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="discountCategory" class="form-label fw-bold">
+                                            فئة الخصم *
+                                        </label>
+                                        <select class="form-select" id="discountCategory" onchange="filterDiscountSettings()">
+                                            <option value="">اختر فئة الخصم</option>
+                                            {% for category_code, category_name in discount_categories %}
+                                            <option value="{{ category_code }}">{{ category_name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="discountSetting" class="form-label fw-bold">
+                                            نوع الخصم *
+                                        </label>
+                                        <select class="form-select" id="discountSetting" name="discount_setting_id" onchange="showDiscountDetails()">
+                                            <option value="">اختر نوع الخصم</option>
+                                            {% for discount in available_discount_settings %}
+                                            <option value="{{ discount.id }}" 
+                                                    data-category="{{ discount.category }}"
+                                                    data-type="{{ discount.discount_type }}"
+                                                    data-percentage="{{ discount.percentage_value|default:'' }}"
+                                                    data-fixed="{{ discount.fixed_amount|default:'' }}"
+                                                    data-max="{{ discount.max_discount_amount|default:'' }}"
+                                                    data-min="{{ discount.min_payment_amount|default:'' }}"
+                                                    data-description="{{ discount.description }}">
+                                                {{ discount.name }} - {{ discount.get_category_display }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- عرض تفاصيل الخصم المختار -->
+                                    <div id="discountDetails" style="display: none;" class="alert alert-success">
+                                        <h6><i class="fas fa-info-circle me-2"></i>تفاصيل الخصم:</h6>
+                                        <div id="discountDetailsContent"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- حاسبة الخصم -->
+                    <div class="card border-warning mt-3">
+                        <div class="card-header bg-warning text-dark">
+                            <h6 class="mb-0"><i class="fas fa-calculator me-2"></i>حاسبة الخصم</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label for="originalAmount" class="form-label fw-bold">
+                                        المبلغ الأصلي *
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="originalAmount" 
+                                               name="original_amount" step="0.01" min="0.01" 
+                                               onchange="calculateDiscount()" required>
+                                        <span class="input-group-text">ج.م</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">مبلغ الخصم</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control bg-light" id="discountAmount" readonly>
+                                        <span class="input-group-text">ج.م</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">المبلغ النهائي</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control bg-success text-white fw-bold" id="finalAmount" readonly>
+                                        <span class="input-group-text">ج.م</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- سبب التقدم للخصم -->
+                    <div class="mt-3">
+                        <label for="applicationReason" class="form-label fw-bold">
+                            <i class="fas fa-comment me-1"></i>سبب التقدم للخصم *
+                        </label>
+                        <textarea class="form-control" id="applicationReason" name="application_reason" 
+                                  rows="3" placeholder="اكتب سبب استحقاق الطالب لهذا الخصم..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>إلغاء
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save me-1"></i>حفظ الخصم
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal تفاصيل الخصم -->
+<div class="modal fade" id="discountDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-info-circle me-2"></i>تفاصيل الخصم
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="discountDetailsContent">
+                <!-- سيتم ملؤها ديناميكياً -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.discount-stats-card {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    border-left: 5px solid #ffc107;
+    transition: all 0.3s ease;
+}
+
+.discount-stats-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+}
+
+.discount-stats-card.total { border-left-color: #ffc107; }
+.discount-stats-card.active { border-left-color: #28a745; }
+.discount-stats-card.pending { border-left-color: #fd7e14; }
+.discount-stats-card.students { border-left-color: #007bff; }
+
+.discount-amount {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #ffc107;
+}
+
+.discount-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-bottom: 8px;
+}
+
+.discount-change {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.discount-change.positive {
+    color: #28a745;
+}
+
+.discount-amount-cell {
+    font-weight: 600;
+    color: #dc3545;
+    font-size: 1.1rem;
+}
+
+.currency-symbol {
+    font-size: 0.9em;
+    color: #6c757d;
+}
+
+.user-avatar {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+.table th {
+    font-weight: 600;
+    color: #495057;
+    border-top: none;
+}
+
+.badge {
+    font-size: 0.8rem;
+}
+
+@media (max-width: 768px) {
+    .discount-stats-card {
+        margin-bottom: 20px;
+    }
+    
+    .table-responsive {
+        font-size: 0.9rem;
+    }
+    
+    .btn-group-sm .btn {
+        padding: 0.2rem 0.4rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// متغيرات عامة
+let selectedStudentId = null;
+let searchTimeout;
+
+// عرض modal إضافة خصم
+function showAddDiscountModal() {
+    const modal = new bootstrap.Modal(document.getElementById('addDiscountModal'));
+    
+    // إعادة تعيين النموذج
+    document.getElementById('addDiscountForm').reset();
+    document.getElementById('selectedStudentId').value = '';
+    document.getElementById('studentSearchResults').innerHTML = '';
+    document.getElementById('selectedStudentInfo').style.display = 'none';
+    document.getElementById('discountDetails').style.display = 'none';
+    selectedStudentId = null;
+    clearCalculations();
+    
+    modal.show();
+    
+    // التركيز على حقل البحث
+    setTimeout(() => {
+        document.getElementById('studentSearch').focus();
+    }, 500);
+}
+
+// البحث التلقائي عند الكتابة
+document.addEventListener('DOMContentLoaded', function() {
+    const studentSearch = document.getElementById('studentSearch');
+    if (studentSearch) {
+        studentSearch.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const query = this.value.trim();
+            
+            if (query.length < 2) {
+                document.getElementById('studentSearchResults').innerHTML = '';
+                return;
+            }
+            
+            searchTimeout = setTimeout(() => {
+                searchStudentsForDiscount(query);
+            }, 300);
+        });
+        
+        studentSearch.placeholder = 'ابحث بالاسم أو الرقم القومي... (على الأقل حرفين)';
+    }
+    
+    // معالجة إرسال النموذج
+    const addDiscountForm = document.getElementById('addDiscountForm');
+    if (addDiscountForm) {
+        addDiscountForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            submitDiscountForm();
+        });
+    }
+});
+
+// البحث عن الطلاب
+function searchStudentsForDiscount(query) {
+    const resultsContainer = document.getElementById('studentSearchResults');
+    
+    if (!resultsContainer) {
+        console.error('لم يتم العثور على عنصر studentSearchResults');
+        return;
+    }
+    
+    resultsContainer.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm text-primary"></div> جاري البحث...</div>';
+    
+    const searchData = {
+        query: query,
+        grade: '',
+        year: ''
+    };
+    
+    fetch('/payments/api/student-search/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(searchData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success && data.students && data.students.length > 0) {
+            let html = '<div class="list-group shadow-sm">';
+            data.students.forEach(student => {
+                const remainingBadge = student.total_remaining > 0 ? 
+                    `<div><small class="text-warning fw-bold">متبقي: ${student.total_remaining.toFixed(2)} ج.م</small></div>` : 
+                    '<div><small class="text-success">مكتمل الدفع</small></div>';
+                
+                html += `
+                    <button type="button" class="list-group-item list-group-item-action" 
+                            onclick="selectStudentForDiscount(${student.id}, '${escapeHtml(student.name)}', '${escapeHtml(student.grade_name)}', '${escapeHtml(student.national_number)}')">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1 text-start">${escapeHtml(student.name)}</h6>
+                                <p class="mb-1 text-muted small text-start">
+                                    <i class="fas fa-id-card me-1"></i>${escapeHtml(student.national_number)}
+                                </p>
+                                <small class="text-info text-start">
+                                    <i class="fas fa-graduation-cap me-1"></i>${escapeHtml(student.grade_name)}
+                                </small>
+                            </div>
+                            <div class="text-end">
+                                <small class="text-primary fw-bold d-block">
+                                    <i class="fas fa-coins me-1"></i>${student.total_paid.toFixed(2)} ج.م
+                                </small>
+                                <small class="text-muted d-block">${student.payments_count} مدفوع</small>
+                                ${remainingBadge}
+                            </div>
+                        </div>
+                    </button>
+                `;
+            });
+            html += '</div>';
+            
+            const countInfo = `<div class="text-center mt-2 mb-2">
+                <small class="text-muted">تم العثور على ${data.count} طالب</small>
+            </div>`;
+            
+            resultsContainer.innerHTML = countInfo + html;
+        } else if (data.success) {
+            resultsContainer.innerHTML = `
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-search fa-2x mb-2 d-block"></i>
+                    <p class="mb-0">لا يوجد طلاب تطابق البحث</p>
+                    <small>جرب استخدام كلمات أخرى</small>
+                </div>
+            `;
+        } else {
+            resultsContainer.innerHTML = `
+                <div class="text-center text-danger py-3">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    ${data.error || 'حدث خطأ في البحث'}
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        console.error('خطأ في البحث:', error);
+        resultsContainer.innerHTML = `
+            <div class="text-center text-danger py-3">
+                <i class="fas fa-wifi me-2"></i>
+                حدث خطأ في الاتصال<br>
+                <small>تحقق من اتصال الإنترنت</small>
+            </div>
+        `;
+    });
+}
+
+// اختيار طالب للخصم
+function selectStudentForDiscount(studentId, studentName, studentGrade, studentNumber) {
+    selectedStudentId = studentId;
+    
+    document.getElementById('selectedStudentId').value = studentId;
+    document.getElementById('studentSearch').value = studentName;
+    document.getElementById('studentSearchResults').innerHTML = '';
+    
+    const studentInfoHtml = `
+        <div class="d-flex align-items-center">
+            <div class="user-avatar me-3" style="width: 50px; height: 50px; background: linear-gradient(45deg, #28a745, #20c997); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold;">
+                ${studentName.charAt(0).toUpperCase()}
+            </div>
+            <div>
+                <strong class="text-success">${studentName}</strong><br>
+                <small class="text-muted">
+                    <i class="fas fa-id-card me-1"></i>${studentNumber}
+                </small><br>
+                <small class="text-info">
+                    <i class="fas fa-graduation-cap me-1"></i>${studentGrade}
+                </small>
+            </div>
+            <div class="ms-auto">
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="clearSelectedStudent()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('studentInfoDisplay').innerHTML = studentInfoHtml;
+    document.getElementById('selectedStudentInfo').style.display = 'block';
+    
+    showPaymentMessage('success', `تم اختيار الطالب: ${studentName}`);
+    
+    setTimeout(() => {
+        document.getElementById('discountCategory').focus();
+    }, 500);
+}
+
+// مسح الطالب المختار
+function clearSelectedStudent() {
+    selectedStudentId = null;
+    document.getElementById('selectedStudentId').value = '';
+    document.getElementById('studentSearch').value = '';
+    document.getElementById('selectedStudentInfo').style.display = 'none';
+    showPaymentMessage('info', 'تم مسح اختيار الطالب');
+}
+
+// فلترة إعدادات الخصم حسب الفئة
+function filterDiscountSettings() {
+    const categorySelect = document.getElementById('discountCategory');
+    const discountSelect = document.getElementById('discountSetting');
+    const selectedCategory = categorySelect.value;
+    
+    Array.from(discountSelect.options).forEach(option => {
+        if (option.value === '') return;
+        
+        const optionCategory = option.dataset.category;
+        if (!selectedCategory || optionCategory === selectedCategory) {
+            option.style.display = 'block';
+            option.hidden = false;
+        } else {
+            option.style.display = 'none';
+            option.hidden = true;
+        }
+    });
+    
+    discountSelect.value = '';
+    document.getElementById('discountDetails').style.display = 'none';
+    clearCalculations();
+}
+
+// عرض تفاصيل الخصم المختار
+function showDiscountDetails() {
+    const discountSelect = document.getElementById('discountSetting');
+    const selectedOption = discountSelect.selectedOptions[0];
+    
+    if (!selectedOption || selectedOption.value === '') {
+        document.getElementById('discountDetails').style.display = 'none';
+        clearCalculations();
+        return;
+    }
+    
+    const discountType = selectedOption.dataset.type;
+    const percentage = selectedOption.dataset.percentage;
+    const fixedAmount = selectedOption.dataset.fixed;
+    const maxAmount = selectedOption.dataset.max;
+    const minAmount = selectedOption.dataset.min;
+    const description = selectedOption.dataset.description;
+    
+    let detailsHtml = '<div class="row">';
+    
+    detailsHtml += '<div class="col-md-6">';
+    detailsHtml += '<strong>نوع الخصم:</strong> ';
+    if (discountType === 'PERCENTAGE') {
+        detailsHtml += `<span class="badge bg-info">${percentage}% نسبة مئوية</span>`;
+    } else {
+        detailsHtml += `<span class="badge bg-success">${fixedAmount} ج.م مبلغ ثابت</span>`;
+    }
+    detailsHtml += '</div>';
+    
+    detailsHtml += '<div class="col-md-6">';
+    if (maxAmount) {
+        detailsHtml += `<strong>الحد الأقصى:</strong> <span class="text-danger">${maxAmount} ج.م</span><br>`;
+    }
+    if (minAmount) {
+        detailsHtml += `<strong>الحد الأدنى:</strong> <span class="text-warning">${minAmount} ج.م</span>`;
+    }
+    if (!maxAmount && !minAmount) {
+        detailsHtml += '<span class="text-muted">لا توجد حدود</span>';
+    }
+    detailsHtml += '</div>';
+    
+    detailsHtml += '</div>';
+    
+    if (description) {
+        detailsHtml += `<div class="mt-2"><strong>الوصف:</strong><br><div class="alert alert-info py-2 px-3 mt-1"><small>${description}</small></div></div>`;
+    }
+    
+    document.getElementById('discountDetailsContent').innerHTML = detailsHtml;
+    document.getElementById('discountDetails').style.display = 'block';
+    
+    calculateDiscount();
+}
+
+// حساب الخصم
+function calculateDiscount() {
+    const discountSelect = document.getElementById('discountSetting');
+    const originalAmountInput = document.getElementById('originalAmount');
+    const discountAmountInput = document.getElementById('discountAmount');
+    const finalAmountInput = document.getElementById('finalAmount');
+    
+    const selectedOption = discountSelect.selectedOptions[0];
+    const originalAmount = parseFloat(originalAmountInput.value) || 0;
+    
+    if (!selectedOption || selectedOption.value === '' || originalAmount <= 0) {
+        clearCalculations();
+        return;
+    }
+    
+    const discountType = selectedOption.dataset.type;
+    const percentage = parseFloat(selectedOption.dataset.percentage) || 0;
+    const fixedAmount = parseFloat(selectedOption.dataset.fixed) || 0;
+    const maxAmount = parseFloat(selectedOption.dataset.max) || null;
+    const minAmount = parseFloat(selectedOption.dataset.min) || 0;
+    
+    if (originalAmount < minAmount) {
+        discountAmountInput.value = '0.00';
+        finalAmountInput.value = originalAmount.toFixed(2);
+        showPaymentMessage('warning', `المبلغ أقل من الحد الأدنى المطلوب (${minAmount} ج.م)`);
+        return;
+    }
+    
+    let discountAmount = 0;
+    
+    if (discountType === 'PERCENTAGE') {
+        discountAmount = originalAmount * (percentage / 100);
+    } else {
+        discountAmount = fixedAmount;
+    }
+    
+    if (maxAmount && discountAmount > maxAmount) {
+        discountAmount = maxAmount;
+        showPaymentMessage('info', `تم تطبيق الحد الأقصى: ${maxAmount} ج.م`);
+    }
+    
+    if (discountAmount > originalAmount) {
+        discountAmount = originalAmount;
+        showPaymentMessage('warning', 'تم تطبيق خصم 100% (كامل المبلغ)');
+    }
+    
+    const finalAmount = originalAmount - discountAmount;
+    
+    discountAmountInput.value = discountAmount.toFixed(2);
+    finalAmountInput.value = finalAmount.toFixed(2);
+    
+    if (discountAmount > 0) {
+        discountAmountInput.className = 'form-control bg-danger text-white fw-bold';
+        finalAmountInput.className = 'form-control bg-success text-white fw-bold';
+    }
+}
+
+// مسح الحسابات
+function clearCalculations() {
+    document.getElementById('discountAmount').value = '';
+    document.getElementById('finalAmount').value = '';
+    document.getElementById('discountAmount').className = 'form-control bg-light';
+    document.getElementById('finalAmount').className = 'form-control bg-success text-white fw-bold';
+}
+
+// إرسال نموذج الخصم
+function submitDiscountForm() {
+    if (!selectedStudentId) {
+        showPaymentMessage('error', 'يرجى اختيار طالب أولاً');
+        return;
+    }
+    
+    const discountSetting = document.getElementById('discountSetting').value;
+    if (!discountSetting) {
+        showPaymentMessage('error', 'يرجى اختيار نوع الخصم');
+        return;
+    }
+    
+    const originalAmount = document.getElementById('originalAmount').value;
+    if (!originalAmount || parseFloat(originalAmount) <= 0) {
+        showPaymentMessage('error', 'يرجى إدخال المبلغ الأصلي');
+        return;
+    }
+    
+    const applicationReason = document.getElementById('applicationReason').value;
+    if (!applicationReason.trim()) {
+        showPaymentMessage('error', 'يرجى كتابة سبب التقدم للخصم');
+        return;
+    }
+    
+    const submitBtn = document.querySelector('#addDiscountForm button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>جاري الحفظ...';
+    
+    const formData = new FormData(document.getElementById('addDiscountForm'));
+    
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showPaymentMessage('success', data.message);
+            
+            bootstrap.Modal.getInstance(document.getElementById('addDiscountModal')).hide();
+            
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            showPaymentMessage('error', data.message || 'حدث خطأ في حفظ الخصم');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showPaymentMessage('error', 'حدث خطأ في الاتصال');
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    });
+}
+
+// عرض تفاصيل الخصم
+function viewDiscountDetails(discountId) {
+    const modal = new bootstrap.Modal(document.getElementById('discountDetailsModal'));
+    const content = document.getElementById('discountDetailsContent');
+    
+    content.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div><p class="mt-2">جاري تحميل التفاصيل...</p></div>';
+    modal.show();
+    
+    fetch(`/payments/api/discount-details/${discountId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayDiscountDetails(data.discount);
+            } else {
+                content.innerHTML = '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-2"></i>خطأ في جلب التفاصيل</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            content.innerHTML = '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-2"></i>حدث خطأ في الاتصال</div>';
+        });
+}
+
+// عرض تفاصيل الخصم
+function displayDiscountDetails(discount) {
+    const content = document.getElementById('discountDetailsContent');
+    
+    let statusBadge = '';
+    switch(discount.status_code) {
+        case 'PENDING':
+            statusBadge = '<span class="badge bg-warning">في الانتظار</span>';
+            break;
+        case 'APPROVED':
+            statusBadge = '<span class="badge bg-success">موافق عليه</span>';
+            break;
+        case 'REJECTED':
+            statusBadge = '<span class="badge bg-danger">مرفوض</span>';
+            break;
+        case 'EXPIRED':
+            statusBadge = '<span class="badge bg-secondary">منتهي الصلاحية</span>';
+            break;
+    }
+    
+    content.innerHTML = `
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card border-primary">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0"><i class="fas fa-user me-2"></i>بيانات الطالب</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="user-avatar me-3" style="width: 50px; height: 50px; font-size: 1.2rem;">
+                                ${discount.student_name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <h6 class="mb-1">${discount.student_name}</h6>
+                                <small class="text-muted">${discount.student_national_number}</small>
+                            </div>
+                        </div>
+                        <p><strong>الصف الدراسي:</strong> ${discount.student_grade}</p>
+                        <p><strong>العام الدراسي:</strong> ${discount.academic_year}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-4">
+                <div class="card border-success">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0"><i class="fas fa-tags me-2"></i>تفاصيل الخصم</h6>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>نوع الخصم:</strong> ${discount.discount_setting_name}</p>
+                        <p><strong>الفئة:</strong> ${discount.discount_category}</p>
+                        <p><strong>نوع الحساب:</strong> ${discount.discount_type}</p>
+                        <p><strong>الحالة:</strong> ${statusBadge}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-12 mb-4">
+                <div class="card border-warning">
+                    <div class="card-header bg-warning text-dark">
+                        <h6 class="mb-0"><i class="fas fa-calculator me-2"></i>الحسابات المالية</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <h5 class="text-primary">${discount.original_amount.toFixed(2)} ج.م</h5>
+                                    <small class="text-muted">المبلغ الأصلي</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <h5 class="text-danger">- ${discount.applied_amount.toFixed(2)} ج.م</h5>
+                                    <small class="text-muted">مبلغ الخصم</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center p-3 bg-success text-white rounded">
+                                    <h5>${discount.final_amount.toFixed(2)} ج.م</h5>
+                                    <small>المبلغ النهائي</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-12 mb-4">
+                <div class="card border-info">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0"><i class="fas fa-comment me-2"></i>سبب التقدم للخصم</h6>
+                    </div>
+                    <div class="card-body">
+                        <p>${discount.application_reason}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        ${discount.status_code === 'PENDING' ? `
+        <div class="d-flex gap-2 justify-content-end mt-4">
+            <button class="btn btn-success" onclick="approveDiscount(${discount.id})">
+                <i class="fas fa-check me-1"></i>موافقة
+            </button>
+            <button class="btn btn-danger" onclick="rejectDiscount(${discount.id})">
+                <i class="fas fa-times me-1"></i>رفض
+            </button>
+        </div>
+        ` : ''}
+    `;
+}
+
+// الموافقة على خصم
+function approveDiscount(discountId) {
+    if (confirm('هل تريد الموافقة على هذا الخصم؟')) {
+        fetch(`/payments/api/approve-discount/${discountId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showPaymentMessage('success', data.message);
+                bootstrap.Modal.getInstance(document.getElementById('discountDetailsModal')).hide();
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                showPaymentMessage('error', data.message);
+            }
+        })
+        .catch(error => {
+            showPaymentMessage('error', 'حدث خطأ في الموافقة');
+        });
+    }
+}
+
+// رفض خصم
+function rejectDiscount(discountId) {
+    const reason = prompt('أدخل سبب الرفض (اختياري):');
+    if (reason !== null) {
+        const formData = new FormData();
+        formData.append('admin_notes', reason);
+        
+        fetch(`/payments/api/reject-discount/${discountId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showPaymentMessage('success', data.message);
+                bootstrap.Modal.getInstance(document.getElementById('discountDetailsModal')).hide();
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                showPaymentMessage('error', data.message);
+            }
+        })
+        .catch(error => {
+            showPaymentMessage('error', 'حدث خطأ في الرفض');
+        });
+    }
+}
+
+// حذف خصم
+function confirmDeleteDiscount(discountId, studentName) {
+    if (confirm(`هل تريد حذف هذا الخصم للطالب: ${studentName}؟\n\nهذا الإجراء لا يمكن التراجع عنه.`)) {
+        showPaymentMessage('info', 'جاري حذف الخصم...');
+        
+        setTimeout(() => {
+            showPaymentMessage('success', 'تم حذف الخصم بنجاح');
+            window.location.reload();
+        }, 1000);
+    }
+}
+
+// تبديل تحديد جميع الخصومات
+function toggleAllDiscounts() {
+    const masterCheckbox = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.discount-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = masterCheckbox.checked;
+    });
+}
+
+// اختبار البحث
+function testStudentSearch() {
+    console.log('اختبار البحث...');
+    showPaymentMessage('info', 'جاري اختبار البحث...');
+    
+    const testData = {
+        query: 'محمد',
+        grade: '',
+        year: ''
+    };
+    
+    fetch('/payments/api/student-search/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(testData)
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        if (data.success) {
+            showPaymentMessage('success', `✅ البحث يعمل! تم العثور على ${data.students ? data.students.length : 0} طلاب`);
+        } else {
+            showPaymentMessage('error', `❌ فشل البحث: ${data.error}`);
+        }
+    })
+    .catch(error => {
+        console.error('Test error:', error);
+        showPaymentMessage('error', '❌ فشل اختبار البحث - خطأ في الاتصال');
+    });
+}
+
+// دوال أخرى
+function showDiscountSettings() {
+    showPaymentMessage('info', 'إعدادات الخصم قيد التطوير...');
+}
+
+function exportDiscounts() {
+    showPaymentMessage('info', 'تصدير الخصومات قيد التطوير...');
+}
+
+function printDiscounts() {
+    window.print();
+}
+
+// دالة مساعدة لتأمين النص
+function escapeHtml(text) {
+    if (!text) return '';
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return text.toString().replace(/[&<>"']/g, function(m) { return map[m]; });
+}
+
+// دالة الحصول على CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// دالة عرض الرسائل
+function showPaymentMessage(type, message) {
+    const existingAlerts = document.querySelectorAll('.alert.fixed-alert');
+    existingAlerts.forEach(alert => alert.remove());
+    
+    const icons = {
+        success: 'fas fa-check-circle',
+        error: 'fas fa-exclamation-circle',
+        warning: 'fas fa-exclamation-triangle',
+        info: 'fas fa-info-circle'
+    };
+    
+    const colors = {
+        success: 'success',
+        error: 'danger',
+        warning: 'warning',
+        info: 'info'
+    };
+    
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${colors[type] || 'info'} alert-dismissible fade show fixed-alert`;
+    alertDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 350px;
+        max-width: 500px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        border-radius: 10px;
+        font-weight: 500;
+    `;
+    
+    alertDiv.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="${icons[type] || icons.info} me-3" style="font-size: 1.2rem;"></i>
+            <div class="flex-grow-1">${message}</div>
+            <button type="button" class="btn-close ms-2" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

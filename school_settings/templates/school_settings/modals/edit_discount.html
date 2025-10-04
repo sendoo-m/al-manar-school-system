@@ -1,0 +1,164 @@
+<!-- school_settings/templates/school_settings/modals/edit_discount.html -->
+<!-- Modal تعديل الخصم -->
+<div class="modal fade" id="editDiscountModal" tabindex="-1" aria-labelledby="editDiscountModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editDiscountModalLabel">
+                    <i class="fas fa-edit me-2"></i>تعديل الخصم
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <form id="editDiscountForm" method="post">
+                {% csrf_token %}
+                <input type="hidden" id="editDiscountId" name="discount_id">
+                
+                <div class="modal-body">
+                    <!-- نفس محتوى add_discount.html مع قيم محملة -->
+                    
+                    <h6 class="text-primary border-bottom pb-2 mb-3">
+                        <i class="fas fa-info-circle me-1"></i>المعلومات الأساسية
+                    </h6>
+                    
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="editDiscountName" class="form-label">اسم الخصم *</label>
+                            <input type="text" class="form-control" id="editDiscountName" name="name" required>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="editDiscountCategory" class="form-label">فئة الخصم *</label>
+                            <select class="form-select" id="editDiscountCategory" name="category" required>
+                                <option value="SIBLING">خصم الأشقاء</option>
+                                <option value="FINANCIAL_HARDSHIP">خصم الحالة المالية</option>
+                                <option value="ACADEMIC_EXCELLENCE">خصم التفوق الأكاديمي</option>
+                                <option value="STAFF_CHILDREN">خصم أبناء الموظفين</option>
+                                <option value="EARLY_PAYMENT">خصم الدفع المبكر</option>
+                                <option value="OTHER">خصومات أخرى</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="editDiscountType" class="form-label">نوع الخصم *</label>
+                            <select class="form-select" id="editDiscountType" name="discount_type" required>
+                                <option value="PERCENTAGE">نسبة مئوية</option>
+                                <option value="FIXED_AMOUNT">مبلغ ثابت</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4" id="editPercentageField">
+                            <label for="editPercentageValue" class="form-label">النسبة المئوية *</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="editPercentageValue" 
+                                       name="percentage_value" min="0" max="100" step="0.01">
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4" id="editFixedAmountField">
+                            <label for="editFixedAmount" class="form-label">المبلغ الثابت *</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="editFixedAmount" 
+                                       name="fixed_amount" min="0" step="0.01">
+                                <span class="input-group-text">ج.م</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="editRequiresApproval" name="requires_approval">
+                                <label class="form-check-label" for="editRequiresApproval">
+                                    يتطلب موافقة من الإدارة
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="editDiscountIsActive" name="is_active">
+                                <label class="form-check-label" for="editDiscountIsActive">
+                                    الخصم نشط
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-save me-1"></i>حفظ التغييرات
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function loadDiscountForEdit(discountId) {
+    fetch(`/settings/discount/${discountId}/json/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const discount = data.discount;
+                document.getElementById('editDiscountId').value = discount.id;
+                document.getElementById('editDiscountName').value = discount.name;
+                document.getElementById('editDiscountCategory').value = discount.category;
+                document.getElementById('editDiscountType').value = discount.discount_type;
+                
+                if (discount.discount_type === 'PERCENTAGE') {
+                    document.getElementById('editPercentageValue').value = discount.percentage_value;
+                    document.getElementById('editPercentageField').style.display = 'block';
+                    document.getElementById('editFixedAmountField').style.display = 'none';
+                } else {
+                    document.getElementById('editFixedAmount').value = discount.fixed_amount;
+                    document.getElementById('editPercentageField').style.display = 'none';
+                    document.getElementById('editFixedAmountField').style.display = 'block';
+                }
+                
+                document.getElementById('editRequiresApproval').checked = discount.requires_approval;
+                document.getElementById('editDiscountIsActive').checked = discount.is_active;
+                
+                new bootstrap.Modal(document.getElementById('editDiscountModal')).show();
+            }
+        });
+}
+
+document.getElementById('editDiscountForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const discountId = document.getElementById('editDiscountId').value;
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>جاري الحفظ...';
+    submitBtn.disabled = true;
+    
+    fetch(`/settings/edit-discount/${discountId}/`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage('success', data.message);
+            bootstrap.Modal.getInstance(document.getElementById('editDiscountModal')).hide();
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showMessage('error', data.message);
+        }
+    })
+    .finally(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+});
+</script>

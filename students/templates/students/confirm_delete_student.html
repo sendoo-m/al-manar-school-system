@@ -1,15 +1,393 @@
-{% extends 'students/base/administration_navbar.html' %}
-{% comment %} {% extends 'students/base.html' %} {% endcomment %}
+{% extends 'base.html' %}
+
+{% block title %}حذف الطالب - {{ student.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .delete-header {
+        background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 30px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .delete-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+        animation: pulse 3s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 0.3; }
+        50% { opacity: 0.1; }
+    }
+    
+    .delete-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        border: 2px solid #e74c3c;
+        overflow: hidden;
+        margin-bottom: 25px;
+    }
+    
+    .delete-card-header {
+        background: linear-gradient(135deg, #fadbd8, #f1948a);
+        padding: 20px;
+        border-bottom: 1px solid #e74c3c;
+    }
+    
+    .delete-card-body {
+        padding: 30px;
+    }
+    
+    .student-info {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin: 20px 0;
+        border-left: 4px solid #e74c3c;
+    }
+    
+    .warning-box {
+        background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+        border: 2px solid #ffc107;
+        border-radius: 10px;
+        padding: 20px;
+        margin: 20px 0;
+    }
+    
+    .danger-box {
+        background: linear-gradient(135deg, #f8d7da, #fadbd8);
+        border: 2px solid #e74c3c;
+        border-radius: 10px;
+        padding: 20px;
+        margin: 20px 0;
+    }
+    
+    .btn-delete {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+        border: none;
+        border-radius: 25px;
+        padding: 12px 30px;
+        font-weight: 600;
+        color: white;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-delete:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+        color: white;
+    }
+    
+    .btn-cancel {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        border: none;
+        border-radius: 25px;
+        padding: 12px 30px;
+        font-weight: 600;
+        color: white;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-cancel:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+        color: white;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-  <h1>Delete Student</h1>
-  <p>Are you sure you want to delete the following student?</p>
-  <p><strong>Name:</strong> {{ student.name }}</p>
-  <p><strong>National Number:</strong> {{ student.national_number }}</p>
+<div class="container mt-4">
+    <!-- رأس التحذير -->
+    <div class="delete-header">
+        <div class="position-relative" style="z-index: 2;">
+            <i class="fas fa-exclamation-triangle fa-4x mb-3"></i>
+            <h2 class="mb-2">تحذير: حذف طالب</h2>
+            <p class="mb-0 fs-5">هذا الإجراء لا يمكن التراجع عنه</p>
+        </div>
+    </div>
+    
+    <!-- بيانات الطالب -->
+    <div class="delete-card">
+        <div class="delete-card-header">
+            <h4 class="mb-0 text-danger">
+                <i class="fas fa-user-times me-2"></i>
+                بيانات الطالب المراد حذفه
+            </h4>
+        </div>
+        <div class="delete-card-body">
+            <div class="student-info">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5 class="text-primary mb-3">
+                            <i class="fas fa-user me-2"></i>{{ student.name }}
+                        </h5>
+                        
+                        <div class="mb-2">
+                            <strong><i class="fas fa-id-card me-2 text-muted"></i>الرقم القومي:</strong> 
+                            {{ student.national_number }}
+                        </div>
+                        
+                        <div class="mb-2">
+                            <strong><i class="fas fa-calendar me-2 text-muted"></i>العمر:</strong> 
+                            {{ student.age }} سنة
+                        </div>
+                        
+                        <div class="mb-2">
+                            <strong><i class="fas fa-venus-mars me-2 text-muted"></i>الجنس:</strong> 
+                            {% if student.gender == 'M' %}ذكر{% elif student.gender == 'F' %}أنثى{% else %}غير محدد{% endif %}
+                        </div>
+                        
+                        {% if student.date_of_birth %}
+                        <div class="mb-2">
+                            <strong><i class="fas fa-birthday-cake me-2 text-muted"></i>تاريخ الميلاد:</strong> 
+                            {{ student.date_of_birth }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        {% if student.classroom.exists %}
+                        <div class="mb-3">
+                            <strong><i class="fas fa-chalkboard me-2 text-muted"></i>الفصول الدراسية:</strong>
+                            <ul class="list-unstyled ms-3 mt-2">
+                                {% for classroom in student.classroom.all %}
+                                <li><i class="fas fa-angle-left me-2"></i>{{ classroom.name }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        
+                        {% if student.phone_number %}
+                        <div class="mb-2">
+                            <strong><i class="fas fa-phone me-2 text-muted"></i>الهاتف:</strong> 
+                            {{ student.phone_number }}
+                        </div>
+                        {% endif %}
+                        
+                        {% if student.parent_name %}
+                        <div class="mb-2">
+                            <strong><i class="fas fa-user-friends me-2 text-muted"></i>ولي الأمر:</strong> 
+                            {{ student.parent_name }}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mb-2">
+                            <strong><i class="fas fa-calendar-plus me-2 text-muted"></i>تاريخ التسجيل:</strong> 
+                            {{ student.created_at|date:"Y/m/d H:i" }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- الحالة المالية -->
+            {% if student.total_payments or student.total_owed %}
+            <div class="warning-box">
+                <h6 class="text-warning mb-3">
+                    <i class="fas fa-money-bill-wave me-2"></i>الحالة المالية للطالب
+                </h6>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <h5 class="text-success">{{ student.total_payments|default:0 }} ج.م</h5>
+                            <small class="text-muted">إجمالي المدفوعات</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <h5 class="text-danger">{{ student.total_owed|default:0 }} ج.م</h5>
+                            <small class="text-muted">إجمالي المستحقات</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <span class="badge bg-{{ student.get_status_color }} fs-6">
+                                {{ student.get_financial_status }}
+                            </span>
+                            <br><small class="text-muted">الحالة المالية</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- تحذيرات الحذف -->
+            <div class="danger-box">
+                <h6 class="text-danger mb-3">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    تحذيرات مهمة قبل الحذف
+                </h6>
+                
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i class="fas fa-times-circle text-danger me-2"></i>
+                        سيتم حذف جميع بيانات الطالب نهائياً
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-times-circle text-danger me-2"></i>
+                        سيتم حذف جميع سجلات المدفوعات والأقساط المرتبطة
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-times-circle text-danger me-2"></i>
+                        سيتم حذف جميع التقييمات والدرجات
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-times-circle text-danger me-2"></i>
+                        لا يمكن التراجع عن هذا الإجراء
+                    </li>
+                </ul>
+                
+                <div class="alert alert-danger mt-3 mb-0">
+                    <strong>بديل:</strong> يمكنك إلغاء تفعيل الطالب بدلاً من الحذف للاحتفاظ بالبيانات التاريخية.
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- نموذج تأكيد الحذف -->
+    <div class="delete-card">
+        <div class="delete-card-body text-center">
+            <h5 class="text-danger mb-4">
+                هل أنت متأكد من رغبتك في حذف هذا الطالب نهائياً؟
+            </h5>
+            
+            <form method="post" id="deleteForm">
+                {% csrf_token %}
+                
+                <div class="mb-4">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="confirmDelete" required>
+                        <label class="form-check-label" for="confirmDelete">
+                            أؤكد أنني أريد حذف هذا الطالب نهائياً
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-delete" id="deleteBtn" disabled>
+                        <i class="fas fa-trash me-2"></i>تأكيد الحذف النهائي
+                    </button>
+                    
+                    <a href="{% url 'students:edit_student' student.pk %}" class="btn btn-cancel">
+                        <i class="fas fa-edit me-2"></i>تعديل بدلاً من الحذف
+                    </a>
+                    
+                    <a href="{% url 'students:student_detail' student.pk %}" class="btn btn-cancel">
+                        <i class="fas fa-arrow-right me-2"></i>إلغاء والعودة
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- خيارات بديلة -->
+    <div class="delete-card">
+        <div class="delete-card-header">
+            <h5 class="mb-0 text-success">
+                <i class="fas fa-lightbulb me-2"></i>
+                بدائل أخرى للحذف
+            </h5>
+        </div>
+        <div class="delete-card-body">
+            <div class="row">
+                <div class="col-md-4 text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-user-slash fa-2x text-warning mb-2"></i>
+                        <h6>إلغاء التفعيل</h6>
+                        <p class="small text-muted">إخفاء الطالب مع الاحتفاظ بالبيانات</p>
+                        <button class="btn btn-outline-warning btn-sm" onclick="deactivateStudent()">
+                            <i class="fas fa-pause me-1"></i>إلغاء التفعيل
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="col-md-4 text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-archive fa-2x text-info mb-2"></i>
+                        <h6>نقل للأرشيف</h6>
+                        <p class="small text-muted">نقل الطالب لأرشيف المتخرجين</p>
+                        <button class="btn btn-outline-info btn-sm" onclick="archiveStudent()">
+                            <i class="fas fa-archive me-1"></i>نقل للأرشيف
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="col-md-4 text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-exchange-alt fa-2x text-success mb-2"></i>
+                        <h6>نقل لمدرسة أخرى</h6>
+                        <p class="small text-muted">تسجيل انتقال الطالب</p>
+                        <button class="btn btn-outline-success btn-sm" onclick="transferStudent()">
+                            <i class="fas fa-share me-1"></i>نقل الطالب
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
 
-  <form action="{% url 'students:delete_student' student.id %}" method="POST">
-    {% csrf_token %}
-    <button type="submit" class="btn btn-danger">Delete</button>
-    <a href="{% url 'students:home' %}" class="btn btn-secondary">Cancel</a>
-  </form>
+{% block extra_js %}
+<script>
+// تفعيل زر الحذف عند تأكيد الاختيار
+document.getElementById('confirmDelete').addEventListener('change', function() {
+    document.getElementById('deleteBtn').disabled = !this.checked;
+});
+
+// معالجة إرسال النموذج
+document.getElementById('deleteForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    if (!document.getElementById('confirmDelete').checked) {
+        alert('يجب تأكيد الحذف أولاً');
+        return;
+    }
+    
+    const deleteBtn = document.getElementById('deleteBtn');
+    const originalText = deleteBtn.innerHTML;
+    
+    deleteBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>جاري الحذف...';
+    deleteBtn.disabled = true;
+    
+    // إرسال النموذج
+    setTimeout(() => {
+        this.submit();
+    }, 2000);
+});
+
+// البدائل
+function deactivateStudent() {
+    if (confirm('هل تريد إلغاء تفعيل الطالب بدلاً من حذفه؟')) {
+        // تنفيذ إلغاء التفعيل
+        alert('سيتم تطوير هذه الميزة قريباً');
+    }
+}
+
+function archiveStudent() {
+    if (confirm('هل تريد نقل الطالب للأرشيف؟')) {
+        // تنفيذ الأرشفة
+        alert('سيتم تطوير هذه الميزة قريباً');
+    }
+}
+
+function transferStudent() {
+    if (confirm('هل تريد تسجيل انتقال الطالب لمدرسة أخرى؟')) {
+        // تنفيذ النقل
+        alert('سيتم تطوير هذه الميزة قريباً');
+    }
+}
+</script>
 {% endblock %}

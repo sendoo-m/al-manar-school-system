@@ -1,0 +1,514 @@
+<!-- students/templates/students/student_dashboard.html -->
+{% extends 'students/base.html' %}
+
+{% block title %}لوحة إحصائيات الطلاب - نظام إدارة الطلاب{% endblock %}
+{% block page_title %}لوحة إحصائيات الطلاب{% endblock %}
+{% block page_icon %}<i class="fas fa-tachometer-alt"></i>{% endblock %}
+{% block page_subtitle %}نظرة شاملة على إحصائيات وأرقام الطلاب{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'students:home' %}">الرئيسية</a></li>
+<li class="breadcrumb-item active">لوحة الإحصائيات</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 25px;
+        margin-bottom: 30px;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border: none;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(135deg, var(--card-color-1), var(--card-color-2));
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    }
+    
+    .stat-card.primary {
+        --card-color-1: #3498db;
+        --card-color-2: #2980b9;
+    }
+    
+    .stat-card.success {
+        --card-color-1: #28a745;
+        --card-color-2: #20c997;
+    }
+    
+    .stat-card.info {
+        --card-color-1: #17a2b8;
+        --card-color-2: #138496;
+    }
+    
+    .stat-card.warning {
+        --card-color-1: #ffc107;
+        --card-color-2: #e0a800;
+    }
+    
+    .stat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        color: white;
+        background: linear-gradient(135deg, var(--card-color-1), var(--card-color-2));
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 5px;
+        line-height: 1;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.95rem;
+        font-weight: 500;
+        margin-bottom: 10px;
+    }
+    
+    .stat-change {
+        font-size: 0.8rem;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-weight: 600;
+    }
+    
+    .stat-change.positive {
+        background: rgba(40, 167, 69, 0.1);
+        color: #28a745;
+    }
+    
+    .chart-container {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+    }
+    
+    .chart-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f8f9fa;
+    }
+    
+    .chart-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #2c3e50;
+    }
+    
+    .progress-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+    }
+    
+    .progress-item:hover {
+        background: #e9ecef;
+        transform: translateX(5px);
+    }
+    
+    .progress-info {
+        flex: 1;
+        margin-right: 15px;
+    }
+    
+    .progress-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 5px;
+    }
+    
+    .progress {
+        height: 8px;
+        border-radius: 4px;
+        background: #e9ecef;
+        overflow: hidden;
+    }
+    
+    .progress-bar {
+        transition: width 0.8s ease;
+        border-radius: 4px;
+    }
+    
+    .progress-value {
+        font-weight: 700;
+        color: #2c3e50;
+        font-size: 1.1rem;
+    }
+    
+    .quick-actions {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+    }
+    
+    .action-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+    }
+    
+    .action-btn {
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+        padding: 15px;
+        text-align: center;
+        color: white;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+    }
+    
+    .action-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.4);
+        transform: translateY(-2px);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .action-btn i {
+        font-size: 1.5rem;
+        margin-bottom: 8px;
+        display: block;
+    }
+    
+    .recent-activity {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    
+    .activity-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid #f1f3f4;
+        transition: all 0.3s ease;
+    }
+    
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+    
+    .activity-item:hover {
+        background: rgba(52, 152, 219, 0.05);
+        border-radius: 8px;
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        font-size: 0.9rem;
+        color: white;
+    }
+    
+    .activity-content {
+        flex: 1;
+    }
+    
+    .activity-text {
+        font-weight: 500;
+        color: #495057;
+        margin-bottom: 3px;
+    }
+    
+    .activity-time {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- الإحصائيات الرئيسية -->
+<div class="dashboard-grid">
+    <div class="stat-card primary">
+        <div class="stat-header">
+            <div class="stat-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-change positive">
+                <i class="fas fa-arrow-up me-1"></i>جديد
+            </div>
+        </div>
+        <div class="stat-number">{{ stats.total }}</div>
+        <div class="stat-label">إجمالي الطلاب</div>
+    </div>
+    
+    <div class="stat-card success">
+        <div class="stat-header">
+            <div class="stat-icon">
+                <i class="fas fa-user-check"></i>
+            </div>
+            <div class="stat-change positive">
+                <i class="fas fa-check me-1"></i>نشط
+            </div>
+        </div>
+        <div class="stat-number">{{ stats.active }}</div>
+        <div class="stat-label">الطلاب النشطين</div>
+    </div>
+    
+    <div class="stat-card info">
+        <div class="stat-header">
+            <div class="stat-icon">
+                <i class="fas fa-user-plus"></i>
+            </div>
+            <div class="stat-change positive">
+                <i class="fas fa-plus me-1"></i>اليوم
+            </div>
+        </div>
+        <div class="stat-number">{{ stats.new_today }}</div>
+        <div class="stat-label">طلاب جدد اليوم</div>
+    </div>
+    
+    <div class="stat-card warning">
+        <div class="stat-header">
+            <div class="stat-icon">
+                <i class="fas fa-calendar-week"></i>
+            </div>
+            <div class="stat-change positive">
+                <i class="fas fa-calendar me-1"></i>أسبوع
+            </div>
+        </div>
+        <div class="stat-number">{{ stats.new_this_week }}</div>
+        <div class="stat-label">طلاب جدد هذا الأسبوع</div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- توزيع الطلاب حسب المراحل -->
+        <div class="chart-container">
+            <div class="chart-header">
+                <h5 class="chart-title">
+                    <i class="fas fa-chart-pie me-2"></i>توزيع الطلاب حسب المراحل التعليمية
+                </h5>
+                <div class="text-muted">
+                    <small>آخر تحديث: الآن</small>
+                </div>
+            </div>
+            
+            <div class="progress-list">
+                {% for level in education_levels_stats %}
+                <div class="progress-item">
+                    <div class="progress-info">
+                        <div class="progress-label">{{ level.name }}</div>
+                        <div class="progress">
+                            <div class="progress-bar bg-primary" style="width: {{ level.percentage }}%"></div>
+                        </div>
+                        <small class="text-muted">{{ level.percentage }}%</small>
+                    </div>
+                    <div class="progress-value">{{ level.student_count }}</div>
+                </div>
+                {% empty %}
+                <div class="text-center py-4">
+                    <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">لا توجد بيانات لعرضها</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- توزيع الطلاب حسب الجنس -->
+        <div class="chart-container">
+            <div class="chart-header">
+                <h5 class="chart-title">
+                    <i class="fas fa-venus-mars me-2"></i>توزيع الطلاب حسب الجنس
+                </h5>
+            </div>
+            
+            <div class="row text-center">
+                <div class="col-md-6">
+                    <div class="progress-item">
+                        <div class="progress-info">
+                            <div class="progress-label">
+                                <i class="fas fa-male text-info me-2"></i>طلاب ذكور
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar bg-info" style="width: {{ male_percentage }}%"></div>
+                            </div>
+                            <small class="text-muted">{{ male_percentage }}%</small>
+                        </div>
+                        <div class="progress-value">{{ male_students }}</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="progress-item">
+                        <div class="progress-info">
+                            <div class="progress-label">
+                                <i class="fas fa-female text-danger me-2"></i>طالبات إناث
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar bg-danger" style="width: {{ female_percentage }}%"></div>
+                            </div>
+                            <small class="text-muted">{{ female_percentage }}%</small>
+                        </div>
+                        <div class="progress-value">{{ female_students }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- الإجراءات السريعة -->
+        <div class="quick-actions">
+            <h5 class="mb-0">
+                <i class="fas fa-bolt me-2"></i>إجراءات سريعة
+            </h5>
+            <div class="action-grid">
+                <a href="{% url 'students:add_student' %}" class="action-btn">
+                    <i class="fas fa-user-plus"></i>
+                    <div>إضافة طالب</div>
+                </a>
+                <a href="{% url 'students:student_list' %}" class="action-btn">
+                    <i class="fas fa-list"></i>
+                    <div>قائمة الطلاب</div>
+                </a>
+                <a href="{% url 'students:search_student' %}" class="action-btn">
+                    <i class="fas fa-search"></i>
+                    <div>بحث متقدم</div>
+                </a>
+                <a href="{% url 'students:report' %}" class="action-btn">
+                    <i class="fas fa-chart-bar"></i>
+                    <div>التقارير</div>
+                </a>
+            </div>
+        </div>
+        
+        <!-- النشاط الأخير -->
+        <div class="recent-activity">
+            <h5 class="mb-4">
+                <i class="fas fa-history me-2"></i>النشاط الأخير
+            </h5>
+            
+            <div class="activity-list">
+                <div class="activity-item">
+                    <div class="activity-icon bg-success">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">تم إضافة {{ stats.new_today }} طالب جديد</div>
+                        <div class="activity-time">اليوم</div>
+                    </div>
+                </div>
+                
+                <div class="activity-item">
+                    <div class="activity-icon bg-info">
+                        <i class="fas fa-edit"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">تم تحديث بيانات الطلاب</div>
+                        <div class="activity-time">منذ ساعتين</div>
+                    </div>
+                </div>
+                
+                <div class="activity-item">
+                    <div class="activity-icon bg-warning">
+                        <i class="fas fa-file-export"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">تم تصدير قائمة الطلاب</div>
+                        <div class="activity-time">أمس</div>
+                    </div>
+                </div>
+                
+                <div class="activity-item">
+                    <div class="activity-icon bg-primary">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">تم إنشاء تقرير شهري</div>
+                        <div class="activity-time">منذ 3 أيام</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // تحريك أشرطة التقدم
+    const progressBars = document.querySelectorAll('.progress-bar');
+    progressBars.forEach((bar, index) => {
+        const width = bar.style.width;
+        bar.style.width = '0%';
+        setTimeout(() => {
+            bar.style.width = width;
+        }, index * 200 + 500);
+    });
+    
+    // تأثيرات تفاعلية للبطاقات
+    const statCards = document.querySelectorAll('.stat-card');
+    statCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-8px) scale(1.02)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+        });
+    });
+});
+</script>
+{% endblock %}

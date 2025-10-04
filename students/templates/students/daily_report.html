@@ -1,136 +1,726 @@
-{% extends 'students/base/sub_admin_navbar.html' %}
- {% comment %} {% extends 'students/base.html' %} {% endcomment %}
+{% extends 'students/base.html' %}
 
-{% comment %}{% block title %}Daily Report{% endblock %}
+{% block title %}التقرير اليومي - {{ report_date|date:"d/m/Y" }} - {{ system_settings.school_name }}{% endblock %}
+{% block page_title %}التقرير اليومي{% endblock %}
+{% block page_icon %}<i class="fas fa-calendar-day"></i>{% endblock %}
+{% block page_subtitle %}تقرير مفصل عن أنشطة اليوم والإحصائيات{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'students:home' %}">الرئيسية</a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:all_reports' %}">التقارير</a></li>
+<li class="breadcrumb-item active">التقرير اليومي</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .daily-header {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border-radius: 20px;
+        padding: 30px;
+        text-align: center;
+        margin-bottom: 30px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .daily-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+        animation: float 15s linear infinite;
+    }
+
+    .daily-header-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .date-selector {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 25px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+
+    .quick-stat {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        border-top: 4px solid;
+        text-align: center;
+    }
+
+    .quick-stat:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+
+    .quick-stat.success { border-top-color: #28a745; }
+    .quick-stat.primary { border-top-color: #007bff; }
+    .quick-stat.info { border-top-color: #17a2b8; }
+    .quick-stat.warning { border-top-color: #ffc107; }
+    .quick-stat.danger { border-top-color: #dc3545; }
+
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin: 0 auto 15px;
+    }
+
+    .stat-icon.success { background: linear-gradient(135deg, #28a745, #20c997); color: white; }
+    .stat-icon.primary { background: linear-gradient(135deg, #007bff, #0056b3); color: white; }
+    .stat-icon.info { background: linear-gradient(135deg, #17a2b8, #138496); color: white; }
+    .stat-icon.warning { background: linear-gradient(135deg, #ffc107, #e0a800); color: #212529; }
+    .stat-icon.danger { background: linear-gradient(135deg, #dc3545, #c82333); color: white; }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+
+    .stat-value.success { color: #28a745; }
+    .stat-value.primary { color: #007bff; }
+    .stat-value.info { color: #17a2b8; }
+    .stat-value.warning { color: #ffc107; }
+    .stat-value.danger { color: #dc3545; }
+
+    .stat-label {
+        color: #6c757d;
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+
+    .stat-subtitle {
+        font-size: 0.85rem;
+        color: #8c8c8c;
+    }
+
+    .report-section {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+
+    .section-title {
+        color: #28a745;
+        font-weight: 700;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        font-size: 1.3rem;
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 15px;
+    }
+
+    .section-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 15px;
+        font-size: 1.1rem;
+    }
+
+    .student-card {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 15px;
+        border-left: 4px solid #28a745;
+        transition: all 0.3s ease;
+    }
+
+    .student-card:hover {
+        background: #e8f5e9;
+        transform: translateX(5px);
+    }
+
+    .student-name {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 5px;
+    }
+
+    .student-details {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .student-info {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+
+    .student-time {
+        background: #28a745;
+        color: white;
+        padding: 4px 10px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .week-chart {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        height: 200px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin: 20px 0;
+    }
+
+    .week-bar {
+        flex: 1;
+        margin: 0 5px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .bar {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        border-radius: 4px 4px 0 0;
+        min-height: 10px;
+        width: 100%;
+        transition: all 0.3s ease;
+        margin-bottom: 10px;
+    }
+
+    .bar.today {
+        background: linear-gradient(135deg, #ffc107, #e0a800);
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    .bar-label {
+        font-size: 0.8rem;
+        color: #6c757d;
+        text-align: center;
+        font-weight: 600;
+    }
+
+    .bar-value {
+        font-size: 0.9rem;
+        color: #495057;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+
+    .hourly-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin: 20px 0;
+    }
+
+    .hour-stat {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 15px;
+        text-align: center;
+        border-left: 4px solid #17a2b8;
+    }
+
+    .hour-time {
+        font-weight: 600;
+        color: #17a2b8;
+        margin-bottom: 5px;
+    }
+
+    .hour-count {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #495057;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6c757d;
+    }
+
+    .empty-icon {
+        font-size: 4rem;
+        color: #dee2e6;
+        margin-bottom: 20px;
+    }
+
+    .badge-custom {
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+
+    .table-daily {
+        margin-bottom: 0;
+    }
+
+    .table-daily thead th {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        border: none;
+        font-weight: 600;
+        padding: 15px;
+        vertical-align: middle;
+    }
+
+    .table-daily tbody tr {
+        transition: all 0.3s ease;
+    }
+
+    .table-daily tbody tr:hover {
+        background: rgba(40, 167, 69, 0.05);
+        transform: scale(1.01);
+    }
+
+    .table-daily tbody td {
+        padding: 15px;
+        vertical-align: middle;
+        border-color: #e9ecef;
+    }
+
+    @media (max-width: 768px) {
+        .daily-header {
+            padding: 20px;
+        }
+        
+        .date-selector {
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .quick-stat {
+            padding: 15px;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+        }
+        
+        .week-chart {
+            height: 150px;
+            padding: 15px;
+        }
+        
+        .hourly-stats {
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        }
+        
+        .student-details {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+
+    .alert-today {
+        background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+        border: 2px solid #ffc107;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+
+    .alert-historical {
+        background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+        border: 2px solid #2196f3;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-  <h1>Daily Report - {{ report_date }}</h1>
-    <table>
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Total Payments</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for tuition in paid_tuitions %}
-                <tr>
-                    <td>{{ tuition.payment_date }}</td>
-                    <td>{{ tuition.amount_tuition }}</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<!-- Header التقرير -->
+<div class="daily-header">
+    <div class="daily-header-content">
+        <h1 class="display-4 mb-0">
+            <i class="fas fa-calendar-day me-3"></i>التقرير اليومي
+        </h1>
+        <p class="lead mb-3">تقرير شامل عن أنشطة يوم {{ report_date|date:"d F Y" }}</p>
+        <div class="text-light">
+            {% if is_today %}
+                <span class="badge bg-warning text-dark me-2">
+                    <i class="fas fa-clock me-1"></i>تقرير مباشر
+                </span>
+            {% else %}
+                <span class="badge bg-info me-2">
+                    <i class="fas fa-history me-1"></i>تقرير تاريخي
+                </span>
+            {% endif %}
+            <i class="fas fa-school me-2"></i>{{ system_settings.school_name }}
+        </div>
+    </div>
+</div>
 
-    {% if paid_tuitions.has_previous or paid_tuitions.has_next %}
-      <div class="pagination">
-        {% if paid_tuitions.has_previous %}
-          <a href="?page={{ paid_tuitions.previous_page_number }}">Previous</a>
+<!-- اختيار التاريخ -->
+<div class="date-selector">
+    <form method="get" class="d-flex align-items-center gap-3">
+        <label for="date" class="form-label mb-0 fw-bold">
+            <i class="fas fa-calendar me-2"></i>اختر التاريخ:
+        </label>
+        <input type="date" id="date" name="date" class="form-control" 
+               value="{{ selected_date }}" max="{% now 'Y-m-d' %}">
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-search me-2"></i>عرض التقرير
+        </button>
+        {% if not is_today %}
+        <a href="{% url 'students:daily_report' %}" class="btn btn-outline-success">
+            <i class="fas fa-calendar-day me-2"></i>اليوم
+        </a>
         {% endif %}
+    </form>
+</div>
 
-        <span class="current-page">{{ paid_tuitions.number }}</span>
+<!-- التنبيهات -->
+{% if is_today %}
+<div class="alert-today">
+    <h6><i class="fas fa-info-circle me-2"></i>تقرير مباشر لليوم:</h6>
+    <p class="mb-0">هذا التقرير يعرض البيانات المحدثة لحظياً ليوم {{ report_date|date:"d/m/Y" }}. البيانات قابلة للتغيير خلال اليوم.</p>
+</div>
+{% else %}
+<div class="alert-historical">
+    <h6><i class="fas fa-history me-2"></i>تقرير تاريخي:</h6>
+    <p class="mb-0">هذا التقرير يعرض البيانات النهائية ليوم {{ report_date|date:"d/m/Y" }}.</p>
+</div>
+{% endif %}
 
-        {% if paid_tuitions.has_next %}
-          <a href="?page={{ paid_tuitions.next_page_number }}">Next</a>
-        {% endif %}
-      </div>
-    {% endif %}
-{% endblock %} {% endcomment %}
+<!-- الإحصائيات السريعة -->
+<div class="row">
+    <div class="col-lg-3 col-md-6">
+        <div class="quick-stat success">
+            <div class="stat-icon success">
+                <i class="fas fa-user-plus"></i>
+            </div>
+            <div class="stat-value success">{{ today_stats.new_students }}</div>
+            <div class="stat-label">طلاب جدد</div>
+            <div class="stat-subtitle">مسجلون اليوم</div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="quick-stat primary">
+            <div class="stat-icon primary">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-value primary">{{ today_stats.total_active }}</div>
+            <div class="stat-label">إجمالي الطلاب</div>
+            <div class="stat-subtitle">النشطون في النظام</div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="quick-stat info">
+            <div class="stat-icon info">
+                <i class="fas fa-male"></i>
+            </div>
+            <div class="stat-value info">{{ today_stats.total_male_today }}</div>
+            <div class="stat-label">ذكور جدد</div>
+            <div class="stat-subtitle">من طلاب اليوم</div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="quick-stat warning">
+            <div class="stat-icon warning">
+                <i class="fas fa-female"></i>
+            </div>
+            <div class="stat-value warning">{{ today_stats.total_female_today }}</div>
+            <div class="stat-label">إناث جدد</div>
+            <div class="stat-subtitle">من طلاب اليوم</div>
+        </div>
+    </div>
+</div>
 
+<!-- الإحصائيات المالية -->
+{% if user_role == 'SYSTEM_ADMIN' and financial_summary %}
+<div class="row">
+    <div class="col-lg-6 col-md-6">
+        <div class="quick-stat success">
+            <div class="stat-icon success">
+                <i class="fas fa-money-bill-wave"></i>
+            </div>
+            <div class="stat-value success">{{ financial_summary.expected_fees_from_new_students|floatformat:0 }}</div>
+            <div class="stat-label">مصروفات متوقعة</div>
+            <div class="stat-subtitle">من الطلاب الجدد اليوم</div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 col-md-6">
+        <div class="quick-stat info">
+            <div class="stat-icon info">
+                <i class="fas fa-calculator"></i>
+            </div>
+            <div class="stat-value info">{{ financial_summary.average_fee_per_new_student|floatformat:0 }}</div>
+            <div class="stat-label">متوسط المصروفات</div>
+            <div class="stat-subtitle">لكل طالب جديد</div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
+<!-- إحصائيات الأسبوع -->
+{% if week_stats %}
+<div class="report-section">
+    <div class="section-title">
+        <div class="section-icon">
+            <i class="fas fa-chart-bar"></i>
+        </div>
+        <span>إحصائيات الأسبوع</span>
+    </div>
+    
+    <div class="week-chart">
+        {% for day_stat in week_stats %}
+        <div class="week-bar">
+            <div class="bar-value">{{ day_stat.students_count }}</div>
+            
+            <div class="bar {% if day_stat.is_today %}today{% endif %}"  style="height: {{ day_stat.bar_height }}px;"></div>
 
-{% comment %} {% block title %}Daily Report - {{ report_date }}{% endblock %}
+            <div class="bar-label">
+                {{ day_stat.day_name_ar }}<br>
+                <small>{{ day_stat.date|date:"d/m" }}</small>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
 
-{% block content %}
-    <h1 class="mb-4">Daily Report - {{ report_date }}</h1>
+<!-- الطلاب الجدد اليوم -->
+{% if new_students_today %}
+<div class="report-section">
+    <div class="section-title">
+        <div class="section-icon">
+            <i class="fas fa-user-plus"></i>
+        </div>
+        <span>الطلاب المسجلون اليوم ({{ new_students_today|length }})</span>
+    </div>
+    
     <div class="table-responsive">
-        <table class="table table-striped table-bordered">
+        <table class="table table-daily">
             <thead>
                 <tr>
-                    <th>Date</th>
-                    <th>Total Payments</th>
+                    <th>اسم الطالب</th>
+                    <th>الرقم القومي</th>
+                    <th>المرحلة التعليمية</th>
+                    <th>الصف الدراسي</th>
+                    <th>الجنس</th>
+                    <th>وقت التسجيل</th>
                 </tr>
             </thead>
             <tbody>
-                {% for payment in installments %}
-                    <tr>
-                        <td>{{ payment.receipt_date }}</td>
-                        <td>${{ payment.amount_tuition }}</td>
-                    </tr>
-                {% empty %}
-                    <tr>
-                        <td colspan="2">No payments yet.</td>
-                    </tr>
+                {% for student in new_students_today %}
+                <tr>
+                    <td>
+                        <strong>{{ student.name }}</strong>
+                    </td>
+                    <td>
+                        <span class="font-monospace">{{ student.national_number }}</span>
+                    </td>
+                    <td>
+                        {% if student.grade_level %}
+                            <span class="badge-custom" style="background: rgba(40, 167, 69, 0.1); color: #28a745;">
+                                {{ student.grade_level.education_level.name }}
+                            </span>
+                        {% else %}
+                            <span class="text-muted">غير محدد</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if student.grade_level %}
+                            <span class="badge-custom" style="background: rgba(23, 162, 184, 0.1); color: #17a2b8;">
+                                {{ student.grade_level.name }}
+                            </span>
+                        {% else %}
+                            <span class="text-muted">غير محدد</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if student.gender == 'M' %}
+                            <span class="badge-custom" style="background: rgba(0, 123, 255, 0.1); color: #007bff;">
+                                <i class="fas fa-male me-1"></i>ذكر
+                            </span>
+                        {% elif student.gender == 'F' %}
+                            <span class="badge-custom" style="background: rgba(232, 62, 140, 0.1); color: #e83e8c;">
+                                <i class="fas fa-female me-1"></i>أنثى
+                            </span>
+                        {% else %}
+                            <span class="text-muted">غير محدد</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="student-time">
+                            {{ student.created_at|date:"H:i" }}
+                        </span>
+                    </td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+</div>
+{% endif %}
 
-    {% if daily_payments.has_previous or daily_payments.has_next %}
-    <nav aria-label="Page navigation">
-        <ul class="pagination justify-content-center">
-            {% if daily_payments.has_previous %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ daily_payments.previous_page_number }}">Previous</a>
-            </li>
-            {% endif %}
-            <li class="page-item disabled">
-                <span class="page-link">{{ daily_payments.number }}</span>
-            </li>
-            {% if daily_payments.has_next %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ daily_payments.next_page_number }}">Next</a>
-            </li>
-            {% endif %}
-        </ul>
-    </nav>
-    {% endif %}
-{% endblock %} {% endcomment %}
-
-{% block title %}Daily Report - {{ report_date }}{% endblock %}
-
-{% block content %}
-    <h1 class="mb-4 text-center">التوريد اليومي للخزينة</h1>
-    <div class="table-responsive">
-        <table> <!-- class="table table-striped table-bordered" -->
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Total Payments</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for payment in daily_payments %}
-                    <tr>
-                        <td>{{ payment.receipt_date__date }}</td>
-                        <td>جنيهاً {{ payment.total_amount }}</td>
-                    </tr>
-                {% empty %}
-                    <tr>
-                        <td colspan="2">No payments yet.</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+<!-- إحصائيات المراحل التعليمية لليوم -->
+{% if education_levels_today %}
+<div class="report-section">
+    <div class="section-title">
+        <div class="section-icon">
+            <i class="fas fa-layer-group"></i>
+        </div>
+        <span>توزيع الطلاب الجدد حسب المراحل</span>
     </div>
+    
+    <div class="row">
+        {% for level_stat in education_levels_today %}
+        <div class="col-lg-4 col-md-6">
+            <div class="student-card">
+                <div class="student-name">{{ level_stat.level.name }}</div>
+                <div class="student-details">
+                    <div class="student-info">
+                        <i class="fas fa-users me-1"></i>
+                        {{ level_stat.students_count }} طالب جديد
+                    </div>
+                    <div class="student-time">
+                        {{ level_stat.percentage }}%
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
 
-    {% if daily_payments.has_previous or daily_payments.has_next %}
-    <nav aria-label="Page navigation">
-        <ul class="pagination justify-content-center">
-            {% if daily_payments.has_previous %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ daily_payments.previous_page_number }}">Previous</a>
-            </li>
-            {% endif %}
-            <li class="page-item disabled">
-                <span class="page-link">{{ daily_payments.number }}</span>
-            </li>
-            {% if daily_payments.has_next %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ daily_payments.next_page_number }}">Next</a>
-            </li>
-            {% endif %}
-        </ul>
-    </nav>
+<!-- إحصائيات الساعات -->
+{% if hourly_stats %}
+<div class="report-section">
+    <div class="section-title">
+        <div class="section-icon">
+            <i class="fas fa-clock"></i>
+        </div>
+        <span>توزيع التسجيل حسب الساعات</span>
+    </div>
+    
+    <div class="hourly-stats">
+        {% for hour_stat in hourly_stats %}
+        <div class="hour-stat">
+            <div class="hour-time">{{ hour_stat.hour_range }}</div>
+            <div class="hour-count">{{ hour_stat.count }} طالب</div>
+            <small class="text-muted">{{ hour_stat.percentage }}%</small>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- رسالة فارغة -->
+{% if today_stats.new_students == 0 %}
+<div class="report-section">
+    <div class="empty-state">
+        <div class="empty-icon">
+            <i class="fas fa-calendar-times"></i>
+        </div>
+        <h5>لا توجد تسجيلات جديدة</h5>
+        <p class="text-muted">لم يتم تسجيل أي طلاب جدد في يوم {{ report_date|date:"d/m/Y" }}</p>
+        {% if is_today %}
+        <a href="{% url 'students:add_student' %}" class="btn btn-success">
+            <i class="fas fa-user-plus me-2"></i>إضافة طالب جديد
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- أزرار الإجراءات -->
+<div class="text-center mt-4">
+    <div class="btn-group" role="group">
+        <a href="{% url 'students:all_reports' %}" class="btn btn-outline-primary btn-lg">
+            <i class="fas fa-chart-line me-2"></i>التقارير الشاملة
+        </a>
+        <a href="{% url 'students:report' %}" class="btn btn-outline-success btn-lg">
+            <i class="fas fa-file-alt me-2"></i>التقرير العام
+        </a>
+        <button onclick="window.print()" class="btn btn-outline-info btn-lg">
+            <i class="fas fa-print me-2"></i>طباعة التقرير
+        </button>
+        {% if user_role in 'SYSTEM_ADMIN,SCHOOL_MANAGER,STUDENT_AFFAIRS' %}
+        <a href="{% url 'students:add_student' %}" class="btn btn-outline-warning btn-lg">
+            <i class="fas fa-user-plus me-2"></i>إضافة طالب جديد
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // تحريك الرسوم البيانية
+    const bars = document.querySelectorAll('.bar');
+    bars.forEach((bar, index) => {
+        const height = bar.style.height;
+        bar.style.height = '10px';
+        setTimeout(() => {
+            bar.style.height = height;
+        }, 200 + (index * 100));
+    });
+    
+    // تحديث تلقائي للتقرير الحالي كل 5 دقائق
+    {% if is_today %}
+    setInterval(function() {
+        // يمكن إضافة تحديث AJAX هنا
+        console.log('تحديث تلقائي للتقرير اليومي');
+    }, 300000); // 5 دقائق
     {% endif %}
+    
+    // تحسين تجربة الطباعة
+    window.addEventListener('beforeprint', function() {
+        document.body.classList.add('printing');
+    });
+    
+    window.addEventListener('afterprint', function() {
+        document.body.classList.remove('printing');
+    });
+    
+    console.log('تم تحميل التقرير اليومي بنجاح');
+});
+</script>
 {% endblock %}

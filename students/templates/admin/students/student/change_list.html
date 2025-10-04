@@ -1,0 +1,117 @@
+<!-- templates/admin/students/student/change_list.html -->
+{% extends "admin/change_list.html" %}
+{% load admin_urls static admin_list %}
+
+{% block extrahead %}
+{{ block.super }}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    .import-export-toolbar {
+        background: linear-gradient(135deg, #007cba 0%, #005a87 100%);
+        color: white;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .toolbar-btn {
+        background: rgba(255,255,255,0.2);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.3);
+        padding: 8px 16px;
+        border-radius: 5px;
+        text-decoration: none;
+        margin: 0 5px;
+        transition: all 0.3s ease;
+    }
+    
+    .toolbar-btn:hover {
+        background: rgba(255,255,255,0.3);
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+    
+    .stat-card {
+        background: rgba(255,255,255,0.1);
+        padding: 10px;
+        border-radius: 5px;
+        text-align: center;
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+    
+    .stat-label {
+        font-size: 0.8rem;
+        opacity: 0.9;
+    }
+</style>
+{% endblock %}
+
+{% block object-tools-items %}
+    {% if show_import_export %}
+    <div class="import-export-toolbar">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h5 style="margin: 0; opacity: 0.9;">
+                    <i class="fas fa-exchange-alt me-2"></i>استيراد وتصدير البيانات
+                </h5>
+            </div>
+            <div>
+                <a href="{% url 'admin:students_student_import' %}" class="toolbar-btn">
+                    <i class="fas fa-upload"></i> استيراد طلاب
+                </a>
+                <div class="btn-group">
+                    <a href="{% url 'admin:students_student_export' %}?format=excel" class="toolbar-btn">
+                        <i class="fas fa-file-excel"></i> تصدير Excel
+                    </a>
+                    <a href="{% url 'admin:students_student_export' %}?format=csv" class="toolbar-btn">
+                        <i class="fas fa-file-csv"></i> تصدير CSV
+                    </a>
+                    <a href="{% url 'admin:students_student_export' %}?format=json" class="toolbar-btn">
+                        <i class="fas fa-file-code"></i> تصدير JSON
+                    </a>
+                </div>
+                <a href="{% url 'admin:students_student_export_template' %}" class="toolbar-btn">
+                    <i class="fas fa-download"></i> قالب الاستيراد
+                </a>
+            </div>
+        </div>
+        
+        {% if total_students %}
+        <div class="stats-grid mt-3">
+            <div class="stat-card">
+                <div class="stat-number">{{ total_students }}</div>
+                <div class="stat-label">إجمالي الطلاب</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ male_students }}</div>
+                <div class="stat-label">ذكور</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ female_students }}</div>
+                <div class="stat-label">إناث</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ students_owing }}</div>
+                <div class="stat-label">عليهم مستحقات</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ total_owed|floatformat:0 }}</div>
+                <div class="stat-label">إجمالي المستحقات (ج.م)</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    {{ block.super }}
+{% endblock %}

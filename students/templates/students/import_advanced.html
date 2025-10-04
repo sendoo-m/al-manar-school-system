@@ -1,0 +1,380 @@
+<!-- students/templates/students/import_advanced.html -->
+{% extends 'students/base.html' %}
+
+{% block title %}استيراد بيانات الطلاب - نظام إدارة الطلاب{% endblock %}
+{% block page_title %}استيراد بيانات الطلاب{% endblock %}
+{% block page_icon %}<i class="fas fa-upload"></i>{% endblock %}
+{% block page_subtitle %}استيراد بيانات الطلاب من ملفات CSV أو Excel{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'students:home' %}">الرئيسية</a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:student_list' %}">قائمة الطلاب</a></li>
+<li class="breadcrumb-item active">استيراد البيانات</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .import-card {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    
+    .upload-area {
+        border: 3px dashed #dee2e6;
+        border-radius: 15px;
+        padding: 40px;
+        text-align: center;
+        background: #f8f9fa;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .upload-area:hover {
+        border-color: #3498db;
+        background: #e3f2fd;
+        transform: translateY(-2px);
+    }
+    
+    .upload-area.dragover {
+        border-color: #28a745;
+        background: #d4edda;
+    }
+    
+    .upload-icon {
+        font-size: 3rem;
+        color: #6c757d;
+        margin-bottom: 15px;
+    }
+    
+    .upload-area:hover .upload-icon {
+        color: #3498db;
+    }
+    
+    .file-input {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+    
+    .format-info {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .template-download {
+        background: linear-gradient(135deg, #ffc107, #e0a800);
+        border: none;
+        border-radius: 25px;
+        padding: 10px 25px;
+        color: white;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        display: inline-block;
+    }
+    
+    .template-download:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(255, 193, 7, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .requirements-list {
+        background: #e3f2fd;
+        border-radius: 8px;
+        padding: 15px;
+    }
+    
+    .progress-section {
+        display: none;
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- معلومات الاستيراد -->
+<div class="row g-4 mb-4">
+    <div class="col-md-12">
+        <div class="import-card">
+            <div>
+                <i class="fas fa-file-import" style="font-size: 3rem; margin-bottom: 15px;"></i>
+            </div>
+            <h3>استيراد بيانات الطلاب</h3>
+            <p class="mb-0">يمكنك استيراد بيانات متعددة للطلاب من ملفات CSV أو Excel</p>
+        </div>
+    </div>
+</div>
+
+<!-- نموذج الاستيراد -->
+<div class="content-card">
+    <div class="content-card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-upload me-2"></i>رفع ملف البيانات
+        </h5>
+    </div>
+    <div class="content-card-body">
+        <form method="post" enctype="multipart/form-data" id="importForm">
+            {% csrf_token %}
+            
+            <!-- منطقة رفع الملف -->
+            <div class="upload-area mb-4" id="uploadArea">
+                <input type="file" name="file" id="fileInput" class="file-input" accept=".csv,.xlsx,.xls" required>
+                <div class="upload-content">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <h5>اسحب الملف هنا أو انقر للاختيار</h5>
+                    <p class="text-muted mb-3">الصيغ المدعومة: CSV, Excel (.xlsx, .xls)</p>
+                    <div class="selected-file" style="display: none;">
+                        <i class="fas fa-file me-2"></i>
+                        <span id="fileName"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- معلومات الملف المحدد -->
+            <div id="fileInfo" class="alert alert-info" style="display: none;">
+                <h6><i class="fas fa-info-circle me-2"></i>معلومات الملف:</h6>
+                <div class="row">
+                    <div class="col-md-4">
+                        <strong>اسم الملف:</strong> <span id="fileNameDisplay"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <strong>الحجم:</strong> <span id="fileSizeDisplay"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <strong>النوع:</strong> <span id="fileTypeDisplay"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- أزرار العمل -->
+            <div class="text-center">
+                <button type="submit" class="btn btn-success btn-lg" id="importBtn" disabled>
+                    <i class="fas fa-upload me-2"></i>بدء الاستيراد
+                </button>
+                <a href="{% url 'students:student_list' %}" class="btn btn-outline-secondary me-3">
+                    <i class="fas fa-arrow-left me-2"></i>العودة
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- شرح تنسيق الملف -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="format-info">
+            <h6><i class="fas fa-table me-2"></i>تنسيق الملف المطلوب</h6>
+            <div class="requirements-list">
+                <h6>الأعمدة المطلوبة:</h6>
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-check text-success me-2"></i><code>name</code> - اسم الطالب (مطلوب)</li>
+                    <li><i class="fas fa-check text-success me-2"></i><code>national_number</code> - الرقم القومي (مطلوب)</li>
+                    <li><i class="fas fa-minus text-muted me-2"></i><code>phone_number</code> - رقم الهاتف (اختياري)</li>
+                    <li><i class="fas fa-minus text-muted me-2"></i><code>address</code> - العنوان (اختياري)</li>
+                    <li><i class="fas fa-minus text-muted me-2"></i><code>parent_name</code> - اسم ولي الأمر (اختياري)</li>
+                    <li><i class="fas fa-minus text-muted me-2"></i><code>parent_phone</code> - هاتف ولي الأمر (اختياري)</li>
+                    <li><i class="fas fa-minus text-muted me-2"></i><code>parent_email</code> - بريد ولي الأمر (اختياري)</li>
+                    <li><i class="fas fa-minus text-muted me-2"></i><code>grade_level_id</code> - معرف الصف (اختياري)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="format-info">
+            <h6><i class="fas fa-download me-2"></i>نماذج الملفات</h6>
+            <p class="text-muted">يمكنك تحميل نماذج جاهزة لتسهيل عملية الاستيراد</p>
+            
+            <div class="d-grid gap-2">
+                <a href="#" class="template-download" onclick="downloadTemplate('csv')">
+                    <i class="fas fa-file-csv me-2"></i>تحميل نموذج CSV
+                </a>
+                <a href="#" class="template-download" onclick="downloadTemplate('excel')">
+                    <i class="fas fa-file-excel me-2"></i>تحميل نموذج Excel
+                </a>
+            </div>
+            
+            <div class="mt-3">
+                <h6>الصفوف الدراسية المتاحة:</h6>
+                <div class="requirements-list">
+                    {% for grade in grade_levels %}
+                    <small class="d-block">ID: {{ grade.id }} - {{ grade.education_level.name }} - {{ grade.name }}</small>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- قسم التقدم -->
+<div class="progress-section" id="progressSection">
+    <h6><i class="fas fa-cog fa-spin me-2"></i>جاري معالجة الملف...</h6>
+    <div class="progress mb-3">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+    </div>
+    <div id="progressText">تحضير البيانات...</div>
+</div>
+
+<!-- تحذيرات مهمة -->
+<div class="alert alert-warning">
+    <h6><i class="fas fa-exclamation-triangle me-2"></i>تنبيهات مهمة:</h6>
+    <ul class="mb-0">
+        <li>تأكد من صحة تنسيق الملف قبل الرفع</li>
+        <li>الرقم القومي يجب أن يكون 14 رقماً ولا يتكرر</li>
+        <li>سيتم تخطي الصفوف التي تحتوي على أخطاء</li>
+        <li>العملية قد تستغرق وقتاً مع الملفات الكبيرة</li>
+        <li>يُنصح بعمل نسخة احتياطية قبل الاستيراد</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const importBtn = document.getElementById('importBtn');
+    const fileInfo = document.getElementById('fileInfo');
+    const progressSection = document.getElementById('progressSection');
+    const importForm = document.getElementById('importForm');
+    
+    // مناولة رفع الملفات
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            displayFileInfo(file);
+            importBtn.disabled = false;
+        }
+    });
+    
+    // مناولة السحب والإفلات
+    uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+    
+    uploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+    });
+    
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            displayFileInfo(files[0]);
+            importBtn.disabled = false;
+        }
+    });
+    
+    // عرض معلومات الملف
+    function displayFileInfo(file) {
+        const fileName = file.name;
+        const fileSize = formatFileSize(file.size);
+        const fileType = getFileType(fileName);
+        
+        document.getElementById('fileName').textContent = fileName;
+        document.getElementById('fileNameDisplay').textContent = fileName;
+        document.getElementById('fileSizeDisplay').textContent = fileSize;
+        document.getElementById('fileTypeDisplay').textContent = fileType;
+        
+        document.querySelector('.selected-file').style.display = 'block';
+        document.querySelector('.upload-content h5').textContent = 'تم اختيار الملف';
+        fileInfo.style.display = 'block';
+    }
+    
+    function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
+        return Math.round(bytes / (1024 * 1024)) + ' MB';
+    }
+    
+    function getFileType(fileName) {
+        const extension = fileName.split('.').pop().toLowerCase();
+        switch(extension) {
+            case 'csv': return 'ملف CSV';
+            case 'xlsx': return 'ملف Excel 2007+';
+            case 'xls': return 'ملف Excel 97-2003';
+            default: return 'غير محدد';
+        }
+    }
+    
+    // مناولة إرسال النموذج
+    importForm.addEventListener('submit', function(e) {
+        importBtn.disabled = true;
+        importBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>جاري المعالجة...';
+        progressSection.style.display = 'block';
+        
+        // محاكاة شريط التقدم
+        let progress = 0;
+        const progressBar = document.querySelector('.progress-bar');
+        const progressText = document.getElementById('progressText');
+        
+        const interval = setInterval(function() {
+            progress += Math.random() * 15;
+            if (progress > 90) {
+                progress = 90;
+                progressText.textContent = 'معالجة البيانات...';
+            } else {
+                progressText.textContent = `تم معالجة ${Math.round(progress)}%...`;
+            }
+            
+            progressBar.style.width = progress + '%';
+            
+            if (progress >= 90) {
+                clearInterval(interval);
+            }
+        }, 500);
+    });
+});
+
+// تحميل نماذج الملفات
+function downloadTemplate(type) {
+    const csvContent = `name,national_number,phone_number,address,parent_name,parent_phone,parent_email,grade_level_id
+أحمد محمد علي,29912345678901,01234567890,القاهرة,محمد علي,01234567891,parent@email.com,1
+فاطمة أحمد محمد,30012345678902,01234567892,الجيزة,أحمد محمد,01234567893,parent2@email.com,2`;
+
+    if (type === 'csv') {
+        downloadFile('نموذج_استيراد_الطلاب.csv', csvContent, 'text/csv;charset=utf-8;');
+    } else if (type === 'excel') {
+        // تحويل CSV إلى تنسيق يمكن فتحه في Excel
+        downloadFile('نموذج_استيراد_الطلاب.csv', '\ufeff' + csvContent, 'text/csv;charset=utf-8;');
+    }
+}
+
+function downloadFile(filename, content, contentType) {
+    const blob = new Blob([content], { type: contentType });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+}
+</script>
+{% endblock %}

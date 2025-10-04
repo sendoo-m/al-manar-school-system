@@ -1,0 +1,1501 @@
+<!-- treasury_management/templates/treasury_management/add_account.html -->
+{% extends 'treasury_management/base.html' %}
+{% load static %}
+
+{% block title %}إضافة حساب مالي جديد - نظام الخزينة{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'treasury_management:accounts_list' %}">الحسابات المالية</a></li>
+<li class="breadcrumb-item active">إضافة حساب جديد</li>
+{% endblock %}
+
+{% block content %}
+<style>
+    /* ===================================
+       🎨 ACCOUNT FORM STYLES WITH PREVIEW
+    =================================== */
+    .account-container {
+        background: linear-gradient(135deg, rgba(40, 167, 69, 0.02), rgba(33, 136, 56, 0.02));
+        border-radius: 20px;
+        padding: 25px;
+        margin: -10px;
+        min-height: calc(100vh - 200px);
+    }
+
+    /* التخطيط الجانبي */
+    .account-layout {
+        display: flex;
+        gap: 25px;
+        margin-bottom: 30px;
+    }
+
+    .form-wrapper { flex: 0 0 65%; }
+    .preview-wrapper { flex: 0 0 35%; }
+
+    .account-card {
+        background: white;
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(40, 167, 69, 0.1);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        margin-bottom: 25px;
+    }
+
+    .account-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(40, 167, 69, 0.15);
+    }
+
+    .account-header {
+        background: linear-gradient(135deg, #28a745, #218838);
+        color: white;
+        padding: 25px 30px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .account-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+        animation: float 20s linear infinite;
+    }
+
+    .account-header-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .account-header h4 {
+        margin: 0 0 8px 0;
+        font-weight: 700;
+        font-size: 1.6rem;
+        display: flex;
+        align-items: center;
+        color: white;
+    }
+
+    .account-header i {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 12px;
+        border-radius: 12px;
+        margin-left: 15px;
+        font-size: 1.3rem;
+    }
+
+    .account-header p {
+        margin: 0;
+        opacity: 0.9;
+        font-size: 1rem;
+        color: white;
+    }
+
+    /* أقسام النموذج */
+    .form-section {
+        background: rgba(248, 249, 250, 0.8);
+        border: 2px solid rgba(40, 167, 69, 0.1);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .form-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(135deg, #28a745, #218838);
+        border-radius: 15px 15px 0 0;
+    }
+
+    .form-section:hover {
+        background: rgba(255, 255, 255, 0.9);
+        border-color: rgba(40, 167, 69, 0.2);
+        transform: translateY(-2px);
+    }
+
+    .section-title {
+        color: var(--text-primary);
+        font-weight: 700;
+        font-size: 1.1rem;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        padding-bottom: 10px;
+        border-bottom: 2px solid rgba(40, 167, 69, 0.1);
+    }
+
+    .section-icon {
+        width: 35px;
+        height: 35px;
+        background: linear-gradient(135deg, #28a745, #218838);
+        color: white;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 10px;
+        font-size: 1rem;
+        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+    }
+
+    .section-icon.success { background: linear-gradient(135deg, #28a745, #218838); }
+    .section-icon.info { background: linear-gradient(135deg, #17a2b8, #138496); }
+    .section-icon.warning { background: linear-gradient(135deg, #ffc107, #e0a800); }
+    .section-icon.primary { background: linear-gradient(135deg, #007bff, #0056b3); }
+
+    /* الحقول */
+    .form-label {
+        color: var(--text-primary);
+        font-weight: 600;
+        margin-bottom: 8px;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .form-label .text-danger {
+        margin-right: 5px;
+        font-size: 1.1rem;
+    }
+
+    .form-control, .form-select {
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 12px 15px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        background: white;
+        color: var(--text-primary);
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #28a745;
+        box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.15);
+        background: white;
+        transform: translateY(-1px);
+    }
+
+    .form-control:hover, .form-select:hover {
+        border-color: #bdc3c7;
+        background: white;
+    }
+
+    .form-text {
+        color: #6c757d;
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-top: 5px;
+    }
+
+    .form-text::before {
+        content: '\f05a';
+        font-family: 'Font Awesome 6 Free';
+        font-weight: 900;
+        margin-left: 6px;
+        color: #28a745;
+    }
+
+    /* نصائح نوع الحساب */
+    .account-type-hint {
+        border: none;
+        border-radius: 10px;
+        padding: 12px 15px;
+        margin: 10px 0;
+        font-size: 0.85rem;
+        border-right: 4px solid;
+        transition: all 0.3s ease;
+    }
+
+    .account-type-hint.asset {
+        background: linear-gradient(135deg, rgba(23, 162, 184, 0.1), rgba(255, 255, 255, 0.9));
+        border-right-color: #17a2b8;
+        color: #0c5460;
+    }
+
+    .account-type-hint.liability {
+        background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 255, 255, 0.9));
+        border-right-color: #ffc107;
+        color: #856404;
+    }
+
+    .account-type-hint.equity {
+        background: linear-gradient(135deg, rgba(0, 123, 255, 0.1), rgba(255, 255, 255, 0.9));
+        border-right-color: #007bff;
+        color: #004085;
+    }
+
+    .account-type-hint.revenue {
+        background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(255, 255, 255, 0.9));
+        border-right-color: #28a745;
+        color: #155724;
+    }
+
+    .account-type-hint.expense {
+        background: linear-gradient(135deg, rgba(220, 53, 69, 0.1), rgba(255, 255, 255, 0.9));
+        border-right-color: #dc3545;
+        color: #721c24;
+    }
+
+    /* ===================================
+       🎨 ENHANCED PREVIEW STYLES
+    =================================== */
+    .preview-card {
+        background: white;
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(40, 167, 69, 0.15);
+        overflow: hidden;
+        position: sticky;
+        top: 20px;
+        max-height: calc(100vh - 40px);
+        overflow-y: auto;
+        transition: all 0.3s ease;
+    }
+
+    .preview-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 35px rgba(40, 167, 69, 0.2);
+    }
+
+    .preview-header {
+        background: linear-gradient(135deg, #20c997, #17a2b8);
+        color: white;
+        padding: 25px 20px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .preview-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+        background-size: 20px 20px;
+        animation: drift 25s linear infinite;
+    }
+
+    .preview-header-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .preview-icon {
+        width: 60px;
+        height: 60px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px;
+        font-size: 1.5rem;
+        backdrop-filter: blur(10px);
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        animation: pulse 2s infinite;
+    }
+
+    .preview-header h5 {
+        margin: 0 0 5px 0;
+        font-weight: 700;
+        font-size: 1.3rem;
+        color: white;
+    }
+
+    .preview-header p {
+        margin: 0;
+        opacity: 0.9;
+        font-size: 0.9rem;
+        color: white;
+    }
+
+    .preview-content {
+        padding: 25px 20px;
+    }
+
+    /* مؤشر حالة النموذج */
+    .preview-status {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-radius: 15px;
+        padding: 15px;
+        margin-bottom: 20px;
+        text-align: center;
+        border: 2px dashed #dee2e6;
+        transition: all 0.3s ease;
+    }
+
+    .preview-status.active {
+        background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(32, 201, 151, 0.05));
+        border-color: #28a745;
+        border-style: solid;
+    }
+
+    .status-text {
+        font-weight: 600;
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .status-text.active {
+        color: #28a745;
+    }
+
+    .completion-bar {
+        width: 100%;
+        height: 4px;
+        background: #e9ecef;
+        border-radius: 2px;
+        overflow: hidden;
+        margin-top: 10px;
+    }
+
+    .completion-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #28a745, #20c997);
+        border-radius: 2px;
+        transition: width 0.5s ease;
+        width: 0%;
+    }
+
+    /* أقسام المعاينة */
+    .preview-section {
+        margin-bottom: 20px;
+    }
+
+    .preview-section-title {
+        font-weight: 700;
+        color: #2c3e50;
+        font-size: 0.95rem;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #f1f3f4;
+    }
+
+    .preview-section-icon {
+        width: 25px;
+        height: 25px;
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 8px;
+        font-size: 0.8rem;
+    }
+
+    .preview-item {
+        background: white;
+        border: 2px solid #f1f3f4;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 12px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .preview-item::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 3px;
+        background: #f1f3f4;
+        transition: all 0.3s ease;
+    }
+
+    .preview-item.filled {
+        background: linear-gradient(135deg, rgba(40, 167, 69, 0.08), rgba(255, 255, 255, 0.9));
+        border-color: rgba(40, 167, 69, 0.3);
+        transform: translateX(-3px);
+        box-shadow: 0 3px 10px rgba(40, 167, 69, 0.1);
+    }
+
+    .preview-item.filled::before {
+        background: linear-gradient(135deg, #28a745, #20c997);
+    }
+
+    .preview-item.asset {
+        background: linear-gradient(135deg, rgba(23, 162, 184, 0.08), rgba(255, 255, 255, 0.9));
+        border-color: rgba(23, 162, 184, 0.3);
+    }
+
+    .preview-item.asset::before {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+    }
+
+    .preview-item.liability {
+        background: linear-gradient(135deg, rgba(255, 193, 7, 0.08), rgba(255, 255, 255, 0.9));
+        border-color: rgba(255, 193, 7, 0.3);
+    }
+
+    .preview-item.liability::before {
+        background: linear-gradient(135deg, #ffc107, #e0a800);
+    }
+
+    .preview-item.equity {
+        background: linear-gradient(135deg, rgba(0, 123, 255, 0.08), rgba(255, 255, 255, 0.9));
+        border-color: rgba(0, 123, 255, 0.3);
+    }
+
+    .preview-item.equity::before {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+    }
+
+    .preview-item.revenue {
+        background: linear-gradient(135deg, rgba(40, 167, 69, 0.08), rgba(255, 255, 255, 0.9));
+        border-color: rgba(40, 167, 69, 0.3);
+    }
+
+    .preview-item.revenue::before {
+        background: linear-gradient(135deg, #28a745, #20c997);
+    }
+
+    .preview-item.expense {
+        background: linear-gradient(135deg, rgba(220, 53, 69, 0.08), rgba(255, 255, 255, 0.9));
+        border-color: rgba(220, 53, 69, 0.3);
+    }
+
+    .preview-item.expense::before {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+    }
+
+    .preview-label {
+        font-weight: 700;
+        color: #495057;
+        font-size: 0.8rem;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .preview-label-icon {
+        width: 16px;
+        height: 16px;
+        background: #6c757d;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 6px;
+        font-size: 0.6rem;
+        color: white;
+    }
+
+    .preview-value {
+        color: #2c3e50;
+        font-size: 1rem;
+        line-height: 1.4;
+        font-weight: 500;
+    }
+
+    .preview-value.empty {
+        color: #adb5bd;
+        font-style: italic;
+        font-weight: 400;
+    }
+
+    .preview-value.code {
+        font-weight: 800;
+        color: #28a745;
+        font-size: 1.1rem;
+        font-family: 'Courier New', monospace;
+    }
+
+    .preview-value.balance {
+        font-weight: 700;
+        color: #17a2b8;
+        font-size: 1.1rem;
+        font-family: 'Courier New', monospace;
+    }
+
+    /* رسائل التحذير */
+    .alert {
+        border: none;
+        border-radius: 12px;
+        padding: 15px 20px;
+        font-weight: 500;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .alert-warning {
+        background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+        color: #856404;
+        border-right: 4px solid #ffc107;
+    }
+
+    .alert-danger {
+        background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+        color: #721c24;
+        border-right: 4px solid #dc3545;
+    }
+
+    .alert-success {
+        background: linear-gradient(135deg, #d4edda, #c3e6cb);
+        color: #155724;
+        border-right: 4px solid #28a745;
+    }
+
+    .alert-info {
+        background: linear-gradient(135deg, #d1ecf1, #bee5eb);
+        color: #0c5460;
+        border-right: 4px solid #17a2b8;
+    }
+
+    /* الأزرار */
+    .form-footer {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        padding: 20px 30px;
+        border-top: 1px solid rgba(0,0,0,0.05);
+        border-radius: 0 0 20px 20px;
+    }
+
+    .btn {
+        font-weight: 600;
+        padding: 10px 20px;
+        border-radius: 10px;
+        border: none;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #28a745, #218838);
+        color: white;
+    }
+
+    .btn-success:hover {
+        background: linear-gradient(135deg, #218838, #1e7e34);
+        color: white;
+    }
+
+    .btn-outline-info {
+        border: 2px solid #17a2b8;
+        color: #17a2b8;
+        background: transparent;
+    }
+
+    .btn-outline-info:hover {
+        background: #17a2b8;
+        color: white;
+        border-color: #17a2b8;
+    }
+
+    .btn-secondary {
+        background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: linear-gradient(135deg, #7f8c8d, #95a5a6);
+        color: white;
+    }
+
+    /* بطاقات الدليل */
+    .guide-card {
+        border: none;
+        border-radius: 15px;
+        overflow: hidden;
+        margin-bottom: 20px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+    }
+
+    .guide-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    }
+
+    .guide-card .card-header {
+        font-weight: 700;
+        padding: 15px 20px;
+        border-bottom: none;
+    }
+
+    .guide-card .card-header h5 {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        color: white;
+    }
+
+    .guide-card .card-header i {
+        margin-left: 10px;
+        font-size: 1.1rem;
+    }
+
+    .border-success .card-header {
+        background: linear-gradient(135deg, #28a745, #218838);
+        color: white;
+    }
+
+    .border-info .card-header {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+    }
+
+    .border-warning .card-header {
+        background: linear-gradient(135deg, #ffc107, #e0a800);
+        color: white;
+    }
+
+    .border-danger .card-header {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+    }
+
+    /* الجداول */
+    .table {
+        font-size: 0.9rem;
+        margin-bottom: 0;
+    }
+
+    .table th {
+        background-color: #f8f9fa;
+        color: var(--text-primary);
+        font-weight: 600;
+        border-bottom: 2px solid #e9ecef;
+        padding: 10px 12px;
+    }
+
+    .table td {
+        padding: 8px 12px;
+        vertical-align: middle;
+        color: var(--text-primary);
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(40, 167, 69, 0.05);
+    }
+
+    .table-info { background-color: rgba(23, 162, 184, 0.1); }
+    .table-warning { background-color: rgba(255, 193, 7, 0.1); }
+    .table-primary { background-color: rgba(0, 123, 255, 0.1); }
+    .table-success { background-color: rgba(40, 167, 69, 0.1); }
+    .table-danger { background-color: rgba(220, 53, 69, 0.1); }
+
+    /* الانيميشن */
+    @keyframes float {
+        0%, 100% { transform: translateX(0) translateY(0); }
+        25% { transform: translateX(3px) translateY(-3px); }
+        50% { transform: translateX(-2px) translateY(2px); }
+        75% { transform: translateX(-3px) translateY(-2px); }
+    }
+
+    @keyframes drift {
+        0% { transform: rotate(0deg) translateX(0); }
+        100% { transform: rotate(360deg) translateX(20px); }
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    .fade-in {
+        animation: fadeInUp 0.8s ease-out;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* الاستجابة */
+    @media (max-width: 1200px) {
+        .account-layout {
+            flex-direction: column;
+        }
+        
+        .form-wrapper,
+        .preview-wrapper {
+            flex: none;
+        }
+        
+        .preview-card {
+            position: static;
+            max-height: none;
+            margin-top: 20px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .account-container {
+            padding: 15px;
+            margin: -5px;
+        }
+
+        .account-header {
+            padding: 20px 25px;
+        }
+
+        .account-header h4 {
+            font-size: 1.4rem;
+        }
+
+        .form-section {
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .section-icon {
+            width: 30px;
+            height: 30px;
+            font-size: 0.9rem;
+        }
+
+        .form-footer {
+            padding: 15px 20px;
+        }
+
+        .btn {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .preview-content {
+            padding: 20px 15px;
+        }
+        
+        .preview-icon {
+            width: 50px;
+            height: 50px;
+            font-size: 1.2rem;
+        }
+        
+        .preview-item {
+            padding: 12px;
+        }
+    }
+</style>
+
+<!-- محتوى الصفحة -->
+<div class="account-container">
+    <div class="account-layout">
+        <!-- النموذج -->
+        <div class="form-wrapper">
+            <div class="account-card fade-in">
+                <div class="account-header">
+                    <div class="account-header-content">
+                        <h4>
+                            <i class="fas fa-plus-square"></i>
+                            إضافة حساب مالي جديد
+                        </h4>
+                        <p>إنشاء حساب محاسبي جديد في النظام</p>
+                    </div>
+                </div>
+                
+                <form method="POST" id="accountForm">
+                    {% csrf_token %}
+                    <div class="card-body" style="padding: 30px;">
+                        
+                        <!-- قسم تصنيف الحساب -->
+                        <div class="form-section">
+                            <div class="section-title">
+                                <div class="section-icon">
+                                    <i class="fas fa-sitemap"></i>
+                                </div>
+                                <span>تصنيف الحساب</span>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">
+                                            <span class="text-danger">*</span>
+                                            تصنيف الحساب
+                                        </label>
+                                        <select class="form-select" name="category" id="categorySelect" required>
+                                            <option value="">اختر التصنيف</option>
+                                            {% for category in account_categories %}
+                                            <option value="{{ category.id }}" data-type="{{ category.category_type }}">
+                                                {{ category.code }} - {{ category.name }}
+                                                <small>({{ category.get_category_type_display }})</small>
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                        <div class="form-text" id="categoryInfo">اختر تصنيف الحساب المناسب</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">
+                                            <span class="text-danger">*</span>
+                                            كود الحساب
+                                        </label>
+                                        <input type="text" class="form-control" name="code" id="accountCode" required 
+                                               placeholder="مثال: 1001" maxlength="20">
+                                        <div class="form-text" id="codeHint">كود فريد للحساب (أرقام فقط)</div>
+                                        <div class="invalid-feedback" id="codeError"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- قسم معلومات الحساب -->
+                        <div class="form-section">
+                            <div class="section-title">
+                                <div class="section-icon info">
+                                    <i class="fas fa-info-circle"></i>
+                                </div>
+                                <span>معلومات الحساب</span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <span class="text-danger">*</span>
+                                    اسم الحساب
+                                </label>
+                                <input type="text" class="form-control" name="name" required 
+                                       placeholder="مثال: الخزنة الرئيسية">
+                                <div class="form-text">اسم وصفي واضح للحساب</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">وصف الحساب</label>
+                                <textarea class="form-control" name="description" rows="3" 
+                                          placeholder="وصف تفصيلي لطبيعة هذا الحساب واستخدامه"></textarea>
+                                <div class="form-text">وصف اختياري لتوضيح غرض الحساب</div>
+                            </div>
+                        </div>
+
+                        <!-- قسم الإعدادات المالية -->
+                        <div class="form-section">
+                            <div class="section-title">
+                                <div class="section-icon warning">
+                                    <i class="fas fa-cogs"></i>
+                                </div>
+                                <span>الإعدادات المالية</span>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">الرصيد الافتتاحي</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" name="opening_balance" 
+                                                   value="0" step="0.01" min="0">
+                                            <span class="input-group-text">ج.م</span>
+                                        </div>
+                                        <div class="form-text">الرصيد الابتدائي عند إنشاء الحساب</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">حالة الحساب</label>
+                                        <select class="form-select" name="is_active">
+                                            <option value="1" selected>✅ نشط</option>
+                                            <option value="0">❌ غير نشط</option>
+                                        </select>
+                                        <div class="form-text">الحسابات غير النشطة لا تظهر في الاختيارات</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- معاينة الحساب -->
+                        <div class="alert alert-light border d-none" id="accountPreview">
+                            <h6><i class="fas fa-eye me-2"></i>معاينة الحساب:</h6>
+                            <div id="previewContent"></div>
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="form-footer">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{% url 'treasury_management:accounts_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>إلغاء والعودة
+                            </a>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-info" id="previewBtn">
+                                    <i class="fas fa-eye me-1"></i>معاينة
+                                </button>
+                                <button type="submit" class="btn btn-success" id="submitBtn">
+                                    <i class="fas fa-save me-1"></i>حفظ الحساب
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- المعاينة المحسنة -->
+        <div class="preview-wrapper">
+            <div class="preview-card fade-in" style="animation-delay: 0.2s;">
+                <div class="preview-header">
+                    <div class="preview-header-content">
+                        <div class="preview-icon">
+                            <i class="fas fa-chart-pie"></i>
+                        </div>
+                        <h5>معاينة الحساب</h5>
+                        <p>متابعة حية للبيانات المدخلة</p>
+                    </div>
+                </div>
+                
+                <div class="preview-content">
+                    <!-- مؤشر حالة النموذج -->
+                    <div class="preview-status" id="previewStatus">
+                        <div class="status-text" id="statusText">ابدأ بملء البيانات</div>
+                        <div class="completion-bar">
+                            <div class="completion-fill" id="completionFill"></div>
+                        </div>
+                    </div>
+
+                    <!-- القسم الأساسي -->
+                    <div class="preview-section">
+                        <div class="preview-section-title">
+                            <div class="preview-section-icon">
+                                <i class="fas fa-info"></i>
+                            </div>
+                            البيانات الأساسية
+                        </div>
+                        
+                        <div class="preview-item" id="previewCategory">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-sitemap"></i>
+                                </div>
+                                تصنيف الحساب
+                            </div>
+                            <div class="preview-value empty">لم يتم اختيار التصنيف</div>
+                        </div>
+                        
+                        <div class="preview-item" id="previewCode">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-hashtag"></i>
+                                </div>
+                                كود الحساب
+                            </div>
+                            <div class="preview-value code empty">لم يتم إدخال الكود</div>
+                        </div>
+                        
+                        <div class="preview-item" id="previewName">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-tag"></i>
+                                </div>
+                                اسم الحساب
+                            </div>
+                            <div class="preview-value empty">لم يتم إدخال الاسم</div>
+                        </div>
+                    </div>
+
+                    <!-- القسم المالي -->
+                    <div class="preview-section">
+                        <div class="preview-section-title">
+                            <div class="preview-section-icon">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </div>
+                            التفاصيل المالية
+                        </div>
+                        
+                        <div class="preview-item" id="previewBalance">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-dollar-sign"></i>
+                                </div>
+                                الرصيد الافتتاحي
+                            </div>
+                            <div class="preview-value balance">0.00 ج.م</div>
+                        </div>
+                        
+                        <div class="preview-item" id="previewStatus">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-toggle-on"></i>
+                                </div>
+                                حالة الحساب
+                            </div>
+                            <div class="preview-value">✅ نشط</div>
+                        </div>
+                    </div>
+
+                    <!-- القسم الإضافي -->
+                    <div class="preview-section">
+                        <div class="preview-section-title">
+                            <div class="preview-section-icon">
+                                <i class="fas fa-plus"></i>
+                            </div>
+                            معلومات إضافية
+                        </div>
+                        
+                        <div class="preview-item" id="previewDescription">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-file-alt"></i>
+                                </div>
+                                وصف الحساب
+                            </div>
+                            <div class="preview-value empty">لا يوجد وصف</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- دليل الحسابات المالية -->
+    <div class="row mt-4">
+        <div class="col-lg-10 mx-auto">
+            <!-- تعليمات الاستخدام -->
+            <div class="guide-card border-success fade-in" style="animation-delay: 0.4s;">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i>دليل إنشاء الحسابات المالية</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary"><i class="fas fa-list-ol me-2"></i>خطوات الإنشاء:</h6>
+                            <ol class="mb-3">
+                                <li><strong>اختر التصنيف:</strong> نوع الحساب (أصول، إيرادات، إلخ)</li>
+                                <li><strong>أدخل الكود:</strong> رقم فريد للحساب</li>
+                                <li><strong>اكتب الاسم:</strong> اسم وصفي واضح</li>
+                                <li><strong>أضف وصف:</strong> شرح لغرض الحساب</li>
+                                <li><strong>حدد الرصيد:</strong> الرصيد الابتدائي</li>
+                                <li><strong>احفظ الحساب:</strong> راجع البيانات واحفظ</li>
+                            </ol>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6 class="text-success"><i class="fas fa-lightbulb me-2"></i>نصائح مهمة:</h6>
+                            <ul class="mb-3">
+                                <li>استخدم أكواداً منطقية ومرتبة</li>
+                                <li>اكتب أسماء واضحة ومفهومة</li>
+                                <li>اختر التصنيف الصحيح للحساب</li>
+                                <li>تأكد من دقة الرصيد الافتتاحي</li>
+                                <li>أضف وصف مفيد للمراجعة</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- أنواع الحسابات -->
+            <div class="guide-card border-info fade-in" style="animation-delay: 0.6s;">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-pie"></i>أنواع الحسابات المالية</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-info"><i class="fas fa-coins me-2"></i>حسابات الأصول:</h6>
+                            <ul class="list-unstyled">
+                                <li>💰 <strong>النقدية:</strong> الخزائن والنقد</li>
+                                <li>🏦 <strong>البنوك:</strong> الحسابات المصرفية</li>
+                                <li>🏢 <strong>الأصول الثابتة:</strong> المباني والمعدات</li>
+                                <li>📊 <strong>الاستثمارات:</strong> الأسهم والسندات</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6 class="text-success"><i class="fas fa-arrow-up me-2"></i>حسابات الإيرادات:</h6>
+                            <ul class="list-unstyled">
+                                <li>🎓 <strong>الرسوم الدراسية:</strong> رسوم التعليم</li>
+                                <li>🚌 <strong>رسوم النقل:</strong> المواصلات</li>
+                                <li>🍽️ <strong>رسوم التغذية:</strong> الوجبات</li>
+                                <li>📚 <strong>إيرادات أخرى:</strong> متنوعة</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <h6 class="text-danger"><i class="fas fa-arrow-down me-2"></i>حسابات المصروفات:</h6>
+                            <ul class="list-unstyled">
+                                <li>👥 <strong>المرتبات:</strong> أجور الموظفين</li>
+                                <li>⚡ <strong>المرافق:</strong> كهرباء وماء</li>
+                                <li>📝 <strong>المستلزمات:</strong> قرطاسية ومواد</li>
+                                <li>🔧 <strong>الصيانة:</strong> إصلاح وترميم</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6 class="text-warning"><i class="fas fa-handshake me-2"></i>حسابات الخصوم:</h6>
+                            <ul class="list-unstyled">
+                                <li>💳 <strong>القروض:</strong> ديون المدرسة</li>
+                                <li>📋 <strong>المستحقات:</strong> مبالغ مؤجلة</li>
+                                <li>🤝 <strong>الموردين:</strong> مدفوعات للموردين</li>
+                                <li>📊 <strong>حقوق الملكية:</strong> رأس المال</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- أمثلة الأكواد -->
+            <div class="guide-card border-warning fade-in" style="animation-delay: 0.8s;">
+                <div class="card-header">
+                    <h5><i class="fas fa-hashtag"></i>نظام ترقيم الحسابات</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>نوع الحساب</th>
+                                    <th>نطاق الأرقام</th>
+                                    <th>مثال للكود</th>
+                                    <th>مثال للاسم</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="table-info">
+                                    <td><i class="fas fa-coins text-info me-1"></i>الأصول</td>
+                                    <td><code>1000 - 1999</code></td>
+                                    <td><span class="badge bg-info">1001</span></td>
+                                    <td>الخزنة الرئيسية</td>
+                                </tr>
+                                <tr class="table-warning">
+                                    <td><i class="fas fa-handshake text-warning me-1"></i>الخصوم</td>
+                                    <td><code>2000 - 2999</code></td>
+                                    <td><span class="badge bg-warning">2001</span></td>
+                                    <td>قروض البنوك</td>
+                                </tr>
+                                <tr class="table-primary">
+                                    <td><i class="fas fa-chart-line text-primary me-1"></i>رأس المال</td>
+                                    <td><code>3000 - 3999</code></td>
+                                    <td><span class="badge bg-primary">3001</span></td>
+                                    <td>رأس المال المدفوع</td>
+                                </tr>
+                                <tr class="table-success">
+                                    <td><i class="fas fa-arrow-up text-success me-1"></i>الإيرادات</td>
+                                    <td><code>4000 - 4999</code></td>
+                                    <td><span class="badge bg-success">4001</span></td>
+                                    <td>إيرادات الرسوم الدراسية</td>
+                                </tr>
+                                <tr class="table-danger">
+                                    <td><i class="fas fa-arrow-down text-danger me-1"></i>المصروفات</td>
+                                    <td><code>5000 - 9999</code></td>
+                                    <td><span class="badge bg-danger">5001</span></td>
+                                    <td>مرتبات المعلمين</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- تحذيرات مهمة -->
+            <div class="guide-card border-danger fade-in" style="animation-delay: 1s;">
+                <div class="card-header">
+                    <h5><i class="fas fa-exclamation-triangle"></i>تحذيرات مهمة</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-danger">❌ لا تفعل:</h6>
+                            <ul class="text-danger">
+                                <li>تكرار الأكواد</li>
+                                <li>استخدام أسماء غامضة</li>
+                                <li>خطأ في التصنيف</li>
+                                <li>إهمال الرصيد الافتتاحي</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-success">✅ افعل:</h6>
+                            <ul class="text-success">
+                                <li>استخدم أكواد منطقية</li>
+                                <li>أسماء واضحة ومفهومة</li>
+                                <li>اختر التصنيف الصحيح</li>
+                                <li>راجع البيانات قبل الحفظ</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const categorySelect = document.getElementById('categorySelect');
+    const accountCode = document.getElementById('accountCode');
+    const previewBtn = document.getElementById('previewBtn');
+    const previewDiv = document.getElementById('accountPreview');
+    const form = document.getElementById('accountForm');
+    
+    // تحديث المعاينة عند تغيير أي حقل
+    form.addEventListener('input', updatePreview);
+    form.addEventListener('change', updatePreview);
+    
+    function updatePreview() {
+        let completedFields = 0;
+        const totalRequiredFields = 3; // التصنيف، الكود، الاسم
+        
+        // التصنيف
+        const categoryOption = categorySelect.selectedOptions[0];
+        const categoryItem = document.getElementById('previewCategory');
+        if (categoryOption && categoryOption.value) {
+            const categoryType = categoryOption.getAttribute('data-type');
+            categoryItem.classList.add('filled', categoryType.toLowerCase());
+            categoryItem.querySelector('.preview-value').classList.remove('empty');
+            categoryItem.querySelector('.preview-value').textContent = categoryOption.text.split('(')[0];
+            completedFields++;
+        } else {
+            categoryItem.classList.remove('filled', 'asset', 'liability', 'equity', 'revenue', 'expense');
+            categoryItem.querySelector('.preview-value').classList.add('empty');
+            categoryItem.querySelector('.preview-value').textContent = 'لم يتم اختيار التصنيف';
+        }
+        
+        // الكود
+        const code = accountCode.value;
+        const codeItem = document.getElementById('previewCode');
+        if (code.trim()) {
+            codeItem.classList.add('filled');
+            codeItem.querySelector('.preview-value').classList.remove('empty');
+            codeItem.querySelector('.preview-value').textContent = code;
+            completedFields++;
+        } else {
+            codeItem.classList.remove('filled');
+            codeItem.querySelector('.preview-value').classList.add('empty');
+            codeItem.querySelector('.preview-value').textContent = 'لم يتم إدخال الكود';
+        }
+        
+        // الاسم
+        const name = document.querySelector('input[name="name"]').value;
+        const nameItem = document.getElementById('previewName');
+        if (name.trim()) {
+            nameItem.classList.add('filled');
+            nameItem.querySelector('.preview-value').classList.remove('empty');
+            nameItem.querySelector('.preview-value').textContent = name;
+            completedFields++;
+        } else {
+            nameItem.classList.remove('filled');
+            nameItem.querySelector('.preview-value').classList.add('empty');
+            nameItem.querySelector('.preview-value').textContent = 'لم يتم إدخال الاسم';
+        }
+        
+        // الرصيد الافتتاحي
+        const balance = parseFloat(document.querySelector('input[name="opening_balance"]').value) || 0;
+        const balanceItem = document.getElementById('previewBalance');
+        balanceItem.classList.add('filled');
+        balanceItem.querySelector('.preview-value').textContent = balance.toLocaleString() + ' ج.م';
+        
+        // حالة الحساب
+        const isActive = document.querySelector('select[name="is_active"]').value;
+        const statusItem = document.getElementById('previewStatus');
+        const statusValue = statusItem.querySelector('.preview-value');
+        statusItem.classList.add('filled');
+        if (isActive === '1') {
+            statusValue.textContent = '✅ نشط';
+            statusValue.style.color = '#28a745';
+        } else {
+            statusValue.textContent = '❌ غير نشط';
+            statusValue.style.color = '#6c757d';
+        }
+        
+        // الوصف
+        const description = document.querySelector('textarea[name="description"]').value;
+        const descItem = document.getElementById('previewDescription');
+        if (description.trim()) {
+            descItem.classList.add('filled');
+            descItem.querySelector('.preview-value').classList.remove('empty');
+            const shortDesc = description.length > 50 ? description.substring(0, 50) + '...' : description;
+            descItem.querySelector('.preview-value').textContent = shortDesc;
+        } else {
+            descItem.classList.remove('filled');
+            descItem.querySelector('.preview-value').classList.add('empty');
+            descItem.querySelector('.preview-value').textContent = 'لا يوجد وصف';
+        }
+        
+        // تحديث شريط التقدم
+        const completionPercentage = (completedFields / totalRequiredFields) * 100;
+        document.getElementById('completionFill').style.width = completionPercentage + '%';
+        
+        // تحديث حالة النموذج
+        const statusElement = document.getElementById('previewStatus');
+        const statusText = document.getElementById('statusText');
+        
+        if (completedFields === totalRequiredFields) {
+            statusElement.classList.add('active');
+            statusText.classList.add('active');
+            statusText.textContent = '✅ جميع البيانات المطلوبة مكتملة';
+        } else {
+            statusElement.classList.remove('active');
+            statusText.classList.remove('active');
+            statusText.textContent = `مطلوب ${totalRequiredFields - completedFields} حقل إضافي`;
+        }
+    }
+    
+    // تحديث معلومات التصنيف
+    categorySelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const categoryType = selectedOption.getAttribute('data-type');
+        
+        // إزالة النصائح السابقة
+        const hints = document.querySelectorAll('.account-type-hint');
+        hints.forEach(hint => hint.remove());
+        
+        if (categoryType) {
+            let typeInfo = '';
+            let suggestedRange = '';
+            let hintClass = '';
+            
+            switch(categoryType) {
+                case 'ASSET':
+                    typeInfo = '<span class="badge bg-info">أصول</span> - الممتلكات والأموال';
+                    suggestedRange = '1000-1999';
+                    hintClass = 'asset';
+                    break;
+                case 'LIABILITY':
+                    typeInfo = '<span class="badge bg-warning">خصوم</span> - الديون والالتزامات';
+                    suggestedRange = '2000-2999';
+                    hintClass = 'liability';
+                    break;
+                case 'EQUITY':
+                    typeInfo = '<span class="badge bg-primary">حقوق الملكية</span> - رأس المال';
+                    suggestedRange = '3000-3999';
+                    hintClass = 'equity';
+                    break;
+                case 'REVENUE':
+                    typeInfo = '<span class="badge bg-success">إيرادات</span> - الدخل والمداخيل';
+                    suggestedRange = '4000-4999';
+                    hintClass = 'revenue';
+                    break;
+                case 'EXPENSE':
+                    typeInfo = '<span class="badge bg-danger">مصروفات</span> - النفقات والتكاليف';
+                    suggestedRange = '5000-9999';
+                    hintClass = 'expense';
+                    break;
+            }
+            
+            document.getElementById('categoryInfo').innerHTML = typeInfo;
+            document.getElementById('codeHint').innerHTML = `نطاق الأرقام المقترح: <strong>${suggestedRange}</strong>`;
+            
+            // إضافة نصيحة ملونة
+            const hintHtml = `<div class="account-type-hint ${hintClass}">
+                <small><strong>💡 نصيحة:</strong> استخدم الأرقام من ${suggestedRange} لهذا النوع من الحسابات</small>
+            </div>`;
+            categorySelect.parentNode.insertAdjacentHTML('afterend', hintHtml);
+        }
+    });
+    
+    // التحقق من صحة كود الحساب
+    accountCode.addEventListener('input', function() {
+        const code = this.value;
+        
+        // السماح بالأرقام فقط
+        this.value = code.replace(/[^0-9]/g, '');
+        
+        // التحقق من الطول
+        if (this.value.length < 3) {
+            document.getElementById('codeError').textContent = 'الكود يجب أن يكون 3 أرقام على الأقل';
+            this.classList.add('is-invalid');
+        } else if (this.value.length > 6) {
+            document.getElementById('codeError').textContent = 'الكود لا يجب أن يزيد عن 6 أرقام';
+            this.classList.add('is-invalid');
+        } else {
+            this.classList.remove('is-invalid');
+        }
+    });
+    
+    // معاينة الحساب
+    previewBtn.addEventListener('click', function() {
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData);
+        
+        if (!data.category || !data.code || !data.name) {
+            alert('⚠️ يرجى ملء الحقول المطلوبة أولاً');
+            return;
+        }
+        
+        const categoryName = categorySelect.options[categorySelect.selectedIndex].text;
+        const isActive = data.is_active == '1' ? 'نشط' : 'غير نشط';
+        const statusBadge = data.is_active == '1' ? 'bg-success' : 'bg-secondary';
+        
+        const previewContent = `
+            <div class="row">
+                <div class="col-md-6">
+                    <strong>كود الحساب:</strong> <span class="badge bg-primary fs-6">${data.code}</span><br>
+                    <strong>اسم الحساب:</strong> ${data.name}<br>
+                    <strong>التصنيف:</strong> ${categoryName.split('(')[0]}<br>
+                </div>
+                <div class="col-md-6">
+                    <strong>الرصيد الافتتاحي:</strong> <span class="fw-bold text-info">${parseFloat(data.opening_balance || 0).toLocaleString()} جنيه</span><br>
+                    <strong>الحالة:</strong> <span class="badge ${statusBadge}">${isActive}</span><br>
+                </div>
+            </div>
+            ${data.description ? `<div class="mt-3 p-2 bg-light rounded"><strong>الوصف:</strong> <em>${data.description}</em></div>` : ''}
+        `;
+        
+        document.getElementById('previewContent').innerHTML = previewContent;
+        previewDiv.classList.remove('d-none');
+        previewDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    
+    // التحقق من النموذج قبل الإرسال
+    form.addEventListener('submit', function(e) {
+        const code = accountCode.value;
+        
+        if (code.length < 3 || code.length > 6) {
+            e.preventDefault();
+            alert('❌ كود الحساب يجب أن يكون بين 3 و 6 أرقام');
+            accountCode.focus();
+            return false;
+        }
+        
+        // تأكيد الحفظ
+        const categoryName = categorySelect.options[categorySelect.selectedIndex].text.split('(')[0];
+        const accountName = document.querySelector('[name="name"]').value;
+        const confirmed = confirm(`هل أنت متأكد من حفظ هذا الحساب؟
+
+📋 التفاصيل:
+• الكود: ${code}
+• الاسم: ${accountName}
+• التصنيف: ${categoryName}
+
+⚠️ لا يمكن تغيير الكود بعد الحفظ`);
+        
+        if (!confirmed) {
+            e.preventDefault();
+        } else {
+            // إظهار مؤشر التحميل
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>جاري الحفظ...';
+            submitBtn.disabled = true;
+        }
+    });
+    
+    // تحديث المعاينة في البداية
+    updatePreview();
+    
+    console.log('✅ نموذج الحسابات المالية مع المعاينة الجانبية جاهز');
+});
+</script>
+{% endblock %}

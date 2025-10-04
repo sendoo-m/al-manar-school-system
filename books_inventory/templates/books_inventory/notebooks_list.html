@@ -1,0 +1,217 @@
+{% extends 'books_inventory/base.html' %}
+{% load static %}
+
+{% block title %}قائمة الكراسات - مخزن الكتب{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-search text-primary"></i> البحث والفلترة</h5>
+            </div>
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-8">
+                        <input type="text" class="form-control" name="search" value="{{ search_query }}" placeholder="اسم الكراسة، النوع...">
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" name="notebook_type">
+                            <option value="">جميع الأنواع</option>
+                            {% for type_code, type_name in notebook_type_choices %}
+                            <option value="{{ type_code }}" {% if notebook_type_filter == type_code %}selected{% endif %}>
+                                {{ type_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search"></i> البحث
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-12 text-end">
+        <a href="{% url 'books_inventory:add_notebook' %}" class="btn btn-info">
+            <i class="fas fa-plus"></i> إضافة كراسة جديدة
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-book-open text-info"></i> قائمة الكراسات</h5>
+                <div>
+                    <span class="badge bg-info">{{ notebooks.paginator.count }} كراسة</span>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if notebooks %}
+                <div class="row">
+                    {% for notebook in notebooks %}
+                    <div class="col-lg-6 col-xl-4 mb-4">
+                        <div class="card h-100 {% if notebook.is_low_stock %}border-warning{% elif notebook.available_stock == 0 %}border-danger{% else %}border-info{% endif %}">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <h6 class="card-title text-info">
+                                        <i class="fas fa-book-open"></i> {{ notebook.name }}
+                                    </h6>
+                                    <span class="badge bg-{% if notebook.is_active %}success{% else %}secondary{% endif %}">
+                                        {% if notebook.is_active %}نشط{% else %}غير نشط{% endif %}
+                                    </span>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <p class="mb-1">
+                                        <i class="fas fa-tag text-muted"></i>
+                                        <strong>النوع:</strong> {{ notebook.get_notebook_type_display }}
+                                    </p>
+                                    
+                                    <p class="mb-1">
+                                        <i class="fas fa-expand-alt text-muted"></i>
+                                        <strong>الحجم:</strong> {{ notebook.get_size_display }}
+                                    </p>
+                                    
+                                    <p class="mb-1">
+                                        <i class="fas fa-file-alt text-muted"></i>
+                                        <strong>الصفحات:</strong> {{ notebook.pages_count }} صفحة
+                                    </p>
+                                    
+                                    <p class="mb-1">
+                                        <i class="fas fa-dollar-sign text-muted"></i>
+                                        <strong>السعر:</strong> {{ notebook.cost_price }} ج.م
+                                    </p>
+                                </div>
+                                
+                                <!-- حالة المخزون -->
+                                <div class="mb-3">
+                                    <h6 class="text-muted">حالة المخزون:</h6>
+                                    <div class="row text-center">
+                                        <div class="col-4">
+                                            <small class="text-info">{{ notebook.total_stock|default:0 }}</small>
+                                            <br><small class="text-muted">المخزون</small>
+                                        </div>
+                                        <div class="col-4">
+                                            <small class="text-success">{{ notebook.available_stock|default:0 }}</small>
+                                            <br><small class="text-muted">المتاح</small>
+                                        </div>
+                                        <div class="col-4">
+                                            <small class="text-primary">{{ notebook.distributed_stock|default:0 }}</small>
+                                            <br><small class="text-muted">الموزع</small>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if notebook.is_low_stock %}
+                                    <div class="alert alert-warning py-1 mt-2">
+                                        <small><i class="fas fa-exclamation-triangle"></i> مخزون منخفض</small>
+                                    </div>
+                                    {% elif notebook.available_stock == 0 %}
+                                    <div class="alert alert-danger py-1 mt-2">
+                                        <small><i class="fas fa-times-circle"></i> نفذ من المخزون</small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- الصفوف الدراسية المرتبطة -->
+                                {% if notebook.grade_levels.all %}
+                                <div class="mb-2">
+                                    <h6 class="text-muted mb-1">الصفوف المرتبطة:</h6>
+                                    {% for grade in notebook.grade_levels.all|slice:":3" %}
+                                    <span class="badge bg-secondary me-1">{{ grade.name }}</span>
+                                    {% endfor %}
+                                    {% if notebook.grade_levels.all.count > 3 %}
+                                    <span class="badge bg-light text-dark">+{{ notebook.grade_levels.all.count|add:"-3" }}</span>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="card-footer bg-transparent">
+                                <div class="btn-group w-100">
+                                    <a href="{% url 'books_inventory:notebook_detail' notebook.pk %}" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-eye"></i> التفاصيل
+                                    </a>
+                                    <a href="{% url 'books_inventory:edit_notebook' notebook.pk %}" class="btn btn-outline-warning btn-sm">
+                                        <i class="fas fa-edit"></i> تعديل
+                                    </a>
+                                    {% if notebook.is_low_stock or notebook.available_stock == 0 %}
+                                    <button class="btn btn-outline-danger btn-sm" onclick="reportShortage('NOTEBOOK', {{ notebook.pk }}, '{{ notebook.name }}')">
+                                        <i class="fas fa-exclamation-triangle"></i> نقص
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Pagination -->
+                {% if notebooks.has_other_pages %}
+                <nav aria-label="صفحات النتائج">
+                    <ul class="pagination justify-content-center">
+                        {% if notebooks.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if notebook_type_filter %}notebook_type={{ notebook_type_filter }}&{% endif %}page={{ notebooks.previous_page_number }}">السابق</a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for num in notebooks.paginator.page_range %}
+                        {% if notebooks.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > notebooks.number|add:'-3' and num < notebooks.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if notebook_type_filter %}notebook_type={{ notebook_type_filter }}&{% endif %}page={{ num }}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+                        
+                        {% if notebooks.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if notebook_type_filter %}notebook_type={{ notebook_type_filter }}&{% endif %}page={{ notebooks.next_page_number }}">التالي</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-book-open fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">لا توجد كراسات</h5>
+                    {% if search_query %}
+                    <p class="text-muted">لم يتم العثور على نتائج للبحث "{{ search_query }}"</p>
+                    <a href="{% url 'books_inventory:notebooks_list' %}" class="btn btn-outline-primary">عرض جميع الكراسات</a>
+                    {% else %}
+                    <p class="text-muted">ابدأ بإضافة كراسة جديدة</p>
+                    <a href="{% url 'books_inventory:add_notebook' %}" class="btn btn-info">
+                        <i class="fas fa-plus"></i> إضافة كراسة جديدة
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function reportShortage(itemType, itemId, itemName) {
+    if (confirm(`هل تريد الإبلاغ عن نقص في "${itemName}"؟`)) {
+        // يمكن إضافة AJAX call هنا لإرسال تقرير النقص
+        alert('تم إرسال تقرير النقص بنجاح');
+    }
+}
+</script>
+{% endblock %}

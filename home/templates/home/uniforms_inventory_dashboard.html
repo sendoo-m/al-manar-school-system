@@ -1,0 +1,452 @@
+{% extends 'dashboard_base.html' %}
+
+{% block title %}لوحة تحكم مخزن الملابس{% endblock %}
+{% block page_title %}لوحة تحكم مخزن الملابس{% endblock %}
+{% block page_subtitle %}إدارة مخزون الزي المدرسي والملابس{% endblock %}
+{% block user_role %}موظف مخزن الملابس{% endblock %}
+
+{% block sidebar_nav %}
+    <a href="{% url 'home:uniforms_inventory_dashboard' %}" class="nav-link active">
+        <i class="fas fa-home me-2"></i>الرئيسية
+    </a>
+    <a href="#" class="nav-link">
+        <i class="fas fa-tshirt me-2"></i>إدارة المخزون
+    </a>
+    <a href="#" class="nav-link">
+        <i class="fas fa-shopping-cart me-2"></i>طلبات الزي المدرسي
+    </a>
+    <a href="#" class="nav-link">
+        <i class="fas fa-people-carry me-2"></i>توزيع الملابس
+    </a>
+    <a href="#" class="nav-link">
+        <i class="fas fa-ruler-combined me-2"></i>المقاسات
+    </a>
+    <a href="/admin/students/student/" class="nav-link" target="_blank">
+        <i class="fas fa-list me-2"></i>قائمة الطلاب
+    </a>
+    <div class="nav-link text-white-50 mt-3">
+        <small>التقارير</small>
+    </div>
+    <a href="#" class="nav-link">
+        <i class="fas fa-chart-pie me-2"></i>تقارير المخزون
+    </a>
+    <a href="#" class="nav-link">
+        <i class="fas fa-file-excel me-2"></i>تصدير البيانات
+    </a>
+    <a href="#" class="nav-link">
+        <i class="fas fa-exclamation-triangle me-2"></i>نفاد المقاسات
+    </a>
+{% endblock %}
+
+{% block dashboard_content %}
+<!-- Uniform Statistics -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="stats-card success">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-1">1,850</h3>
+                    <p class="mb-0">قطع ملابس متاحة</p>
+                </div>
+                <i class="fas fa-tshirt fa-2x opacity-75"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-1">24</h3>
+                    <p class="mb-0">أنواع الملابس</p>
+                </div>
+                <i class="fas fa-layer-group fa-2x opacity-75"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stats-card warning">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-1">32</h3>
+                    <p class="mb-0">طلبات معلقة</p>
+                </div>
+                <i class="fas fa-clock fa-2x opacity-75"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stats-card danger">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-1">8</h3>
+                    <p class="mb-0">مقاسات منتهية</p>
+                </div>
+                <i class="fas fa-exclamation-triangle fa-2x opacity-75"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Uniform Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bolt me-2 text-primary"></i>
+                    إجراءات سريعة للملابس
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-success text-white h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-plus fa-2x mb-3"></i>
+                                <h6>إضافة قطعة جديدة</h6>
+                                <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#addUniformModal">
+                                    إضافة
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-primary text-white h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-handshake fa-2x mb-3"></i>
+                                <h6>تسليم طلب</h6>
+                                <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#deliverModal">
+                                    تسليم
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-info text-white h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-ruler fa-2x mb-3"></i>
+                                <h6>قياس مقاس</h6>
+                                <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#measureModal">
+                                    قياس
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-warning text-white h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-file-export fa-2x mb-3"></i>
+                                <h6>تقرير المخزن</h6>
+                                <button class="btn btn-light btn-sm">
+                                    تصدير
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Uniform Requests & Size Availability -->
+<div class="row">
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-shopping-cart me-2 text-info"></i>
+                    طلبات الزي المدرسي الحديثة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>اسم الطالب</th>
+                                <th>الفصل</th>
+                                <th>القطع المطلوبة</th>
+                                <th>المقاس</th>
+                                <th>التاريخ</th>
+                                <th>الحالة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-success rounded-circle p-2 me-2">
+                                            <i class="fas fa-user text-white"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0">أحمد محمد</h6>
+                                            <small class="text-muted">رقم: 12345</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-primary">الصف الثالث</span></td>
+                                <td>
+                                    <small>قميص، بنطال، جاكيت</small>
+                                    <br><span class="text-muted">3 قطع</span>
+                                </td>
+                                <td><span class="badge bg-info">M</span></td>
+                                <td>اليوم - 10:30</td>
+                                <td><span class="badge bg-warning">جاري التحضير</span></td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-success">تسليم</button>
+                                        <button class="btn btn-info">عرض</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-primary rounded-circle p-2 me-2">
+                                            <i class="fas fa-user text-white"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0">فاطمة أحمد</h6>
+                                            <small class="text-muted">رقم: 54321</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-success">الصف الثاني</span></td>
+                                <td>
+                                    <small>فستان، جاكيت</small>
+                                    <br><span class="text-muted">2 قطعة</span>
+                                </td>
+                                <td><span class="badge bg-info">S</span></td>
+                                <td>أمس - 14:15</td>
+                                <td><span class="badge bg-success">تم التسليم</span></td>
+                                <td>
+                                    <button class="btn btn-outline-primary btn-sm">طباعة إيصال</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-warning rounded-circle p-2 me-2">
+                                            <i class="fas fa-user text-white"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0">محمد سعد</h6>
+                                            <small class="text-muted">رقم: 67890</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-warning">الصف الرابع</span></td>
+                                <td>
+                                    <small>طقم رياضة كامل</small>
+                                    <br><span class="text-muted">4 قطع</span>
+                                </td>
+                                <td><span class="badge bg-warning">L</span></td>
+                                <td>منذ يومين</td>
+                                <td><span class="badge bg-danger">غير متاح</span></td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-warning">طلب توفير</button>
+                                        <button class="btn btn-secondary">تأجيل</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 mb-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-exclamation-triangle me-2 text-danger"></i>
+                    مقاسات تحتاج تجديد
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item px-0 border-start border-danger border-3">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="mb-1">قميص ولادي - مقاس L</h6>
+                                <small class="text-muted">متبقي: 2 قطعة</small>
+                            </div>
+                            <span class="text-danger fw-bold">خطر</span>
+                        </div>
+                    </div>
+                    <div class="list-group-item px-0 border-start border-warning border-3">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="mb-1">فستان بنات - مقاس M</h6>
+                                <small class="text-muted">متبقي: 7 قطع</small>
+                            </div>
+                            <span class="text-warning fw-bold">تحذير</span>
+                        </div>
+                    </div>
+                    <div class="list-group-item px-0 border-start border-info border-3">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="mb-1">جاكيت شتوي - مقاس XL</h6>
+                                <small class="text-muted">متبقي: 12 قطعة</small>
+                            </div>
+                            <span class="text-info fw-bold">قليل</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <button class="btn btn-danger btn-sm w-100">
+                        <i class="fas fa-shopping-cart me-1"></i>طلب تجديد المخزون
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Size Distribution -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-donut me-2 text-success"></i>
+                    توزيع المقاسات المتاحة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small>مقاس S (صغير)</small>
+                        <small>280 قطعة</small>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar bg-success" style="width: 20%"></div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small>مقاس M (متوسط)</small>
+                        <small>420 قطعة</small>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar bg-primary" style="width: 30%"></div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small>مقاس L (كبير)</small>
+                        <small>350 قطعة</small>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar bg-info" style="width: 25%"></div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small>مقاسات أخرى</small>
+                        <small>200 قطعة</small>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar bg-warning" style="width: 15%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Add Uniform Modal -->
+<div class="modal fade" id="addUniformModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">إضافة قطعة ملابس جديدة</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">نوع القطعة</label>
+                        <select class="form-select">
+                            <option>قميص ولادي</option>
+                            <option>فستان بنات</option>
+                            <option>بنطال</option>
+                            <option>جاكيت</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">المقاس</label>
+                        <select class="form-select">
+                            <option>XS</option>
+                            <option>S</option>
+                            <option>M</option>
+                            <option>L</option>
+                            <option>XL</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">الكمية</label>
+                        <input type="number" class="form-control" placeholder="عدد القطع">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">السعر</label>
+                        <input type="number" class="form-control" placeholder="السعر للقطعة الواحدة">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">ملاحظات</label>
+                    <textarea class="form-control" rows="3" placeholder="أي ملاحظات إضافية"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-success">إضافة للمخزن</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Deliver Order Modal -->
+<div class="modal fade" id="deliverModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تسليم طلب زي مدرسي</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">البحث عن الطالب</label>
+                    <input type="text" class="form-control" placeholder="اكتب اسم الطالب أو الرقم">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">القطع المطلوبة</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="shirt">
+                        <label class="form-check-label" for="shirt">قميص - مقاس M</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="pants">
+                        <label class="form-check-label" for="pants">بنطال - مقاس M</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="jacket">
+                        <label class="form-check-label" for="jacket">جاكيت - مقاس M</label>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">إجمالي المبلغ</label>
+                    <input type="text" class="form-control" readonly value="450 ج.م">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary">تأكيد التسليم</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

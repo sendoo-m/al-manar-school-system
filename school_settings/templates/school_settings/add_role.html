@@ -1,0 +1,935 @@
+{% extends 'school_settings/base.html' %}
+
+{% block title %}إضافة دور جديد - {{ system_settings.school_name }}{% endblock %}
+{% block header_title %}إضافة دور جديد{% endblock %}
+{% block header_icon %}<i class="fas fa-plus-circle"></i>{% endblock %}
+{% block page_description %}إضافة دور جديد وتعيين صلاحيات للمستخدمين{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item">
+    <a href="{% url 'school_settings:roles_list' %}">أدوار المستخدمين</a>
+</li>
+<li class="breadcrumb-item active">إضافة دور جديد</li>
+{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'school_settings:roles_list' %}" class="btn btn-outline-secondary btn-custom">
+    <i class="fas fa-arrow-right me-2"></i>العودة للقائمة
+</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* إصلاح مشكلة العرض والحركة */
+    body {
+        overflow-x: hidden !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+    }
+    
+    .container-fluid,
+    .row,
+    .col-lg-8,
+    .col-lg-4,
+    .col-md-6,
+    .col-md-4 {
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box !important;
+    }
+    
+    .form-header {
+        background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%); /* ألوان رمادية أمنية */
+        color: white;
+        border-radius: 20px;
+        padding: 30px 20px;
+        margin-bottom: 25px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 25px rgba(52, 73, 94, 0.3);
+    }
+
+    .form-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+        animation: float 20s linear infinite;
+    }
+
+    @keyframes float {
+        0% { transform: translateX(-50px) translateY(-50px); }
+        100% { transform: translateX(50px) translateY(50px); }
+    }
+
+    .form-header-content {
+        position: relative;
+        z-index: 2;
+        text-align: center;
+    }
+
+    .form-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px;
+        font-size: 2rem;
+        backdrop-filter: blur(10px);
+        border: 3px solid rgba(255,255,255,0.3);
+    }
+
+    .form-container {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .form-section {
+        margin-bottom: 25px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 15px;
+        border-right: 4px solid #34495e; /* لون رمادي أمني */
+        transition: all 0.3s ease;
+    }
+
+    .form-section:hover {
+        background: rgba(52, 73, 94, 0.03);
+        transform: translateX(-3px);
+    }
+
+    .section-title {
+        color: #34495e; /* لون رمادي أمني */
+        font-weight: 700;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        font-size: 1rem;
+    }
+
+    .section-icon {
+        width: 35px;
+        height: 35px;
+        border-radius: 8px;
+        background: #34495e; /* لون رمادي أمني */
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 10px;
+        font-size: 1rem;
+    }
+
+    .section-icon.success {
+        background: #27ae60;
+    }
+
+    .section-icon.info {
+        background: #3498db;
+    }
+
+    .section-icon.warning {
+        background: #f39c12;
+        color: #000;
+    }
+
+    .form-control-custom,
+    .form-select-custom {
+        border-radius: 12px;
+        border: 2px solid #e9ecef;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+        background: white;
+        font-size: 0.95rem;
+    }
+
+    .form-control-custom:focus,
+    .form-select-custom:focus {
+        border-color: #34495e; /* لون رمادي أمني */
+        box-shadow: 0 0 0 0.2rem rgba(52, 73, 94, 0.15);
+        background: white;
+    }
+
+    .form-check-input:focus {
+        border-color: #34495e;
+        box-shadow: 0 0 0 0.2rem rgba(52, 73, 94, 0.15);
+    }
+
+    .form-check-input:checked {
+        background-color: #34495e;
+        border-color: #34495e;
+    }
+
+    .preview-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        border: 2px solid #e9ecef;
+        transition: all 0.3s ease;
+        position: sticky;
+        top: 20px;
+    }
+
+    .preview-card.active {
+        border-color: #34495e; /* لون رمادي أمني */
+        box-shadow: 0 8px 25px rgba(52, 73, 94, 0.2);
+    }
+
+    .preview-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .preview-avatar {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, #34495e, #2c3e50); /* ألوان رمادية أمنية */
+        color: white;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 15px;
+        font-size: 1.2rem;
+        font-weight: 800;
+    }
+
+    .preview-value {
+        background: linear-gradient(135deg, rgba(52, 73, 94, 0.1), rgba(44, 62, 80, 0.05));
+        border-radius: 12px;
+        padding: 15px;
+        text-align: center;
+        border: 2px solid rgba(52, 73, 94, 0.2);
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #34495e;
+        margin-bottom: 15px;
+    }
+
+    .role-options-display {
+        background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(52, 152, 219, 0.05));
+        border-radius: 12px;
+        padding: 15px;
+        border: 2px solid rgba(52, 152, 219, 0.2);
+        margin-top: 15px;
+    }
+
+    .role-option-item {
+        display: flex;
+        align-items: center;
+        padding: 12px;
+        background: white;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+
+    .role-option-item:hover {
+        background: rgba(52, 152, 219, 0.05);
+        border-color: rgba(52, 152, 219, 0.2);
+        transform: translateX(-3px);
+    }
+
+    .role-option-item.selected {
+        background: rgba(52, 73, 94, 0.1);
+        border-color: #34495e;
+    }
+
+    .role-option-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .role-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 12px;
+        font-size: 1.1rem;
+        color: white;
+    }
+
+    .role-icon.system-admin {
+        background: linear-gradient(135deg, #ffc107, #fd7e14);
+    }
+
+    .role-icon.school-manager {
+        background: linear-gradient(135deg, #28a745, #20c997);
+    }
+
+    .role-icon.accountant {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+    }
+
+    .role-icon.teacher {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+    }
+
+    .role-icon.default {
+        background: linear-gradient(135deg, #6c757d, #495057);
+    }
+
+    .user-selector {
+        background: linear-gradient(135deg, rgba(39, 174, 96, 0.1), rgba(39, 174, 96, 0.05));
+        border-radius: 12px;
+        padding: 15px;
+        margin-top: 15px;
+        border: 2px solid rgba(39, 174, 96, 0.2);
+    }
+
+    .user-item {
+        display: flex;
+        align-items: center;
+        padding: 10px 12px;
+        background: white;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+
+    .user-item:hover {
+        background: rgba(39, 174, 96, 0.05);
+        border-color: rgba(39, 174, 96, 0.2);
+        transform: translateX(-2px);
+    }
+
+    .user-item.selected {
+        background: rgba(39, 174, 96, 0.1);
+        border-color: #27ae60;
+    }
+
+    .user-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .user-avatar {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        background: #27ae60;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 10px;
+        font-size: 0.9rem;
+        font-weight: 700;
+    }
+
+    .help-text {
+        background: #f7f8fc; /* لون فاتح مناسب للثيم الرمادي */
+        border: 1px solid #e3e6ea;
+        border-radius: 10px;
+        padding: 15px;
+        margin-top: 15px;
+    }
+
+    .help-text .help-icon {
+        color: #34495e; /* لون رمادي أمني */
+        margin-left: 8px;
+    }
+
+    .btn-save {
+        background: linear-gradient(135deg, #34495e, #2c3e50); /* ألوان رمادية أمنية */
+        border: none;
+        border-radius: 12px;
+        padding: 12px 30px;
+        color: white;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(52, 73, 94, 0.4);
+        color: white;
+        background: linear-gradient(135deg, #2c3e50, #34495e);
+    }
+
+    .preview-section {
+        margin-bottom: 20px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        border-right: 4px solid #34495e;
+    }
+
+    .preview-section h6 {
+        color: #34495e;
+        font-weight: 700;
+        margin-bottom: 10px;
+        font-size: 0.9rem;
+    }
+
+    .badge-custom {
+        padding: 6px 12px;
+        border-radius: 15px;
+        font-weight: 600;
+        font-size: 0.8rem;
+    }
+
+    .badge-active {
+        background: linear-gradient(135deg, #27ae60, #2ecc71);
+        color: white;
+    }
+
+    .badge-inactive {
+        background: #95a5a6;
+        color: white;
+    }
+
+    .required-asterisk {
+        color: #dc3545;
+        margin-left: 3px;
+    }
+
+    .permissions-preview {
+        background: linear-gradient(135deg, rgba(155, 89, 182, 0.1), rgba(155, 89, 182, 0.05));
+        border-radius: 10px;
+        padding: 15px;
+        margin-top: 15px;
+        border: 2px solid rgba(155, 89, 182, 0.2);
+    }
+
+    .permission-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        background: white;
+        border-radius: 8px;
+        margin-bottom: 6px;
+        font-size: 0.9rem;
+    }
+
+    .permission-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .permission-check {
+        color: #27ae60;
+        font-weight: 700;
+    }
+
+    /* إصلاح responsive */
+    @media (max-width: 768px) {
+        .form-header {
+            padding: 20px 15px;
+            margin-bottom: 20px;
+        }
+        
+        .form-icon {
+            width: 60px;
+            height: 60px;
+            font-size: 1.5rem;
+        }
+        
+        .form-container {
+            padding: 20px;
+        }
+        
+        .form-section {
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .section-icon {
+            width: 30px;
+            height: 30px;
+            font-size: 0.9rem;
+        }
+        
+        .preview-card {
+            margin-top: 20px;
+            position: static;
+        }
+        
+        .role-option-item,
+        .user-item {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .role-icon,
+        .user-avatar {
+            margin-bottom: 8px;
+            margin-left: 0;
+        }
+    }
+
+    /* إصلاح مشاكل الـ overflow النهائية */
+    * {
+        box-sizing: border-box;
+    }
+    
+    .row {
+        margin-right: 0 !important;
+        margin-left: 0 !important;
+    }
+    
+    [class*="col-"] {
+        padding-right: 12px !important;
+        padding-left: 12px !important;
+    }
+
+    .page-footer {
+        margin-top: 15px;
+        margin-bottom: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Form Header -->
+<div class="form-header">
+    <div class="form-header-content">
+        <div class="form-icon">
+            <i class="fas fa-user-shield"></i>
+        </div>
+        <h4 class="mb-2">إضافة دور جديد</h4>
+        <p class="mb-0 opacity-90">اختر المستخدم وحدد الدور والصلاحيات المناسبة</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="form-container">
+            <form method="post" id="roleForm">
+                {% csrf_token %}
+                
+                <!-- اختيار المستخدم -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <div class="section-icon">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <span>اختيار المستخدم</span>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-user me-2"></i>اختيار المستخدم <span class="required-asterisk">*</span>
+                            </label>
+                            <select class="form-select form-select-custom" name="user_id" id="userId" required>
+                                <option value="">اختر المستخدم</option>
+                                {% for user in available_users %}
+                                <option value="{{ user.id }}" 
+                                        data-firstname="{{ user.first_name|default:'' }}"
+                                        data-lastname="{{ user.last_name|default:'' }}"
+                                        data-username="{{ user.username }}"
+                                        data-email="{{ user.email|default:'' }}">
+                                    {% if user.first_name %}{{ user.first_name }}{% endif %}
+                                    {% if user.last_name %} {{ user.last_name }}{% endif %}
+                                    ({{ user.username }})
+                                    {% if user.email %} - {{ user.email }}{% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="help-text">
+                                <i class="fas fa-info-circle help-icon"></i>
+                                <small>المستخدمون الذين لا يملكون أدوار فقط</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- اختيار الدور -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <div class="section-icon success">
+                            <i class="fas fa-user-tag"></i>
+                        </div>
+                        <span>تحديد الدور والصلاحيات</span>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-user-tag me-2"></i>نوع الدور <span class="required-asterisk">*</span>
+                            </label>
+                            <select class="form-select form-select-custom" name="role" id="roleType" required>
+                                <option value="">اختر الدور</option>
+                                {% for role_code, role_name in role_choices %}
+                                <option value="{{ role_code }}" data-role-name="{{ role_name }}">{{ role_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-comment-alt me-2"></i>ملاحظات ووصف الدور
+                            </label>
+                            <textarea class="form-control form-control-custom" name="description" id="roleDescription"
+                                      rows="4" placeholder="اكتب وصف مختصر لمهام ومسؤوليات هذا الدور..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- الإعدادات الإضافية -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <div class="section-icon info">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                        <span>الإعدادات الإضافية</span>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_active" id="isActive" checked>
+                                <label class="form-check-label fw-bold" for="isActive">
+                                    <i class="fas fa-toggle-on me-2"></i>تفعيل الدور فوراً
+                                </label>
+                            </div>
+                            <div class="help-text">
+                                <i class="fas fa-info-circle help-icon"></i>
+                                <small>إذا تم إلغاء التفعيل، سيحتاج المستخدم لتفعيل الدور لاحقاً</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- ملاحظة مهمة -->
+                <div class="alert alert-info border-0">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    <strong>ملاحظة مهمة:</strong> 
+                    <ul class="mb-0 mt-2">
+                        <li>سيتم تطبيق الدور على المستخدم المحدد فور الحفظ</li>
+                        <li>كل مستخدم يمكن أن يكون له دور واحد فقط</li>
+                        <li>يمكن تعديل أو حذف الدور لاحقاً من قائمة الأدوار</li>
+                    </ul>
+                </div>
+                
+                <!-- أزرار الإجراءات -->
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="{% url 'school_settings:roles_list' %}" 
+                       class="btn btn-outline-secondary btn-lg px-4">
+                        <i class="fas fa-times me-2"></i>إلغاء
+                    </a>
+                    <button type="submit" class="btn btn-save btn-lg px-4">
+                        <i class="fas fa-save me-2"></i>حفظ الدور الجديد
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- معاينة -->
+    <div class="col-lg-4">
+        <div class="preview-card" id="previewCard">
+            <h6 style="color: #34495e;" class="mb-3">
+                <i class="fas fa-eye me-2"></i>معاينة الدور الجديد
+            </h6>
+            
+            <div class="preview-header">
+                <div class="preview-avatar" id="previewAvatar">👤</div>
+                <div>
+                    <h6 class="mb-1" id="previewUserName">اختر المستخدم</h6>
+                    <small class="text-muted" id="previewUserEmail">البريد الإلكتروني</small>
+                </div>
+            </div>
+            
+            <div class="preview-value" id="previewRole">
+                اختر الدور
+            </div>
+            
+            <!-- الصلاحيات المتوقعة -->
+            <div class="permissions-preview" id="permissionsPreview" style="display: none;">
+                <h6 style="color: #9b59b6; margin-bottom: 10px;">
+                    <i class="fas fa-key me-2"></i>الصلاحيات المتوقعة
+                </h6>
+                <div id="permissionsList"></div>
+            </div>
+            
+            <!-- إعدادات الدور -->
+            <div class="preview-section">
+                <h6>إعدادات الدور</h6>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>حالة الدور:</span>
+                    <span class="badge-custom badge-active" id="previewStatus">نشط</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- أنواع الأدوار المتاحة -->
+        <div class="role-options-display">
+            <h6 style="color: #3498db; margin-bottom: 10px;">
+                <i class="fas fa-info-circle me-2"></i>أنواع الأدوار المتاحة
+            </h6>
+            {% for role_code, role_name in role_choices %}
+            <div class="role-option-item" onclick="selectRole('{{ role_code }}')">
+                <div class="role-icon {% if role_code == 'SYSTEM_ADMIN' %}system-admin{% elif role_code == 'SCHOOL_MANAGER' %}school-manager{% elif role_code == 'ACCOUNTANT' %}accountant{% elif role_code == 'TEACHER' %}teacher{% else %}default{% endif %}">
+                    {% if role_code == 'SYSTEM_ADMIN' %}
+                        <i class="fas fa-crown"></i>
+                    {% elif role_code == 'SCHOOL_MANAGER' %}
+                        <i class="fas fa-building"></i>
+                    {% elif role_code == 'ACCOUNTANT' %}
+                        <i class="fas fa-calculator"></i>
+                    {% elif role_code == 'TEACHER' %}
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    {% else %}
+                        <i class="fas fa-user"></i>
+                    {% endif %}
+                </div>
+                <div>
+                    <strong>{{ role_name }}</strong>
+                    <div class="small text-muted">{{ role_code }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- نصائح مفيدة -->
+        <div class="alert alert-info mt-3 border-0" style="background: rgba(52, 73, 94, 0.1); border-right: 4px solid #34495e !important;">
+            <h6 style="color: #34495e;">
+                <i class="fas fa-shield-alt me-2"></i>نصائح أمنية
+            </h6>
+            <ul class="mb-0 small">
+                <li>امنح أقل صلاحيات ممكنة للمستخدم</li>
+                <li>راجع الأدوار دورياً للتأكد من الحاجة</li>
+                <li>استخدم أدوار مخصصة للمهام الحساسة</li>
+                <li>قم بتوثيق سبب منح كل دور</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="page-footer"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    setupFormPreview();
+    setupFormEvents();
+    updatePreview();
+});
+
+function setupFormPreview() {
+    // ربط أحداث التحديث
+    ['userId', 'roleType', 'roleDescription', 'isActive'].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            if (element.type === 'checkbox') {
+                element.addEventListener('change', updatePreview);
+            } else {
+                element.addEventListener('change', updatePreview);
+            }
+        }
+    });
+}
+
+function updatePreview() {
+    // تحديث معلومات المستخدم
+    const userSelect = document.getElementById('userId');
+    const selectedUser = userSelect.options[userSelect.selectedIndex];
+    
+    if (selectedUser && selectedUser.value) {
+        const firstName = selectedUser.getAttribute('data-firstname') || '';
+        const lastName = selectedUser.getAttribute('data-lastname') || '';
+        const username = selectedUser.getAttribute('data-username') || '';
+        const email = selectedUser.getAttribute('data-email') || '';
+        
+        const fullName = firstName && lastName ? `${firstName} ${lastName}` : username;
+        document.getElementById('previewUserName').textContent = fullName;
+        document.getElementById('previewUserEmail').textContent = email || 'لا يوجد بريد إلكتروني';
+        
+        // تحديث الأفاتار
+        const initial = firstName ? firstName.charAt(0).toUpperCase() : username.charAt(0).toUpperCase();
+        document.getElementById('previewAvatar').textContent = initial;
+    } else {
+        document.getElementById('previewUserName').textContent = 'اختر المستخدم';
+        document.getElementById('previewUserEmail').textContent = 'البريد الإلكتروني';
+        document.getElementById('previewAvatar').textContent = '👤';
+    }
+    
+    // تحديث الدور
+    const roleSelect = document.getElementById('roleType');
+    const selectedRole = roleSelect.options[roleSelect.selectedIndex];
+    
+    if (selectedRole && selectedRole.value) {
+        const roleName = selectedRole.getAttribute('data-role-name');
+        document.getElementById('previewRole').textContent = roleName;
+        
+        // إظهار الصلاحيات المتوقعة
+        showExpectedPermissions(selectedRole.value);
+        document.getElementById('permissionsPreview').style.display = 'block';
+    } else {
+        document.getElementById('previewRole').textContent = 'اختر الدور';
+        document.getElementById('permissionsPreview').style.display = 'none';
+    }
+    
+    // تحديث الحالة
+    const isActive = document.getElementById('isActive').checked;
+    document.getElementById('previewStatus').textContent = isActive ? 'نشط' : 'غير نشط';
+    document.getElementById('previewStatus').className = isActive ? 'badge-custom badge-active' : 'badge-custom badge-inactive';
+    
+    // تفعيل المعاينة
+    if (selectedUser && selectedUser.value && selectedRole && selectedRole.value) {
+        document.getElementById('previewCard').classList.add('active');
+    } else {
+        document.getElementById('previewCard').classList.remove('active');
+    }
+}
+
+function showExpectedPermissions(roleCode) {
+    const permissionsList = document.getElementById('permissionsList');
+    let permissions = [];
+    
+    switch(roleCode) {
+        case 'SYSTEM_ADMIN':
+            permissions = [
+                'إدارة جميع أجزاء النظام',
+                'إضافة وحذف المستخدمين',
+                'تغيير إعدادات النظام',
+                'الوصول لجميع التقارير'
+            ];
+            break;
+        case 'SCHOOL_MANAGER':
+            permissions = [
+                'إدارة الطلاب والمعلمين',
+                'عرض التقارير المالية',
+                'إدارة الصفوف والمواد',
+                'مراجعة العمليات المالية'
+            ];
+            break;
+        case 'ACCOUNTANT':
+            permissions = [
+                'إدارة المصروفات المدرسية',
+                'معالجة المدفوعات',
+                'إنشاء التقارير المالية',
+                'إدارة الخصومات'
+            ];
+            break;
+        case 'STUDENT_AFFAIRS':
+            permissions = [
+                'إدارة بيانات الطلاب',
+                'معالجة طلبات القبول',
+                'إدارة الحضور والغياب',
+                'التواصل مع أولياء الأمور'
+            ];
+            break;
+        case 'BOOKS_INVENTORY':
+            permissions = [
+                'إدارة مخزن الكتب',
+                'تسجيل دخول وخروج الكتب',
+                'إنشاء تقارير المخزن',
+                'إدارة المشتريات'
+            ];
+            break;
+        case 'UNIFORMS_INVENTORY':
+            permissions = [
+                'إدارة مخزن الملابس',
+                'تسجيل المقاسات والطلبات',
+                'إدارة المبيعات',
+                'تتبع المخزون'
+            ];
+            break;
+        case 'TEACHER':
+            permissions = [
+                'عرض بيانات الطلاب',
+                'تسجيل الدرجات',
+                'إنشاء تقارير الطلاب',
+                'التواصل مع أولياء الأمور'
+            ];
+            break;
+        default:
+            permissions = ['صلاحيات محدودة'];
+    }
+    
+    permissionsList.innerHTML = permissions.map(permission => 
+        `<div class="permission-item">
+            <span>${permission}</span>
+            <span class="permission-check">✓</span>
+        </div>`
+    ).join('');
+}
+
+function selectRole(roleCode) {
+    document.getElementById('roleType').value = roleCode;
+    
+    // تحديث التحديد البصري
+    document.querySelectorAll('.role-option-item').forEach(item => {
+        item.classList.remove('selected');
+    });
+    event.currentTarget.classList.add('selected');
+    
+    updatePreview();
+}
+
+function setupFormEvents() {
+    const form = document.getElementById('roleForm');
+    
+    form.addEventListener('submit', function(e) {
+        // التحقق من البيانات
+        const userId = document.getElementById('userId').value;
+        const roleType = document.getElementById('roleType').value;
+        
+        // منع الإرسال فقط في حالة وجود أخطاء
+        if (!userId) {
+            e.preventDefault();
+            showMessage('error', 'يجب اختيار المستخدم');
+            return false;
+        }
+        
+        if (!roleType) {
+            e.preventDefault();
+            showMessage('error', 'يجب اختيار نوع الدور');
+            return false;
+        }
+        
+        // إذا وصلنا هنا، كل شيء صحيح - اعرض رسالة التحميل واترك الـ form يرسل
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        submitBtn.innerHTML = '<div class="spinner-border spinner-border-sm me-2"></div>جاري الحفظ...';
+        submitBtn.disabled = true;
+        
+        // لا نوقف الإرسال - نتركه يحدث طبيعياً
+        return true;
+    });
+}
+
+function showMessage(type, message) {
+    const colors = { success: 'success', error: 'danger', warning: 'warning', info: 'info' };
+    const icons = { success: 'fas fa-check-circle', error: 'fas fa-exclamation-circle', warning: 'fas fa-exclamation-triangle', info: 'fas fa-info-circle' };
+    
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${colors[type]} alert-dismissible fade show`;
+    alertDiv.style.cssText = `position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 350px; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); border-radius: 10px;`;
+    
+    alertDiv.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="${icons[type]} me-3"></i>
+            <div class="flex-grow-1">${message}</div>
+            <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    setTimeout(() => { if (alertDiv.parentNode) alertDiv.remove(); }, 6000);
+}
+</script>
+{% endblock %}

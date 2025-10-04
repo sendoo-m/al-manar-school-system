@@ -1,115 +1,949 @@
-{% extends 'students/base/student_affairs_navbar.html' %}
+{% extends 'students/base.html' %}
 
-{% comment %} {% extends 'students/base.html' %} {% endcomment %}
-{% block title %}Students List{% endblock %}
+{% block title %}قائمة الطلاب - نظام إدارة الطلاب{% endblock %}
+{% block page_title %}قائمة جميع الطلاب{% endblock %}
+{% block page_icon %}<i class="fas fa-users"></i>{% endblock %}
+{% block page_subtitle %}عرض وإدارة بيانات جميع الطلاب المسجلين{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'students:home' %}">الرئيسية</a></li>
+<li class="breadcrumb-item active">قائمة الطلاب</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'students:add_student' %}" class="btn btn-success btn-custom">
+        <i class="fas fa-user-plus me-1"></i>إضافة طالب جديد
+    </a>
+    <a href="{% url 'students:export_students' %}" class="btn btn-primary btn-custom">
+        <i class="fas fa-download me-1"></i>تصدير البيانات
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        text-align: center;
+        transition: all 0.3s ease;
+        border: none;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .stats-icon {
+        font-size: 2.5rem;
+        opacity: 0.9;
+        margin-bottom: 10px;
+    }
+    
+    .stats-number {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+    
+    /* تحسين مربع البحث */
+    .search-input-group {
+        position: relative;
+        box-shadow: 0 4px 15px rgba(52, 152, 219, 0.1);
+        border-radius: 12px;
+        overflow: hidden;
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+    }
+    
+    .search-input-group:focus-within {
+        border-color: #3498db;
+        box-shadow: 0 6px 20px rgba(52, 152, 219, 0.2);
+        transform: translateY(-1px);
+    }
+    
+    .search-input-group .form-control {
+        border: none;
+        border-radius: 10px 0 0 10px;
+        padding: 15px 18px;
+        font-size: 1rem;
+        background: white;
+    }
+    
+    .search-input-group .input-group-text {
+        border: none;
+        border-radius: 0 10px 10px 0;
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        color: white;
+        padding: 15px 18px;
+        border-left: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .students-table {
+        background: white;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .students-table .table {
+        margin: 0;
+        border-radius: 15px;
+    }
+    
+    .students-table thead {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        color: white;
+    }
+    
+    .students-table thead th {
+        border: none;
+        padding: 18px 15px;
+        font-weight: 600;
+        text-align: center;
+        white-space: nowrap;
+    }
+    
+    .students-table thead th:first-child {
+        border-radius: 15px 0 0 0;
+    }
+    
+    .students-table thead th:last-child {
+        border-radius: 0 15px 0 0;
+    }
+    
+    .students-table tbody tr {
+        transition: all 0.3s ease;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .students-table tbody tr:hover {
+        background: rgba(52, 152, 219, 0.05);
+        transform: scale(1.01);
+    }
+    
+    .students-table tbody tr:last-child {
+        border-bottom: none;
+    }
+    
+    .students-table tbody td {
+        padding: 15px;
+        vertical-align: middle;
+        border: none;
+    }
+    
+    /* تأثير خاص لنتائج البحث */
+    .search-result-row {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef) !important;
+        border-left: 4px solid #3498db !important;
+        animation: highlightSearch 0.5s ease-in-out;
+    }
+    
+    @keyframes highlightSearch {
+        0% { background: rgba(52, 152, 219, 0.2); }
+        100% { background: linear-gradient(135deg, #f8f9fa, #e9ecef); }
+    }
+    
+    .student-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .student-avatar {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
+    
+    .student-details {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .student-name {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 3px;
+        font-size: 1rem;
+    }
+    
+    .student-id {
+        color: #6c757d;
+        font-size: 0.85rem;
+        font-family: 'Courier New', monospace;
+    }
+    
+    .gender-badge {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        color: white;
+    }
+    
+    .age-badge {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .classroom-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+    
+    .classroom-tag {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        padding: 3px 8px;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+    
+    .classroom-tag:hover {
+        transform: scale(1.05);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .actions-buttons {
+        display: flex;
+        gap: 4px;
+        justify-content: center;
+    }
+    
+    .btn-action {
+        padding: 6px 10px;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        border: 1px solid;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 32px;
+        height: 32px;
+    }
+    
+    .btn-action:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        text-decoration: none;
+    }
+    
+    .table-footer {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 0 0 15px 15px;
+        border-top: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    /* حالة التحميل */
+    .loading-row {
+        text-align: center;
+        padding: 40px;
+    }
+    
+    .no-results-row {
+        text-align: center;
+        padding: 40px;
+        background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+    }
+    
+    .search-info {
+        background: linear-gradient(135deg, #d4edda, #c3e6cb);
+        color: #155724;
+        padding: 10px 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .clear-search {
+        background: #dc3545;
+        color: white;
+        border: none;
+        padding: 4px 8px;
+        border-radius: 5px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .clear-search:hover {
+        background: #c82333;
+        transform: scale(1.05);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-    <h1>Students List</h1>
-    <div class="row">
-        <div class="col-md-6">
-            <div class="bg-light p-3 mb-3">
-                <h2>Students</h2>
-                <p class="mb-0">Total number of students: {{ students|length }}</p>
-                <p class="mb-0">Total male students: {{ total_male_students }}</p>
-                <p class="mb-0">Total female students: {{ total_female_students }}</p>
+<!-- إحصائيات سريعة -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="stats-card" style="background: linear-gradient(135deg, #3498db, #2980b9);">
+            <div class="stats-icon">
+                <i class="fas fa-users"></i>
             </div>
-            <form method="get" class="form-inline mb-3">
-                <div class="form-group mr-2">
-                    {{ search_form.search_query.label_tag }}
-                    {{ search_form.search_query }}
-                </div>
-                <div class="form-group mr-2">
-                    {{ search_form.educational_stage.label_tag }}
-                    {{ search_form.educational_stage }}
-                </div>
-                <div class="form-group mr-2">
-                    {{ search_form.gender.label_tag }}
-                    {{ search_form.gender }}
-                </div>
-                <div class="form-group mr-2">
-                    {{ search_form.date_of_birth.label_tag }}
-                    {{ search_form.date_of_birth }}
-                </div>
-                <div class="form-group mr-2">
-                    {{ search_form.classroom.label_tag }}
-                    {{ search_form.classroom }}
-                </div>
-                <button type="submit" class="btn btn-primary">Search</button>
-                
-                <a href="{% url 'students:student_list' %}" class="btn btn-secondary  ml-2">Clear</a>
-            </form>
-            <br >
+            <div class="stats-number" id="totalStudentsCount">{{ page_obj.paginator.count }}</div>
+            <div>إجمالي الطلاب</div>
         </div>
-        <div class="col-md-6">
-            <h2>Student Table</h2>
-            {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-            {% endfor %}
-            {% endif %}
-            <div class="table-responsive">
-                <table> <!--  class="table table-striped"  -->
-                    <thead> <!--  class="table-primary"  -->
-                      <tr>
-                        <th>Name</th>
-                        <th>National Number</th>
-                        <th>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {% for student in page_obj %}
-                        <tr class="{% cycle 'table-secondary' 'table-white' %}">
-                        <td>{{ student.name }}</td>
-                        <td>{{ student.national_number }}</td>
-                        <td>
-                            <a href="{% url 'students:edit_student' pk=student.pk %}" class="btn btn-sm btn-primary">Edit</a>
-                        </td>
-                        </tr>
-                      {% endfor %}
-                    </tbody>
-                  </table>
-                <!--  =======================  start pagination work =======================  -->
-                {% comment %} <div class="pagination">
-                    <span class="step-links">
-                        {% if page_obj.has_previous %}
-                            <a href="?page=1">&laquo; first</a>
-                            <a href="?page={{ page_obj.previous_page_number }}">previous</a>
-                        {% endif %}
-            
-                        <span class="current-page">
-                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
-                        </span>
-            
-                        {% if page_obj.has_next %}
-                            <a href="?page={{ page_obj.next_page_number }}">next</a>
-                            <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
-                        {% endif %}
+    </div>
+    
+    <div class="col-md-3">
+        <div class="stats-card" style="background: linear-gradient(135deg, #17a2b8, #138496);">
+            <div class="stats-icon">
+                <i class="fas fa-male"></i>
+            </div>
+            <div class="stats-number" id="maleStudentsCount">{{ total_male_students }}</div>
+            <div>طلاب ذكور</div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="stats-card" style="background: linear-gradient(135deg, #28a745, #218838);">
+            <div class="stats-icon">
+                <i class="fas fa-female"></i>
+            </div>
+            <div class="stats-number" id="femaleStudentsCount">{{ total_female_students }}</div>
+            <div>طالبات إناث</div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="stats-card" style="background: linear-gradient(135deg, #ffc107, #e0a800);">
+            <div class="stats-icon">
+                <i class="fas fa-user-check"></i>
+            </div>
+            <div class="stats-number" id="activeStudentsCount">{{ page_obj.paginator.count }}</div>
+            <div>طلاب نشطين</div>
+        </div>
+    </div>
+</div>
+
+<!-- البحث والفلاتر -->
+<div class="content-card mb-4">
+    <div class="content-card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-search me-2"></i>البحث والفلاتر
+        </h5>
+    </div>
+    <div class="content-card-body">
+        <div class="row g-3">
+            <!-- البحث الآجاكس -->
+            <div class="col-md-6">
+                <label class="form-label">البحث السريع</label>
+                <div class="search-input-group input-group">
+                    <input type="text" class="form-control" id="quickSearch" 
+                           placeholder="ابحث بالاسم أو الرقم القومي (3 حروف على الأقل)">
+                    <span class="input-group-text">
+                        <i class="fas fa-search" id="searchIcon"></i>
+                        <div class="spinner-border spinner-border-sm d-none" id="searchLoader"></div>
                     </span>
-                </div> {% endcomment %}
-                <!--  =======================  End pagination =======================  -->
-                <div class="d-flex justify-content-center">
-                    <nav aria-label="Page navigation example">
-                        <ul class="pagination">
-                            {% if page_obj.has_previous %}
-                                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo;</a></li>
-                            {% else %}
-                                <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
-                            {% endif %}
-                            {% for num in page_obj.paginator.page_range %}
-                                {% if page_obj.number == num %}
-                                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                                    <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
-                                {% endif %}
-                            {% endfor %}
-                            {% if page_obj.has_next %}
-                                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">&raquo;</a></li>
-                            {% else %}
-                                <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
-                            {% endif %}
-                        </ul>
-                    </nav>
+                </div>
+            </div>
+            
+            <!-- الفلاتر -->
+            <div class="col-md-2">
+                <label class="form-label">الجنس</label>
+                <select class="form-select" name="gender" onchange="filterStudents()">
+                    <option value="">الكل</option>
+                    <option value="M" {% if search_form.gender.value == 'M' %}selected{% endif %}>ذكر</option>
+                    <option value="F" {% if search_form.gender.value == 'F' %}selected{% endif %}>أنثى</option>
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label">المرحلة التعليمية</label>
+                <select class="form-select" name="educational_stage" onchange="filterStudents()">
+                    <option value="">جميع المراحل</option>
+                    {% for stage in search_form.educational_stage.field.queryset %}
+                        <option value="{{ stage.id }}" {% if search_form.educational_stage.value == stage.id|stringformat:"s" %}selected{% endif %}>
+                            {{ stage.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-1">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="button" class="btn btn-outline-secondary" onclick="clearFilters()" title="مسح الفلاتر">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
             </div>
         </div>
     </div>
+</div>
+
+<!-- معلومات البحث -->
+<div id="searchInfo" class="search-info d-none">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <i class="fas fa-search me-2"></i>
+            <strong>نتائج البحث:</strong> <span id="searchResultsCount">0</span> طالب
+            <span class="me-3">|</span>
+            <strong>كلمة البحث:</strong> "<span id="searchTerm"></span>"
+        </div>
+        <button class="clear-search" onclick="clearSearch()">
+            <i class="fas fa-times me-1"></i>إلغاء البحث
+        </button>
+    </div>
+</div>
+
+<!-- جدول الطلاب -->
+<div class="students-table">
+    <div class="table-responsive">
+        <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th style="width: 8%">#</th>
+                    <th style="width: 35%">البيانات الأساسية</th>
+                    <th style="width: 12%">الجنس</th>
+                    <th style="width: 10%">العمر</th>
+                    <th style="width: 25%">الفصول الدراسية</th>
+                    <th style="width: 10%">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody id="studentsTableBody">
+                {% if page_obj %}
+                    {% for student in page_obj %}
+                    <tr>
+                        <td class="text-center">
+                            <strong>{{ forloop.counter|add:page_obj.start_index|add:"-1" }}</strong>
+                        </td>
+                        <td>
+                            <div class="student-info">
+                                <div class="student-avatar bg-primary">
+                                    {{ student.name.0|upper }}
+                                </div>
+                                <div class="student-details">
+                                    <div class="student-name">{{ student.name }}</div>
+                                    <div class="student-id">{{ student.national_number }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            {% if student.gender == 'M' %}
+                                <div class="gender-badge" style="background: linear-gradient(135deg, #17a2b8, #138496);" title="ذكر">
+                                    <i class="fas fa-male"></i>
+                                </div>
+                            {% elif student.gender == 'F' %}
+                                <div class="gender-badge" style="background: linear-gradient(135deg, #e83e8c, #d73486);" title="أنثى">
+                                    <i class="fas fa-female"></i>
+                                </div>
+                            {% else %}
+                                <div class="gender-badge" style="background: linear-gradient(135deg, #6c757d, #5a6268);" title="غير محدد">
+                                    <i class="fas fa-question"></i>
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <span class="age-badge">{{ student.age|default:"غ.م" }} سنة</span>
+                        </td>
+                        <td>
+                            {% if student.grade_level %}
+                                <div class="classroom-tags">
+                                    <!-- عرض الصف الدراسي -->
+                                    <span class="classroom-tag" title="الصف الدراسي">
+                                        <i class="fas fa-graduation-cap me-1"></i>{{ student.grade_level.name }}
+                                    </span>
+                                    
+                                    <!-- عرض المرحلة التعليمية -->
+                                    {% if student.grade_level.education_level %}
+                                    <span class="classroom-tag" style="background: linear-gradient(135deg, #6c757d, #5a6268);" title="المرحلة التعليمية">
+                                        <i class="fas fa-layer-group me-1"></i>{{ student.grade_level.education_level.name }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <div class="text-center">
+                                    <small class="text-muted">
+                                        <i class="fas fa-exclamation-triangle me-1 text-warning"></i>غير مسجل في صف
+                                    </small>
+                                    {% if permissions.can_edit %}
+                                    <div class="mt-1">
+                                        <a href="{% url 'students:edit_student' student.pk %}" 
+                                           class="btn btn-outline-warning btn-sm" title="تعديل وتسجيل في صف">
+                                            <i class="fas fa-edit me-1"></i>تسجيل
+                                        </a>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="actions-buttons">
+                                {% if permissions.can_view_details %}
+                                <a href="{% url 'students:student_detail' student.pk %}" 
+                                   class="btn btn-outline-info btn-action" title="عرض التفاصيل">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% endif %}
+                                
+                                {% if permissions.can_edit %}
+                                <a href="{% url 'students:edit_student' student.pk %}" 
+                                   class="btn btn-outline-primary btn-action" title="تعديل">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% endif %}
+                                
+                                {% if permissions.can_delete %}
+                                <a href="{% url 'students:confirm_delete_student' student.pk %}" 
+                                   class="btn btn-outline-danger btn-action" title="حذف">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">لا توجد طلاب</h5>
+                            <p class="text-muted">لم يتم العثور على أي طلاب مطابقين لمعايير البحث</p>
+                            {% if permissions.can_add %}
+                            <a href="{% url 'students:add_student' %}" class="btn btn-primary btn-custom">
+                                <i class="fas fa-plus me-1"></i>إضافة طالب جديد
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination - نفس الكود الموجود -->
+    <div class="table-footer" id="paginationContainer">
+        {% if page_obj.has_other_pages %}
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="text-muted">
+                عرض {{ page_obj.start_index }} إلى {{ page_obj.end_index }} من {{ page_obj.paginator.count }} طالب
+            </div>
+            
+            <nav aria-label="تنقل الصفحات">
+                <ul class="pagination pagination-sm mb-0">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                                <i class="fas fa-angle-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-2' and num < page_obj.number|add:'2' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                                <i class="fas fa-angle-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+    
+    <!-- Pagination -->
+    <div class="table-footer" id="paginationContainer">
+        {% if page_obj.has_other_pages %}
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="text-muted">
+                عرض {{ page_obj.start_index }} إلى {{ page_obj.end_index }} من {{ page_obj.paginator.count }} طالب
+            </div>
+            
+            <nav aria-label="تنقل الصفحات">
+                <ul class="pagination pagination-sm mb-0">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                                <i class="fas fa-angle-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-2' and num < page_obj.number|add:'2' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                                <i class="fas fa-angle-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let searchTimeout;
+let isSearchMode = false;
+
+// البحث الآجاكس
+document.getElementById('quickSearch').addEventListener('input', function() {
+    const query = this.value.trim();
+    
+    clearTimeout(searchTimeout);
+    
+    if (query.length < 3) {
+        if (isSearchMode) {
+            clearSearch();
+        }
+        return;
+    }
+    
+    searchTimeout = setTimeout(() => {
+        performAjaxSearch(query);
+    }, 300);
+});
+
+function performAjaxSearch(query) {
+    const searchIcon = document.getElementById('searchIcon');
+    const searchLoader = document.getElementById('searchLoader');
+    const tableBody = document.getElementById('studentsTableBody');
+    
+    // إظهار مؤشر التحميل
+    searchIcon.classList.add('d-none');
+    searchLoader.classList.remove('d-none');
+    isSearchMode = true;
+    
+    // عرض رسالة التحميل
+    tableBody.innerHTML = `
+        <tr class="loading-row">
+            <td colspan="7">
+                <div class="text-center py-4">
+                    <i class="fas fa-spinner fa-spin fa-2x text-primary mb-3"></i>
+                    <h5>جاري البحث...</h5>
+                    <p class="text-muted">البحث عن: "${query}"</p>
+                </div>
+            </td>
+        </tr>
+    `;
+    
+    // إرسال طلب الآجاكس
+    fetch(`/students/ajax/search/?q=${encodeURIComponent(query)}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        // إخفاء مؤشر التحميل
+        searchIcon.classList.remove('d-none');
+        searchLoader.classList.add('d-none');
+        
+        if (data.students && data.students.length > 0) {
+            displaySearchResults(data.students, query);
+        } else {
+            showNoResults(query);
+        }
+    })
+    .catch(error => {
+        console.error('خطأ في البحث:', error);
+        searchIcon.classList.remove('d-none');
+        searchLoader.classList.add('d-none');
+        showSearchError(query);
+    });
+}
+
+function displaySearchResults(students, query) {
+    const tableBody = document.getElementById('studentsTableBody');
+    const searchInfo = document.getElementById('searchInfo');
+    const searchResultsCount = document.getElementById('searchResultsCount');
+    const searchTerm = document.getElementById('searchTerm');
+    const paginationContainer = document.getElementById('paginationContainer');
+    
+    // إخفاء pagination أثناء البحث
+    paginationContainer.style.display = 'none';
+    
+    // تحديث معلومات البحث
+    searchInfo.classList.remove('d-none');
+    searchResultsCount.textContent = students.length;
+    searchTerm.textContent = query;
+    
+    // تحديث الإحصائيات
+    updateSearchStats(students);
+    
+    // عرض النتائج
+    let tableHTML = '';
+    students.forEach((student, index) => {
+        const genderBadge = createGenderBadge(student);
+        const classroomTags = createClassroomTags(student);
+        
+        tableHTML += `
+            <tr class="search-result-row">
+                <td class="text-center">
+                    <strong>${index + 1}</strong>
+                </td>
+                <td>
+                    <div class="student-info">
+                        <div class="student-avatar bg-primary">
+                            ${student.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div class="student-details">
+                            <div class="student-name">${highlightSearchTerm(student.name, query)}</div>
+                            <div class="student-id">${highlightSearchTerm(student.national_number, query)}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="text-center">
+                    ${genderBadge}
+                </td>
+                <td class="text-center">
+                    <span class="age-badge">${student.age} سنة</span>
+                </td>
+                <td>
+                    ${classroomTags}
+                </td>
+                <td>
+                    <div class="financial-status">
+                        <span class="status-badge bg-${student.status_color}">
+                            ${student.financial_status}
+                        </span>
+                        <div class="amount-text text-muted">
+                            مستحق: ${student.total_owed} ج.م
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="actions-buttons">
+                        <a href="${student.detail_url}" 
+                           class="btn btn-outline-info btn-action" title="عرض التفاصيل">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        <a href="${student.edit_url}" 
+                           class="btn btn-outline-primary btn-action" title="تعديل">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="${student.delete_url}" 
+                           class="btn btn-outline-danger btn-action" title="حذف">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tableBody.innerHTML = tableHTML;
+}
+
+function createGenderBadge(student) {
+    if (student.gender_icon === 'male') {
+        return `<div class="gender-badge" style="background: linear-gradient(135deg, #17a2b8, #138496);" title="ذكر">
+                    <i class="fas fa-male"></i>
+                </div>`;
+    } else if (student.gender_icon === 'female') {
+        return `<div class="gender-badge" style="background: linear-gradient(135deg, #e83e8c, #d73486);" title="أنثى">
+                    <i class="fas fa-female"></i>
+                </div>`;
+    } else {
+        return `<div class="gender-badge" style="background: linear-gradient(135deg, #6c757d, #5a6268);" title="غير محدد">
+                    <i class="fas fa-question"></i>
+                </div>`;
+    }
+}
+
+function createClassroomTags(student) {
+    if (student.classrooms && student.classrooms.length > 0) {
+        return `<div class="classroom-tags">
+                    ${student.classrooms.map(classroom => 
+                        `<span class="classroom-tag">${classroom}</span>`
+                    ).join('')}
+                </div>`;
+    } else {
+        return '<small class="text-muted">غير مسجل</small>';
+    }
+}
+
+function highlightSearchTerm(text, term) {
+    if (!term || !text) return text;
+    const regex = new RegExp(`(${term})`, 'gi');
+    return text.replace(regex, '<mark style="background: #fff3cd; padding: 1px 3px; border-radius: 3px;">$1</mark>');
+}
+
+function showNoResults(query) {
+    const tableBody = document.getElementById('studentsTableBody');
+    const searchInfo = document.getElementById('searchInfo');
+    const searchResultsCount = document.getElementById('searchResultsCount');
+    const searchTerm = document.getElementById('searchTerm');
+    const paginationContainer = document.getElementById('paginationContainer');
+    
+    // إخفاء pagination
+    paginationContainer.style.display = 'none';
+    
+    // تحديث معلومات البحث
+    searchInfo.classList.remove('d-none');
+    searchResultsCount.textContent = '0';
+    searchTerm.textContent = query;
+    
+    // تحديث الإحصائيات
+    updateSearchStats([]);
+    
+    tableBody.innerHTML = `
+        <tr class="no-results-row">
+            <td colspan="7">
+                <div class="text-center py-5">
+                    <i class="fas fa-search fa-3x text-warning mb-3"></i>
+                    <h5>لا توجد نتائج</h5>
+                    <p class="text-muted">لم يتم العثور على أي طلاب مطابقين للبحث: "<strong>${query}</strong>"</p>
+                    <button class="btn btn-outline-primary btn-sm" onclick="clearSearch()">
+                        <i class="fas fa-times me-1"></i>إلغاء البحث
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `;
+}
+
+function showSearchError(query) {
+    const tableBody = document.getElementById('studentsTableBody');
+    
+    tableBody.innerHTML = `
+        <tr>
+            <td colspan="7">
+                <div class="text-center py-5 text-danger">
+                    <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                    <h5>خطأ في البحث</h5>
+                    <p>حدث خطأ أثناء البحث عن: "${query}"</p>
+                    <button class="btn btn-outline-danger btn-sm" onclick="clearSearch()">
+                        <i class="fas fa-redo me-1"></i>إعادة المحاولة
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `;
+}
+
+function updateSearchStats(students) {
+    const totalCount = students.length;
+    const maleCount = students.filter(s => s.gender_icon === 'male').length;
+    const femaleCount = students.filter(s => s.gender_icon === 'female').length;
+    
+    document.getElementById('totalStudentsCount').textContent = totalCount;
+    document.getElementById('maleStudentsCount').textContent = maleCount;
+    document.getElementById('femaleStudentsCount').textContent = femaleCount;
+    document.getElementById('activeStudentsCount').textContent = totalCount;
+}
+
+function clearSearch() {
+    const searchInput = document.getElementById('quickSearch');
+    const searchInfo = document.getElementById('searchInfo');
+    const paginationContainer = document.getElementById('paginationContainer');
+    
+    searchInput.value = '';
+    searchInfo.classList.add('d-none');
+    isSearchMode = false;
+    
+    // إعادة تحميل الصفحة لعرض جميع الطلاب
+    window.location.reload();
+}
+
+// مسح الفلاتر
+function clearFilters() {
+    document.querySelector('select[name="gender"]').value = '';
+    document.querySelector('select[name="educational_stage"]').value = '';
+    document.getElementById('quickSearch').value = '';
+    
+    window.location.href = window.location.pathname;
+}
+
+// تطبيق الفلاتر
+function filterStudents() {
+    const gender = document.querySelector('select[name="gender"]').value;
+    const educationalStage = document.querySelector('select[name="educational_stage"]').value;
+    
+    let url = window.location.pathname + '?';
+    const params = [];
+    
+    if (gender) params.push(`gender=${gender}`);
+    if (educationalStage) params.push(`educational_stage=${educationalStage}`);
+    
+    if (params.length > 0) {
+        url += params.join('&');
+    } else {
+        url = window.location.pathname;
+    }
+    
+    window.location.href = url;
+}
+</script>
 {% endblock %}

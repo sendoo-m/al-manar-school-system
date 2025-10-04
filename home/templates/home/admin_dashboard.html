@@ -1,0 +1,244 @@
+{% extends 'dashboard_base.html' %}
+
+{% block title %}لوحة تحكم مدير النظام{% endblock %}
+{% block page_title %}لوحة تحكم مدير النظام{% endblock %}
+{% block page_subtitle %}إدارة شاملة لجميع أجزاء النظام{% endblock %}
+{% block user_role %}مدير النظام{% endblock %}
+
+{% block sidebar_nav %}
+    <a href="{% url 'home:admin_dashboard' %}" class="nav-link active">
+        <i class="fas fa-tachometer-alt me-2"></i>الرئيسية
+    </a>
+    <a href="/admin/auth/user/" class="nav-link" target="_blank">
+        <i class="fas fa-users me-2"></i>إدارة المستخدمين
+    </a>
+    <a href="/admin/school_settings/" class="nav-link" target="_blank">
+        <i class="fas fa-cogs me-2"></i>إعدادات النظام
+    </a>
+    <a href="/admin/students/student/" class="nav-link" target="_blank">
+        <i class="fas fa-user-graduate me-2"></i>إدارة الطلاب
+    </a>
+    <a href="/admin/students/classroom/" class="nav-link" target="_blank">
+        <i class="fas fa-chalkboard me-2"></i>الفصول الدراسية
+    </a>
+    <a href="/admin/students/tuition/" class="nav-link" target="_blank">
+        <i class="fas fa-money-bill me-2"></i>الأقساط المالية
+    </a>
+    <div class="nav-link text-white-50 mt-3">
+        <small>التقارير</small>
+    </div>
+    <a href="#" class="nav-link">
+        <i class="fas fa-chart-bar me-2"></i>تقارير شاملة
+    </a>
+    <a href="#" class="nav-link">
+        <i class="fas fa-file-export me-2"></i>تصدير البيانات
+    </a>
+{% endblock %}
+
+{% block dashboard_content %}
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-1">150</h3>
+                    <p class="mb-0">إجمالي المستخدمين</p>
+                </div>
+                <i class="fas fa-users fa-2x opacity-75"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stats-card success">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-1">1,250</h3>
+                    <p class="mb-0">إجمالي الطلاب</p>
+                </div>
+                <i class="fas fa-user-graduate fa-2x opacity-75"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stats-card warning">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-1">24</h3>
+                    <p class="mb-0">الفصول الدراسية</p>
+                </div>
+                <i class="fas fa-chalkboard fa-2x opacity-75"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stats-card danger">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-1">85%</h3>
+                    <p class="mb-0">نسبة تحصيل الأقساط</p>
+                </div>
+                <i class="fas fa-chart-pie fa-2x opacity-75"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bolt me-2 text-primary"></i>
+                    إجراءات سريعة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100 border-0 bg-light">
+                            <div class="card-body text-center">
+                                <i class="fas fa-user-plus fa-2x text-primary mb-3"></i>
+                                <h6>إضافة مستخدم جديد</h6>
+                                <p class="text-muted small">إنشاء حساب مستخدم جديد</p>
+                                <a href="/admin/auth/user/add/" class="btn btn-primary btn-sm" target="_blank">
+                                    إضافة الآن
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100 border-0 bg-light">
+                            <div class="card-body text-center">
+                                <i class="fas fa-user-graduate fa-2x text-success mb-3"></i>
+                                <h6>إضافة طالب جديد</h6>
+                                <p class="text-muted small">تسجيل طالب في النظام</p>
+                                <a href="/admin/students/student/add/" class="btn btn-success btn-sm" target="_blank">
+                                    تسجيل طالب
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100 border-0 bg-light">
+                            <div class="card-body text-center">
+                                <i class="fas fa-cogs fa-2x text-warning mb-3"></i>
+                                <h6>إعدادات النظام</h6>
+                                <p class="text-muted small">تخصيص إعدادات المدرسة</p>
+                                <a href="/admin/school_settings/" class="btn btn-warning btn-sm" target="_blank">
+                                    الإعدادات
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activities -->
+<div class="row">
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-clock me-2 text-info"></i>
+                    الأنشطة الأخيرة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-success"></div>
+                        <div class="timeline-content">
+                            <h6 class="mb-1">تسجيل طالب جديد</h6>
+                            <p class="text-muted small mb-1">تم تسجيل الطالب أحمد محمد</p>
+                            <small class="text-muted">منذ ساعة</small>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-primary"></div>
+                        <div class="timeline-content">
+                            <h6 class="mb-1">تحديث الإعدادات</h6>
+                            <p class="text-muted small mb-1">تم تحديث إعدادات النظام</p>
+                            <small class="text-muted">منذ 3 ساعات</small>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-warning"></div>
+                        <div class="timeline-content">
+                            <h6 class="mb-1">دفع قسط</h6>
+                            <p class="text-muted small mb-1">تم دفع قسط للطالب فاطمة علي</p>
+                            <small class="text-muted">أمس</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-exclamation-triangle me-2 text-danger"></i>
+                    تنبيهات هامة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning border-0">
+                    <i class="fas fa-money-bill me-2"></i>
+                    <strong>15 طالب</strong> لديهم أقساط متأخرة
+                </div>
+                <div class="alert alert-info border-0">
+                    <i class="fas fa-database me-2"></i>
+                    آخر نسخة احتياطية: أمس
+                </div>
+                <div class="alert alert-success border-0">
+                    <i class="fas fa-check-circle me-2"></i>
+                    النظام يعمل بشكل طبيعي
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #e9ecef;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -23px;
+    top: 5px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid white;
+}
+
+.timeline-content {
+    padding-left: 10px;
+}
+</style>
+{% endblock %}

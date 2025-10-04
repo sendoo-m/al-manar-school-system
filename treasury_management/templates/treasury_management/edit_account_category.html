@@ -1,0 +1,1054 @@
+<!-- treasury_management/templates/treasury_management/edit_account_category.html -->
+{% extends 'treasury_management/base.html' %}
+{% load static %}
+
+{% block title %}تحرير تصنيف الحساب - {{ category.name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'treasury_management:account_categories_list' %}">تصنيفات الحسابات</a></li>
+<li class="breadcrumb-item active">تحرير: {{ category.name }}</li>
+{% endblock %}
+
+{% block content %}
+<style>
+    /* ===================================
+       🎨 EDIT CATEGORY FORM STYLES WITH PREVIEW
+    =================================== */
+    .edit-category-container {
+        background: linear-gradient(135deg, rgba(255, 152, 0, 0.02), rgba(255, 111, 0, 0.02));
+        border-radius: 20px;
+        padding: 25px;
+        margin: -10px;
+        min-height: calc(100vh - 200px);
+    }
+
+    /* التخطيط الجانبي */
+    .edit-category-layout {
+        display: flex;
+        gap: 25px;
+        margin-bottom: 30px;
+    }
+
+    .form-wrapper { flex: 0 0 60%; }
+    .preview-wrapper { flex: 0 0 40%; }
+
+    .edit-category-card {
+        background: white;
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(255, 152, 0, 0.1);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        margin-bottom: 25px;
+    }
+
+    .edit-category-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(255, 152, 0, 0.15);
+    }
+
+    .edit-category-header {
+        background: linear-gradient(135deg, #ff9800, #f57c00);
+        color: #212529;
+        padding: 25px 30px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .edit-category-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="1" fill="rgba(0,0,0,0.1)"/></svg>') repeat;
+        animation: float 20s linear infinite;
+    }
+
+    .edit-category-header-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .edit-category-header h4 {
+        margin: 0 0 8px 0;
+        font-weight: 700;
+        font-size: 1.6rem;
+        display: flex;
+        align-items: center;
+        color: #212529;
+    }
+
+    .edit-category-header i {
+        background: rgba(0, 0, 0, 0.1);
+        padding: 12px;
+        border-radius: 12px;
+        margin-left: 15px;
+        font-size: 1.3rem;
+    }
+
+    .edit-category-header p {
+        margin: 0;
+        opacity: 0.8;
+        font-size: 1rem;
+        color: #212529;
+    }
+
+    /* أقسام النموذج */
+    .form-section {
+        background: rgba(248, 249, 250, 0.8);
+        border: 2px solid rgba(255, 152, 0, 0.1);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .form-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(135deg, #ff9800, #f57c00);
+        border-radius: 15px 15px 0 0;
+    }
+
+    .form-section:hover {
+        background: rgba(255, 255, 255, 0.9);
+        border-color: rgba(255, 152, 0, 0.2);
+        transform: translateY(-2px);
+    }
+
+    .section-title {
+        color: var(--text-primary);
+        font-weight: 700;
+        font-size: 1.1rem;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        padding-bottom: 10px;
+        border-bottom: 2px solid rgba(255, 152, 0, 0.1);
+    }
+
+    .section-icon {
+        width: 35px;
+        height: 35px;
+        background: linear-gradient(135deg, #ff9800, #f57c00);
+        color: #212529;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 10px;
+        font-size: 1rem;
+        box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
+    }
+
+    .section-icon.success { background: linear-gradient(135deg, #4caf50, #45a049); color: white; }
+    .section-icon.info { background: linear-gradient(135deg, #2196f3, #1976d2); color: white; }
+    .section-icon.danger { background: linear-gradient(135deg, #f44336, #d32f2f); color: white; }
+
+    /* الحقول */
+    .form-label {
+        color: var(--text-primary);
+        font-weight: 600;
+        margin-bottom: 8px;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .form-label .text-danger {
+        margin-right: 5px;
+        font-size: 1.1rem;
+    }
+
+    .form-control, .form-select {
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 12px 15px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        background: white;
+        color: var(--text-primary);
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #ff9800;
+        box-shadow: 0 0 0 0.2rem rgba(255, 152, 0, 0.15);
+        background: white;
+        transform: translateY(-1px);
+    }
+
+    .form-control:hover, .form-select:hover {
+        border-color: #bdc3c7;
+        background: white;
+    }
+
+    .form-control[readonly] {
+        background-color: #f8f9fa;
+        color: #6c757d;
+        cursor: not-allowed;
+    }
+
+    .form-select[disabled] {
+        background-color: #f8f9fa;
+        color: #6c757d;
+        cursor: not-allowed;
+    }
+
+    .form-text {
+        color: #6c757d;
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-top: 5px;
+    }
+
+    .form-text::before {
+        content: '\f05a';
+        font-family: 'Font Awesome 6 Free';
+        font-weight: 900;
+        margin-left: 6px;
+        color: #ff9800;
+    }
+
+    .form-text.text-warning::before {
+        color: #f57c00;
+        content: '\f071';
+    }
+
+    /* تحذير الحقول غير القابلة للتعديل */
+    .readonly-warning {
+        background: linear-gradient(135deg, rgba(255, 152, 0, 0.1), rgba(255, 255, 255, 0.9));
+        border: 1px dashed #ff9800;
+        border-radius: 8px;
+        padding: 10px;
+        margin-top: 8px;
+        font-size: 0.8rem;
+    }
+
+    /* ===================================
+       🎨 ENHANCED PREVIEW STYLES
+    =================================== */
+    .preview-card {
+        background: white;
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(156, 39, 176, 0.15);
+        overflow: hidden;
+        position: sticky;
+        top: 20px;
+        max-height: calc(100vh - 40px);
+        overflow-y: auto;
+        transition: all 0.3s ease;
+    }
+
+    .preview-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 35px rgba(156, 39, 176, 0.2);
+    }
+
+    .preview-header {
+        background: linear-gradient(135deg, #9c27b0, #7b1fa2);
+        color: white;
+        padding: 25px 20px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .preview-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+        background-size: 20px 20px;
+        animation: drift 25s linear infinite;
+    }
+
+    .preview-header-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .preview-icon {
+        width: 60px;
+        height: 60px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px;
+        font-size: 1.5rem;
+        backdrop-filter: blur(10px);
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        animation: pulse 2s infinite;
+    }
+
+    .preview-header h5 {
+        margin: 0 0 5px 0;
+        font-weight: 700;
+        font-size: 1.3rem;
+        color: white;
+    }
+
+    .preview-header p {
+        margin: 0;
+        opacity: 0.9;
+        font-size: 0.9rem;
+        color: white;
+    }
+
+    .preview-content {
+        padding: 25px 20px;
+    }
+
+    /* أقسام المعاينة */
+    .preview-section {
+        margin-bottom: 20px;
+    }
+
+    .preview-section-title {
+        font-weight: 700;
+        color: #2c3e50;
+        font-size: 0.95rem;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #f1f3f4;
+    }
+
+    .preview-section-icon {
+        width: 25px;
+        height: 25px;
+        background: linear-gradient(135deg, #9c27b0, #7b1fa2);
+        color: white;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 8px;
+        font-size: 0.8rem;
+    }
+
+    .preview-item {
+        background: white;
+        border: 2px solid #f1f3f4;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 12px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .preview-item::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 3px;
+        background: #f1f3f4;
+        transition: all 0.3s ease;
+    }
+
+    .preview-item.filled {
+        background: linear-gradient(135deg, rgba(156, 39, 176, 0.08), rgba(255, 255, 255, 0.9));
+        border-color: rgba(156, 39, 176, 0.3);
+        transform: translateX(-3px);
+        box-shadow: 0 3px 10px rgba(156, 39, 176, 0.1);
+    }
+
+    .preview-item.filled::before {
+        background: linear-gradient(135deg, #9c27b0, #7b1fa2);
+    }
+
+    .preview-item.readonly {
+        background: linear-gradient(135deg, rgba(158, 158, 158, 0.08), rgba(255, 255, 255, 0.9));
+        border-color: rgba(158, 158, 158, 0.3);
+    }
+
+    .preview-item.readonly::before {
+        background: linear-gradient(135deg, #9e9e9e, #757575);
+    }
+
+    .preview-label {
+        font-weight: 700;
+        color: #495057;
+        font-size: 0.8rem;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .preview-label-icon {
+        width: 16px;
+        height: 16px;
+        background: #6c757d;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 6px;
+        font-size: 0.6rem;
+        color: white;
+    }
+
+    .preview-value {
+        color: #2c3e50;
+        font-size: 1rem;
+        line-height: 1.4;
+        font-weight: 500;
+    }
+
+    .preview-value.empty {
+        color: #adb5bd;
+        font-style: italic;
+        font-weight: 400;
+    }
+
+    .preview-value.readonly {
+        color: #6c757d;
+    }
+
+    .preview-value.code {
+        font-weight: 800;
+        color: #9c27b0;
+        font-size: 1.1rem;
+        font-family: 'Courier New', monospace;
+    }
+
+    /* مؤشر الحالة */
+    .status-indicator {
+        background: rgba(76, 175, 80, 0.1);
+        border: 1px solid #4caf50;
+        border-radius: 8px;
+        padding: 10px;
+        margin-top: 15px;
+        text-align: center;
+    }
+
+    .status-indicator.inactive {
+        background: rgba(158, 158, 158, 0.1);
+        border-color: #9e9e9e;
+    }
+
+    .status-text {
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin: 0;
+        color: #4caf50;
+    }
+
+    .status-text.inactive {
+        color: #9e9e9e;
+    }
+
+    /* إحصائيات التصنيف */
+    .category-stats {
+        background: rgba(33, 150, 243, 0.05);
+        border: 1px dashed #2196f3;
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 20px;
+    }
+
+    .stat-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+        font-size: 0.9rem;
+    }
+
+    .stat-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .stat-label {
+        color: #495057;
+        font-weight: 600;
+    }
+
+    .stat-value {
+        color: #2196f3;
+        font-weight: 700;
+        background: rgba(33, 150, 243, 0.1);
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+    }
+
+    /* رسائل التحذير */
+    .alert {
+        border: none;
+        border-radius: 12px;
+        padding: 15px 20px;
+        font-weight: 500;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .alert-info {
+        background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+        color: #0d47a1;
+        border-right: 4px solid #2196f3;
+    }
+
+    /* الأزرار */
+    .form-footer {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        padding: 20px 30px;
+        border-top: 1px solid rgba(0,0,0,0.05);
+        border-radius: 0 0 20px 20px;
+    }
+
+    .btn {
+        font-weight: 600;
+        padding: 10px 20px;
+        border-radius: 10px;
+        border: none;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+    }
+
+    .btn-warning {
+        background: linear-gradient(135deg, #ff9800, #f57c00);
+        color: #212529;
+    }
+
+    .btn-warning:hover {
+        background: linear-gradient(135deg, #f57c00, #ef6c00);
+        color: #212529;
+    }
+
+    .btn-secondary {
+        background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: linear-gradient(135deg, #7f8c8d, #95a5a6);
+        color: white;
+    }
+
+    /* الانيميشن */
+    @keyframes float {
+        0%, 100% { transform: translateX(0) translateY(0); }
+        25% { transform: translateX(3px) translateY(-3px); }
+        50% { transform: translateX(-2px) translateY(2px); }
+        75% { transform: translateX(-3px) translateY(-2px); }
+    }
+
+    @keyframes drift {
+        0% { transform: rotate(0deg) translateX(0); }
+        100% { transform: rotate(360deg) translateX(20px); }
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    .fade-in {
+        animation: fadeInUp 0.8s ease-out;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* الاستجابة */
+    @media (max-width: 1200px) {
+        .edit-category-layout {
+            flex-direction: column;
+        }
+        
+        .form-wrapper,
+        .preview-wrapper {
+            flex: none;
+        }
+        
+        .preview-card {
+            position: static;
+            max-height: none;
+            margin-top: 20px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .edit-category-container {
+            padding: 15px;
+            margin: -5px;
+        }
+
+        .edit-category-header {
+            padding: 20px 25px;
+        }
+
+        .edit-category-header h4 {
+            font-size: 1.4rem;
+        }
+
+        .form-section {
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .section-icon {
+            width: 30px;
+            height: 30px;
+            font-size: 0.9rem;
+        }
+
+        .form-footer {
+            padding: 15px 20px;
+        }
+
+        .btn {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .preview-content {
+            padding: 20px 15px;
+        }
+        
+        .preview-icon {
+            width: 50px;
+            height: 50px;
+            font-size: 1.2rem;
+        }
+        
+        .preview-item {
+            padding: 12px;
+        }
+    }
+</style>
+
+<!-- محتوى الصفحة -->
+<div class="edit-category-container">
+    <div class="edit-category-layout">
+        <!-- النموذج -->
+        <div class="form-wrapper">
+            <div class="edit-category-card fade-in">
+                <div class="edit-category-header">
+                    <div class="edit-category-header-content">
+                        <h4>
+                            <i class="fas fa-edit"></i>
+                            تحرير تصنيف الحساب
+                        </h4>
+                        <p>{{ category.code }} - {{ category.name }}</p>
+                    </div>
+                </div>
+                
+                <form method="POST" id="editCategoryForm">
+                    {% csrf_token %}
+                    <div class="card-body" style="padding: 30px;">
+                        
+                        <!-- قسم المعلومات الأساسية -->
+                        <div class="form-section">
+                            <div class="section-title">
+                                <div class="section-icon">
+                                    <i class="fas fa-info-circle"></i>
+                                </div>
+                                <span>المعلومات الأساسية</span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <span class="text-danger">*</span>
+                                    اسم التصنيف
+                                </label>
+                                <input type="text" class="form-control" name="name" required 
+                                       value="{{ category.name }}">
+                                <div class="form-text">يمكن تعديل اسم التصنيف في أي وقت</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">كود التصنيف</label>
+                                <input type="text" class="form-control" value="{{ category.code }}" readonly>
+                                <div class="form-text text-warning">لا يمكن تعديل الكود بعد الإنشاء لحماية البيانات</div>
+                                <div class="readonly-warning">
+                                    <i class="fas fa-lock me-1"></i>
+                                    <strong>محمي:</strong> تغيير الكود قد يؤثر على الحسابات المرتبطة
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">نوع التصنيف</label>
+                                <select class="form-select" name="category_type" disabled>
+                                    <option value="{{ category.category_type }}" selected>{{ category.get_category_type_display }}</option>
+                                </select>
+                                <div class="form-text text-warning">لا يمكن تعديل النوع بعد الإنشاء لحماية التوازن المحاسبي</div>
+                                <div class="readonly-warning">
+                                    <i class="fas fa-lock me-1"></i>
+                                    <strong>محمي:</strong> تغيير النوع يتطلب إعادة تصنيف جميع الحسابات
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- قسم الهيكل التنظيمي -->
+                        <div class="form-section">
+                            <div class="section-title">
+                                <div class="section-icon success">
+                                    <i class="fas fa-sitemap"></i>
+                                </div>
+                                <span>الهيكل التنظيمي</span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">التصنيف الرئيسي</label>
+                                <select class="form-select" name="parent">
+                                    <option value="">تصنيف رئيسي</option>
+                                    {% for parent_category in parent_categories %}
+                                    <option value="{{ parent_category.id }}" 
+                                            {% if category.parent and category.parent.id == parent_category.id %}selected{% endif %}>
+                                        {{ parent_category.code }} - {{ parent_category.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">يمكن تغيير التصنيف الرئيسي لإعادة تنظيم الهيكل</div>
+                            </div>
+                        </div>
+
+                        <!-- قسم التفاصيل الإضافية -->
+                        <div class="form-section">
+                            <div class="section-title">
+                                <div class="section-icon info">
+                                    <i class="fas fa-align-left"></i>
+                                </div>
+                                <span>التفاصيل والوصف</span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">الوصف</label>
+                                <textarea class="form-control" name="description" rows="3">{{ category.description }}</textarea>
+                                <div class="form-text">وصف تفصيلي لغرض واستخدام التصنيف</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="is_active" 
+                                           {% if category.is_active %}checked{% endif %}>
+                                    <label class="form-check-label">
+                                        <strong>التصنيف نشط</strong>
+                                    </label>
+                                    <div class="form-text">إلغاء التفعيل سيخفي التصنيف من الاختيارات الجديدة</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- معلومات إضافية -->
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle me-2"></i>معلومات التصنيف:</h6>
+                            <ul class="mb-0">
+                                <li><strong>تاريخ الإنشاء:</strong> {{ category.created_at|date:"d M Y - H:i" }}</li>
+                                {% if category.parent %}
+                                <li><strong>التصنيف الرئيسي:</strong> {{ category.parent.name }}</li>
+                                {% endif %}
+                                <li><strong>عدد الحسابات المرتبطة:</strong> {{ category.account_set.count }}</li>
+                                <li><strong>التصنيفات الفرعية:</strong> {{ category.children.count }}</li>
+                            </ul>
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="form-footer">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{% url 'treasury_management:account_categories_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>إلغاء والعودة
+                            </a>
+                            <button type="submit" class="btn btn-warning text-dark" id="submitBtn">
+                                <i class="fas fa-save me-1"></i>حفظ التعديلات
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- المعاينة المحسنة -->
+        <div class="preview-wrapper">
+            <div class="preview-card fade-in" style="animation-delay: 0.2s;">
+                <div class="preview-header">
+                    <div class="preview-header-content">
+                        <div class="preview-icon">
+                            <i class="fas fa-folder-open"></i>
+                        </div>
+                        <h5>معاينة التصنيف</h5>
+                        <p>عرض البيانات الحالية والتعديلات</p>
+                    </div>
+                </div>
+                
+                <div class="preview-content">
+                    <!-- القسم الأساسي -->
+                    <div class="preview-section">
+                        <div class="preview-section-title">
+                            <div class="preview-section-icon">
+                                <i class="fas fa-info"></i>
+                            </div>
+                            البيانات الأساسية
+                        </div>
+                        
+                        <div class="preview-item filled" id="previewName">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-tag"></i>
+                                </div>
+                                اسم التصنيف
+                            </div>
+                            <div class="preview-value">{{ category.name }}</div>
+                        </div>
+                        
+                        <div class="preview-item readonly" id="previewCode">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-code"></i>
+                                </div>
+                                كود التصنيف (محمي)
+                            </div>
+                            <div class="preview-value code readonly">{{ category.code }}</div>
+                        </div>
+                        
+                        <div class="preview-item readonly" id="previewType">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-layer-group"></i>
+                                </div>
+                                نوع التصنيف (محمي)
+                            </div>
+                            <div class="preview-value readonly">{{ category.get_category_type_display }}</div>
+                        </div>
+                    </div>
+
+                    <!-- القسم الهيكلي -->
+                    <div class="preview-section">
+                        <div class="preview-section-title">
+                            <div class="preview-section-icon">
+                                <i class="fas fa-sitemap"></i>
+                            </div>
+                            الهيكل التنظيمي
+                        </div>
+                        
+                        <div class="preview-item filled" id="previewParent">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-level-up-alt"></i>
+                                </div>
+                                التصنيف الرئيسي
+                            </div>
+                            <div class="preview-value">
+                                {% if category.parent %}
+                                    {{ category.parent.name }}
+                                {% else %}
+                                    تصنيف رئيسي
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- القسم الإضافي -->
+                    <div class="preview-section">
+                        <div class="preview-section-title">
+                            <div class="preview-section-icon">
+                                <i class="fas fa-plus"></i>
+                            </div>
+                            معلومات إضافية
+                        </div>
+                        
+                        <div class="preview-item filled" id="previewDescription">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-file-alt"></i>
+                                </div>
+                                وصف التصنيف
+                            </div>
+                            <div class="preview-value">
+                                {% if category.description %}
+                                    {{ category.description }}
+                                {% else %}
+                                    لا يوجد وصف
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- مؤشر الحالة -->
+                        <div class="status-indicator {% if not category.is_active %}inactive{% endif %}" id="statusIndicator">
+                            <p class="status-text {% if not category.is_active %}inactive{% endif %}" id="statusText">
+                                {% if category.is_active %}
+                                    <i class="fas fa-check-circle me-1"></i>
+                                    التصنيف نشط ومتاح للاستخدام
+                                {% else %}
+                                    <i class="fas fa-pause-circle me-1"></i>
+                                    التصنيف غير نشط
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- إحصائيات التصنيف -->
+                    <div class="category-stats">
+                        <h6 class="mb-3" style="color: #2196f3; font-weight: 700;">
+                            <i class="fas fa-chart-bar me-2"></i>
+                            إحصائيات التصنيف
+                        </h6>
+                        
+                        <div class="stat-item">
+                            <span class="stat-label">تاريخ الإنشاء:</span>
+                            <span class="stat-value">{{ category.created_at|date:"d/m/Y" }}</span>
+                        </div>
+                        
+                        <div class="stat-item">
+                            <span class="stat-label">الحسابات المرتبطة:</span>
+                            <span class="stat-value">{{ category.account_set.count }}</span>
+                        </div>
+                        
+                        <div class="stat-item">
+                            <span class="stat-label">التصنيفات الفرعية:</span>
+                            <span class="stat-value">{{ category.children.count }}</span>
+                        </div>
+                        
+                        {% if category.parent %}
+                        <div class="stat-item">
+                            <span class="stat-label">المستوى:</span>
+                            <span class="stat-value">فرعي</span>
+                        </div>
+                        {% else %}
+                        <div class="stat-item">
+                            <span class="stat-label">المستوى:</span>
+                            <span class="stat-value">رئيسي</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('editCategoryForm');
+    const nameInput = document.querySelector('input[name="name"]');
+    const parentSelect = document.querySelector('select[name="parent"]');
+    const descriptionTextarea = document.querySelector('textarea[name="description"]');
+    const isActiveCheckbox = document.querySelector('input[name="is_active"]');
+    
+    // تحديث المعاينة عند تغيير أي حقل
+    form.addEventListener('input', updatePreview);
+    form.addEventListener('change', updatePreview);
+    
+    function updatePreview() {
+        // تحديث الاسم
+        const nameItem = document.getElementById('previewName');
+        const newName = nameInput.value.trim();
+        if (newName) {
+            nameItem.querySelector('.preview-value').textContent = newName;
+        }
+        
+        // تحديث التصنيف الرئيسي
+        const parentItem = document.getElementById('previewParent');
+        const selectedParent = parentSelect.selectedOptions[0];
+        if (selectedParent && selectedParent.value) {
+            parentItem.querySelector('.preview-value').textContent = selectedParent.text.split(' - ')[1];
+        } else {
+            parentItem.querySelector('.preview-value').textContent = 'تصنيف رئيسي';
+        }
+        
+        // تحديث الوصف
+        const descItem = document.getElementById('previewDescription');
+        const newDescription = descriptionTextarea.value.trim();
+        if (newDescription) {
+            const shortDesc = newDescription.length > 50 ? newDescription.substring(0, 50) + '...' : newDescription;
+            descItem.querySelector('.preview-value').textContent = shortDesc;
+        } else {
+            descItem.querySelector('.preview-value').textContent = 'لا يوجد وصف';
+        }
+        
+        // تحديث الحالة
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        if (isActiveCheckbox.checked) {
+            statusIndicator.classList.remove('inactive');
+            statusText.classList.remove('inactive');
+            statusText.innerHTML = '<i class="fas fa-check-circle me-1"></i>التصنيف نشط ومتاح للاستخدام';
+        } else {
+            statusIndicator.classList.add('inactive');
+            statusText.classList.add('inactive');
+            statusText.innerHTML = '<i class="fas fa-pause-circle me-1"></i>التصنيف غير نشط';
+        }
+    }
+    
+    // التحقق من النموذج قبل الإرسال
+    form.addEventListener('submit', function(e) {
+        const name = nameInput.value.trim();
+        
+        if (!name) {
+            alert('❌ يرجى إدخال اسم التصنيف');
+            e.preventDefault();
+            nameInput.focus();
+            return false;
+        }
+        
+        // تأكيد الحفظ
+        const originalName = '{{ category.name }}';
+        const hasChanges = name !== originalName || 
+                          parentSelect.value !== '{{ category.parent.id|default:"" }}' ||
+                          descriptionTextarea.value.trim() !== '{{ category.description|default:"" }}' ||
+                          isActiveCheckbox.checked !== {{ category.is_active|yesno:"true,false" }};
+        
+        if (!hasChanges) {
+            alert('ℹ️ لم يتم إجراء أي تعديلات');
+            e.preventDefault();
+            return false;
+        }
+        
+        const confirmed = confirm(`هل أنت متأكد من حفظ التعديلات؟
+
+📋 التفاصيل الجديدة:
+• الاسم: ${name}
+• التصنيف الرئيسي: ${parentSelect.selectedOptions[0].text.split(' - ')[1] || 'تصنيف رئيسي'}
+• الحالة: ${isActiveCheckbox.checked ? 'نشط' : 'غير نشط'}
+
+⚠️ هذا التغيير سيؤثر على جميع الحسابات المرتبطة`);
+        
+        if (!confirmed) {
+            e.preventDefault();
+        } else {
+            // إظهار مؤشر التحميل
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>جاري الحفظ...';
+            submitBtn.disabled = true;
+        }
+    });
+    
+    console.log('✅ نموذج تحرير التصنيف مع المعاينة الجانبية جاهز');
+});
+</script>
+{% endblock %}

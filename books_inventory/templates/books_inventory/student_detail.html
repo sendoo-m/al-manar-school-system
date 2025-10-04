@@ -1,0 +1,404 @@
+{% extends 'books_inventory/base.html' %}
+{% load static %}
+
+{% block title %}{{ student.name }} - تفاصيل الطالب{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:inventory_home' %}">الرئيسية</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:student_search_view' %}">البحث عن الطلاب</a></li>
+                <li class="breadcrumb-item active">{{ student.name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- معلومات الطالب الأساسية -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4><i class="fas fa-user"></i> بيانات الطالب {{ student.name }}</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">الاسم الكامل:</th>
+                                <td><strong>{{ student.name }}</strong></td>
+                            </tr>
+                            <tr>
+                                <th>الرقم القومي:</th>
+                                <td>{{ student.national_number }}</td>
+                            </tr>
+                            <tr>
+                                <th>الصف الدراسي:</th>
+                                <td>
+                                    {% if student.grade_name %}
+                                    <span class="badge bg-primary">{{ student.grade_name }}</span>
+                                    {% else %}
+                                    <span class="text-muted">غير محدد</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>المرحلة التعليمية:</th>
+                                <td>
+                                    {% if student.education_level_name %}
+                                    <span class="badge bg-info">{{ student.education_level_name }}</span>
+                                    {% else %}
+                                    <span class="text-muted">غير محدد</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">رقم الهاتف:</th>
+                                <td>
+                                    {% if student.phone_number %}
+                                    <a href="tel:{{ student.phone_number }}">{{ student.phone_number }}</a>
+                                    {% else %}
+                                    <span class="text-muted">غير محدد</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>تاريخ التسجيل:</th>
+                                <td>{{ student.created_at|date:"Y-m-d" }}</td>
+                            </tr>
+                            <tr>
+                                <th>حالة الطالب:</th>
+                                <td>
+                                    {% if student.is_active %}
+                                    <span class="badge bg-success">نشط</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">غير نشط</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>السنة الدراسية:</th>
+                                <td>
+                                    {% if student.academic_year %}
+                                    {{ student.academic_year.name }}
+                                    {% else %}
+                                    <span class="text-muted">غير محدد</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- حالة القسط الأول -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-money-check-alt text-success"></i> حالة القسط الأول</h5>
+            </div>
+            <div class="card-body text-center">
+                {% if first_installment_paid %}
+                    <div class="mb-3">
+                        <i class="fas fa-check-circle fa-3x text-success mb-2"></i>
+                        <h5 class="text-success">تم الدفع</h5>
+                    </div>
+                    {% if first_installment_date %}
+                    <p class="text-muted">
+                        <i class="fas fa-calendar-check"></i>
+                        تاريخ الدفع: {{ first_installment_date|date:"Y-m-d" }}
+                    </p>
+                    {% endif %}
+                    
+                    <div class="alert alert-success" role="alert">
+                        <i class="fas fa-info-circle"></i>
+                        يمكن توزيع المواد لهذا الطالب
+                    </div>
+                    
+                    {% if can_distribute %}
+                    <a href="{% url 'books_inventory:create_distribution' %}?student={{ student.pk }}" class="btn btn-success">
+                        <i class="fas fa-share"></i> إنشاء توزيع جديد
+                    </a>
+                    {% else %}
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        تم إنشاء توزيع اليوم بالفعل
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <div class="mb-3">
+                        <i class="fas fa-times-circle fa-3x text-danger mb-2"></i>
+                        <h5 class="text-danger">لم يتم الدفع</h5>
+                    </div>
+                    
+                    <div class="alert alert-danger" role="alert">
+                        <i class="fas fa-ban"></i>
+                        لا يمكن توزيع المواد حتى يتم دفع القسط الأول
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- الإجماليات المالية -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-calculator text-success"></i> الإجماليات المالية</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 bg-light">
+                            <h4 class="text-primary">{{ total_fees|default:0 }} ج.م</h4>
+                            <p class="text-muted mb-0">إجمالي المصروفات</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 bg-light">
+                            <h4 class="text-success">{{ total_payments|default:0 }} ج.م</h4>
+                            <p class="text-muted mb-0">إجمالي المدفوع</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 bg-light">
+                            <h4 class="text-danger">{{ total_owed|default:0 }} ج.م</h4>
+                            <p class="text-muted mb-0">المتبقي</p>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if total_fees > 0 %}
+                <div class="mt-3">
+                    <div class="progress" style="height: 25px;">
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             style="width: {{ payment_percentage }}%"
+                             aria-valuenow="{{ payment_percentage }}" 
+                             aria-valuemin="0" aria-valuemax="100">
+                            {{ payment_percentage }}% مدفوع
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- معلومات المدفوعات -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-pie text-info"></i> ملخص المدفوعات</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="border rounded p-3">
+                            <h4 class="text-primary">{{ payment_stats.total_installments|default:0 }}</h4>
+                            <p class="text-muted mb-0">إجمالي الأقساط</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3">
+                            <h4 class="text-success">{{ payment_stats.paid_installments|default:0 }}</h4>
+                            <p class="text-muted mb-0">أقساط مدفوعة</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3">
+                            <h4 class="text-warning">{{ payment_stats.pending_installments|default:0 }}</h4>
+                            <p class="text-muted mb-0">أقساط معلقة</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3">
+                            <h4 class="text-danger">{{ payment_stats.overdue_installments|default:0 }}</h4>
+                            <p class="text-muted mb-0">أقساط متأخرة</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- تفاصيل الأقساط -->
+{% if tuitions_with_remaining %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-list text-primary"></i> تفاصيل الأقساط</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>رقم القسط</th>
+                                <th>مبلغ القسط</th>
+                                <th>المبلغ المدفوع</th>
+                                <th>المتبقي</th>
+                                <th>تاريخ الاستحقاق</th>
+                                <th>تاريخ الدفع</th>
+                                <th>الحالة</th>
+                                <th>طريقة الدفع</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tuition_data in tuitions_with_remaining %}
+                            <tr>
+                                <td>
+                                    <strong>القسط {{ tuition_data.installment_number }}</strong>
+                                    {% if tuition_data.installment_number == 1 %}
+                                    <span class="badge bg-warning ms-2">القسط الأول</span>
+                                    {% endif %}
+                                </td>
+                                <td><strong>{{ tuition_data.amount_tuition }} ج.م</strong></td>
+                                <td>
+                                    <strong class="text-success">{{ tuition_data.amount_paid }} ج.م</strong>
+                                </td>
+                                <td>
+                                    <strong class="{% if tuition_data.remaining_amount > 0 %}text-danger{% else %}text-success{% endif %}">
+                                        {{ tuition_data.remaining_amount }} ج.م
+                                    </strong>
+                                </td>
+                                <td>{{ tuition_data.due_date|date:"Y-m-d" }}</td>
+                                <td>
+                                    {% if tuition_data.payment_date %}
+                                    {{ tuition_data.payment_date|date:"Y-m-d" }}
+                                    {% else %}
+                                    <span class="text-muted">لم يتم الدفع</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if tuition_data.payment_status == 'PAID' %}
+                                        <span class="badge bg-success">مدفوع</span>
+                                    {% elif tuition_data.payment_status == 'PENDING' %}
+                                        <span class="badge bg-warning">معلق</span>
+                                    {% elif tuition_data.payment_status == 'OVERDUE' %}
+                                        <span class="badge bg-danger">متأخر</span>
+                                    {% elif tuition_data.payment_status == 'PARTIALLY_PAID' %}
+                                        <span class="badge bg-info">مدفوع جزئياً</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ tuition_data.get_payment_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if tuition_data.payment_method %}
+                                    {{ tuition_data.get_payment_method_display }}
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% if tuition_data.notes %}
+                            <tr>
+                                <td colspan="8">
+                                    <small class="text-muted">
+                                        <i class="fas fa-sticky-note"></i> ملاحظات: {{ tuition_data.notes }}
+                                    </small>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- تاريخ التوزيعات -->
+{% if distributions %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-history text-success"></i> تاريخ التوزيعات</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>تاريخ التوزيع</th>
+                                <th>إجمالي العناصر</th>
+                                <th>الحالة</th>
+                                <th>موزع بواسطة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for distribution in distributions %}
+                            <tr>
+                                <td>
+                                    <strong>{{ distribution.distribution_date|date:"Y-m-d" }}</strong>
+                                    <br><small class="text-muted">{{ distribution.distribution_date|date:"D" }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ distribution.total_items|default:0 }}</span>
+                                </td>
+                                <td>
+                                    {% if distribution.status == 'COMPLETED' %}
+                                        <span class="badge bg-success">مكتمل</span>
+                                    {% elif distribution.status == 'PARTIAL' %}
+                                        <span class="badge bg-warning">جزئي</span>
+                                    {% elif distribution.status == 'PENDING' %}
+                                        <span class="badge bg-primary">في الانتظار</span>
+                                    {% elif distribution.status == 'CANCELLED' %}
+                                        <span class="badge bg-danger">ملغي</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small>{{ distribution.distributed_by.get_full_name|default:distribution.distributed_by.username }}</small>
+                                    <br><small class="text-muted">{{ distribution.created_at|date:"Y-m-d H:i" }}</small>
+                                </td>
+                                <td>
+                                    <a href="{% url 'books_inventory:distribution_detail' distribution.pk %}" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-eye"></i> التفاصيل
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-share fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">لا توجد توزيعات سابقة</h5>
+                <p class="text-muted">لم يتم إنشاء توزيعات لهذا الطالب بعد</p>
+                {% if can_distribute %}
+                <a href="{% url 'books_inventory:create_distribution' %}?student={{ student.pk }}" class="btn btn-success">
+                    <i class="fas fa-plus"></i> إنشاء أول توزيع
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,141 +1,637 @@
-{% extends 'students/base/account_navbar.html' %}
-{% comment %} {% extends 'students/base.html' %} {% endcomment %}
-{% load crispy_forms_tags %}
-{% load custom_filters %}
+{% extends 'students/base.html' %}
 
-{% block title %}{{ student.name }} - Student Detail{% endblock %}
+{% block title %}تفاصيل الطالب - {{ student.name }}{% endblock %}
+{% block page_title %}تفاصيل الطالب{% endblock %}
+{% block page_icon %}<i class="fas fa-user-graduate"></i>{% endblock %}
+{% block page_subtitle %}عرض تفصيلي لبيانات الطالب ومعلوماته الأكاديمية والمالية{% endblock %}
 
-{% block content %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'students:home' %}">الرئيسية</a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:student_list' %}">قائمة الطلاب</a></li>
+<li class="breadcrumb-item active">{{ student.name }}</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'students:edit_student' student.pk %}" class="btn btn-primary btn-custom">
+        <i class="fas fa-edit me-1"></i>تعديل البيانات
+    </a>
+    <a href="{% url 'students:student_list' %}" class="btn btn-secondary btn-custom">
+        <i class="fas fa-arrow-right me-1"></i>رجوع للقائمة
+    </a>
+    <div class="btn-group">
+        <button type="button" class="btn btn-success btn-custom dropdown-toggle" data-bs-toggle="dropdown">
+            <i class="fas fa-cog me-1"></i>المزيد
+        </button>
+        <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="#"><i class="fas fa-print me-2"></i>طباعة البيانات</a></li>
+            <li><a class="dropdown-item" href="#"><i class="fas fa-file-pdf me-2"></i>تصدير PDF</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="{% url 'students:confirm_delete_student' student.pk %}">
+                <i class="fas fa-trash me-2"></i>حذف الطالب</a></li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
 <style>
-    /* Hide the button on the print paper */
-    @media print {
-      .print-button {
-        display: none;
-      }
+    .student-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 20px;
+        padding: 40px;
+        margin-bottom: 30px;
+        position: relative;
+        overflow: hidden;
     }
-    @media print {
-        footer {
-            display: none;
-        }
+    
+    .student-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+        opacity: 0.1;
+    }
+    
+    .student-avatar-large {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.2);
+        backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 20px;
+        border: 3px solid rgba(255,255,255,0.3);
+    }
+    
+    .info-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border: 1px solid rgba(0,0,0,0.05);
+        margin-bottom: 25px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .info-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    }
+    
+    .info-card-header {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        padding: 20px 25px;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .info-card-body {
+        padding: 25px;
+    }
+    
+    .info-item {
+        display: flex;
+        align-items: center;
+        padding: 15px 0;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+    }
+    
+    .info-item:last-child {
+        border-bottom: none;
+    }
+    
+    .info-item:hover {
+        background: rgba(52, 152, 219, 0.02);
+        padding-right: 10px;
+        border-radius: 8px;
+    }
+    
+    .info-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 15px;
+        font-size: 1.1rem;
+        color: white;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 2px;
+        font-size: 0.9rem;
+    }
+    
+    .info-value {
+        color: #2c3e50;
+        font-size: 1.1rem;
+    }
+    
+    .status-badge {
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    
+    .financial-summary {
+        background: linear-gradient(135deg, #1757b8ff, #17159cff);
+        color: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+    }
+    
+    .financial-item {
+        text-align: center;
+        padding: 20px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 10px;
+        backdrop-filter: blur(10px);
+    }
+    
+    .financial-amount {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+    
+    .financial-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+    
+    .timeline-item {
+        position: relative;
+        padding-right: 30px;
+        margin-bottom: 20px;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        right: 8px;
+        top: 0;
+        width: 2px;
+        height: 100%;
+        background: #e9ecef;
+    }
+    
+    .timeline-item::after {
+        content: '';
+        position: absolute;
+        right: 4px;
+        top: 8px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--primary-color);
+    }
+    
+    .timeline-content {
+        background: white;
+        border-radius: 10px;
+        padding: 15px 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        border: 1px solid #e9ecef;
+    }
+    
+    .classroom-badge {
+        display: inline-block;
+        background: linear-gradient(135deg, #285fa7ff, #20b0c9ff);
+        color: white;
+        padding: 8px 15px;
+        border-radius: 10px;
+        margin: 5px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+    
+    .classroom-badge:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        color: white;
+        text-decoration: none;
     }
 </style>
-<!-- ============================= chat GPT code ============================= -->
-<h3 class='text-center text-danger'>الحسابات والمدفوعات الخاصة بـ {{ student.name }} </h3>
-<!-- Existing code omitted for brevity -->
-<!-- Display expenses -->
-{% comment %} <h2>المصاريف</h2> {% endcomment %}
-<div class="button " >
-    <h4 class="text-center text-primary">Discount: {{ discount }}</h4>
-    <table> <!--class="table table-striped"-->
-        <thead>
-            <tr>
-                <th>المصاريف المدرسية</th>
-                <th>مبلغ</th>
-                <th>تاريخ رصد المبلغ</th>
-                <th>  خصم</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for expense in expenses %}
-            <tr>
-                <td>{{ expense.expense_type }}</td>
-                <td>{{ expense.amount }}</td>
-                <td>{{ expense.date }}</td>
-                <td>{{ expense.discounted_amount }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-<!-- ============================= chat GPT code ============================= -->
-<br>    
-<h4 class='text-center text-primary'> الاقساط التي تم سدادها -  {{ student.name }}</h4>
-    {% if messages %}
-    {% for message in messages %}
-      <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-    {% endfor %}
-  {% endif %}
-  <a href="{% url 'students:pay_installment' pk=student.pk %}" class="btn btn-success btn-lg px-4 py-2 rounded-pill">دفع قسط </a>
-      <table> <!-- class="table"-->
-        <thead>
-            <tr>
-                <th>Receipt Number</th>
-                <th>Receipt Date</th>
-                <th>Amount</th>
-                <th>Paid</th>
-                {% comment %} <th>Status</th> {% endcomment %}
-                <th>Payer</th>
-                <th>Receipt</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for installment in installments %}
-                <tr>
-                    <td>{{ installment.installment_number }}</td>
-                    <td>{{ installment.receipt_date|date:"F d, Y" }} {{ installment.receipt_date|time:"h:i A" }}</td>
-                    <td>{{ installment.amount_tuition }}</td>
-                    <td>
-                    {% if installment.paid %}
-                        Yes
-                    {% else %}
-                        No
-                    {% endif %}
-                    </td>
-                    {% comment %} <td> <!-- علامة الدفع باللون الاخضر-->
-                        {% if installment.paid %}
-                            <span class="status-mark status-paid">&#10004;</span>
-                        {% else %}
-                            {% if student.premium %}
-                                <span class="status-mark status-premium">&#9888;</span>
-                            {% else %}
-                                <span class="status-mark status-unpaid">&#10008;</span>
+{% endblock %}
+
+{% block content %}
+<!-- رأس بيانات الطالب -->
+<div class="student-header">
+    <div class="row align-items-center position-relative" style="z-index: 2;">
+        <div class="col-md-8">
+            <div class="d-flex align-items-center">
+                <div class="student-avatar-large">
+                    {{ student.name.0|upper }}
+                </div>
+                <div>
+                    <h2 class="mb-2">{{ student.name }}</h2>
+                    <div class="d-flex gap-4 mb-2">
+                        <div>
+                            <i class="fas fa-id-card me-2"></i>
+                            <strong>{{ student.national_number }}</strong>
+                        </div>
+                        <div>
+                            <i class="fas fa-calendar me-2"></i>
+                            <strong>{{ student.age }} سنة</strong>
+                        </div>
+                        <div>
+                            {% if student.gender == 'M' %}
+                                <i class="fas fa-male me-2"></i><strong>ذكر</strong>
+                            {% elif student.gender == 'F' %}
+                                <i class="fas fa-female me-2"></i><strong>أنثى</strong>
                             {% endif %}
-                        {% endif %}
-                    </td><!-- نهاية علامة الدفع بالالوان --> {% endcomment %}
-                    <td>{{ installment.payment_user }}</td>
-                    <td>
-                        <a href="{% url 'students:receipt' pk=installment.pk %}" class="btn btn-secondary btn-sm">إيصال القسط</a>
-                        {% comment %}<form method="POST" action="{% url 'students:delete_installment' pk=installment.pk %}" style="display: inline;">
-                            {% csrf_token %}
-                             <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this installment?')">Delete</button> 
-                        </form>{% endcomment %}
-                    </td>
-                </tr>
-            {% endfor %}
-            <tr>
-                <td colspan="2"><strong>Total Paid:</strong></td>
-                <td colspan="4"><strong>{{ total_paid }}</strong></td>
-            </tr>
-            {% if expenses %}
-            <tr>
-                <td colspan="2"><strong>Total Expenses:</strong></td>
-                <td colspan="4"><strong>{{ total_expenses }}</strong></td>
-            </tr>
-            {% endif %}
-            <tr>
-                <td colspan="2"><strong>Total Owed:</strong></td>
-                <td colspan="4">
-                    <strong style="color: {% if total_owed > 0 %}red{% elif total_owed < 0 %}green{% else %}green{% endif %}">
-                        {% if total_owed > 0 %}
-                            {{ total_owed }}
-                        {% elif total_owed < 0 %}
-                            Paid over
-                            {{ total_owed|abs_value }} 
-                        {% else %}
-                            0
-                        {% endif %}
-                    </strong>
-                </td>
+                        </div>
+                    </div>
+                    <div class="status-badge bg-{{ student.get_status_color }}">
+                        <i class="fas fa-wallet me-2"></i>{{ student.get_financial_status }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 text-center">
+            <div class="display-4 opacity-50">
+                <i class="fas fa-user-graduate"></i>
+            </div>
+        </div>
+    </div>
+</div>
 
-            </tr>
-           
-        </tbody>
-    </table>
-    <button class="btn btn-primary print-button" onclick="printReceipt()">طباعة حساب الطالب</button>
-    <script>
-        function printReceipt() {
-            window.print();
-        }
-    </script>
-    {% endblock %}
+<!-- الحالة المالية -->
+<div class="financial-summary">
+    <h5 class="mb-4 text-center">
+        <i class="fas fa-money-bill-wave me-2"></i>الحالة المالية
+    </h5>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="financial-item">
+                <div class="financial-amount">{{ student.total_payments|default:0 }}</div>
+                <div class="financial-label">إجمالي المدفوعات</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="financial-item">
+                <div class="financial-amount">{{ student.total_owed|default:0 }}</div>
+                <div class="financial-label">إجمالي المستحقات</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="financial-item">
+                <div class="financial-amount">{{ student.get_overdue_amount|default:0 }}</div>
+                <div class="financial-label">المتأخرات</div>
+            </div>
+        </div>
+    </div>
+</div>
 
+<div class="row g-4">
+    <!-- البيانات الشخصية -->
+    <div class="col-md-6">
+        <div class="info-card">
+            <div class="info-card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-user me-2 text-primary"></i>البيانات الشخصية
+                </h5>
+            </div>
+            <div class="info-card-body">
+                <div class="info-item">
+                    <div class="info-icon" style="background: linear-gradient(135deg, #3498db, #2980b9);">
+                        <i class="fas fa-signature"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="info-label">الاسم الكامل</div>
+                        <div class="info-value">{{ student.name }}</div>
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-icon" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
+                        <i class="fas fa-id-card"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="info-label">الرقم القومي</div>
+                        <div class="info-value font-monospace">{{ student.national_number }}</div>
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-icon" style="background: linear-gradient(135deg, #f39c12, #e67e22);">
+                        <i class="fas fa-birthday-cake"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="info-label">تاريخ الميلاد</div>
+                        <div class="info-value">
+                            {% if student.date_of_birth %}
+                                {{ student.date_of_birth|date:"Y/m/d" }} ({{ student.age }} سنة)
+                            {% else %}
+                                غير محدد
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-icon" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">
+                        <i class="fas fa-venus-mars"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="info-label">الجنس</div>
+                        <div class="info-value">
+                            {% if student.gender == 'M' %}
+                                <i class="fas fa-male text-info me-2"></i>ذكر
+                            {% elif student.gender == 'F' %}
+                                <i class="fas fa-female text-success me-2"></i>أنثى
+                            {% else %}
+                                غير محدد
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                {% if student.address %}
+                <div class="info-item">
+                    <div class="info-icon" style="background: linear-gradient(135deg, #2730aeff, #2ea7ccff);">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="info-label">العنوان</div>
+                        <div class="info-value">{{ student.address }}</div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if student.phone_number %}
+                <div class="info-item">
+                    <div class="info-icon" style="background: linear-gradient(135deg, #17a2b8, #138496);">
+                        <i class="fas fa-phone"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="info-label">رقم الهاتف</div>
+                        <div class="info-value">{{ student.phone_number }}</div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- بيانات ولي الأمر -->
+    <div class="col-md-6">
+        <div class="info-card">
+            <div class="info-card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-users me-2 text-warning"></i>بيانات ولي الأمر
+                </h5>
+            </div>
+            <div class="info-card-body">
+                {% if student.parent_name %}
+                <div class="info-item">
+                    <div class="info-icon" style="background: linear-gradient(135deg, #f39c12, #e67e22);">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="info-label">اسم ولي الأمر</div>
+                        <div class="info-value">{{ student.parent_name }}</div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if student.parent_phone %}
+                <div class="info-item">
+                    <div class="info-icon" style="background: linear-gradient(135deg, #27ae60, #2ecc71);">
+                        <i class="fas fa-phone"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="info-label">هاتف ولي الأمر</div>
+                        <div class="info-value">{{ student.parent_phone }}</div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if student.parent_email %}
+                <div class="info-item">
+                    <div class="info-icon" style="background: linear-gradient(135deg, #3498db, #2980b9);">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="info-label">بريد ولي الأمر</div>
+                        <div class="info-value">{{ student.parent_email }}</div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if not student.parent_name and not student.parent_phone and not student.parent_email %}
+                <div class="text-center py-4 text-muted">
+                    <i class="fas fa-user-times fa-2x mb-3"></i>
+                    <p>لم يتم إدخال بيانات ولي الأمر</p>
+                    <a href="{% url 'students:edit_student' student.pk %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-plus me-1"></i>إضافة بيانات
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- البيانات الأكاديمية -->
+<div class="row g-4">
+    <div class="col-md-8">
+        <div class="info-card">
+            <div class="info-card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-graduation-cap me-2 text-success"></i>البيانات الأكاديمية
+                </h5>
+            </div>
+            <div class="info-card-body">
+                {% if student.classroom.exists %}
+                <div class="mb-4">
+                    <h6 class="text-muted mb-3">الفصول الدراسية:</h6>
+                    <div class="d-flex flex-wrap">
+                        {% for classroom in student.classroom.all %}
+                        <a href="{% url 'students:classroom_details' classroom.id %}" class="classroom-badge">
+                            <i class="fas fa-chalkboard me-2"></i>{{ classroom.name }}
+                            <small class="d-block">{{ classroom.get_stage_display }}</small>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if student.settings_grade_level %}
+                <div class="info-item">
+                    <div class="info-icon" style="background: linear-gradient(135deg, #28a745, #20c997);">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="info-label">الصف الدراسي (نظام الإعدادات)</div>
+                        <div class="info-value">{{ student.settings_grade_level.name }}</div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="info-item">
+                    <div class="info-icon" style="background: linear-gradient(135deg, #6f42c1, #5a67d8);">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="info-label">العام الدراسي</div>
+                        <div class="info-value">
+                            {% if student.academic_year %}
+                                {{ student.academic_year.year }}
+                            {% else %}
+                                غير محدد
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-icon" style="background: linear-gradient(135deg, #fd7e14, #e55a4e);">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="info-label">تاريخ التسجيل</div>
+                        <div class="info-value">{{ student.created_at|date:"Y/m/d H:i" }}</div>
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-icon" style="background: linear-gradient(135deg, #20c997, #17a2b8);">
+                        <i class="fas fa-edit"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="info-label">آخر تحديث</div>
+                        <div class="info-value">{{ student.updated_at|date:"Y/m/d H:i" }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- إجراءات سريعة -->
+    <div class="col-md-4">
+        <div class="info-card">
+            <div class="info-card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2 text-warning"></i>إجراءات سريعة
+                </h5>
+            </div>
+            <div class="info-card-body">
+                <div class="d-grid gap-3">
+                    <a href="{% url 'students:edit_student' student.pk %}" class="btn btn-primary">
+                        <i class="fas fa-edit me-2"></i>تعديل البيانات
+                    </a>
+                    
+                    <button class="btn btn-success" onclick="addPayment()">
+                        <i class="fas fa-money-bill me-2"></i>إضافة دفعة
+                    </button>
+                    
+                    <button class="btn btn-info" onclick="viewAttendance()">
+                        <i class="fas fa-calendar-check me-2"></i>سجل الحضور
+                    </button>
+                    
+                    <button class="btn btn-warning" onclick="viewGrades()">
+                        <i class="fas fa-star me-2"></i>الدرجات والتقييم
+                    </button>
+                    
+                    <button class="btn btn-secondary" onclick="generateReport()">
+                        <i class="fas fa-file-alt me-2"></i>تقرير شامل
+                    </button>
+                    
+                    <button class="btn btn-outline-primary" onclick="sendMessage()">
+                        <i class="fas fa-sms me-2"></i>إرسال رسالة
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- تاريخ النشاط -->
+{% if student.created_at %}
+<div class="info-card">
+    <div class="info-card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-history me-2 text-info"></i>تاريخ النشاط
+        </h5>
+    </div>
+    <div class="info-card-body">
+        <div class="timeline-item">
+            <div class="timeline-content">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="mb-1">تسجيل الطالب</h6>
+                        <small class="text-muted">تم تسجيل الطالب في النظام</small>
+                    </div>
+                    <small class="text-muted">{{ student.created_at|date:"Y/m/d H:i" }}</small>
+                </div>
+            </div>
+        </div>
+        
+        {% if student.updated_at %}
+        <div class="timeline-item">
+            <div class="timeline-content">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="mb-1">تحديث البيانات</h6>
+                        <small class="text-muted">تم تحديث بيانات الطالب</small>
+                    </div>
+                    <small class="text-muted">{{ student.updated_at|date:"Y/m/d H:i" }}</small>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="text-center mt-4">
+            <button class="btn btn-outline-info btn-sm" onclick="viewFullHistory()">
+                <i class="fas fa-history me-1"></i>عرض التاريخ الكامل
+            </button>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// دوال الإجراءات السريعة
+function addPayment() {
+    alert('سيتم إضافة هذه الميزة قريباً');
+}
+
+function viewAttendance() {
+    alert('سيتم إضافة هذه الميزة قريباً');
+}
+
+function viewGrades() {
+    alert('سيتم إضافة هذه الميزة قريباً');
+}
+
+function generateReport() {
+    alert('سيتم إضافة هذه الميزة قريباً');
+}
+
+function sendMessage() {
+    alert('سيتم إضافة هذه الميزة قريباً');
+}
+
+function viewFullHistory() {
+    alert('سيتم إضافة هذه الميزة قريباً');
+}
+</script>
+{% endblock %}

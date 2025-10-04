@@ -1,0 +1,1935 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}نظام إدارة الخزينة - مدرسة المنار{% endblock %}</title>
+    
+    <!-- Google Fonts - Cairo -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap RTL CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        /* ===================================
+           🎨 GLOBAL STYLES - خط Cairo
+        =================================== */
+        :root {
+            --primary-color: #3498db;
+            --primary-dark: #2980b9;
+            --secondary-color: #95a5a6;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --info-color: #17a2b8;
+            --dark-color: #2c3e50;
+            --light-color: #ecf0f1;
+            --sidebar-bg: #34495e;
+            --sidebar-hover: #445a75;
+            --main-bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-primary: #2c3e50;
+            --text-secondary: #7f8c8d;
+            --text-light: #bdc3c7;
+            --border-color: #e9ecef;
+            --shadow: 0 2px 10px rgba(0,0,0,0.08);
+            --shadow-hover: 0 8px 25px rgba(0,0,0,0.12);
+        }
+
+        * {
+            font-family: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background-color: var(--main-bg);
+            color: var(--text-primary);
+            line-height: 1.7;
+            font-weight: 400;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Cairo', sans-serif;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* ===================================
+           🏢 CLEAN SIDEBAR
+        =================================== */
+        .sidebar {
+            min-height: 100vh;
+            background-color: var(--sidebar-bg);
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            position: relative;
+            overflow-y: auto;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background-color: rgba(255,255,255,0.1);
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background-color: rgba(255,255,255,0.3);
+            border-radius: 3px;
+        }
+
+        /* العلامة التجارية */
+        .brand-section {
+            padding: 25px 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            background-color: rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .brand-icon {
+            background: linear-gradient(135deg, var(--warning-color), #e67e22);
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            color: white;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
+        }
+
+        .brand-section h4 {
+            margin: 0 0 5px 0;
+            font-weight: 700;
+            font-size: 1.3rem;
+            color: white;
+        }
+
+        .brand-section small {
+            color: var(--text-light);
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        .user-badges {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        /* أقسام التنقل */
+        .section-title {
+            color: rgba(255, 255, 255, 0.92);
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 15px 15px 5px 15px;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.47);
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title i {
+            margin-left: 6px;
+            font-size: 0.7rem;
+        }
+
+        /* روابط التنقل المحسنة */
+        .nav-link {
+            color: rgba(255,255,255,0.9) !important;
+            padding: 10px 18px;
+            border-radius: 8px;
+            margin: 2px 8px;
+            transition: all 0.2s ease;
+            font-weight: 500;
+            font-size: 0.9rem;
+            position: relative;
+            display: flex !important;
+            align-items: center;
+            text-decoration: none;
+            background-color: transparent;
+        }
+
+        .nav-link:hover {
+            color: white !important;
+            background-color: var(--sidebar-hover);
+            transform: translateX(-3px);
+        }
+
+        .nav-link.active {
+            color: white !important;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+        }
+
+        .nav-link i {
+            width: 18px;
+            margin-left: 10px;
+            text-align: center;
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .nav-link:hover i,
+        .nav-link.active i {
+            opacity: 1;
+        }
+
+        .nav-link div {
+            flex: 1;
+        }
+
+        .nav-link small {
+            font-size: 0.7rem;
+            opacity: 0.8;
+            margin-top: 1px;
+            display: block;
+            line-height: 1.1;
+            color: inherit;
+        }
+
+        .nav-link .badge {
+            font-size: 0.6rem;
+            padding: 2px 5px;
+            margin-right: 4px;
+            opacity: 0.9;
+        }
+
+        /* معلومات المستخدم */
+        .user-section {
+            margin-top: auto;
+            padding: 18px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            background-color: rgba(0,0,0,0.05);
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            color: white;
+            margin: 0 auto 10px;
+            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
+        }
+
+        .user-info {
+            text-align: center;
+            color: white;
+            margin-bottom: 12px;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 2px;
+            color: white;
+        }
+
+        .user-email {
+            font-size: 0.75rem;
+            color: var(--text-light);
+        }
+
+        .user-actions {
+            display: grid;
+            gap: 6px;
+        }
+
+        .user-actions .btn {
+            font-size: 0.8rem;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .user-actions .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        /* إحصائيات سريعة */
+        .quick-stats {
+            margin-top: 12px;
+            padding: 10px;
+            background-color: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .quick-stats .stats-title {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.7);
+            text-align: center;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .quick-stats .stats-row {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .quick-stats .stat-item {
+            text-align: center;
+            flex: 1;
+        }
+
+        .quick-stats .stat-value {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .quick-stats .stat-label {
+            font-size: 0.6rem;
+            color: rgba(255,255,255,0.6);
+            margin-top: 1px;
+        }
+
+        /* ===================================
+           📱 MAIN CONTENT AREA
+        =================================== */
+        .main-content {
+            padding: 20px;
+            min-height: 100vh;
+            background-color: var(--main-bg);
+        }
+
+        .page-header {
+            background-color: var(--card-bg);
+            padding: 18px 22px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .breadcrumb {
+            background: none;
+            padding: 0;
+            margin: 0;
+            font-weight: 500;
+        }
+
+        .breadcrumb-item a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        .breadcrumb-item a:hover {
+            color: var(--primary-dark);
+        }
+
+        .breadcrumb-item.active {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        /* مؤشر الحالة */
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+            margin-left: 6px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        /* ===================================
+           💬 ENHANCED MESSAGES
+        =================================== */
+        .messages-container {
+            margin-bottom: 20px;
+        }
+
+        .alert {
+            border: none;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            animation: slideInDown 0.4s ease;
+            position: relative;
+            padding: 12px 18px 12px 45px;
+            font-weight: 500;
+            border-right: 3px solid;
+        }
+
+        .alert::before {
+            content: '';
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            font-size: 1.1rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border-right-color: var(--success-color);
+        }
+        .alert-success::before { content: '\f00c'; color: var(--success-color); }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-right-color: var(--danger-color);
+        }
+        .alert-danger::before { content: '\f057'; color: var(--danger-color); }
+
+        .alert-warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border-right-color: var(--warning-color);
+        }
+        .alert-warning::before { content: '\f071'; color: var(--warning-color); }
+
+        .alert-info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border-right-color: var(--info-color);
+        }
+        .alert-info::before { content: '\f05a'; color: var(--info-color); }
+
+        @keyframes slideInDown {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* ===================================
+           🎴 ENHANCED CARDS & COMPONENTS
+        =================================== */
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            transition: all 0.2s ease;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid var(--border-color);
+            border-radius: 10px 10px 0 0;
+            font-weight: 600;
+            color: var(--text-primary);
+            padding: 12px 18px;
+        }
+
+        .btn {
+            border-radius: 8px;
+            font-weight: 600;
+            font-family: 'Cairo', sans-serif;
+            transition: all 0.2s ease;
+            border: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            color: white;
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #219a52;
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #dc2626;
+            color: white;
+        }
+
+        .btn-warning {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background-color: #e67e22;
+            color: white;
+        }
+
+        .btn-info {
+            background-color: var(--info-color);
+            color: white;
+        }
+
+        .btn-info:hover {
+            background-color: #138496;
+            color: white;
+        }
+
+        .btn-outline-light {
+            border: 1px solid rgba(255,255,255,0.3);
+            color: rgba(255,255,255,0.9);
+        }
+
+        .btn-outline-light:hover {
+            background-color: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.5);
+            color: white;
+        }
+
+        /* ===================================
+           🎯 LOADING & ANIMATIONS
+        =================================== */
+        .loading-spinner {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+            display: none;
+            background-color: var(--card-bg);
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        .loading-spinner .spinner-border {
+            color: var(--primary-color);
+        }
+
+        .fade-in {
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===================================
+           📱 RESPONSIVE IMPROVEMENTS
+        =================================== */
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 15px;
+            }
+
+            .page-header {
+                padding: 15px 18px;
+            }
+
+            .sidebar {
+                transform: translateX(100%);
+                position: fixed;
+                top: 0;
+                right: 0;
+                width: 100%;
+                z-index: 1050;
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .brand-section {
+                padding: 18px;
+            }
+
+            .nav-link {
+                padding: 12px 18px;
+            }
+
+            .user-section {
+                padding: 15px;
+            }
+        }
+
+        /* ===================================
+           🌙 DARK THEME
+        =================================== */
+        .dark-theme {
+            --main-bg: #1a202c;
+            --card-bg: #2d3748;
+            --text-primary: #f7fafc;
+            --text-secondary: #a0aec0;
+            --border-color: #4a5568;
+            --sidebar-bg: #2d3748;
+            --sidebar-hover: #4a5568;
+        }
+
+        .dark-theme .page-header {
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+        }
+
+        .dark-theme .card {
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+        }
+
+        .dark-theme .card-header {
+            background-color: #4a5568;
+            color: var(--text-primary);
+        }
+
+        .dark-theme .breadcrumb-item a {
+            color: var(--primary-color);
+        }
+
+        .dark-theme .breadcrumb-item.active {
+            color: var(--text-primary);
+        }
+
+        /* ===================================
+           🔧 SYSTEM LINKS
+        =================================== */
+        .system-links {
+            padding: 12px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            background-color: rgba(0,0,0,0.05);
+        }
+
+        .system-links .nav-link {
+            margin: 1px 0;
+            font-size: 0.85rem;
+            padding: 8px 15px;
+        }
+
+        /* ===================================
+           🎯 PERMISSION ALERT
+        =================================== */
+        .permission-alert {
+            text-align: center;
+            padding: 40px 20px;
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin: 20px 0;
+        }
+
+        .permission-alert i {
+            font-size: 3rem;
+            color: var(--warning-color);
+            margin-bottom: 15px;
+        }
+
+        .permission-alert h5 {
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }
+
+        .permission-alert p {
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Loading Spinner -->
+    <div class="loading-spinner">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">جاري التحميل...</span>
+        </div>
+        <div class="mt-2">
+            <small class="text-muted">جاري تحميل النظام...</small>
+        </div>
+    </div>
+
+    <div class="container-fluid p-0">
+        <div class="row g-0">
+            <!-- Enhanced Sidebar -->
+            <div class="col-md-3 col-lg-2">
+                <div class="sidebar">
+                    <!-- Brand Section -->
+                    <div class="brand-section">
+                        <div class="brand-icon">
+                            <i class="fas fa-coins"></i>
+                        </div>
+                        <h4>نظام الخزينة</h4>
+                        <small>إدارة مالية متكاملة</small>
+                        
+                        <!-- عرض دور المستخدم -->
+                        {% if has_treasury_access %}
+                        <div class="user-badges">
+                            {% if is_treasury_admin %}
+                            <span class="badge bg-danger">مدير عام</span>
+                            {% elif is_treasury_manager %}
+                            <span class="badge bg-warning">مدير خزينة</span>
+                            {% elif is_treasury_accountant %}
+                            <span class="badge bg-info">محاسب</span>
+                            {% elif is_treasury_cashier %}
+                            <span class="badge bg-success">أمين خزينة</span>
+                            {% elif is_treasury_viewer %}
+                            <span class="badge bg-secondary">مراجع</span>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Navigation Menu -->
+                    <nav class="nav flex-column p-0">
+                        {% if has_treasury_access %}
+                        
+                        <!-- القسم الرئيسي -->
+                        <a href="{% url 'treasury_management:dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                            <i class="fas fa-tachometer-alt"></i>
+                            <div>
+                                لوحة التحكم
+                                <small>نظرة شاملة على النظام</small>
+                            </div>
+                        </a>
+                        
+                        {% if is_treasury_manager %}
+                        <a href="{% url 'treasury_management:quick_setup' %}" class="nav-link {% if request.resolver_match.url_name == 'quick_setup' %}active{% endif %}">
+                            <i class="fas fa-magic"></i>
+                            <div>
+                                الإعداد السريع
+                                <small>تهيئة النظام</small>
+                            </div>
+                        </a>
+                        {% endif %}
+                        
+                        <!-- قسم العمليات -->
+                        <div class="section-title">
+                            <i class="fas fa-exchange-alt"></i>العمليات المالية
+                        </div>
+                        
+                        {% if is_treasury_cashier %}
+                        <a href="{% url 'treasury_management:add_transaction' %}" class="nav-link {% if request.resolver_match.url_name == 'add_transaction' %}active{% endif %}">
+                            <i class="fas fa-plus-circle text-success"></i>
+                            <div>
+                                إضافة عملية مالية
+                                <small>إيرادات ومصروفات</small>
+                            </div>
+                        </a>
+                        {% endif %}
+                        
+                        <a href="{% url 'treasury_management:transactions_list' %}" class="nav-link {% if request.resolver_match.url_name == 'transactions_list' %}active{% endif %}">
+                            <i class="fas fa-list"></i>
+                            <div>
+                                العمليات المالية
+                                {% if is_treasury_viewer %}
+                                <span class="badge bg-secondary">مشاهدة</span>
+                                {% endif %}
+                            </div>
+                        </a>
+                        
+                        {% if is_treasury_cashier %}
+                        <a href="{% url 'treasury_management:add_expense' %}" class="nav-link {% if request.resolver_match.url_name == 'add_expense' %}active{% endif %}">
+                            <i class="fas fa-receipt text-danger"></i>
+                            <div>
+                                إضافة مصروف
+                                <small>مصروفات يومية</small>
+                            </div>
+                        </a>
+                        {% endif %}
+                        
+                        <a href="{% url 'treasury_management:expenses_list' %}" class="nav-link {% if request.resolver_match.url_name == 'expenses_list' %}active{% endif %}">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                            <div>قائمة المصروفات</div>
+                        </a>
+                        
+                        <!-- قسم التقارير -->
+                        <div class="section-title">
+                            <i class="fas fa-chart-line"></i>التقارير والملخصات
+                        </div>
+                        
+                        <a href="{% url 'treasury_management:daily_summary' %}" class="nav-link {% if request.resolver_match.url_name == 'daily_summary' %}active{% endif %}">
+                            <i class="fas fa-calendar-day text-info"></i>
+                            <div>
+                                الملخص اليومي
+                                <small>ملخص العمليات اليومية</small>
+                            </div>
+                        </a>
+                        
+                        {% if is_treasury_accountant %}
+                        <a href="{% url 'treasury_management:reports' %}" class="nav-link {% if request.resolver_match.url_name == 'reports' %}active{% endif %}">
+                            <i class="fas fa-chart-bar text-warning"></i>
+                            <div>
+                                التقارير المتقدمة
+                                <small>تقارير مفصلة</small>
+                            </div>
+                        </a>
+                        {% endif %}
+                        
+                        <!-- قسم الإعدادات -->
+                        {% if is_treasury_accountant %}
+                        <div class="section-title">
+                            <i class="fas fa-cogs"></i>الإعدادات المالية
+                        </div>
+                        
+                        <a href="{% url 'treasury_management:treasuries_list' %}" class="nav-link {% if request.resolver_match.url_name == 'treasuries_list' %}active{% endif %}">
+                            <i class="fas fa-vault text-primary"></i>
+                            <div>
+                                إدارة الخزائن
+                                {% if not is_treasury_manager %}
+                                <span class="badge bg-warning">محدود</span>
+                                {% endif %}
+                            </div>
+                        </a>
+                        
+                        <a href="{% url 'treasury_management:accounts_list' %}" class="nav-link {% if request.resolver_match.url_name == 'accounts_list' %}active{% endif %}">
+                            <i class="fas fa-list-alt text-success"></i>
+                            <div>
+                                الحسابات المالية
+                                <small>دليل الحسابات</small>
+                            </div>
+                        </a>
+                        {% endif %}
+                        
+                        {% if is_treasury_manager %}
+                        <a href="{% url 'treasury_management:account_categories_list' %}" class="nav-link {% if request.resolver_match.url_name == 'account_categories_list' %}active{% endif %}">
+                            <i class="fas fa-folder text-info"></i>
+                            <div>
+                                تصنيفات الحسابات
+                                <small>هيكل الحسابات</small>
+                            </div>
+                        </a>
+                        
+                        <a href="{% url 'treasury_management:expense_categories_list' %}" class="nav-link {% if request.resolver_match.url_name == 'expense_categories_list' %}active{% endif %}">
+                            <i class="fas fa-tags text-warning"></i>
+                            <div>
+                                تصنيفات المصروفات
+                                <small>أنواع المصروفات</small>
+                            </div>
+                        </a>
+                        {% endif %}
+                        
+                        <!-- قسم الإدارة المتقدمة -->
+                        {% if is_treasury_admin %}
+                        <div class="section-title">
+                            <i class="fas fa-crown"></i>إدارة متقدمة
+                            <span class="badge bg-danger ms-auto">مدير عام</span>
+                        </div>
+                        
+                        <a href="{% url 'treasury_management:manage_users' %}" class="nav-link">
+                            <i class="fas fa-users-cog text-danger"></i>
+                            <div>
+                                إدارة المستخدمين
+                                <small>صلاحيات الخزينة</small>
+                            </div>
+                        </a>
+                        
+                        <a href="{% url 'treasury_management:system_settings' %}" class="nav-link {% if request.resolver_match.url_name == 'system_settings' %}active{% endif %}">
+                            <i class="fas fa-sliders-h text-danger"></i>
+                            <div>
+                                إعدادات النظام
+                                <small>إعدادات متقدمة</small>
+                            </div>
+                        </a>
+                        
+                        <a href="{% url 'treasury_management:backup_restore' %}" class="nav-link">
+                            <i class="fas fa-database text-danger"></i>
+                            <div>
+                                النسخ الاحتياطي
+                                <small>حفظ واستعادة</small>
+                            </div>
+                        </a>
+                        {% endif %}
+                        
+                        {% else %}
+                        <!-- رسالة عدم وجود صلاحيات -->
+                        <div class="text-center p-4" style="margin-top: 50px;">
+                            <i class="fas fa-lock fa-3x text-muted mb-3"></i>
+                            <h6 class="text-white">غير مخول</h6>
+                            <p class="text-white-50 small">ليس لديك صلاحية للوصول لنظام الخزينة</p>
+                            <a href="/" class="btn btn-outline-light btn-sm">
+                                <i class="fas fa-home me-1"></i>العودة للرئيسية
+                            </a>
+                        </div>
+                        {% endif %}
+                    </nav>
+                    
+                    <!-- User Section -->
+                    <div class="user-section">
+                        <div class="user-avatar">
+                            <i class="fas fa-user-circle"></i>
+                        </div>
+                        
+                        <div class="user-info">
+                            <div class="user-name">{{ user.get_full_name|default:user.username }}</div>
+                            <div class="user-email">{{ user.email }}</div>
+                        </div>
+                        
+                        <div class="user-actions">
+                            {% if has_treasury_access %}
+                            <button class="btn btn-outline-light btn-sm" onclick="toggleTheme()">
+                                <i class="fas fa-palette me-1"></i>تغيير المظهر
+                            </button>
+                            {% endif %}
+                            
+                            <a href="/accounts/logout/" class="btn btn-outline-light btn-sm">
+                                <i class="fas fa-sign-out-alt me-1"></i>تسجيل الخروج
+                            </a>
+                        </div>
+                        
+                        <!-- Quick Stats -->
+                        {% if is_treasury_cashier %}
+                        <div class="quick-stats">
+                            <div class="stats-title">إحصائيات سريعة</div>
+                            <div class="stats-row">
+                                <div class="stat-item">
+                                    <div class="stat-value text-success">{{ today_income|default:0 }}</div>
+                                    <div class="stat-label">إيرادات اليوم</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value text-danger">{{ today_expenses|default:0 }}</div>
+                                    <div class="stat-label">مصروفات اليوم</div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- System Links -->
+                    <div class="system-links">
+                        <a href="{% url 'school_settings:comprehensive_settings' %}" class="nav-link">
+                            <i class="fas fa-school"></i>
+                            <div>إعدادات المدرسة</div>
+                        </a>
+                        
+                        {% if user.is_superuser or is_treasury_admin %}
+                        <a href="/admin/" class="nav-link" target="_blank">
+                            <i class="fas fa-user-shield text-danger"></i>
+                            <div>
+                                لوحة الإدارة
+                                <small>Django Admin</small>
+                            </div>
+                        </a>
+                        {% endif %}
+                        
+                        <a href="/" class="nav-link">
+                            <i class="fas fa-home"></i>
+                            <div>الصفحة الرئيسية</div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Enhanced Main Content -->
+            <div class="col-md-9 col-lg-10">
+                <div class="main-content">
+                    <!-- Enhanced Page Header -->
+                    {% block page_header %}
+                    <div class="page-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <nav aria-label="breadcrumb">
+                                    <ol class="breadcrumb">
+                                        <li class="breadcrumb-item">
+                                            <a href="{% url 'treasury_management:dashboard' %}">
+                                                <i class="fas fa-home"></i> الرئيسية
+                                            </a>
+                                        </li>
+                                        {% block breadcrumb %}{% endblock %}
+                                    </ol>
+                                </nav>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                {% if has_treasury_access %}
+                                <div class="me-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="status-indicator bg-success"></div>
+                                        <small class="text-muted">متصل بنظام الخزينة</small>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                <div class="text-muted">
+                                    <i class="fas fa-calendar-alt me-1"></i>
+                                    <span id="current-datetime">{{ now|date:"l، d F Y - H:i" }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endblock %}
+                    
+                    <!-- Permission Alert -->
+                    {% if not has_treasury_access %}
+                    <div class="permission-alert">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h5>غير مخول للوصول</h5>
+                        <p>ليس لديك صلاحية للوصول لنظام إدارة الخزينة. يرجى التواصل مع الإدارة للحصول على الصلاحيات المطلوبة.</p>
+                        <a href="/" class="btn btn-primary">العودة للصفحة الرئيسية</a>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Enhanced Messages -->
+                    {% if messages %}
+                    <div class="messages-container">
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Page Content -->
+                    {% if has_treasury_access %}
+                    <div class="content-wrapper fade-in">
+                        {% block content %}{% endblock %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // تحديث الوقت كل دقيقة
+            function updateDateTime() {
+                const now = new Date();
+                const options = {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                };
+                const dateTimeString = now.toLocaleDateString('ar-EG', options);
+                const element = document.getElementById('current-datetime');
+                if (element) {
+                    element.textContent = dateTimeString;
+                }
+            }
+            
+            setInterval(updateDateTime, 60000);
+            
+            // إدارة الرسائل
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach((alert, index) => {
+                alert.style.animationDelay = `${index * 0.1}s`;
+                
+                const isImportant = alert.classList.contains('alert-success') || 
+                                  alert.classList.contains('alert-danger');
+                const delay = isImportant ? 6000 : 4000;
+                
+                setTimeout(() => {
+                    if (alert && alert.parentNode) {
+                        alert.style.animation = 'slideOutUp 0.4s ease';
+                        setTimeout(() => {
+                            if (alert && alert.parentNode) {
+                                alert.remove();
+                            }
+                        }, 400);
+                    }
+                }, delay);
+            });
+            
+            // Loading spinner
+            const showLoading = () => {
+                document.querySelector('.loading-spinner').style.display = 'block';
+            };
+            const hideLoading = () => {
+                document.querySelector('.loading-spinner').style.display = 'none';
+            };
+            
+            document.querySelectorAll('form').forEach(form => {
+                form.addEventListener('submit', showLoading);
+            });
+            
+            window.addEventListener('load', hideLoading);
+            
+            console.log('✅ نظام الخزينة جاهز - خط Cairo مع ألوان محسنة');
+        });
+        
+        // تغيير المظهر
+        function toggleTheme() {
+            const body = document.body;
+            body.classList.toggle('dark-theme');
+            
+            const isDark = body.classList.contains('dark-theme');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            
+            // إشعار بالتغيير
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-info alert-dismissible fade show';
+            alertDiv.innerHTML = `
+                <i class="fas fa-palette me-2"></i>
+                تم تغيير المظهر إلى ${isDark ? 'الداكن' : 'الفاتح'} بنجاح!
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            const container = document.querySelector('.messages-container') || 
+                            document.querySelector('.main-content');
+            if (container) {
+                container.insertBefore(alertDiv, container.firstChild);
+            }
+        }
+        
+        // تحميل المظهر المحفوظ
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-theme');
+        }
+        
+        // دوال مساعدة
+        function formatNumber(num) {
+            return new Intl.NumberFormat('ar-EG', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(num);
+        }
+        
+        function confirmDelete(message = 'هل أنت متأكد من الحذف؟') {
+            return confirm(message);
+        }
+
+        // تأثير slideOutUp
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideOutUp {
+                from {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateY(-100%);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+
+{% comment %} <!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}نظام إدارة الخزنة{% endblock %}</title>
+    
+    <!-- Bootstrap RTL CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts (Arabic) -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Noto Sans Arabic', sans-serif;
+            background-color: #f8f9fa;
+            line-height: 1.6;
+        }
+        
+        .navbar-brand {
+            font-weight: 600;
+            font-size: 1.25rem;
+        }
+        
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            margin: 0.25rem 0.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar .nav-link:hover {
+            color: white;
+            background: rgba(255,255,255,0.1);
+            transform: translateX(-3px);
+        }
+        
+        .sidebar .nav-link.active {
+            color: white;
+            background: rgba(255,255,255,0.2);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar .nav-link i {
+            width: 20px;
+            margin-left: 10px;
+        }
+        
+        .main-content {
+            padding: 2rem;
+            min-height: 100vh;
+        }
+        
+        .page-header {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 2rem;
+        }
+        
+        .breadcrumb {
+            background: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .breadcrumb-item a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        .alert {
+            border: none;
+            border-radius: 10px;
+        }
+        
+        .btn {
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .table {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        /* Loading Spinner */
+        .loading-spinner {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+            display: none;
+        }
+        
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .section-title {
+            color: rgba(255,255,255,0.6);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            margin: 1rem 1rem 0.5rem;
+        }
+
+        /* إضافة في static/css/treasury.css أو في head القوالب */
+        
+        /* تحسين رسائل النظام */
+        .alert {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            animation: slideInDown 0.5s ease;
+            position: relative;
+            padding-right: 3rem;
+        }
+
+        .alert-success {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border-left: 5px solid #155724;
+        }
+
+        .alert-danger {
+            background: linear-gradient(45deg, #dc3545, #fd7e14);
+            color: white;
+            border-left: 5px solid #721c24;
+        }
+
+        .alert-warning {
+            background: linear-gradient(45deg, #ffc107, #fd7e14);
+            color: #212529;
+            border-left: 5px solid #856404;
+        }
+
+        .alert-info {
+            background: linear-gradient(45deg, #17a2b8, #6610f2);
+            color: white;
+            border-left: 5px solid #0c5460;
+        }
+
+        /* تأثير الدخول */
+        @keyframes slideInDown {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* إطالة عرض الرسائل */
+        .alert {
+            animation-duration: 0.5s;
+            transition: all 0.3s ease;
+        }
+
+        /* أيقونات الرسائل */
+        .alert::before {
+            content: '';
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            font-size: 1.2rem;
+        }
+
+        .alert-success::before { content: '\f00c'; }
+        .alert-danger::before { content: '\f057'; }
+        .alert-warning::before { content: '\f071'; }
+        .alert-info::before { content: '\f05a'; }
+
+        /* زر الإغلاق المحسن */
+        .alert .btn-close {
+            background: rgba(255,255,255,0.3);
+            border-radius: 50%;
+            opacity: 0.8;
+        }
+
+        .alert .btn-close:hover {
+            opacity: 1;
+            background: rgba(255,255,255,0.5);
+        }
+
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Loading Spinner -->
+    <div class="loading-spinner">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">جاري التحميل...</span>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 px-0">
+            <div class="sidebar">
+                <!-- Brand -->
+                <div class="p-3 text-center border-bottom border-white border-opacity-25">
+                    <h4 class="text-white mb-0">
+                        <i class="fas fa-coins me-2"></i>
+                        نظام الخزنة
+                    </h4>
+                    <small class="text-white-50">إدارة مالية متكاملة</small>
+                    
+                    <!-- عرض دور المستخدم -->
+                    {% if has_treasury_access %}
+                    <div class="mt-2">
+                        <span class="badge bg-info">{{ treasury_role }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Navigation -->
+                <nav class="nav flex-column p-3">
+                    {% if has_treasury_access %}
+                    
+                    <!-- القسم الرئيسي -->
+                    <a href="{% url 'treasury_management:dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                        <i class="fas fa-tachometer-alt"></i>
+                        لوحة التحكم
+                    </a>
+                    
+                    {% if is_treasury_manager %}
+                    <a href="{% url 'treasury_management:quick_setup' %}" class="nav-link {% if request.resolver_match.url_name == 'quick_setup' %}active{% endif %}">
+                        <i class="fas fa-magic"></i>
+                        الإعداد السريع
+                    </a>
+                    {% endif %}
+                    
+                    <!-- قسم العمليات -->
+                    <div class="section-title">
+                        <i class="fas fa-exchange-alt me-2"></i>العمليات المالية
+                    </div>
+                    
+                    {% if is_treasury_cashier %}
+                    <a href="{% url 'treasury_management:add_transaction' %}" class="nav-link {% if request.resolver_match.url_name == 'add_transaction' %}active{% endif %}">
+                        <i class="fas fa-plus-circle text-success"></i>
+                        إضافة عملية مالية
+                        <small class="text-white-50 d-block">إيرادات ومصروفات</small>
+                    </a>
+                    {% endif %}
+                    
+                    <a href="{% url 'treasury_management:transactions_list' %}" class="nav-link {% if request.resolver_match.url_name == 'transactions_list' %}active{% endif %}">
+                        <i class="fas fa-list"></i>
+                        العمليات المالية
+                        {% if is_treasury_viewer %}
+                        <span class="badge bg-secondary ms-2">مشاهدة</span>
+                        {% endif %}
+                    </a>
+                    
+                    {% if is_treasury_cashier %}
+                    <a href="{% url 'treasury_management:add_expense' %}" class="nav-link {% if request.resolver_match.url_name == 'add_expense' %}active{% endif %}">
+                        <i class="fas fa-receipt text-danger"></i>
+                        إضافة مصروف
+                        <small class="text-white-50 d-block">مصروفات يومية</small>
+                    </a>
+                    {% endif %}
+                    
+                    <a href="{% url 'treasury_management:expenses_list' %}" class="nav-link {% if request.resolver_match.url_name == 'expenses_list' %}active{% endif %}">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        قائمة المصروفات
+                    </a>
+                    
+                    <!-- قسم التقارير -->
+                    <div class="section-title">
+                        <i class="fas fa-chart-line me-2"></i>التقارير والملخصات
+                    </div>
+                    
+                    <a href="{% url 'treasury_management:daily_summary' %}" class="nav-link {% if request.resolver_match.url_name == 'daily_summary' %}active{% endif %}">
+                        <i class="fas fa-calendar-day text-info"></i>
+                        الملخص اليومي
+                        <small class="text-white-50 d-block">ملخص العمليات اليومية</small>
+                    </a>
+                    
+                    {% if is_treasury_accountant %}
+                    <a href="{% url 'treasury_management:reports' %}" class="nav-link {% if request.resolver_match.url_name == 'reports' %}active{% endif %}">
+                        <i class="fas fa-chart-bar text-warning"></i>
+                        التقارير
+                        <small class="text-white-50 d-block">تقارير مفصلة</small>
+                    </a>
+                    {% endif %}
+                    
+                    <!-- قسم الإعدادات -->
+                    {% if is_treasury_accountant %}
+                    <div class="section-title">
+                        <i class="fas fa-cogs me-2"></i>الإعدادات المالية
+                    </div>
+                    
+                    <a href="{% url 'treasury_management:treasuries_list' %}" class="nav-link {% if request.resolver_match.url_name == 'treasuries_list' %}active{% endif %}">
+                        <i class="fas fa-vault text-primary"></i>
+                        إدارة الخزائن
+                        {% if not is_treasury_manager %}
+                        <span class="badge bg-warning ms-2">محدود</span>
+                        {% endif %}
+                    </a>
+                    
+                    <a href="{% url 'treasury_management:accounts_list' %}" class="nav-link {% if request.resolver_match.url_name == 'accounts_list' %}active{% endif %}">
+                        <i class="fas fa-list-alt text-success"></i>
+                        الحسابات المالية
+                        <small class="text-white-50 d-block">دليل الحسابات</small>
+                    </a>
+                    {% endif %}
+                    
+                    {% if is_treasury_manager %}
+                    <a href="{% url 'treasury_management:account_categories_list' %}" class="nav-link {% if request.resolver_match.url_name == 'account_categories_list' %}active{% endif %}">
+                        <i class="fas fa-folder text-info"></i>
+                        تصنيفات الحسابات
+                        <small class="text-white-50 d-block">هيكل الحسابات</small>
+                    </a>
+                    
+                    <a href="{% url 'treasury_management:expense_categories_list' %}" class="nav-link {% if request.resolver_match.url_name == 'expense_categories_list' %}active{% endif %}">
+                        <i class="fas fa-tags text-warning"></i>
+                        تصنيفات المصروفات
+                        <small class="text-white-50 d-block">أنواع المصروفات</small>
+                    </a>
+                    {% endif %}
+                    
+                    <!-- قسم الإدارة المتقدمة -->
+                    {% if is_treasury_admin %}
+                    <div class="section-title">
+                        <i class="fas fa-crown me-2"></i>إدارة متقدمة
+                        <span class="badge bg-danger ms-2">مدير عام</span>
+                    </div>
+                    
+                    <a href="{% url 'treasury_management:manage_users' %}" class="nav-link">
+                        <i class="fas fa-users-cog text-danger"></i>
+                        إدارة المستخدمين
+                        <small class="text-white-50 d-block">صلاحيات الخزينة</small>
+                    </a>
+                    
+                    <a href="{% url 'treasury_management:system_settings' %}" class="nav-link">
+                        <i class="fas fa-sliders-h text-danger"></i>
+                        إعدادات النظام
+                        <small class="text-white-50 d-block">إعدادات متقدمة</small>
+                    </a>
+                    
+                    <a href="{% url 'treasury_management:backup_restore' %}" class="nav-link">
+                        <i class="fas fa-database text-danger"></i>
+                        النسخ الاحتياطي
+                        <small class="text-white-50 d-block">حفظ واستعادة</small>
+                    </a>
+                    {% endif %}
+                    
+                    <!-- قسم النظام -->
+                    <hr class="border-white border-opacity-25">
+                    
+                    <a href="{% url 'school_settings:comprehensive_settings' %}" class="nav-link">
+                        <i class="fas fa-school"></i>
+                        إعدادات المدرسة
+                    </a>
+                    
+                    {% if user.is_superuser or is_treasury_admin %}
+                    <a href="/admin/" class="nav-link" target="_blank">
+                        <i class="fas fa-user-shield text-danger"></i>
+                        لوحة الإدارة
+                        <small class="text-white-50 d-block">Django Admin</small>
+                    </a>
+                    {% endif %}
+                    
+                    <a href="/" class="nav-link">
+                        <i class="fas fa-home"></i>
+                        الصفحة الرئيسية
+                    </a>
+                    
+                    {% else %}
+                    <!-- رسالة عدم وجود صلاحيات -->
+                    <div class="text-center p-4">
+                        <i class="fas fa-lock fa-3x text-muted mb-3"></i>
+                        <h6 class="text-white">غير مخول</h6>
+                        <p class="text-white-50 small">ليس لديك صلاحية للوصول لنظام الخزينة</p>
+                        <a href="/" class="btn btn-outline-light btn-sm">
+                            <i class="fas fa-home me-1"></i>العودة للرئيسية
+                        </a>
+                    </div>
+                    {% endif %}
+                </nav>
+                
+                <!-- User Info -->
+                <div class="mt-auto p-3 border-top border-white border-opacity-25">
+                    <div class="text-center">
+                        <div class="text-white">
+                            <i class="fas fa-user-circle fa-2x mb-2"></i>
+                            <div class="fw-bold">{{ user.get_full_name|default:user.username }}</div>
+                            <small class="text-white-50">{{ user.email }}</small>
+                            
+                            <!-- عرض صلاحيات المستخدم -->
+                            {% if has_treasury_access %}
+                            <div class="mt-2">
+                                {% if is_treasury_admin %}
+                                <span class="badge bg-danger">مدير عام</span>
+                                {% elif is_treasury_manager %}
+                                <span class="badge bg-warning">مدير خزينة</span>
+                                {% elif is_treasury_accountant %}
+                                <span class="badge bg-info">محاسب</span>
+                                {% elif is_treasury_cashier %}
+                                <span class="badge bg-success">أمين خزينة</span>
+                                {% elif is_treasury_viewer %}
+                                <span class="badge bg-secondary">مراجع</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mt-2 d-grid gap-1">
+                            {% if has_treasury_access %}
+                            <button class="btn btn-outline-light btn-sm" onclick="toggleTheme()">
+                                <i class="fas fa-palette me-1"></i>تغيير المظهر
+                            </button>
+                            {% endif %}
+                            
+                            <a href="/accounts/logout/" class="btn btn-outline-light btn-sm">
+                                <i class="fas fa-sign-out-alt me-1"></i>تسجيل الخروج
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Stats للصلاحيات المناسبة -->
+                    {% if is_treasury_cashier %}
+                    <div class="mt-3 p-2 bg-white bg-opacity-10 rounded">
+                        <div class="text-center">
+                            <small class="text-white-50">إحصائيات سريعة</small>
+                            <div class="row text-center mt-1">
+                                <div class="col-6">
+                                    <div class="small text-success">{{ today_income|default:0 }}</div>
+                                    <div class="small text-white-50">إيرادات اليوم</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="small text-danger">{{ today_expenses|default:0 }}</div>
+                                    <div class="small text-white-50">مصروفات اليوم</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10">
+            <div class="main-content">
+                <!-- Page Header -->
+                {% block page_header %}
+                <div class="page-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <nav aria-label="breadcrumb">
+                                <ol class="breadcrumb">
+                                    <li class="breadcrumb-item">
+                                        <a href="{% url 'treasury_management:dashboard' %}">
+                                            <i class="fas fa-home"></i> الرئيسية
+                                        </a>
+                                    </li>
+                                    {% block breadcrumb %}{% endblock %}
+                                </ol>
+                            </nav>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <!-- مؤشر الحالة -->
+                            {% if has_treasury_access %}
+                            <div class="me-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="status-indicator bg-success me-2"></div>
+                                    <small class="text-muted">متصل بنظام الخزينة</small>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="text-muted">
+                                <i class="fas fa-calendar-alt me-1"></i>
+                                <span id="current-datetime">{{ now|date:"l، d F Y - H:i" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endblock %}
+                
+                <!-- Permission Alert -->
+                {% if not has_treasury_access %}
+                <div class="alert alert-warning text-center">
+                    <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                    <h5>غير مخول للوصول</h5>
+                    <p>ليس لديك صلاحية للوصول لنظام إدارة الخزينة. يرجى التواصل مع الإدارة للحصول على الصلاحيات المطلوبة.</p>
+                    <a href="/" class="btn btn-primary">العودة للصفحة الرئيسية</a>
+                </div>
+                {% endif %}
+                
+                <!-- Messages -->
+                {% if messages %}
+                <div class="messages-container">
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {% if message.tags == 'error' %}
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                        {% elif message.tags == 'success' %}
+                            <i class="fas fa-check-circle me-2"></i>
+                        {% elif message.tags == 'warning' %}
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                        {% else %}
+                            <i class="fas fa-info-circle me-2"></i>
+                        {% endif %}
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <!-- Page Content -->
+                {% if has_treasury_access %}
+                <div class="content-wrapper fade-in">
+                    {% block content %}{% endblock %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CSS إضافي للتحسينات -->
+<style>
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.section-title {
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 1rem 0 0.5rem 0;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.nav-link {
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    margin-bottom: 2px;
+}
+
+.nav-link:hover {
+    background-color: rgba(255,255,255,0.1);
+    transform: translateX(5px);
+}
+
+.nav-link.active {
+    background-color: rgba(255,255,255,0.2);
+    font-weight: 600;
+}
+
+.nav-link small {
+    font-size: 0.7rem;
+    margin-top: 2px;
+}
+
+.badge {
+    font-size: 0.6rem;
+}
+</style>
+
+<!-- JavaScript للميزات الإضافية -->
+<script>
+// تحديث الوقت كل دقيقة
+setInterval(function() {
+    const now = new Date();
+    const options = { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    };
+    document.getElementById('current-datetime').textContent = now.toLocaleDateString('ar-EG', options);
+}, 60000);
+
+// تغيير المظهر
+function toggleTheme() {
+    const body = document.body;
+    body.classList.toggle('dark-theme');
+    
+    // حفظ التفضيل
+    const isDark = body.classList.contains('dark-theme');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+}
+
+// تحميل المظهر المحفوظ
+document.addEventListener('DOMContentLoaded', function() {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-theme');
+    }
+});
+</script>
+
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- jQuery (optional) -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // تحديث الوقت كل دقيقة
+            function updateDateTime() {
+                const now = new Date();
+                const options = {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                };
+                const dateTimeString = now.toLocaleDateString('ar-EG', options);
+                const element = document.getElementById('current-datetime');
+                if (element) {
+                    element.textContent = dateTimeString;
+                }
+            }
+            
+            // تحديث كل دقيقة
+            setInterval(updateDateTime, 60000);
+            
+            // إخفاء الرسائل تلقائياً بعد 5 ثوان
+            setTimeout(function() {
+                const alerts = document.querySelectorAll('.alert');
+                alerts.forEach(function(alert) {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                });
+            }, 5000);
+            
+            // Loading spinner للطلبات
+            const showLoading = () => document.querySelector('.loading-spinner').style.display = 'block';
+            const hideLoading = () => document.querySelector('.loading-spinner').style.display = 'none';
+            
+            // إظهار loading عند submit النماذج
+            document.querySelectorAll('form').forEach(form => {
+                form.addEventListener('submit', showLoading);
+            });
+            
+            // إخفاء loading عند تحميل الصفحة
+            window.addEventListener('load', hideLoading);
+            
+            // Tooltips
+            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+            const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+        });
+        
+        // دالة لتنسيق الأرقام
+        function formatNumber(num) {
+            return new Intl.NumberFormat('ar-EG', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(num);
+        }
+        
+        // دالة لإظهار تأكيد الحذف
+        function confirmDelete(message = 'هل أنت متأكد من الحذف؟') {
+            return confirm(message);
+        }
+    </script>
+    /* إضافة في نهاية base.html */
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // إطالة مدة عرض رسائل النجاح والخطأ
+    const alerts = document.querySelectorAll('.alert');
+    
+    alerts.forEach(alert => {
+        // إزالة الإغلاق التلقائي من Bootstrap
+        if (alert.classList.contains('alert-success') || 
+            alert.classList.contains('alert-danger')) {
+            
+            // إضافة تأثير pulse للرسائل المهمة
+            alert.style.animation = 'pulse 2s infinite';
+            
+            // إبقاء الرسالة لمدة 8 ثوان بدلاً من 5
+            setTimeout(() => {
+                alert.style.animation = 'slideOutUp 0.5s ease';
+                setTimeout(() => {
+                    alert.remove();
+                }, 500);
+            }, 15000);
+        }
+    });
+});
+
+// تأثير pulse
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.02); }
+        100% { transform: scale(1); }
+    }
+    
+    @keyframes slideOutUp {
+        from {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateY(-100%);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(style);
+</script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html> {% endcomment %}

@@ -1,0 +1,446 @@
+<!-- templates/home/access_denied.html -->
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>رفض الوصول - نظام إدارة المدرسة</title>
+    
+    <!-- Bootstrap 5 RTL -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .access-denied-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            overflow: hidden;
+            max-width: 800px;
+            width: 100%;
+            animation: slideInUp 0.6s ease;
+        }
+        
+        @keyframes slideInUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .header-section {
+            background: linear-gradient(45deg, #dc3545, #fd7e14);
+            color: white;
+            text-align: center;
+            padding: 3rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(255,255,255,0.05) 10px,
+                rgba(255,255,255,0.05) 20px
+            );
+            animation: movePattern 20s linear infinite;
+        }
+        
+        @keyframes movePattern {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(-40px, -40px); }
+        }
+        
+        .error-icon {
+            font-size: 5rem;
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 1;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .body-section {
+            padding: 2rem;
+        }
+        
+        .section-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            border-left: 5px solid #6c757d;
+            transition: all 0.3s ease;
+        }
+        
+        .section-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .section-card.required {
+            border-left-color: #dc3545;
+            background: linear-gradient(45deg, #fff5f5, #ffffff);
+        }
+        
+        .section-card.current {
+            border-left-color: #0d6efd;
+            background: linear-gradient(45deg, #f0f8ff, #ffffff);
+        }
+        
+        .section-card.info {
+            border-left-color: #17a2b8;
+            background: linear-gradient(45deg, #f0fdff, #ffffff);
+        }
+        
+        .role-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            margin: 0.25rem;
+            border-radius: 25px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .role-required {
+            background: linear-gradient(45deg, #dc3545, #fd7e14);
+            color: white;
+            box-shadow: 0 2px 10px rgba(220, 53, 69, 0.3);
+        }
+        
+        .role-current {
+            background: linear-gradient(45deg, #0d6efd, #6610f2);
+            color: white;
+            box-shadow: 0 2px 10px rgba(13, 110, 253, 0.3);
+        }
+        
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            margin: 2rem 0;
+        }
+        
+        .btn-custom {
+            border: none;
+            border-radius: 50px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-custom::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-custom:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .btn-primary-custom {
+            background: linear-gradient(45deg, #0d6efd, #6610f2);
+            color: white;
+        }
+        
+        .btn-secondary-custom {
+            background: linear-gradient(45deg, #6c757d, #495057);
+            color: white;
+        }
+        
+        .btn-success-custom {
+            background: linear-gradient(45deg, #198754, #20c997);
+            color: white;
+        }
+        
+        .countdown-section {
+            text-align: center;
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .countdown-timer {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #dc3545;
+            margin: 1rem 0;
+        }
+        
+        .user-info-card {
+            background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+        
+        .alternative-section {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 0.5rem;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.3s ease;
+        }
+        
+        .alternative-section:hover {
+            border-color: #0d6efd;
+            transform: scale(1.02);
+            color: #0d6efd;
+        }
+
+        .responsive-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="access-denied-container">
+        <!-- Header -->
+        <div class="header-section">
+            <div class="header-content">
+                <div class="error-icon">
+                    <i class="fas fa-{{ section_info.icon|default:'shield-alt' }}"></i>
+                </div>
+                <h1 class="mb-3">🚫 رفض الوصول</h1>
+                <h4 class="mb-2">{{ section_info.name|default:'قسم محمي' }}</h4>
+                <p class="mb-0 opacity-75">{{ section_info.description|default:'هذا القسم يتطلب صلاحيات خاصة' }}</p>
+            </div>
+        </div>
+        
+        <!-- Body -->
+        <div class="body-section">
+            <!-- معلومات المستخدم -->
+            <div class="user-info-card">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <i class="fas fa-user fa-3x text-primary mb-2"></i>
+                        <div>
+                            <strong>{{ user.get_full_name|default:user.username }}</strong>
+                            <br><small class="text-muted">المستخدم الحالي</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <i class="fas fa-id-badge fa-3x text-info mb-2"></i>
+                        <div>
+                            <strong>{{ user_current_role }}</strong>
+                            <br><small class="text-muted">الدور الحالي</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <i class="fas fa-clock fa-3x text-warning mb-2"></i>
+                        <div>
+                            <strong id="currentTime"></strong>
+                            <br><small class="text-muted">الوقت الحالي</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- الصلاحيات المطلوبة -->
+            {% if required_roles %}
+            <div class="section-card required">
+                <h5 class="mb-3">
+                    <i class="fas fa-key text-danger me-2"></i>
+                    الصلاحيات المطلوبة للوصول:
+                </h5>
+                <div class="text-center">
+                    {% for role in required_roles %}
+                    <span class="role-badge role-required">
+                        <i class="fas fa-user-shield me-1"></i>{{ role }}
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- الصلاحية الحالية -->
+            <div class="section-card {% if has_role %}current{% else %}info{% endif %}">
+                <h5 class="mb-3">
+                    <i class="fas fa-{% if has_role %}user-check{% else %}user-times{% endif %} text-{% if has_role %}primary{% else %}secondary{% endif %} me-2"></i>
+                    صلاحيتك الحالية:
+                </h5>
+                {% if has_role %}
+                <div class="text-center">
+                    <span class="role-badge role-current">
+                        <i class="fas fa-user me-1"></i>{{ user_current_role }}
+                    </span>
+                </div>
+                {% else %}
+                <div class="text-center text-muted">
+                    <i class="fas fa-exclamation-circle fa-2x mb-2"></i>
+                    <p>لا يوجد دور محدد لحسابك حالياً</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- اقتراحات التواصل -->
+            {% if suggested_contacts %}
+            <div class="section-card info">
+                <h5 class="mb-3">
+                    <i class="fas fa-phone text-info me-2"></i>
+                    للحصول على الصلاحيات:
+                </h5>
+                <div class="responsive-grid">
+                    {% for contact in suggested_contacts %}
+                    <div class="text-center p-3">
+                        <i class="fas fa-{{ contact.icon }} fa-2x text-primary mb-2"></i>
+                        <h6>{{ contact.title }}</h6>
+                        <small class="text-muted">{{ contact.description }}</small>
+                        <div class="mt-2">
+                            <small class="fw-bold text-primary">{{ contact.action }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- الأقسام البديلة -->
+            {% if alternative_sections %}
+            <div class="section-card">
+                <h5 class="mb-3">
+                    <i class="fas fa-compass text-success me-2"></i>
+                    أقسام يمكنك الوصول إليها:
+                </h5>
+                <div class="responsive-grid">
+                    {% for section in alternative_sections %}
+                    <a href="{{ section.url }}" class="alternative-section">
+                        <div class="text-center">
+                            <i class="fas fa-{{ section.icon }} fa-2x mb-2"></i>
+                            <div>{{ section.name }}</div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- أزرار الإجراءات -->
+            <div class="action-buttons">
+                <a href="/" class="btn btn-custom btn-primary-custom">
+                    <i class="fas fa-home me-2"></i>الصفحة الرئيسية
+                </a>
+                <a href="javascript:history.back()" class="btn btn-custom btn-secondary-custom">
+                    <i class="fas fa-arrow-right me-2"></i>العودة للخلف
+                </a>
+                {% if has_role %}
+                <a href="{{ requested_url }}" class="btn btn-custom btn-success-custom">
+                    <i class="fas fa-refresh me-2"></i>إعادة المحاولة
+                </a>
+                {% endif %}
+            </div>
+            
+            <!-- العد التنازلي -->
+            <div class="countdown-section">
+                <div class="countdown-timer" id="countdown">15</div>
+                <p class="mb-2">ثانية حتى التحويل للصفحة الرئيسية</p>
+                <button class="btn btn-sm btn-outline-danger" onclick="clearInterval(redirectTimer)">
+                    <i class="fas fa-stop me-1"></i>إيقاف العد التنازلي
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+    // تحديث الوقت
+    function updateTime() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('ar-EG', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        document.getElementById('currentTime').textContent = timeString;
+    }
+    
+    updateTime();
+    setInterval(updateTime, 2500);
+    
+    // العد التنازلي للتحويل
+    let countdown = 15;
+    const countdownElement = document.getElementById('countdown');
+    
+    const redirectTimer = setInterval(() => {
+        countdown--;
+        countdownElement.textContent = countdown;
+        
+        if (countdown <= 0) {
+            window.location.href = '/';
+        }
+    }, 2500);
+    
+    // تأثيرات إضافية
+    document.addEventListener('DOMContentLoaded', function() {
+        // تأثير hover للبطاقات
+        const cards = document.querySelectorAll('.section-card');
+        cards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-3px) scale(1.01)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1292 @@
+<!-- treasury_management/templates/treasury_management/edit_treasury.html -->
+{% extends 'treasury_management/base.html' %}
+{% load static %}
+
+{% block title %}تحرير الخزنة - {{ treasury.name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'treasury_management:treasuries_list' %}">الخزائن</a></li>
+<li class="breadcrumb-item active">تحرير: {{ treasury.name }}</li>
+{% endblock %}
+
+{% block content %}
+<style>
+    /* ===================================
+       🎨 EDIT TREASURY FORM STYLES WITH PREVIEW
+    =================================== */
+    .edit-treasury-container {
+        background: linear-gradient(135deg, rgba(63, 81, 181, 0.02), rgba(48, 63, 159, 0.02));
+        border-radius: 20px;
+        padding: 25px;
+        margin: -10px;
+        min-height: calc(100vh - 200px);
+    }
+
+    /* التخطيط الجانبي */
+    .edit-treasury-layout {
+        display: flex;
+        gap: 25px;
+        margin-bottom: 30px;
+    }
+
+    .form-wrapper { flex: 0 0 60%; }
+    .preview-wrapper { flex: 0 0 40%; }
+
+    .edit-treasury-card {
+        background: white;
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(63, 81, 181, 0.1);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        margin-bottom: 25px;
+    }
+
+    .edit-treasury-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(63, 81, 181, 0.15);
+    }
+
+    .edit-treasury-header {
+        background: linear-gradient(135deg, #3f51b5, #303f9f);
+        color: white;
+        padding: 25px 30px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .edit-treasury-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+        animation: float 20s linear infinite;
+    }
+
+    .edit-treasury-header-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .edit-treasury-header h4 {
+        margin: 0 0 8px 0;
+        font-weight: 700;
+        font-size: 1.6rem;
+        display: flex;
+        align-items: center;
+        color: white;
+    }
+
+    .edit-treasury-header i {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 12px;
+        border-radius: 12px;
+        margin-left: 15px;
+        font-size: 1.3rem;
+    }
+
+    .edit-treasury-header p {
+        margin: 0;
+        opacity: 0.9;
+        font-size: 1rem;
+        color: white;
+    }
+
+    /* أقسام النموذج */
+    .form-section {
+        background: rgba(248, 249, 250, 0.8);
+        border: 2px solid rgba(63, 81, 181, 0.1);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .form-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(135deg, #3f51b5, #303f9f);
+        border-radius: 15px 15px 0 0;
+    }
+
+    .form-section:hover {
+        background: rgba(255, 255, 255, 0.9);
+        border-color: rgba(63, 81, 181, 0.2);
+        transform: translateY(-2px);
+    }
+
+    .section-title {
+        color: var(--text-primary);
+        font-weight: 700;
+        font-size: 1.1rem;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        padding-bottom: 10px;
+        border-bottom: 2px solid rgba(63, 81, 181, 0.1);
+    }
+
+    .section-icon {
+        width: 35px;
+        height: 35px;
+        background: linear-gradient(135deg, #3f51b5, #303f9f);
+        color: white;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 10px;
+        font-size: 1rem;
+        box-shadow: 0 2px 8px rgba(63, 81, 181, 0.3);
+    }
+
+    .section-icon.success { background: linear-gradient(135deg, #4caf50, #45a049); }
+    .section-icon.info { background: linear-gradient(135deg, #2196f3, #1976d2); }
+    .section-icon.warning { background: linear-gradient(135deg, #ff9800, #f57c00); }
+    .section-icon.danger { background: linear-gradient(135deg, #f44336, #d32f2f); }
+
+    /* الحقول */
+    .form-label {
+        color: var(--text-primary);
+        font-weight: 600;
+        margin-bottom: 8px;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .form-label .text-danger {
+        margin-right: 5px;
+        font-size: 1.1rem;
+    }
+
+    .form-control, .form-select {
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 12px 15px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        background: white;
+        color: var(--text-primary);
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #3f51b5;
+        box-shadow: 0 0 0 0.2rem rgba(63, 81, 181, 0.15);
+        background: white;
+        transform: translateY(-1px);
+    }
+
+    .form-control:hover, .form-select:hover {
+        border-color: #bdc3c7;
+        background: white;
+    }
+
+    .form-control[readonly] {
+        background-color: #f8f9fa;
+        color: #6c757d;
+        cursor: not-allowed;
+        border-color: #dee2e6;
+    }
+
+    .form-text {
+        color: #6c757d;
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-top: 5px;
+    }
+
+    .form-text::before {
+        content: '\f05a';
+        font-family: 'Font Awesome 6 Free';
+        font-weight: 900;
+        margin-left: 6px;
+        color: #3f51b5;
+    }
+
+    .form-text.text-warning::before {
+        color: #ff9800;
+        content: '\f071';
+    }
+
+    /* تحذير الحقول غير القابلة للتعديل */
+    .readonly-warning {
+        background: linear-gradient(135deg, rgba(63, 81, 181, 0.1), rgba(255, 255, 255, 0.9));
+        border: 1px dashed #3f51b5;
+        border-radius: 8px;
+        padding: 10px;
+        margin-top: 8px;
+        font-size: 0.8rem;
+    }
+
+    /* ===================================
+       🎨 ENHANCED PREVIEW STYLES
+    =================================== */
+    .preview-card {
+        background: white;
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(103, 58, 183, 0.15);
+        overflow: hidden;
+        position: sticky;
+        top: 20px;
+        max-height: calc(100vh - 40px);
+        overflow-y: auto;
+        transition: all 0.3s ease;
+    }
+
+    .preview-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 35px rgba(103, 58, 183, 0.2);
+    }
+
+    .preview-header {
+        background: linear-gradient(135deg, #673ab7, #512da8);
+        color: white;
+        padding: 25px 20px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .preview-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+        background-size: 20px 20px;
+        animation: drift 25s linear infinite;
+    }
+
+    .preview-header-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .preview-icon {
+        width: 60px;
+        height: 60px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px;
+        font-size: 1.5rem;
+        backdrop-filter: blur(10px);
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        animation: pulse 2s infinite;
+    }
+
+    .preview-header h5 {
+        margin: 0 0 5px 0;
+        font-weight: 700;
+        font-size: 1.3rem;
+        color: white;
+    }
+
+    .preview-header p {
+        margin: 0;
+        opacity: 0.9;
+        font-size: 0.9rem;
+        color: white;
+    }
+
+    .preview-content {
+        padding: 25px 20px;
+    }
+
+    /* أقسام المعاينة */
+    .preview-section {
+        margin-bottom: 20px;
+    }
+
+    .preview-section-title {
+        font-weight: 700;
+        color: #2c3e50;
+        font-size: 0.95rem;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #f1f3f4;
+    }
+
+    .preview-section-icon {
+        width: 25px;
+        height: 25px;
+        background: linear-gradient(135deg, #673ab7, #512da8);
+        color: white;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 8px;
+        font-size: 0.8rem;
+    }
+
+    .preview-item {
+        background: white;
+        border: 2px solid #f1f3f4;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 12px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .preview-item::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 3px;
+        background: #f1f3f4;
+        transition: all 0.3s ease;
+    }
+
+    .preview-item.filled {
+        background: linear-gradient(135deg, rgba(103, 58, 183, 0.08), rgba(255, 255, 255, 0.9));
+        border-color: rgba(103, 58, 183, 0.3);
+        transform: translateX(-3px);
+        box-shadow: 0 3px 10px rgba(103, 58, 183, 0.1);
+    }
+
+    .preview-item.filled::before {
+        background: linear-gradient(135deg, #673ab7, #512da8);
+    }
+
+    .preview-item.readonly {
+        background: linear-gradient(135deg, rgba(158, 158, 158, 0.08), rgba(255, 255, 255, 0.9));
+        border-color: rgba(158, 158, 158, 0.3);
+    }
+
+    .preview-item.readonly::before {
+        background: linear-gradient(135deg, #9e9e9e, #757575);
+    }
+
+    .preview-label {
+        font-weight: 700;
+        color: #495057;
+        font-size: 0.8rem;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .preview-label-icon {
+        width: 16px;
+        height: 16px;
+        background: #6c757d;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 6px;
+        font-size: 0.6rem;
+        color: white;
+    }
+
+    .preview-value {
+        color: #2c3e50;
+        font-size: 1rem;
+        line-height: 1.4;
+        font-weight: 500;
+    }
+
+    .preview-value.empty {
+        color: #adb5bd;
+        font-style: italic;
+        font-weight: 400;
+    }
+
+    .preview-value.readonly {
+        color: #6c757d;
+    }
+
+    .preview-value.code {
+        font-weight: 800;
+        color: #673ab7;
+        font-size: 1.1rem;
+        font-family: 'Courier New', monospace;
+    }
+
+    .preview-value.balance {
+        font-weight: 700;
+        color: #4caf50;
+        font-size: 1.1rem;
+        font-family: 'Courier New', monospace;
+    }
+
+    /* مؤشر الحدود */
+    .limits-indicator {
+        background: rgba(63, 81, 181, 0.05);
+        border: 1px dashed #3f51b5;
+        border-radius: 8px;
+        padding: 10px;
+        margin-top: 15px;
+        text-align: center;
+    }
+
+    .limits-indicator.set {
+        background: rgba(76, 175, 80, 0.05);
+        border-color: #4caf50;
+        border-style: solid;
+    }
+
+    .limits-text {
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin: 0;
+        color: #3f51b5;
+    }
+
+    .limits-text.set {
+        color: #4caf50;
+    }
+
+    /* إحصائيات الخزنة */
+    .treasury-stats {
+        background: rgba(33, 150, 243, 0.05);
+        border: 1px dashed #2196f3;
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 20px;
+    }
+
+    .stat-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+        font-size: 0.9rem;
+    }
+
+    .stat-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .stat-label {
+        color: #495057;
+        font-weight: 600;
+    }
+
+    .stat-value {
+        color: #2196f3;
+        font-weight: 700;
+        background: rgba(33, 150, 243, 0.1);
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+    }
+
+    /* رسائل التحذير */
+    .alert {
+        border: none;
+        border-radius: 12px;
+        padding: 15px 20px;
+        font-weight: 500;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .alert-info {
+        background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+        color: #0d47a1;
+        border-right: 4px solid #2196f3;
+    }
+
+    /* الأزرار */
+    .form-footer {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        padding: 20px 30px;
+        border-top: 1px solid rgba(0,0,0,0.05);
+        border-radius: 0 0 20px 20px;
+    }
+
+    .btn {
+        font-weight: 600;
+        padding: 10px 20px;
+        border-radius: 10px;
+        border: none;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #3f51b5, #303f9f);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #303f9f, #283593);
+        color: white;
+    }
+
+    .btn-secondary {
+        background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: linear-gradient(135deg, #7f8c8d, #95a5a6);
+        color: white;
+    }
+
+    /* الانيميشن */
+    @keyframes float {
+        0%, 100% { transform: translateX(0) translateY(0); }
+        25% { transform: translateX(3px) translateY(-3px); }
+        50% { transform: translateX(-2px) translateY(2px); }
+        75% { transform: translateX(-3px) translateY(-2px); }
+    }
+
+    @keyframes drift {
+        0% { transform: rotate(0deg) translateX(0); }
+        100% { transform: rotate(360deg) translateX(20px); }
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    .fade-in {
+        animation: fadeInUp 0.8s ease-out;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* الاستجابة */
+    @media (max-width: 1200px) {
+        .edit-treasury-layout {
+            flex-direction: column;
+        }
+        
+        .form-wrapper,
+        .preview-wrapper {
+            flex: none;
+        }
+        
+        .preview-card {
+            position: static;
+            max-height: none;
+            margin-top: 20px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .edit-treasury-container {
+            padding: 15px;
+            margin: -5px;
+        }
+
+        .edit-treasury-header {
+            padding: 20px 25px;
+        }
+
+        .edit-treasury-header h4 {
+            font-size: 1.4rem;
+        }
+
+        .form-section {
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .section-icon {
+            width: 30px;
+            height: 30px;
+            font-size: 0.9rem;
+        }
+
+        .form-footer {
+            padding: 15px 20px;
+        }
+
+        .btn {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .preview-content {
+            padding: 20px 15px;
+        }
+        
+        .preview-icon {
+            width: 50px;
+            height: 50px;
+            font-size: 1.2rem;
+        }
+        
+        .preview-item {
+            padding: 12px;
+        }
+    }
+
+    /* أضف هذا CSS في كلا الملفين */
+
+/* مؤشر حالة الخزنة */
+.status-indicator {
+    background: rgba(158, 158, 158, 0.1);
+    border: 1px solid #9e9e9e;
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 15px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.status-indicator.active {
+    background: rgba(76, 175, 80, 0.1);
+    border-color: #4caf50;
+    border-style: solid;
+}
+
+.status-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin: 0;
+    color: #9e9e9e;
+    transition: all 0.3s ease;
+}
+
+.status-text.active {
+    color: #4caf50;
+}
+
+/* تحسين الـ switch */
+.form-check-input:checked {
+    background-color: #4caf50;
+    border-color: #4caf50;
+}
+
+.form-check-input:focus {
+    border-color: #4caf50;
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgba(76, 175, 80, 0.25);
+}
+
+// أضف هذا في قسم JavaScript في edit_treasury.html
+
+// معالجة تغيير حالة التفعيل
+const isActiveSwitch = document.getElementById('isActiveSwitch');
+const statusIndicator = document.getElementById('statusIndicator');
+const statusText = document.getElementById('statusText');
+
+if (isActiveSwitch) {
+    isActiveSwitch.addEventListener('change', function() {
+        if (this.checked) {
+            statusIndicator.classList.add('active');
+            statusText.classList.add('active');
+            statusText.innerHTML = '<i class="fas fa-check-circle me-1"></i>الخزنة نشطة ومتاحة للاستخدام';
+        } else {
+            statusIndicator.classList.remove('active');
+            statusText.classList.remove('active');
+            statusText.innerHTML = '<i class="fas fa-pause-circle me-1"></i>الخزنة غير نشطة';
+        }
+        
+        // تحديث المعاينة
+        updatePreview();
+    });
+}
+
+// إضافة معاينة الحالة في المعاينة الجانبية
+function updatePreview() {
+    // ... الكود الموجود ...
+    
+    // تحديث حالة التفعيل في المعاينة
+    const statusPreview = document.getElementById('previewStatus');
+    if (statusPreview) {
+        const isActive = isActiveSwitch ? isActiveSwitch.checked : {{ treasury.is_active|yesno:"true,false" }};
+        if (isActive) {
+            statusPreview.innerHTML = '<span class="badge bg-success">✅ نشطة</span>';
+        } else {
+            statusPreview.innerHTML = '<span class="badge bg-secondary">❌ غير نشطة</span>';
+        }
+    }
+}
+
+
+</style>
+
+<!-- محتوى الصفحة -->
+<div class="edit-treasury-container">
+    <div class="edit-treasury-layout">
+        <!-- النموذج -->
+        <div class="form-wrapper">
+            <div class="edit-treasury-card fade-in">
+                <div class="edit-treasury-header">
+                    <div class="edit-treasury-header-content">
+                        <h4>
+                            <i class="fas fa-edit"></i>
+                            تحرير الخزنة
+                        </h4>
+                        <p>{{ treasury.code }} - {{ treasury.name }}</p>
+                    </div>
+                </div>
+                
+                <form method="POST" id="editTreasuryForm">
+                    {% csrf_token %}
+                    <div class="card-body" style="padding: 30px;">
+                        
+                        <!-- قسم بيانات الخزنة -->
+                        <div class="form-section">
+                            <div class="section-title">
+                                <div class="section-icon">
+                                    <i class="fas fa-safe"></i>
+                                </div>
+                                <span>بيانات الخزنة الأساسية</span>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">
+                                            <span class="text-danger">*</span>
+                                            اسم الخزنة
+                                        </label>
+                                        <input type="text" class="form-control" name="name" required 
+                                               value="{{ treasury.name }}">
+                                        <div class="form-text">يمكن تعديل اسم الخزنة في أي وقت</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">كود الخزنة</label>
+                                        <input type="text" class="form-control" value="{{ treasury.code }}" readonly>
+                                        <div class="form-text text-warning">لا يمكن تعديل الكود بعد الإنشاء لحماية البيانات</div>
+                                        <div class="readonly-warning">
+                                            <i class="fas fa-lock me-1"></i>
+                                            <strong>محمي:</strong> تغيير الكود قد يؤثر على العمليات المالية
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">الموقع</label>
+                                        <input type="text" class="form-control" name="location" 
+                                               value="{{ treasury.location|default:'' }}"
+                                               placeholder="مثال: الطابق الأول - مكتب المحاسبة">
+                                        <div class="form-text">مكان وجود الخزنة فعلياً</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">المسؤول عن الخزنة</label>
+                                        <select class="form-select" name="responsible_person">
+                                            <option value="">اختر المسؤول</option>
+                                            {% for user in users %}
+                                            <option value="{{ user.id }}" 
+                                                    {% if treasury.responsible_person and treasury.responsible_person.id == user.id %}selected{% endif %}>
+                                                {{ user.get_full_name|default:user.username }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                        <div class="form-text">الشخص المخول للتعامل مع هذه الخزنة</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- قسم الحدود المالية -->
+                        <div class="form-section">
+                            <div class="section-title">
+                                <div class="section-icon success">
+                                    <i class="fas fa-sliders-h"></i>
+                                </div>
+                                <span>الحدود والضوابط المالية</span>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">الحد الأدنى</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" name="min_limit" 
+                                                   value="{{ treasury.min_limit|default:0 }}" step="0.01" min="0">
+                                            <span class="input-group-text">ج.م</span>
+                                        </div>
+                                        <div class="form-text">أقل مبلغ يجب الاحتفاظ به</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">الحد الأقصى</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" name="max_limit" 
+                                                   value="{{ treasury.max_limit|default:'' }}" step="0.01" min="0" placeholder="غير محدود">
+                                            <span class="input-group-text">ج.م</span>
+                                        </div>
+                                        <div class="form-text">أعلى مبلغ مسموح (اختياري)</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- قسم الحساب المرتبط -->
+                        <!-- في قسم الحساب المرتبط - تأكد من أن هذا الحقل readonly -->
+<!-- أضف هذا الحقل في قسم الحساب المرتبط في edit_treasury.html -->
+
+<div class="form-section">
+    <div class="section-title">
+        <div class="section-icon warning">
+            <i class="fas fa-link"></i>
+        </div>
+        <span>الحساب المحاسبي المرتبط</span>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">الحساب المرتبط</label>
+        <input type="text" class="form-control" 
+               value="{{ treasury.account.code }} - {{ treasury.account.name }}" readonly>
+        <div class="form-text text-warning">لا يمكن تغيير الحساب المرتبط لحماية التوازن المحاسبي</div>
+        <div class="readonly-warning">
+            <i class="fas fa-lock me-1"></i>
+            <strong>محمي:</strong> تغيير الحساب يتطلب إعادة حساب جميع العمليات
+        </div>
+    </div>
+    
+    <!-- ✅ إضافة حقل تحديث الرصيد -->
+    <div class="mb-3">
+        <label class="form-label">
+            <i class="fas fa-coins me-1"></i>
+            الرصيد الحالي
+        </label>
+        <div class="input-group">
+            <input type="number" class="form-control" name="current_balance" 
+                   value="{{ treasury.current_balance }}" step="0.01" min="0">
+            <span class="input-group-text">ج.م</span>
+        </div>
+        <div class="form-text text-info">
+            <i class="fas fa-exclamation-triangle me-1"></i>
+            احذر: تعديل الرصيد يؤثر على التقارير المالية
+        </div>
+        <div class="alert alert-warning mt-2">
+            <small>
+                <strong>تحذير:</strong> يُنصح بتعديل الرصيد فقط في الحالات الضرورية مثل:
+                <ul class="mb-0 mt-1">
+                    <li>تصحيح خطأ في الرصيد الافتتاحي</li>
+                    <li>تسوية أرصدة بعد الجرد</li>
+                    <li>تعديل بناءً على مراجعة محاسبية</li>
+                </ul>
+            </small>
+        </div>
+    </div>
+</div>
+
+
+<!-- في ملف edit_treasury.html، أضف هذا القسم قبل معلومات إضافية -->
+
+<!-- قسم الحالة والتفعيل -->
+<div class="form-section">
+    <div class="section-title">
+        <div class="section-icon warning">
+            <i class="fas fa-toggle-on"></i>
+        </div>
+        <span>حالة الخزنة</span>
+    </div>
+    <div class="mb-3">
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" name="is_active" id="isActiveSwitch" 
+                   {% if treasury.is_active %}checked{% endif %}>
+            <label class="form-check-label" for="isActiveSwitch">
+                <strong>الخزنة نشطة</strong>
+            </label>
+            <div class="form-text">إلغاء التفعيل سيخفي الخزنة من الاختيارات الجديدة</div>
+        </div>
+    </div>
+    
+    <!-- مؤشر حالة الخزنة -->
+    <div class="status-indicator {% if not treasury.is_active %}inactive{% endif %}" id="statusIndicator">
+        <p class="status-text {% if not treasury.is_active %}inactive{% endif %}" id="statusText">
+            {% if treasury.is_active %}
+                <i class="fas fa-check-circle me-1"></i>
+                الخزنة نشطة ومتاحة للاستخدام
+            {% else %}
+                <i class="fas fa-pause-circle me-1"></i>
+                الخزنة غير نشطة
+            {% endif %}
+        </p>
+    </div>
+</div>
+
+
+                        <!-- معلومات إضافية -->
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle me-2"></i>معلومات الخزنة:</h6>
+                            <ul class="mb-0">
+                                <li><strong>تاريخ الإنشاء:</strong> {{ treasury.created_at|date:"d M Y - H:i"|default:"غير متوفر" }}</li>
+                                <li><strong>الرصيد الحالي:</strong> {{ treasury.current_balance|floatformat:2 }} ج.م</li>
+                                <li><strong>الحساب المرتبط:</strong> {{ treasury.account.name }}</li>
+                                <li><strong>عدد العمليات:</strong> قيد التطوير</li>
+                            </ul>
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="form-footer">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{% url 'treasury_management:treasuries_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>إلغاء والعودة
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <i class="fas fa-save me-1"></i>حفظ التعديلات
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- المعاينة المحسنة -->
+        <div class="preview-wrapper">
+            <div class="preview-card fade-in" style="animation-delay: 0.2s;">
+                <div class="preview-header">
+                    <div class="preview-header-content">
+                        <div class="preview-icon">
+                            <i class="fas fa-vault"></i>
+                        </div>
+                        <h5>معاينة الخزنة</h5>
+                        <p>عرض البيانات الحالية والتعديلات</p>
+                    </div>
+                </div>
+                
+                <div class="preview-content">
+                    <!-- القسم الأساسي -->
+                    <div class="preview-section">
+                        <div class="preview-section-title">
+                            <div class="preview-section-icon">
+                                <i class="fas fa-info"></i>
+                            </div>
+                            بيانات الخزنة
+                        </div>
+                        
+                        <div class="preview-item filled" id="previewName">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-tag"></i>
+                                </div>
+                                اسم الخزنة
+                            </div>
+                            <div class="preview-value">{{ treasury.name }}</div>
+                        </div>
+                        
+                        <div class="preview-item readonly" id="previewCode">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-code"></i>
+                                </div>
+                                كود الخزنة (محمي)
+                            </div>
+                            <div class="preview-value code readonly">{{ treasury.code }}</div>
+                        </div>
+                        <!-- أضف هذا في المعاينة الجانبية لكلا الملفين -->
+
+<!-- قسم الحالة -->
+<div class="preview-section">
+    <div class="preview-section-title">
+        <div class="preview-section-icon">
+            <i class="fas fa-toggle-on"></i>
+        </div>
+        حالة الخزنة
+    </div>
+    
+    <div class="preview-item filled" id="previewStatusItem">
+        <div class="preview-label">
+            <div class="preview-label-icon">
+                <i class="fas fa-power-off"></i>
+            </div>
+            حالة التفعيل
+        </div>
+        <div class="preview-value" id="previewStatus">
+            <span class="badge bg-success">✅ نشطة</span>
+        </div>
+    </div>
+</div>
+
+                        <div class="preview-item filled" id="previewLocation">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                </div>
+                                موقع الخزنة
+                            </div>
+                            <div class="preview-value">
+                                {% if treasury.location %}
+                                    {{ treasury.location }}
+                                {% else %}
+                                    لم يتم تحديد الموقع
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="preview-item filled" id="previewResponsible">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                المسؤول
+                            </div>
+                            <div class="preview-value">
+                                {% if treasury.responsible_person %}
+                                    {{ treasury.responsible_person.get_full_name|default:treasury.responsible_person.username }}
+                                {% else %}
+                                    لم يتم اختيار المسؤول
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- القسم المالي -->
+                    <div class="preview-section">
+                        <div class="preview-section-title">
+                            <div class="preview-section-icon">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </div>
+                            التفاصيل المالية
+                        </div>
+                        
+                        <div class="preview-item filled" id="previewBalance">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-dollar-sign"></i>
+                                </div>
+                                الرصيد الحالي
+                            </div>
+                            <div class="preview-value balance">{{ treasury.current_balance|floatformat:2 }} ج.م</div>
+                        </div>
+
+                        <!-- مؤشر الحدود -->
+                        <div class="limits-indicator {% if treasury.min_limit or treasury.max_limit %}set{% endif %}" id="limitsIndicator">
+                            <p class="limits-text {% if treasury.min_limit or treasury.max_limit %}set{% endif %}" id="limitsText">
+                                {% if treasury.min_limit or treasury.max_limit %}
+                                    <i class="fas fa-check-circle me-1"></i>
+                                    {% if treasury.min_limit %}الحد الأدنى: {{ treasury.min_limit|floatformat:2 }}{% endif %}
+                                    {% if treasury.min_limit and treasury.max_limit %} | {% endif %}
+                                    {% if treasury.max_limit %}الحد الأقصى: {{ treasury.max_limit|floatformat:2 }}{% endif %}
+                                    ج.م
+                                {% else %}
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    لم يتم تحديد حدود
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- القسم المحاسبي -->
+                    <div class="preview-section">
+                        <div class="preview-section-title">
+                            <div class="preview-section-icon">
+                                <i class="fas fa-calculator"></i>
+                            </div>
+                            الحساب المحاسبي
+                        </div>
+                        
+                        <div class="preview-item readonly" id="previewAccount">
+                            <div class="preview-label">
+                                <div class="preview-label-icon">
+                                    <i class="fas fa-link"></i>
+                                </div>
+                                الحساب المرتبط (محمي)
+                            </div>
+                            <div class="preview-value readonly">{{ treasury.account.name }}</div>
+                        </div>
+                    </div>
+
+                    <!-- إحصائيات الخزنة -->
+                    <div class="treasury-stats">
+                        <h6 class="mb-3" style="color: #2196f3; font-weight: 700;">
+                            <i class="fas fa-chart-bar me-2"></i>
+                            إحصائيات الخزنة
+                        </h6>
+                        
+                        <div class="stat-item">
+                            <span class="stat-label">تاريخ الإنشاء:</span>
+                            <span class="stat-value">{{ treasury.created_at|date:"d/m/Y"|default:"غ/م" }}</span>
+                        </div>
+                        
+                        <div class="stat-item">
+                            <span class="stat-label">كود الحساب:</span>
+                            <span class="stat-value">{{ treasury.account.code }}</span>
+                        </div>
+                        
+                        <div class="stat-item">
+                            <span class="stat-label">الرصيد الحالي:</span>
+                            <span class="stat-value">{{ treasury.current_balance|floatformat:2 }} ج.م</span>
+                        </div>
+                        
+                        <div class="stat-item">
+                            <span class="stat-label">عدد العمليات:</span>
+                            <span class="stat-value">قيد التطوير</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('editTreasuryForm');
+    const nameInput = document.querySelector('input[name="name"]');
+    const locationInput = document.querySelector('input[name="location"]');
+    const responsibleSelect = document.querySelector('select[name="responsible_person"]');
+    const minLimitInput = document.querySelector('input[name="min_limit"]');
+    const maxLimitInput = document.querySelector('input[name="max_limit"]');
+    
+    // تحديث المعاينة عند تغيير أي حقل
+    form.addEventListener('input', updatePreview);
+    form.addEventListener('change', updatePreview);
+    
+    function updatePreview() {
+        // تحديث الاسم
+        const nameItem = document.getElementById('previewName');
+        const newName = nameInput.value.trim();
+        if (newName) {
+            nameItem.querySelector('.preview-value').textContent = newName;
+        }
+        
+        // تحديث الموقع
+        const locationItem = document.getElementById('previewLocation');
+        const newLocation = locationInput.value.trim();
+        if (newLocation) {
+            locationItem.querySelector('.preview-value').textContent = newLocation;
+        } else {
+            locationItem.querySelector('.preview-value').textContent = 'لم يتم تحديد الموقع';
+        }
+        
+        // تحديث المسؤول
+        const responsibleItem = document.getElementById('previewResponsible');
+        const selectedResponsible = responsibleSelect.selectedOptions[0];
+        if (selectedResponsible && selectedResponsible.value) {
+            responsibleItem.querySelector('.preview-value').textContent = selectedResponsible.text;
+        } else {
+            responsibleItem.querySelector('.preview-value').textContent = 'لم يتم اختيار المسؤول';
+        }
+        
+        // تحديث الحدود
+        const limitsIndicator = document.getElementById('limitsIndicator');
+        const limitsText = document.getElementById('limitsText');
+        const minLimit = parseFloat(minLimitInput.value) || 0;
+        const maxLimit = parseFloat(maxLimitInput.value) || 0;
+        
+        if (minLimit > 0 || maxLimit > 0) {
+            limitsIndicator.classList.add('set');
+            limitsText.classList.add('set');
+            let limitsStr = '';
+            if (minLimit > 0) limitsStr += `الحد الأدنى: ${minLimit.toLocaleString()}`;
+            if (maxLimit > 0) limitsStr += (limitsStr ? ' | ' : '') + `الحد الأقصى: ${maxLimit.toLocaleString()}`;
+            limitsText.innerHTML = '<i class="fas fa-check-circle me-1"></i>' + limitsStr + ' ج.م';
+        } else {
+            limitsIndicator.classList.remove('set');
+            limitsText.classList.remove('set');
+            limitsText.innerHTML = '<i class="fas fa-info-circle me-1"></i>لم يتم تحديد حدود';
+        }
+    }
+    
+    // التحقق من النموذج قبل الإرسال
+    form.addEventListener('submit', function(e) {
+        const name = nameInput.value.trim();
+        
+        if (!name) {
+            alert('❌ يرجى إدخال اسم الخزنة');
+            e.preventDefault();
+            nameInput.focus();
+            return false;
+        }
+        
+        // التحقق من أن الحد الأقصى أكبر من الأدنى
+        const minLimit = parseFloat(minLimitInput.value) || 0;
+        const maxLimit = parseFloat(maxLimitInput.value) || 0;
+        
+        if (maxLimit > 0 && maxLimit <= minLimit) {
+            alert('❌ الحد الأقصى يجب أن يكون أكبر من الحد الأدنى');
+            e.preventDefault();
+            return false;
+        }
+        
+        // تأكيد الحفظ
+        const originalName = '{{ treasury.name }}';
+        const originalLocation = '{{ treasury.location|default:"" }}';
+        const originalResponsible = '{{ treasury.responsible_person.id|default:"" }}';
+        const originalMinLimit = parseFloat('{{ treasury.min_limit|default:"0" }}');
+        const originalMaxLimit = parseFloat('{{ treasury.max_limit|default:"0" }}');
+        
+        const newLocation = locationInput.value.trim();
+        const newResponsible = responsibleSelect.value;
+        const newMinLimit = parseFloat(minLimitInput.value) || 0;
+        const newMaxLimit = parseFloat(maxLimitInput.value) || 0;
+        
+        const hasChanges = name !== originalName || 
+                          newLocation !== originalLocation ||
+                          newResponsible !== originalResponsible ||
+                          newMinLimit !== originalMinLimit ||
+                          newMaxLimit !== originalMaxLimit;
+        
+        if (!hasChanges) {
+            alert('ℹ️ لم يتم إجراء أي تعديلات');
+            e.preventDefault();
+            return false;
+        }
+        
+        const confirmed = confirm(`هل أنت متأكد من حفظ التعديلات؟
+
+📋 التفاصيل الجديدة:
+• الاسم: ${name}
+• الموقع: ${newLocation || 'غير محدد'}
+• المسؤول: ${responsibleSelect.selectedOptions[0].text || 'غير محدد'}
+• الحدود: ${newMinLimit > 0 || newMaxLimit > 0 ? 'تم تحديد حدود' : 'بدون حدود'}
+
+⚠️ هذا التغيير سيؤثر على عرض الخزنة في التقارير`);
+        
+        if (!confirmed) {
+            e.preventDefault();
+        } else {
+            // إظهار مؤشر التحميل
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>جاري الحفظ...';
+            submitBtn.disabled = true;
+        }
+    });
+    
+    console.log('✅ نموذج تحرير الخزنة مع المعاينة الجانبية جاهز');
+});
+</script>
+{% endblock %}

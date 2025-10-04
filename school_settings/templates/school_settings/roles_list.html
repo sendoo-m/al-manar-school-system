@@ -1,0 +1,841 @@
+{% extends 'school_settings/base.html' %}
+
+{% block title %}إدارة أدوار المستخدمين - {{ system_settings.school_name }}{% endblock %}
+{% block header_title %}إدارة أدوار المستخدمين{% endblock %}
+{% block header_icon %}<i class="fas fa-users-cog"></i>{% endblock %}
+{% block page_description %}إدارة وتحكم كامل في أدوار وصلاحيات المستخدمين{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">أدوار المستخدمين</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'school_settings:add_role' %}" class="btn btn-primary-custom btn-custom">
+        <i class="fas fa-plus me-2"></i>إضافة دور جديد
+    </a>
+    <button class="btn btn-outline-secondary btn-custom" onclick="exportRoles()">
+        <i class="fas fa-download me-2"></i>تصدير
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* إصلاح مشكلة العرض والحركة */
+    body {
+        overflow-x: hidden !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+    }
+    
+    .container-fluid,
+    .row,
+    .col-lg-4,
+    .col-lg-3,
+    .col-lg-2,
+    .col-md-6 {
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box !important;
+    }
+
+    .stats-overview {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 20px; /* تقليل border radius */
+        padding: 30px 20px; /* تقليل padding */
+        margin-bottom: 25px; /* تقليل margin */
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    }
+
+    .stats-overview::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.05)"/></svg>') repeat;
+        animation: float 25s linear infinite;
+    }
+
+    @keyframes float {
+        0% { transform: translateX(-50px) translateY(-50px); }
+        100% { transform: translateX(50px) translateY(50px); }
+    }
+
+    .overview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* تقليل الحد الأدنى */
+        gap: 20px; /* تقليل gap */
+        position: relative;
+        z-index: 2;
+    }
+
+    .overview-stat {
+        background: rgba(255,255,255,0.15);
+        backdrop-filter: blur(15px);
+        border-radius: 15px; /* تقليل border radius */
+        padding: 20px; /* تقليل padding */
+        text-align: center;
+        transition: all 0.4s ease;
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .overview-stat:hover {
+        transform: translateY(-3px) scale(1.01); /* تقليل الحركة */
+        background: rgba(255,255,255,0.2);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    }
+
+    .overview-stat-icon {
+        width: 60px; /* تقليل الحجم */
+        height: 60px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 12px; /* تقليل margin */
+        font-size: 1.5rem; /* تقليل الخط */
+    }
+
+    .overview-stat-number {
+        font-size: 2rem; /* تقليل الخط */
+        font-weight: 800;
+        margin-bottom: 6px; /* تقليل margin */
+        text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+
+    .overview-stat-label {
+        font-size: 0.9rem; /* تقليل الخط */
+        font-weight: 600;
+        opacity: 0.9;
+    }
+
+    .control-panel {
+        background: white;
+        border-radius: 15px; /* تقليل border radius */
+        padding: 25px; /* تقليل padding */
+        margin-bottom: 20px; /* تقليل margin */
+        box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .control-panel:hover {
+        transform: translateY(-2px); /* تقليل الحركة */
+        box-shadow: 0 12px 35px rgba(0,0,0,0.12);
+    }
+
+    .control-header {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        margin: -25px -25px 20px -25px; /* تقليل margin */
+        padding: 15px 25px; /* تقليل padding */
+        border-radius: 15px 15px 0 0;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .filter-input {
+        border-radius: 10px; /* تقليل border radius */
+        border: 2px solid #e9ecef;
+        padding: 10px 12px; /* تقليل padding */
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .filter-input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+        background: white;
+    }
+
+    .roles-table-container {
+        background: white;
+        border-radius: 15px; /* تقليل border radius */
+        overflow: hidden;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .roles-table-container:hover {
+        transform: translateY(-2px); /* تقليل الحركة */
+        box-shadow: 0 12px 35px rgba(0,0,0,0.12);
+    }
+
+    .table-header {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 20px 25px; /* تقليل padding */
+        position: relative;
+        overflow: hidden;
+    }
+
+    .table-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.08)"/></svg>') repeat;
+        animation: float 18s linear infinite;
+    }
+
+    .table-header-content {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modern-table {
+        margin: 0;
+        background: white;
+        width: 100%;
+        table-layout: fixed; /* تثبيت تخطيط الجدول */
+    }
+
+    .modern-table thead th {
+        background: #f8f9fa;
+        border: none;
+        padding: 15px 12px; /* تقليل padding */
+        font-weight: 700;
+        color: #495057;
+        font-size: 0.85rem; /* تقليل الخط */
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #e9ecef;
+        word-wrap: break-word;
+    }
+
+    .modern-table tbody tr {
+        transition: all 0.3s ease;
+        border-bottom: 1px solid #f1f3f4;
+    }
+
+    .modern-table tbody tr:hover {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.03), rgba(118, 75, 162, 0.03));
+        transform: scale(1.005); /* تقليل الحركة */
+        box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    }
+
+    .modern-table tbody td {
+        padding: 15px 12px; /* تقليل padding */
+        vertical-align: middle;
+        border: none;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+
+    .user-avatar {
+        width: 45px; /* تقليل الحجم */
+        height: 45px;
+        border-radius: 12px; /* تقليل border radius */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 1.1rem; /* تقليل الخط */
+        margin-left: 12px; /* تقليل margin */
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        flex-shrink: 0;
+    }
+
+    .user-info h6 {
+        font-weight: 700;
+        color: #495057;
+        margin-bottom: 4px; /* تقليل margin */
+        font-size: 1rem; /* تقليل الخط */
+        word-wrap: break-word;
+    }
+
+    .user-email {
+        color: #6c757d;
+        font-size: 0.8rem; /* تقليل الخط */
+    }
+
+    .role-info {
+        display: flex;
+        align-items: center;
+        padding: 10px 12px; /* تقليل padding */
+        background: #f8f9fa;
+        border-radius: 10px; /* تقليل border radius */
+        transition: all 0.3s ease;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .role-info:hover {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+        transform: translateX(-2px); /* تقليل الحركة */
+    }
+
+    .role-icon {
+        width: 32px; /* تقليل الحجم */
+        height: 32px;
+        border-radius: 6px; /* تقليل border radius */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 10px; /* تقليل margin */
+        font-size: 0.9rem; /* تقليل الخط */
+        flex-shrink: 0;
+    }
+
+    .role-icon.system-admin {
+        background: linear-gradient(135deg, #ffc107, #fd7e14);
+        color: white;
+    }
+
+    .role-icon.school-manager {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+    }
+
+    .role-icon.accountant {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+    }
+
+    .role-icon.teacher {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+    }
+
+    .role-icon.default {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        color: white;
+    }
+
+    .status-badge {
+        padding: 6px 12px; /* تقليل padding */
+        border-radius: 15px; /* تقليل border radius */
+        font-weight: 600;
+        font-size: 0.75rem; /* تقليل الخط */
+        border: 2px solid;
+        transition: all 0.3s ease;
+    }
+
+    .status-badge:hover {
+        transform: scale(1.03); /* تقليل الحركة */
+    }
+
+    .status-badge.active {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        border-color: transparent;
+        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+    }
+
+    .status-badge.inactive {
+        background: #f8f9fa;
+        color: #6c757d;
+        border-color: #dee2e6;
+    }
+
+    .date-info {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 8px; /* تقليل padding */
+        background: #f8f9fa;
+        border-radius: 8px; /* تقليل border radius */
+    }
+
+    .date-main {
+        font-weight: 700;
+        color: #495057;
+        font-size: 0.9rem; /* تقليل الخط */
+    }
+
+    .date-time {
+        color: #6c757d;
+        font-size: 0.75rem; /* تقليل الخط */
+        margin-top: 2px;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 4px; /* تقليل gap */
+        justify-content: center;
+    }
+
+    .action-btn {
+        width: 35px; /* تقليل الحجم */
+        height: 35px;
+        border-radius: 8px; /* تقليل border radius */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid;
+        background: white;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        font-size: 0.9rem; /* تقليل الخط */
+    }
+
+    .action-btn:hover {
+        transform: translateY(-1px) scale(1.05); /* تقليل الحركة */
+        box-shadow: 0 3px 12px rgba(0,0,0,0.2);
+    }
+
+    .action-btn.edit {
+        color: #667eea;
+        border-color: #667eea;
+    }
+
+    .action-btn.edit:hover {
+        background: #667eea;
+        color: white;
+    }
+
+    .action-btn.delete {
+        color: #dc3545;
+        border-color: #dc3545;
+    }
+
+    .action-btn.delete:hover {
+        background: #dc3545;
+        color: white;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 30px; /* تقليل padding */
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.05);
+    }
+
+    .empty-icon {
+        width: 100px; /* تقليل الحجم */
+        height: 100px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 25px; /* تقليل margin */
+        color: #adb5bd;
+        font-size: 2.5rem; /* تقليل الخط */
+    }
+
+    /* إصلاح الاستجابة للشاشات الصغيرة */
+    @media (max-width: 768px) {
+        .stats-overview {
+            padding: 20px 15px;
+            margin-bottom: 20px;
+        }
+        
+        .overview-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        
+        .overview-stat {
+            padding: 15px;
+        }
+        
+        .overview-stat-number {
+            font-size: 1.6rem;
+        }
+        
+        .control-panel {
+            padding: 20px;
+        }
+        
+        .control-header {
+            margin: -20px -20px 15px -20px;
+            padding: 12px 20px;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .action-btn {
+            width: 32px;
+            height: 32px;
+            font-size: 0.8rem;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            margin-left: 10px;
+            font-size: 1rem;
+        }
+        
+        .table-header {
+            padding: 15px 20px;
+        }
+        
+        .modern-table thead th {
+            padding: 12px 10px;
+            font-size: 0.8rem;
+        }
+        
+        .modern-table tbody td {
+            padding: 12px 10px;
+        }
+        
+        .role-info {
+            padding: 8px 10px;
+        }
+        
+        .role-icon {
+            width: 28px;
+            height: 28px;
+            margin-left: 8px;
+            font-size: 0.8rem;
+        }
+    }
+
+    /* إصلاح مشاكل الـ overflow النهائية */
+    * {
+        box-sizing: border-box;
+    }
+    
+    .row {
+        margin-right: 0 !important;
+        margin-left: 0 !important;
+    }
+    
+    [class*="col-"] {
+        padding-right: 12px !important;
+        padding-left: 12px !important;
+    }
+
+    /* تقليل المسافة في نهاية الصفحة */
+    .page-footer {
+        margin-top: 15px;
+        margin-bottom: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Statistics Overview -->
+<div class="stats-overview">
+    <div class="text-center mb-3">
+        <h4 class="mb-2">نظرة عامة على أدوار المستخدمين</h4> <!-- تقليل حجم العنوان -->
+        <p class="mb-0 opacity-90">إحصائيات شاملة لجميع الأدوار والصلاحيات في النظام</p>
+    </div>
+    
+    <div class="overview-grid">
+        <div class="overview-stat">
+            <div class="overview-stat-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="overview-stat-number" id="totalRoles">{{ total_roles|default:0 }}</div>
+            <div class="overview-stat-label">إجمالي الأدوار</div>
+        </div>
+        
+        <div class="overview-stat">
+            <div class="overview-stat-icon">
+                <i class="fas fa-user-check"></i>
+            </div>
+            <div class="overview-stat-number" id="activeRoles">{{ active_roles|default:0 }}</div>
+            <div class="overview-stat-label">أدوار نشطة</div>
+        </div>
+        
+        <div class="overview-stat">
+            <div class="overview-stat-icon">
+                <i class="fas fa-user-clock"></i>
+            </div>
+            <div class="overview-stat-number" id="inactiveRoles">{{ inactive_roles|default:0 }}</div>
+            <div class="overview-stat-label">غير نشطة</div>
+        </div>
+        
+        <div class="overview-stat">
+            <div class="overview-stat-icon">
+                <i class="fas fa-crown"></i>
+            </div>
+            <div class="overview-stat-number" id="adminRoles">{{ admin_roles_count|default:0 }}</div>
+            <div class="overview-stat-label">مدراء النظام</div>
+        </div>
+    </div>
+</div>
+
+<!-- Control Panel -->
+<div class="control-panel">
+    <div class="control-header">
+        <h6 class="mb-0"> <!-- تقليل حجم العنوان -->
+            <i class="fas fa-filter me-2"></i>أدوات البحث والتصفية
+        </h6>
+    </div>
+    
+    <form method="get" class="row g-3">
+        <div class="col-lg-4 col-md-6">
+            <label class="form-label fw-bold">البحث في المستخدمين</label>
+            <div class="position-relative">
+                <i class="fas fa-search position-absolute" style="right: 12px; top: 50%; transform: translateY(-50%); color: #6c757d;"></i>
+                <input type="text" class="form-control filter-input" name="search" 
+                       value="{{ search_query }}"
+                       placeholder="اكتب اسم المستخدم أو البريد..." style="padding-right: 35px;">
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label fw-bold">نوع الدور</label>
+            <select class="form-select filter-input" name="role">
+                <option value="">جميع الأدوار</option>
+                {% for role_code, role_name in role_choices %}
+                <option value="{{ role_code }}" {% if role_filter == role_code %}selected{% endif %}>
+                    {{ role_name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label fw-bold">حالة الدور</label>
+            <select class="form-select filter-input" name="status">
+                <option value="">جميع الحالات</option>
+                <option value="active" {% if status_filter == 'active' %}selected{% endif %}>نشط</option>
+                <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>غير نشط</option>
+            </select>
+        </div>
+        
+        <div class="col-lg-2 col-md-6">
+            <label class="form-label fw-bold">&nbsp;</label>
+            <button type="submit" class="btn btn-primary-custom btn-custom w-100 btn-sm"> <!-- تقليل حجم الزر -->
+                <i class="fas fa-search me-2"></i>بحث
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Roles Table -->
+<div class="roles-table-container">
+    <div class="table-header">
+        <div class="table-header-content">
+            <div>
+                <h5 class="mb-1"> <!-- تقليل حجم العنوان -->
+                    <i class="fas fa-users-cog me-2"></i>قائمة أدوار المستخدمين
+                </h5>
+                <small class="opacity-90">إدارة وتحكم كامل في الصلاحيات</small>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <span class="badge bg-light bg-opacity-25 text-white px-2 py-1">{{ total_roles }} دور</span> <!-- تقليل padding -->
+                <button class="btn btn-outline-light btn-sm" onclick="refreshRoles()">
+                    <i class="fas fa-sync-alt me-1"></i>تحديث
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    {% if roles %}
+    <div class="table-responsive">
+        <table class="table modern-table">
+            <thead>
+                <tr>
+                    <th style="width: 30%">المستخدم</th>
+                    <th style="width: 25%">الدور</th>
+                    <th style="width: 15%">الحالة</th>
+                    <th style="width: 20%">تاريخ الإنشاء</th>
+                    <th style="width: 10%">إجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for role in roles %}
+                <tr class="role-row" 
+                    data-role-id="{{ role.id }}" 
+                    data-role-type="{{ role.role }}" 
+                    data-is-active="{% if role.is_active %}true{% else %}false{% endif %}">
+                    
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="user-avatar">
+                                {{ role.user.first_name.0|default:role.user.username.0|upper }}
+                            </div>
+                            <div class="user-info" style="flex: 1; min-width: 0;">
+                                <h6 class="mb-1">{{ role.user.get_full_name|default:role.user.username|truncatechars:20 }}</h6> <!-- تحديد طول النص -->
+                                <div class="user-email">{{ role.user.email|default:"لا يوجد بريد إلكتروني"|truncatechars:25 }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    
+                    <td>
+                        <div class="role-info">
+                            <div class="role-icon {% if role.role == 'SYSTEM_ADMIN' %}system-admin{% elif role.role == 'SCHOOL_MANAGER' %}school-manager{% elif role.role == 'ACCOUNTANT' %}accountant{% elif role.role == 'TEACHER' %}teacher{% else %}default{% endif %}">
+                                {% if role.role == 'SYSTEM_ADMIN' %}
+                                    <i class="fas fa-crown"></i>
+                                {% elif role.role == 'SCHOOL_MANAGER' %}
+                                    <i class="fas fa-building"></i>
+                                {% elif role.role == 'ACCOUNTANT' %}
+                                    <i class="fas fa-calculator"></i>
+                                {% elif role.role == 'TEACHER' %}
+                                    <i class="fas fa-chalkboard-teacher"></i>
+                                {% else %}
+                                    <i class="fas fa-user"></i>
+                                {% endif %}
+                            </div>
+                            <span class="fw-bold" style="flex: 1; min-width: 0;">{{ role.get_role_display|truncatechars:15 }}</span> <!-- تحديد طول النص -->
+                        </div>
+                    </td>
+                    
+                    <td>
+                        {% if role.is_active %}
+                        <span class="status-badge active">
+                            <i class="fas fa-check-circle me-1"></i>نشط
+                        </span>
+                        {% else %}
+                        <span class="status-badge inactive">
+                            <i class="fas fa-pause-circle me-1"></i>غير نشط
+                        </span>
+                        {% endif %}
+                    </td>
+                    
+                    <td>
+                        <div class="date-info">
+                            <div class="date-main">{{ role.created_date|date:"d/m/Y" }}</div>
+                            <div class="date-time">{{ role.created_date|date:"H:i" }}</div>
+                        </div>
+                    </td>
+                    
+                    <td>
+                        <div class="action-buttons">
+                            <a href="{% url 'school_settings:edit_role' role.id %}" class="action-btn edit" 
+                               data-bs-toggle="tooltip" title="تعديل">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            
+                            <a href="{% url 'school_settings:delete_role' role.id %}" class="action-btn delete" 
+                               data-bs-toggle="tooltip" title="حذف"
+                               onclick="return confirm('هل تريد حذف هذا الدور؟')">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    {% if roles.has_other_pages %}
+    <div class="p-2 border-top"> <!-- تقليل padding -->
+        <nav>
+            <ul class="pagination justify-content-center mb-0">
+                {% if roles.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ roles.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">السابق</a>
+                </li>
+                {% endif %}
+                
+                <li class="page-item active">
+                    <span class="page-link">{{ roles.number }} من {{ roles.paginator.num_pages }}</span>
+                </li>
+                
+                {% if roles.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ roles.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">التالي</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">
+            <i class="fas fa-users-cog"></i>
+        </div>
+        <h5 class="text-muted mb-3">لا توجد أدوار محددة</h5> <!-- تقليل حجم العنوان -->
+        <p class="text-muted mb-4">ابدأ بإضافة أول دور للمستخدمين لإدارة الصلاحيات</p>
+        <a href="{% url 'school_settings:add_role' %}" class="btn btn-primary-custom btn-custom">
+            <i class="fas fa-plus me-2"></i>إضافة أول دور
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<div class="page-footer"></div> <!-- إضافة مسافة نهاية الصفحة -->
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Animate statistics
+    animateStatistics();
+});
+
+function animateStatistics() {
+    const numbers = document.querySelectorAll('.overview-stat-number');
+    numbers.forEach(number => {
+        const finalValue = parseInt(number.textContent) || 0;
+        if (finalValue === 0) return; // لا تُحرك الصفر
+        
+        const duration = 1500; // تقليل المدة
+        const increment = finalValue / (duration / 50);
+        let current = 0;
+        
+        const timer = setInterval(() => {
+            current += increment;
+            if (current >= finalValue) {
+                current = finalValue;
+                clearInterval(timer);
+            }
+            number.textContent = Math.floor(current);
+        }, 50);
+    });
+}
+
+function refreshRoles() {
+    showMessage('info', 'جاري تحديث قائمة الأدوار...');
+    setTimeout(() => {
+        location.reload();
+    }, 1000);
+}
+
+function exportRoles() {
+    showMessage('info', 'جاري تصدير قائمة الأدوار...');
+    setTimeout(() => {
+        showMessage('success', 'تم تصدير قائمة الأدوار بنجاح');
+    }, 2000);
+}
+
+function showMessage(type, message) {
+    const colors = { success: 'success', error: 'danger', warning: 'warning', info: 'info' };
+    const icons = { success: 'fas fa-check-circle', error: 'fas fa-exclamation-circle', warning: 'fas fa-exclamation-triangle', info: 'fas fa-info-circle' };
+    
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${colors[type]} alert-dismissible fade show`;
+    alertDiv.style.cssText = `position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; max-width: 400px; box-shadow: 0 8px 25px rgba(0,0,0,0.15); border-radius: 10px;`;
+    
+    alertDiv.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="${icons[type]} me-3"></i>
+            <div class="flex-grow-1">${message}</div>
+            <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    setTimeout(() => { if (alertDiv.parentNode) alertDiv.remove(); }, 5000);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,154 @@
+<!-- school_settings/templates/school_settings/modals/edit_school_fee.html -->
+<!-- Modal تعديل المصروفات المدرسية -->
+<div class="modal fade" id="editSchoolFeeModal" tabindex="-1" aria-labelledby="editSchoolFeeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editSchoolFeeModalLabel">
+                    <i class="fas fa-edit me-2"></i>تعديل إعداد المصروفات
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <form id="editSchoolFeeForm" method="post">
+                {% csrf_token %}
+                <input type="hidden" id="editFeeId" name="fee_id">
+                
+                <div class="modal-body">
+                    <!-- نفس محتوى نموذج الإضافة مع قيم محملة -->
+                    <!-- يمكن نسخ محتوى add_school_fee.html وتغيير الـ IDs -->
+                    
+                    <h6 class="text-primary border-bottom pb-2 mb-3">
+                        <i class="fas fa-info-circle me-1"></i>المعلومات الأساسية
+                    </h6>
+                    
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="editFeeName" class="form-label">اسم المصروفات *</label>
+                            <input type="text" class="form-control" id="editFeeName" name="fee_name" required>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="editFeeType" class="form-label">نوع المصروفات *</label>
+                            <select class="form-select" id="editFeeType" name="fee_type" required disabled>
+                                <option value="TUITION">مصروفات دراسية</option>
+                                <option value="BOOKS">مصروفات كتب</option>
+                                <option value="UNIFORMS">مصروفات ملابس</option>
+                                <option value="TRANSPORT">مصروفات نقل</option>
+                                <option value="OTHER">مصروفات أخرى</option>
+                            </select>
+                            <div class="form-text">لا يمكن تغيير نوع المصروفات بعد الإنشاء</div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="editTotalAmount" class="form-label">المبلغ الإجمالي *</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="editTotalAmount" name="total_amount" 
+                                       min="0" step="0.01" required onchange="calculateEditInstallmentAmount()">
+                                <span class="input-group-text">ج.م</span>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="editInstallmentsCount" class="form-label">عدد الأقساط *</label>
+                            <input type="number" class="form-control" id="editInstallmentsCount" name="installments_count" 
+                                   min="1" max="12" required onchange="calculateEditInstallmentAmount()">
+                        </div>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="editIsMandatory" name="is_mandatory">
+                                <label class="form-check-label" for="editIsMandatory">
+                                    مصروفات إجبارية
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="editFeeIsActive" name="is_active">
+                                <label class="form-check-label" for="editFeeIsActive">
+                                    إعداد المصروفات نشط
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-save me-1"></i>حفظ التغييرات
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function calculateEditInstallmentAmount() {
+    const totalAmount = parseFloat(document.getElementById('editTotalAmount').value) || 0;
+    const installmentsCount = parseInt(document.getElementById('editInstallmentsCount').value) || 1;
+    
+    if (totalAmount > 0 && installmentsCount > 0) {
+        const installmentAmount = (totalAmount / installmentsCount).toFixed(2);
+        // يمكن إضافة عرض مبلغ القسط هنا
+    }
+}
+
+function loadSchoolFeeForEdit(feeId) {
+    fetch(`/settings/school-fee/${feeId}/json/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const fee = data.fee;
+                document.getElementById('editFeeId').value = fee.id;
+                document.getElementById('editFeeName').value = fee.fee_name;
+                document.getElementById('editFeeType').value = fee.fee_type;
+                document.getElementById('editTotalAmount').value = fee.total_amount;
+                document.getElementById('editInstallmentsCount').value = fee.installments_count;
+                document.getElementById('editIsMandatory').checked = fee.is_mandatory;
+                document.getElementById('editFeeIsActive').checked = fee.is_active;
+                
+                new bootstrap.Modal(document.getElementById('editSchoolFeeModal')).show();
+            }
+        });
+}
+
+document.getElementById('editSchoolFeeForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const feeId = document.getElementById('editFeeId').value;
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>جاري الحفظ...';
+    submitBtn.disabled = true;
+    
+    fetch(`/settings/edit-school-fee/${feeId}/`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage('success', data.message);
+            bootstrap.Modal.getInstance(document.getElementById('editSchoolFeeModal')).hide();
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showMessage('error', data.message);
+        }
+    })
+    .finally(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+});
+</script>

@@ -1,0 +1,677 @@
+{% extends 'books_inventory/base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:inventory_home' %}">الرئيسية</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:distributions_list' %}">توزيعات الطلاب</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:student_distribution_detail' distribution.pk %}">{{ distribution.student.name }}</a></li>
+                <li class="breadcrumb-item active">تعديل</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h4><i class="fas fa-edit"></i> تعديل التوزيع</h4>
+            </div>
+            <form method="POST" id="editDistributionForm">
+                {% csrf_token %}
+                <div class="card-body">
+                    
+                    <!-- معلومات الطالب (للعرض فقط) -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h6><i class="fas fa-user text-primary"></i> بيانات الطالب</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>الاسم:</strong> {{ distribution.student.name }}</p>
+                                    <p><strong>الرقم القومي:</strong> {{ distribution.student.national_number|default:"غير محدد" }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>الصف الدراسي:</strong> 
+                                        {% if distribution.student.current_group %}
+                                            {{ distribution.student.current_group.name }}
+                                        {% else %}
+                                            غير محدد
+                                        {% endif %}
+                                    </p>
+                                    <p><strong>تاريخ التوزيع:</strong> {{ distribution.distribution_date|date:"Y-m-d" }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- تعديل حالة التوزيع -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">حالة التوزيع <span class="text-danger">*</span></label>
+                                <select class="form-select" name="status" required>
+                                    {% for status_code, status_name in status_choices %}
+                                    <option value="{{ status_code }}" {% if distribution.status == status_code %}selected{% endif %}>
+                                        {{ status_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">حالة الدفع</label>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="first_installment_verified" id="paymentVerified" 
+                                           {% if distribution.first_installment_verified %}checked{% endif %}>
+                                    <label class="form-check-label" for="paymentVerified">
+                                        تم التحقق من دفع القسط الأول
+                                    </label>
+                                </div>
+                                {% if distribution.verification_date %}
+                                <small class="text-muted">تم التأكيد في: {{ distribution.verification_date|date:"Y-m-d H:i" }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- ملاحظات التوزيع -->
+                    <div class="mb-4">
+                        <label class="form-label">ملاحظات التوزيع</label>
+                        <textarea class="form-control" name="notes" rows="4" placeholder="أي ملاحظات خاصة بالتوزيع...">{{ distribution.notes|default:'' }}</textarea>
+                    </div>
+                    
+                    <!-- ملاحظات التحقق من الدفع -->
+                    <div class="mb-4">
+                        <label class="form-label">ملاحظات التحقق من الدفع</label>
+                        <textarea class="form-control" name="verification_notes" rows="3" placeholder="ملاحظات حول تحقق الدفع...">{{ distribution.verification_notes|default:'' }}</textarea>
+                    </div>
+                    
+                </div>
+                
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'books_inventory:student_distribution_detail' distribution.pk %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> إلغاء
+                        </a>
+                        <div>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-save"></i> حفظ التغييرات
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- قسم إدارة العناصر الموزعة -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-plus text-success"></i> إضافة عناصر جديدة للتوزيع</h5>
+            </div>
+            <div class="card-body">
+                
+                <!-- أزرار إضافة العناصر -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <button type="button" class="btn btn-primary w-100" onclick="showAddBookModal()">
+                            <i class="fas fa-book"></i> إضافة كتاب
+                        </button>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="button" class="btn btn-info w-100" onclick="showAddNotebookModal()">
+                            <i class="fas fa-book-open"></i> إضافة كراسة
+                        </button>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="button" class="btn btn-success w-100" onclick="showAddSupplyModal()">
+                            <i class="fas fa-pen"></i> إضافة أداة مدرسية
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- العناصر الموزعة الحالية -->
+                <div class="row">
+                    <div class="col-12">
+                        <h6><i class="fas fa-list text-primary"></i> العناصر الموزعة حالياً</h6>
+                        
+                        <!-- الكتب -->
+                        {% if distribution.book_items.exists %}
+                        <div class="mb-4">
+                            <h6><i class="fas fa-book text-primary"></i> الكتب ({{ distribution.book_items.count }})</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>الكتاب</th>
+                                            <th>المادة</th>
+                                            <th>مطلوب</th>
+                                            <th>موزع</th>
+                                            <th>الحالة</th>
+                                            <th>الإجراءات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="currentBooks">
+                                        {% for item in distribution.book_items.all %}
+                                        <tr id="book-item-{{ item.id }}">
+                                            <td>{{ item.book.title }}</td>
+                                            <td><small>{{ item.book.subject.name }}</small></td>
+                                            <td><span class="badge bg-secondary">{{ item.quantity_requested }}</span></td>
+                                            <td><span class="badge bg-success">{{ item.quantity_distributed }}</span></td>
+                                            <td>
+                                                {% if item.is_distributed %}
+                                                    <span class="badge bg-success">موزع</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">انتظار</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn btn-outline-warning btn-sm" onclick="editBookItem({{ item.id }})">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeBookItem({{ item.id }})">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- الكراسات -->
+                        {% if distribution.notebook_items.exists %}
+                        <div class="mb-4">
+                            <h6><i class="fas fa-book-open text-info"></i> الكراسات ({{ distribution.notebook_items.count }})</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>الكراسة</th>
+                                            <th>النوع</th>
+                                            <th>مطلوب</th>
+                                            <th>موزع</th>
+                                            <th>الحالة</th>
+                                            <th>الإجراءات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="currentNotebooks">
+                                        {% for item in distribution.notebook_items.all %}
+                                        <tr id="notebook-item-{{ item.id }}">
+                                            <td>{{ item.notebook.name }}</td>
+                                            <td><small>{{ item.notebook.get_notebook_type_display }}</small></td>
+                                            <td><span class="badge bg-secondary">{{ item.quantity_requested }}</span></td>
+                                            <td><span class="badge bg-success">{{ item.quantity_distributed }}</span></td>
+                                            <td>
+                                                {% if item.is_distributed %}
+                                                    <span class="badge bg-success">موزع</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">انتظار</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn btn-outline-warning btn-sm" onclick="editNotebookItem({{ item.id }})">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeNotebookItem({{ item.id }})">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- الأدوات المدرسية -->
+                        {% if distribution.supply_items.exists %}
+                        <div class="mb-4">
+                            <h6><i class="fas fa-pencil-alt text-success"></i> الأدوات المدرسية ({{ distribution.supply_items.count }})</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>الأداة</th>
+                                            <th>الفئة</th>
+                                            <th>مطلوب</th>
+                                            <th>موزع</th>
+                                            <th>الحالة</th>
+                                            <th>الإجراءات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="currentSupplies">
+                                        {% for item in distribution.supply_items.all %}
+                                        <tr id="supply-item-{{ item.id }}">
+                                            <td>{{ item.supply.name }}</td>
+                                            <td><small>{{ item.supply.get_category_display }}</small></td>
+                                            <td><span class="badge bg-secondary">{{ item.quantity_requested }}</span></td>
+                                            <td><span class="badge bg-success">{{ item.quantity_distributed }}</span></td>
+                                            <td>
+                                                {% if item.is_distributed %}
+                                                    <span class="badge bg-success">موزع</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">انتظار</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn btn-outline-warning btn-sm" onclick="editSupplyItem({{ item.id }})">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeSupplyItem({{ item.id }})">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- رسالة عدم وجود عناصر -->
+                        {% if not distribution.book_items.exists and not distribution.notebook_items.exists and not distribution.supply_items.exists %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <h6 class="text-muted">لا توجد عناصر موزعة</h6>
+                            <p class="text-muted">ابدأ بإضافة عناصر للطالب باستخدام الأزرار أعلاه</p>
+                        </div>
+                        {% endif %}
+                        
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal إضافة كتاب -->
+<div class="modal fade" id="addBookModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-book text-primary"></i> إضافة كتاب للتوزيع</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addBookForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">اختر الكتاب <span class="text-danger">*</span></label>
+                        <select class="form-select" id="bookSelect" required>
+                            <option value="">اختر كتاب...</option>
+                            {% for book in available_books %}
+                            <option value="{{ book.id }}" data-title="{{ book.title }}" data-subject="{{ book.subject.name }}" data-stock="{{ book.available_stock }}">
+                                {{ book.title }} - {{ book.subject.name }} (متاح: {{ book.available_stock }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">الكمية المطلوبة</label>
+                                <input type="number" class="form-control" id="bookQuantityRequested" min="1" value="1">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">الكمية الموزعة</label>
+                                <input type="number" class="form-control" id="bookQuantityDistributed" min="0" value="0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="bookIsDistributed">
+                            <label class="form-check-label" for="bookIsDistributed">
+                                تم التوزيع فعلياً
+                            </label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">ملاحظات</label>
+                        <textarea class="form-control" id="bookNotes" rows="3" placeholder="ملاحظات خاصة بهذا الكتاب..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">إضافة الكتاب</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal إضافة كراسة -->
+<div class="modal fade" id="addNotebookModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-book-open text-info"></i> إضافة كراسة للتوزيع</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addNotebookForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">اختر الكراسة <span class="text-danger">*</span></label>
+                        <select class="form-select" id="notebookSelect" required>
+                            <option value="">اختر كراسة...</option>
+                            {% for notebook in available_notebooks %}
+                            <option value="{{ notebook.id }}" data-name="{{ notebook.name }}" data-type="{{ notebook.get_notebook_type_display }}" data-stock="{{ notebook.available_stock }}">
+                                {{ notebook.name }} - {{ notebook.get_notebook_type_display }} (متاح: {{ notebook.available_stock }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">الكمية المطلوبة</label>
+                                <input type="number" class="form-control" id="notebookQuantityRequested" min="1" value="1">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">الكمية الموزعة</label>
+                                <input type="number" class="form-control" id="notebookQuantityDistributed" min="0" value="0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="notebookIsDistributed">
+                            <label class="form-check-label" for="notebookIsDistributed">
+                                تم التوزيع فعلياً
+                            </label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">ملاحظات</label>
+                        <textarea class="form-control" id="notebookNotes" rows="3" placeholder="ملاحظات خاصة بهذه الكراسة..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-info">إضافة الكراسة</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal إضافة أداة مدرسية -->
+<div class="modal fade" id="addSupplyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-pen text-success"></i> إضافة أداة مدرسية للتوزيع</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addSupplyForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">اختر الأداة المدرسية <span class="text-danger">*</span></label>
+                        <select class="form-select" id="supplySelect" required>
+                            <option value="">اختر أداة...</option>
+                            {% for supply in available_supplies %}
+                            <option value="{{ supply.id }}" data-name="{{ supply.name }}" data-category="{{ supply.get_category_display }}" data-stock="{{ supply.available_stock }}">
+                                {{ supply.name }} - {{ supply.get_category_display }} (متاح: {{ supply.available_stock }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">الكمية المطلوبة</label>
+                                <input type="number" class="form-control" id="supplyQuantityRequested" min="1" value="1">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">الكمية الموزعة</label>
+                                <input type="number" class="form-control" id="supplyQuantityDistributed" min="0" value="0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="supplyIsDistributed">
+                            <label class="form-check-label" for="supplyIsDistributed">
+                                تم التوزيع فعلياً
+                            </label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">ملاحظات</label>
+                        <textarea class="form-control" id="supplyNotes" rows="3" placeholder="ملاحظات خاصة بهذه الأداة..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-success">إضافة الأداة</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+{% block extra_js %}
+<script>
+// متغيرات عامة
+const distributionId = {{ distribution.pk }};
+const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+// إظهار modals
+function showAddBookModal() {
+    const modal = new bootstrap.Modal(document.getElementById('addBookModal'));
+    modal.show();
+}
+
+function showAddNotebookModal() {
+    const modal = new bootstrap.Modal(document.getElementById('addNotebookModal'));
+    modal.show();
+}
+
+function showAddSupplyModal() {
+    const modal = new bootstrap.Modal(document.getElementById('addSupplyModal'));
+    modal.show();
+}
+
+// إضافة كتاب جديد
+document.getElementById('addBookForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const bookId = document.getElementById('bookSelect').value;
+    const quantityRequested = document.getElementById('bookQuantityRequested').value;
+    const quantityDistributed = document.getElementById('bookQuantityDistributed').value;
+    const isDistributed = document.getElementById('bookIsDistributed').checked;
+    const notes = document.getElementById('bookNotes').value;
+    
+    if (!bookId) {
+        alert('يرجى اختيار كتاب');
+        return;
+    }
+    
+    addItemToDistribution('book', {
+        book_id: bookId,
+        quantity_requested: quantityRequested,
+        quantity_distributed: quantityDistributed,
+        is_distributed: isDistributed,
+        notes: notes
+    });
+});
+
+// إضافة كراسة جديدة
+document.getElementById('addNotebookForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const notebookId = document.getElementById('notebookSelect').value;
+    const quantityRequested = document.getElementById('notebookQuantityRequested').value;
+    const quantityDistributed = document.getElementById('notebookQuantityDistributed').value;
+    const isDistributed = document.getElementById('notebookIsDistributed').checked;
+    const notes = document.getElementById('notebookNotes').value;
+    
+    if (!notebookId) {
+        alert('يرجى اختيار كراسة');
+        return;
+    }
+    
+    addItemToDistribution('notebook', {
+        notebook_id: notebookId,
+        quantity_requested: quantityRequested,
+        quantity_distributed: quantityDistributed,
+        is_distributed: isDistributed,
+        notes: notes
+    });
+});
+
+// إضافة أداة مدرسية جديدة
+document.getElementById('addSupplyForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const supplyId = document.getElementById('supplySelect').value;
+    const quantityRequested = document.getElementById('supplyQuantityRequested').value;
+    const quantityDistributed = document.getElementById('supplyQuantityDistributed').value;
+    const isDistributed = document.getElementById('supplyIsDistributed').checked;
+    const notes = document.getElementById('supplyNotes').value;
+    
+    if (!supplyId) {
+        alert('يرجى اختيار أداة مدرسية');
+        return;
+    }
+    
+    addItemToDistribution('supply', {
+        supply_id: supplyId,
+        quantity_requested: quantityRequested,
+        quantity_distributed: quantityDistributed,
+        is_distributed: isDistributed,
+        notes: notes
+    });
+});
+
+// دالة موحدة لإضافة العناصر
+function addItemToDistribution(itemType, data) {
+    const url = `/inventory/distributions/${distributionId}/add-${itemType}/`;
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // إغلاق الـ modal
+            const modalId = `add${itemType.charAt(0).toUpperCase() + itemType.slice(1)}Modal`;
+            const modal = bootstrap.Modal.getInstance(document.getElementById(modalId));
+            modal.hide();
+            
+            // إعادة تحميل الصفحة لعرض التحديثات
+            location.reload();
+        } else {
+            alert('حدث خطأ: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('خطأ:', error);
+        alert('حدث خطأ في الاتصال');
+    });
+}
+
+// حذف العناصر
+function removeBookItem(itemId) {
+    removeItem('book', itemId);
+}
+
+function removeNotebookItem(itemId) {
+    removeItem('notebook', itemId);
+}
+
+function removeSupplyItem(itemId) {
+    removeItem('supply', itemId);
+}
+
+function removeItem(itemType, itemId) {
+    if (confirm(`هل أنت متأكد من حذف هذا العنصر من التوزيع؟`)) {
+        fetch(`/inventory/distributions/${itemType}-item/${itemId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById(`${itemType}-item-${itemId}`).remove();
+                
+                // إظهار رسالة نجاح
+                showSuccessMessage(data.message);
+            } else {
+                alert('حدث خطأ: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('خطأ:', error);
+            alert('حدث خطأ في الاتصال');
+        });
+    }
+}
+
+// إظهار رسالة نجاح
+function showSuccessMessage(message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-success alert-dismissible fade show';
+    alertDiv.innerHTML = `
+        <i class="fas fa-check-circle"></i> ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.querySelector('.card-body').insertBefore(alertDiv, document.querySelector('.card-body').firstChild);
+    
+    // إخفاء الرسالة بعد 3 ثواني
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 3000);
+}
+
+// تأكيد قبل حفظ التغييرات
+document.getElementById('editDistributionForm').addEventListener('submit', function(e) {
+    const status = document.querySelector('select[name="status"]').value;
+    const paymentVerified = document.querySelector('input[name="first_installment_verified"]').checked;
+    
+    let confirmMessage = 'هل أنت متأكد من حفظ التغييرات؟';
+    
+    if (status === 'CANCELLED') {
+        confirmMessage = 'تحذير: سيتم إلغاء التوزيع. هل أنت متأكد؟';
+    } else if (paymentVerified) {
+        confirmMessage = 'سيتم تأكيد دفع القسط الأول. هل أنت متأكد؟';
+    }
+    
+    if (!confirm(confirmMessage)) {
+        e.preventDefault();
+    }
+});
+</script>
+{% endblock %}

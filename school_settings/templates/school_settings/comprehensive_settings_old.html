@@ -1,0 +1,996 @@
+{% extends 'school_settings/base.html' %}
+
+{% block title %}{{ page_title }} - {{ system_settings.school_name }}{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_icon %}<i class="fas fa-cogs"></i>{% endblock %}
+{% block current_page %}الإعدادات الشاملة{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-dashboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        text-align: center;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(90deg, var(--accent-color), var(--success-color));
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    }
+    
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px;
+        font-size: 1.5rem;
+        color: white;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 5px;
+    }
+    
+    .settings-tabs {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        overflow: hidden;
+        margin-bottom: 30px;
+    }
+    
+    .settings-tabs .nav-tabs {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-bottom: 2px solid var(--accent-color);
+        padding: 0 20px;
+    }
+    
+    .settings-tabs .nav-link {
+        border: none;
+        color: #6c757d;
+        font-weight: 600;
+        padding: 15px 25px;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    
+    .settings-tabs .nav-link:hover {
+        color: var(--accent-color);
+        background: rgba(52, 152, 219, 0.1);
+    }
+    
+    .settings-tabs .nav-link.active {
+        color: var(--accent-color);
+        background: white;
+        border-bottom: 3px solid var(--accent-color);
+    }
+    
+    .tab-content {
+        padding: 30px;
+    }
+    
+    .add-item-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .add-item-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    }
+    
+    .items-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+    }
+    
+    .item-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        border: 1px solid #e9ecef;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    
+    .item-card:hover {
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    
+    .item-actions {
+        position: absolute;
+        top: 15px;
+        left: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- إحصائيات سريعة -->
+<div class="stats-dashboard">
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, var(--accent-color), #2980b9);">
+            <i class="fas fa-calendar-alt"></i>
+        </div>
+        <div class="stat-number">{{ academic_years.count }}</div>
+        <div class="text-muted">الأعوام الدراسية</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, var(--success-color), #229954);">
+            <i class="fas fa-layer-group"></i>
+        </div>
+        <div class="stat-number">{{ education_levels.count }}</div>
+        <div class="text-muted">المراحل التعليمية</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, var(--warning-color), #e67e22);">
+            <i class="fas fa-chalkboard"></i>
+        </div>
+        <div class="stat-number">{{ grade_levels.count }}</div>
+        <div class="text-muted">الصفوف الدراسية</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, var(--danger-color), #c0392b);">
+            <i class="fas fa-percentage"></i>
+        </div>
+        <div class="stat-number">{{ discounts.count }}</div>
+        <div class="text-muted">الخصومات المتاحة</div>
+    </div>
+</div>
+
+<!-- التبويبات الرئيسية -->
+<div class="settings-tabs">
+    <ul class="nav nav-tabs" id="settingsTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="academic-tab" data-bs-toggle="tab" data-bs-target="#academic" type="button">
+                <i class="fas fa-calendar-academic me-2"></i>الأعوام الدراسية
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="levels-tab" data-bs-toggle="tab" data-bs-target="#levels" type="button">
+                <i class="fas fa-layer-group me-2"></i>المراحل التعليمية
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="grades-tab" data-bs-toggle="tab" data-bs-target="#grades" type="button">
+                <i class="fas fa-chalkboard me-2"></i>الصفوف الدراسية
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="fees-tab" data-bs-toggle="tab" data-bs-target="#fees" type="button">
+                <i class="fas fa-money-bill me-2"></i>المصروفات
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="discounts-tab" data-bs-toggle="tab" data-bs-target="#discounts" type="button">
+                <i class="fas fa-percentage me-2"></i>الخصومات
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="settingsTabContent">
+        
+        <!-- تبويبة الأعوام الدراسية -->
+        <div class="tab-pane fade show active" id="academic" role="tabpanel">
+            <!-- زر إضافة عام دراسي جديد -->
+            <div class="add-item-card" data-bs-toggle="modal" data-bs-target="#addAcademicYearModal">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h5 class="mb-2">
+                            <i class="fas fa-plus-circle me-2"></i>
+                            إضافة عام دراسي جديد
+                        </h5>
+                        <p class="mb-0">انقر لإضافة عام دراسي جديد مع تحديد تواريخ بداية ونهاية كل فصل</p>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <i class="fas fa-calendar-plus fa-3x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- قائمة الأعوام الدراسية -->
+            <div class="items-grid">
+                {% for year in academic_years %}
+                <div class="item-card">
+                    <div class="item-actions">
+                        <div class="btn-group btn-group-sm">
+                            {% if not year.is_current %}
+                            <button class="btn btn-outline-success" onclick="setCurrentYear({{ year.id }})" 
+                                    title="تعيين كعام حالي">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            {% endif %}
+                            <button class="btn btn-outline-primary" onclick="editAcademicYear({{ year.id }})" 
+                                    title="تعديل">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-outline-danger" onclick="deleteAcademicYear({{ year.id }})" 
+                                    title="حذف">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="mb-0">{{ year.name }}</h6>
+                            {% if year.is_current %}
+                                <span class="badge bg-success">العام الحالي</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="small text-muted">
+                            <div><strong>من:</strong> {{ year.start_date }}</div>
+                            <div><strong>إلى:</strong> {{ year.end_date }}</div>
+                        </div>
+                        
+                        <div class="mt-2">
+                            <div class="row">
+                                <div class="col-6">
+                                    <small class="text-muted d-block">الفصل الأول</small>
+                                    <small>{{ year.first_term_start|date:"d/m" }} - {{ year.first_term_end|date:"d/m" }}</small>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted d-block">الفصل الثاني</small>
+                                    <small>{{ year.second_term_start|date:"d/m" }} - {{ year.second_term_end|date:"d/m" }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-calendar fa-3x mb-3 opacity-50"></i>
+                        <p>لا توجد أعوام دراسية مضافة</p>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAcademicYearModal">
+                            <i class="fas fa-plus me-1"></i>إضافة عام دراسي جديد
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- تبويبة المراحل التعليمية -->
+        <div class="tab-pane fade" id="levels" role="tabpanel">
+            <!-- زر إضافة مرحلة تعليمية جديدة -->
+            <div class="add-item-card" data-bs-toggle="modal" data-bs-target="#addEducationLevelModal">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h5 class="mb-2">
+                            <i class="fas fa-plus-circle me-2"></i>
+                            إضافة مرحلة تعليمية جديدة
+                        </h5>
+                        <p class="mb-0">مثل: رياض الأطفال، الابتدائية، الإعدادية، الثانوية</p>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <i class="fas fa-graduation-cap fa-3x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- قائمة المراحل التعليمية -->
+            <div class="items-grid">
+                {% for level in education_levels %}
+                <div class="item-card">
+                    <div class="item-actions">
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-primary" onclick="editEducationLevel({{ level.id }})" 
+                                    title="تعديل">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-outline-danger" onclick="deleteEducationLevel({{ level.id }})" 
+                                    title="حذف">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <h6>{{ level.name }}</h6>
+                        {% if level.name_en %}
+                            <div class="small text-muted">{{ level.name_en }}</div>
+                        {% endif %}
+                        
+                        <div class="mt-2 small">
+                            <div><strong>العمر:</strong> من {{ level.min_age }} إلى {{ level.max_age }} سنة</div>
+                            <div><strong>عدد الصفوف:</strong> {{ level.gradelevel_set.count }} صف</div>
+                        </div>
+                        
+                        {% if level.description %}
+                        <div class="mt-2">
+                            <small class="text-muted">{{ level.description|truncatewords:10 }}</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-layer-group fa-3x mb-3 opacity-50"></i>
+                        <p>لا توجد مراحل تعليمية مضافة</p>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEducationLevelModal">
+                            <i class="fas fa-plus me-1"></i>إضافة مرحلة تعليمية جديدة
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- تبويبة الصفوف الدراسية -->
+        <div class="tab-pane fade" id="grades" role="tabpanel">
+            <!-- زر إضافة صف دراسي جديد -->
+            <div class="add-item-card" data-bs-toggle="modal" data-bs-target="#addGradeLevelModal">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h5 class="mb-2">
+                            <i class="fas fa-plus-circle me-2"></i>
+                            إضافة صف دراسي جديد
+                        </h5>
+                        <p class="mb-0">مثل: الصف الأول الابتدائي، الثاني الإعدادي، الثالث الثانوي</p>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <i class="fas fa-chalkboard fa-3x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- قائمة الصفوف الدراسية مجمعة حسب المرحلة -->
+            {% for level in education_levels %}
+            {% if level.gradelevel_set.exists %}
+            <div class="mb-4">
+                <h5 class="text-primary mb-3">
+                    <i class="fas fa-layer-group me-2"></i>{{ level.name }}
+                </h5>
+                
+                <div class="items-grid">
+                    {% for grade in level.gradelevel_set.all %}
+                    <div class="item-card">
+                        <div class="item-actions">
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary" onclick="editGradeLevel({{ grade.id }})" 
+                                        title="تعديل">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="deleteGradeLevel({{ grade.id }})" 
+                                        title="حذف">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <h6>{{ grade.name }}</h6>
+                            {% if grade.name_en %}
+                                <div class="small text-muted">{{ grade.name_en }}</div>
+                            {% endif %}
+                            
+                            <div class="mt-2 small">
+                                <div><strong>رقم الصف:</strong> {{ grade.grade_number }}</div>
+                                <div><strong>العمر المعتاد:</strong> {{ grade.typical_age }} سنة</div>
+                                <div><strong>عدد الطلاب:</strong> {{ grade.student_set.count|default:0 }} طالب</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            {% empty %}
+            <div class="text-center py-5 text-muted">
+                <i class="fas fa-chalkboard fa-3x mb-3 opacity-50"></i>
+                <p>لا توجد صفوف دراسية مضافة</p>
+                <p class="small">يجب إضافة مراحل تعليمية أولاً</p>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addGradeLevelModal">
+                    <i class="fas fa-plus me-1"></i>إضافة صف دراسي جديد
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- تبويبة المصروفات المدرسية -->
+        <div class="tab-pane fade" id="fees" role="tabpanel">
+            <!-- زر إضافة مصروفات جديدة -->
+            <div class="add-item-card" data-bs-toggle="modal" data-bs-target="#addSchoolFeeModal">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h5 class="mb-2">
+                            <i class="fas fa-plus-circle me-2"></i>
+                            إضافة إعداد مصروفات جديد
+                        </h5>
+                        <p class="mb-0">تحديد المصروفات الدراسية لكل صف مع عدد الأقساط ومواعيد الاستحقاق</p>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <i class="fas fa-money-bill-wave fa-3x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- فلاتر المصروفات -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <select class="form-select" id="feeYearFilter" onchange="filterFees()">
+                        <option value="">جميع الأعوام</option>
+                        {% for year in academic_years %}
+                        <option value="{{ year.id }}">{{ year.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" id="feeGradeFilter" onchange="filterFees()">
+                        <option value="">جميع الصفوف</option>
+                        {% for grade in grade_levels %}
+                        <option value="{{ grade.id }}">{{ grade.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" id="feeTypeFilter" onchange="filterFees()">
+                        <option value="">جميع الأنواع</option>
+                        <option value="TUITION">مصروفات دراسية</option>
+                        <option value="BOOKS">مصروفات كتب</option>
+                        <option value="UNIFORMS">مصروفات ملابس</option>
+                        <option value="TRANSPORT">مصروفات نقل</option>
+                        <option value="OTHER">مصروفات أخرى</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-outline-secondary w-100" onclick="clearFeeFilters()">
+                        <i class="fas fa-times me-1"></i>مسح الفلاتر
+                    </button>
+                </div>
+            </div>
+            
+            <!-- قائمة المصروفات -->
+            <div class="items-grid" id="feesGrid">
+                {% for fee in school_fees %}
+                <div class="item-card fee-item" data-year="{{ fee.academic_year.id }}" data-grade="{{ fee.grade_level.id }}" data-type="{{ fee.fee_type }}">
+                    <div class="item-actions">
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-primary" onclick="editSchoolFee({{ fee.id }})" 
+                                    title="تعديل">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-outline-danger" onclick="deleteSchoolFee({{ fee.id }})" 
+                                    title="حذف">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="mb-0">{{ fee.fee_name }}</h6>
+                            <span class="badge bg-{{ fee.fee_type|lower }}-color">{{ fee.get_fee_type_display }}</span>
+                        </div>
+                        
+                        <div class="small text-muted mb-2">
+                            <div><strong>العام:</strong> {{ fee.academic_year.name }}</div>
+                            <div><strong>الصف:</strong> {{ fee.grade_level.name }}</div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-bold text-success">{{ fee.total_amount }} ج.م</span>
+                            <small class="text-muted">{{ fee.installments_count }} قسط</small>
+                        </div>
+                        
+                        <div class="small">
+                            <div><strong>قيمة القسط:</strong> {{ fee.installment_amount }} ج.م</div>
+                            <div><strong>استحقاق أول قسط:</strong> {{ fee.first_installment_due_date|date:"Y-m-d" }}</div>
+                        </div>
+                        
+                        <div class="mt-2">
+                            {% if fee.is_mandatory %}
+                            <span class="badge bg-warning text-dark">إجباري</span>
+                            {% else %}
+                            <span class="badge bg-info">اختياري</span>
+                            {% endif %}
+                            
+                            {% if fee.is_active %}
+                            <span class="badge bg-success">نشط</span>
+                            {% else %}
+                            <span class="badge bg-secondary">غير نشط</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-money-bill fa-3x mb-3 opacity-50"></i>
+                        <p>لا توجد إعدادات مصروفات مضافة</p>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSchoolFeeModal">
+                            <i class="fas fa-plus me-1"></i>إضافة أول إعداد مصروفات
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- تبويبة الخصومات -->
+        <div class="tab-pane fade" id="discounts" role="tabpanel">
+            <!-- زر إضافة خصم جديد -->
+            <div class="add-item-card" data-bs-toggle="modal" data-bs-target="#addDiscountModal">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h5 class="mb-2">
+                            <i class="fas fa-plus-circle me-2"></i>
+                            إضافة خصم جديد
+                        </h5>
+                        <p class="mb-0">إنشاء خصومات للطلاب بناءً على معايير مختلفة مثل التفوق أو الحالة المالية</p>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <i class="fas fa-percentage fa-3x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- فلاتر الخصومات -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <select class="form-select" id="discountCategoryFilter" onchange="filterDiscounts()">
+                        <option value="">جميع الفئات</option>
+                        <option value="SIBLING">خصم الأشقاء</option>
+                        <option value="FINANCIAL_HARDSHIP">خصم الحالة المالية</option>
+                        <option value="ACADEMIC_EXCELLENCE">خصم التفوق الأكاديمي</option>
+                        <option value="STAFF_CHILDREN">خصم أبناء الموظفين</option>
+                        <option value="EARLY_PAYMENT">خصم الدفع المبكر</option>
+                        <option value="OTHER">خصومات أخرى</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" id="discountTypeFilter" onchange="filterDiscounts()">
+                        <option value="">جميع الأنواع</option>
+                        <option value="PERCENTAGE">نسبة مئوية</option>
+                        <option value="FIXED_AMOUNT">مبلغ ثابت</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" id="discountStatusFilter" onchange="filterDiscounts()">
+                        <option value="">جميع الحالات</option>
+                        <option value="true">نشط</option>
+                        <option value="false">غير نشط</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-outline-secondary w-100" onclick="clearDiscountFilters()">
+                        <i class="fas fa-times me-1"></i>مسح الفلاتر
+                    </button>
+                </div>
+            </div>
+            
+            <!-- قائمة الخصومات -->
+            <div class="items-grid" id="discountsGrid">
+                {% for discount in discounts %}
+                <div class="item-card discount-item" data-category="{{ discount.category }}" data-type="{{ discount.discount_type }}" data-active="{{ discount.is_active|yesno:'true,false' }}">
+                    <div class="item-actions">
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-primary" onclick="editDiscount({{ discount.id }})" 
+                                    title="تعديل">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-outline-danger" onclick="deleteDiscount({{ discount.id }})" 
+                                    title="حذف">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="mb-0">{{ discount.name }}</h6>
+                            <span class="badge bg-info">{{ discount.get_category_display }}</span>
+                        </div>
+                        
+                        <div class="text-center mb-3">
+                            <div class="display-6 fw-bold text-primary">
+                                {% if discount.discount_type == 'PERCENTAGE' %}
+                                {{ discount.percentage_value }}%
+                                {% else %}
+                                {{ discount.fixed_amount }} ج.م
+                                {% endif %}
+                            </div>
+                            <small class="text-muted">
+                                {% if discount.discount_type == 'PERCENTAGE' %}
+                                خصم نسبي
+                                {% else %}
+                                خصم ثابت
+                                {% endif %}
+                            </small>
+                        </div>
+                        
+                        <div class="small text-muted mb-2">
+                            <div><strong>صالح من:</strong> {{ discount.valid_from_date|date:"Y-m-d" }}</div>
+                            <div><strong>صالح حتى:</strong> {{ discount.valid_to_date|date:"Y-m-d" }}</div>
+                        </div>
+                        
+                        {% if discount.max_discount_amount %}
+                        <div class="small mb-2">
+                            <strong>الحد الأقصى:</strong> {{ discount.max_discount_amount }} ج.م
+                        </div>
+                        {% endif %}
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                {% if discount.is_active %}
+                                <span class="badge bg-success">نشط</span>
+                                {% else %}
+                                <span class="badge bg-secondary">غير نشط</span>
+                                {% endif %}
+                                
+                                {% if discount.requires_approval %}
+                                <span class="badge bg-warning text-dark">يتطلب موافقة</span>
+                                {% endif %}
+                            </div>
+                            
+                            <small class="text-muted">
+                                <i class="fas fa-users me-1"></i>{{ discount.applied_count|default:0 }} مطبق
+                            </small>
+                        </div>
+                        
+                        {% if discount.description %}
+                        <div class="mt-2">
+                            <small class="text-muted">{{ discount.description|truncatewords:8 }}</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-percentage fa-3x mb-3 opacity-50"></i>
+                        <p>لا توجد خصومات مضافة</p>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addDiscountModal">
+                            <i class="fas fa-plus me-1"></i>إضافة أول خصم
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        
+        <div class="tab-pane fade" id="fees" role="tabpanel">
+            <div class="text-center py-5 text-muted">
+                <i class="fas fa-money-bill fa-3x mb-3 opacity-50"></i>
+                <p>قسم المصروفات قيد التطوير...</p>
+            </div>
+        </div>
+        
+        <div class="tab-pane fade" id="discounts" role="tabpanel">
+            <div class="text-center py-5 text-muted">
+                <i class="fas fa-percentage fa-3x mb-3 opacity-50"></i>
+                <p>قسم الخصومات قيد التطوير...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- نماذج إضافة العناصر فقط في الصفحة الرئيسية -->
+{% include 'school_settings/modals/add_academic_year.html' %}
+{% include 'school_settings/modals/add_education_level.html' %}
+{% include 'school_settings/modals/add_grade_level.html' %}
+{% include 'school_settings/modals/add_school_fee.html' %}
+{% include 'school_settings/modals/add_discount.html' %}
+
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+// تعيين العام الدراسي الحالي
+function setCurrentYear(yearId) {
+    if (confirm('هل تريد تعيين هذا العام كعام دراسي حالي؟')) {
+        fetch(`/settings/set-current-year/${yearId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                showMessage('success', 'تم تعيين العام الدراسي الحالي بنجاح');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showMessage('error', 'حدث خطأ في التحديث');
+            }
+        });
+    }
+}
+
+// دوال حذف العناصر - محدثة
+function deleteAcademicYear(yearId) {
+    if (confirm('هل تريد حذف هذا العام الدراسي؟ هذا الإجراء لا يمكن التراجع عنه.')) {
+        fetch(`/settings/delete-academic-year/${yearId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                showMessage('success', 'تم حذف العام الدراسي بنجاح');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showMessage('error', 'حدث خطأ في الحذف');
+            }
+        })
+        .catch(error => {
+            showMessage('error', 'حدث خطأ في الاتصال');
+        });
+    }
+}
+
+function deleteEducationLevel(levelId) {
+    if (confirm('هل تريد حذف هذه المرحلة التعليمية؟ سيتم حذف جميع الصفوف المرتبطة بها.')) {
+        fetch(`/settings/delete-education-level/${levelId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                showMessage('success', 'تم حذف المرحلة التعليمية بنجاح');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showMessage('error', 'حدث خطأ في الحذف');
+            }
+        })
+        .catch(error => {
+            showMessage('error', 'حدث خطأ في الاتصال');
+        });
+    }
+}
+
+function deleteGradeLevel(gradeId) {
+    if (confirm('هل تريد حذف هذا الصف الدراسي؟')) {
+        fetch(`/settings/delete-grade-level/${gradeId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                showMessage('success', 'تم حذف الصف الدراسي بنجاح');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showMessage('error', 'حدث خطأ في الحذف');
+            }
+        })
+        .catch(error => {
+            showMessage('error', 'حدث خطأ في الاتصال');
+        });
+    }
+}
+
+function deleteSchoolFee(feeId) {
+    if (confirm('هل تريد حذف إعداد المصروفات هذا؟ قد يؤثر على الطلاب المرتبطين به.')) {
+        fetch(`/settings/delete-school-fee/${feeId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                showMessage('success', 'تم حذف إعداد المصروفات بنجاح');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showMessage('error', 'حدث خطأ في الحذف');
+            }
+        })
+        .catch(error => {
+            showMessage('error', 'حدث خطأ في الاتصال');
+        });
+    }
+}
+
+function deleteDiscount(discountId) {
+    if (confirm('هل تريد حذف هذا الخصم؟ سيتم إلغاء جميع الخصومات المطبقة على الطلاب.')) {
+        fetch(`/settings/delete-discount/${discountId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                showMessage('success', 'تم حذف الخصم بنجاح');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showMessage('error', 'حدث خطأ في الحذف');
+            }
+        })
+        .catch(error => {
+            showMessage('error', 'حدث خطأ في الاتصال');
+        });
+    }
+}
+
+// دوال التعديل - تحويل للصفحة المناسبة
+function editAcademicYear(yearId) {
+    window.location.href = `/settings/edit-academic-year/${yearId}/`;
+}
+
+function editEducationLevel(levelId) {
+    window.location.href = `/settings/edit-education-level/${levelId}/`;
+}
+
+function editGradeLevel(gradeId) {
+    window.location.href = `/settings/edit-grade-level/${gradeId}/`;
+}
+
+function editSchoolFee(feeId) {
+    window.location.href = `/settings/edit-school-fee/${feeId}/`;
+}
+
+function editDiscount(discountId) {
+    window.location.href = `/settings/edit-discount/${discountId}/`;
+}
+
+// دوال فلترة المصروفات
+function filterFees() {
+    const yearFilter = document.getElementById('feeYearFilter').value;
+    const gradeFilter = document.getElementById('feeGradeFilter').value;
+    const typeFilter = document.getElementById('feeTypeFilter').value;
+    
+    const feeItems = document.querySelectorAll('.fee-item');
+    
+    feeItems.forEach(item => {
+        let show = true;
+        
+        if (yearFilter && item.dataset.year !== yearFilter) show = false;
+        if (gradeFilter && item.dataset.grade !== gradeFilter) show = false;
+        if (typeFilter && item.dataset.type !== typeFilter) show = false;
+        
+        item.style.display = show ? 'block' : 'none';
+    });
+    
+    updateFeesEmptyState();
+}
+
+function clearFeeFilters() {
+    document.getElementById('feeYearFilter').value = '';
+    document.getElementById('feeGradeFilter').value = '';
+    document.getElementById('feeTypeFilter').value = '';
+    filterFees();
+}
+
+function updateFeesEmptyState() {
+    const visibleItems = document.querySelectorAll('.fee-item[style="display: block"], .fee-item:not([style])');
+    const emptyState = document.querySelector('#feesGrid .text-center');
+    
+    if (visibleItems.length === 0 && !emptyState) {
+        document.getElementById('feesGrid').innerHTML = `
+            <div class="col-12">
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-search fa-3x mb-3 opacity-50"></i>
+                    <p>لا توجد نتائج تطابق الفلاتر المحددة</p>
+                    <button class="btn btn-outline-primary" onclick="clearFeeFilters()">
+                        <i class="fas fa-times me-1"></i>مسح الفلاتر
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// دوال فلترة الخصومات
+function filterDiscounts() {
+    const categoryFilter = document.getElementById('discountCategoryFilter').value;
+    const typeFilter = document.getElementById('discountTypeFilter').value;
+    const statusFilter = document.getElementById('discountStatusFilter').value;
+    
+    const discountItems = document.querySelectorAll('.discount-item');
+    
+    discountItems.forEach(item => {
+        let show = true;
+        
+        if (categoryFilter && item.dataset.category !== categoryFilter) show = false;
+        if (typeFilter && item.dataset.type !== typeFilter) show = false;
+        if (statusFilter && item.dataset.active !== statusFilter) show = false;
+        
+        item.style.display = show ? 'block' : 'none';
+    });
+    
+    updateDiscountsEmptyState();
+}
+
+function clearDiscountFilters() {
+    document.getElementById('discountCategoryFilter').value = '';
+    document.getElementById('discountTypeFilter').value = '';
+    document.getElementById('discountStatusFilter').value = '';
+    filterDiscounts();
+}
+
+function updateDiscountsEmptyState() {
+    const visibleItems = document.querySelectorAll('.discount-item[style="display: block"], .discount-item:not([style])');
+    const emptyState = document.querySelector('#discountsGrid .text-center');
+    
+    if (visibleItems.length === 0 && !emptyState) {
+        document.getElementById('discountsGrid').innerHTML = `
+            <div class="col-12">
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-search fa-3x mb-3 opacity-50"></i>
+                    <p>لا توجد نتائج تطابق الفلاتر المحددة</p>
+                    <button class="btn btn-outline-primary" onclick="clearDiscountFilters()">
+                        <i class="fas fa-times me-1"></i>مسح الفلاتر
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// تحديث الإحصائيات
+function updateStats() {
+    fetch('/settings/dashboard-api/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // تحديث الأرقام في البطاقات
+                const statCards = document.querySelectorAll('.stat-number');
+                if (statCards[0]) statCards[0].textContent = data.academic_years_count || 0;
+                if (statCards[1]) statCards[1].textContent = data.education_levels_count || 0;
+                if (statCards[2]) statCards[2].textContent = data.grade_levels_count || 0;
+                if (statCards[3]) statCards[3].textContent = data.discounts_count || 0;
+            }
+        })
+        .catch(error => {
+            console.log('خطأ في تحديث الإحصائيات:', error);
+        });
+}
+
+// تحديث الإحصائيات عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    updateStats();
+});
+</script>
+
+{% endblock %}

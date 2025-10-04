@@ -1,0 +1,323 @@
+<!-- school_settings/templates/school_settings/modals/add_discount.html -->
+<!-- Modal إضافة خصم جديد -->
+<div class="modal fade" id="addDiscountModal" tabindex="-1" aria-labelledby="addDiscountModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addDiscountModalLabel">
+                    <i class="fas fa-percentage me-2"></i>إضافة خصم جديد
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <form id="addDiscountForm" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    
+                    <!-- المعلومات الأساسية -->
+                    <h6 class="text-primary border-bottom pb-2 mb-3">
+                        <i class="fas fa-info-circle me-1"></i>المعلومات الأساسية
+                    </h6>
+                    
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="discountName" class="form-label">اسم الخصم *</label>
+                            <input type="text" class="form-control" id="discountName" name="name" 
+                                   placeholder="مثال: خصم الأشقاء" required>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="discountCategory" class="form-label">فئة الخصم *</label>
+                            <select class="form-select" id="discountCategory" name="category" required>
+                                <option value="">اختر فئة الخصم</option>
+                                <option value="SIBLING">خصم الأشقاء</option>
+                                <option value="FINANCIAL_HARDSHIP">خصم الحالة المالية</option>
+                                <option value="ACADEMIC_EXCELLENCE">خصم التفوق الأكاديمي</option>
+                                <option value="STAFF_CHILDREN">خصم أبناء الموظفين</option>
+                                <option value="EARLY_PAYMENT">خصم الدفع المبكر</option>
+                                <option value="LOYALTY">خصم الولاء</option>
+                                <option value="OTHER">خصومات أخرى</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="discountDescription" class="form-label">وصف الخصم</label>
+                            <textarea class="form-control" id="discountDescription" name="description" rows="2" 
+                                      placeholder="وصف مختصر للخصم وشروط تطبيقه..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- نوع وقيمة الخصم -->
+                    <h6 class="text-success border-bottom pb-2 mb-3">
+                        <i class="fas fa-calculator me-1"></i>نوع وقيمة الخصم
+                    </h6>
+                    
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label for="discountType" class="form-label">نوع الخصم *</label>
+                            <select class="form-select" id="discountType" name="discount_type" 
+                                    required onchange="toggleDiscountValueFields()">
+                                <option value="">اختر نوع الخصم</option>
+                                <option value="PERCENTAGE">نسبة مئوية</option>
+                                <option value="FIXED_AMOUNT">مبلغ ثابت</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4" id="percentageField" style="display: none;">
+                            <label for="percentageValue" class="form-label">النسبة المئوية *</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="percentageValue" 
+                                       name="percentage_value" min="0" max="100" step="0.01">
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4" id="fixedAmountField" style="display: none;">
+                            <label for="fixedAmount" class="form-label">المبلغ الثابت *</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="fixedAmount" 
+                                       name="fixed_amount" min="0" step="0.01">
+                                <span class="input-group-text">ج.م</span>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="maxDiscountAmount" class="form-label">الحد الأقصى للخصم</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="maxDiscountAmount" 
+                                       name="max_discount_amount" min="0" step="0.01">
+                                <span class="input-group-text">ج.م</span>
+                            </div>
+                            <div class="form-text">اتركه فارغاً لعدم التحديد</div>
+                        </div>
+                    </div>
+                    
+                    <!-- شروط التطبيق -->
+                    <h6 class="text-warning border-bottom pb-2 mb-3">
+                        <i class="fas fa-list-check me-1"></i>شروط التطبيق
+                    </h6>
+                    
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="minPaymentAmount" class="form-label">الحد الأدنى للمبلغ</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="minPaymentAmount" 
+                                       name="min_payment_amount" min="0" step="0.01">
+                                <span class="input-group-text">ج.م</span>
+                            </div>
+                            <div class="form-text">أقل مبلغ لتطبيق الخصم عليه</div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="applicableFeeTypes" class="form-label">أنواع المصروفات المطبق عليها</label>
+                            <input type="text" class="form-control" id="applicableFeeTypes" 
+                                   name="applicable_to_fee_types" 
+                                   placeholder="مثال: TUITION,BOOKS">
+                            <div class="form-text">اتركه فارغاً للتطبيق على جميع الأنواع</div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="validFromDate" class="form-label">صالح من تاريخ *</label>
+                            <input type="date" class="form-control" id="validFromDate" 
+                                   name="valid_from_date" required>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="validToDate" class="form-label">صالح حتى تاريخ *</label>
+                            <input type="date" class="form-control" id="validToDate" 
+                                   name="valid_to_date" required>
+                        </div>
+                    </div>
+                    
+                    <!-- الصفوف المطبق عليها -->
+                    <h6 class="text-info border-bottom pb-2 mb-3">
+                        <i class="fas fa-chalkboard me-1"></i>الصفوف المطبق عليها الخصم
+                    </h6>
+                    
+                    <div class="mb-4">
+                        <div class="form-text mb-2">اختر الصفوف التي ينطبق عليها هذا الخصم (اتركها فارغة للتطبيق على جميع الصفوف)</div>
+                        <div class="row">
+                            {% for level in education_levels %}
+                            <div class="col-md-6 mb-3">
+                                <h6 class="text-muted">{{ level.name }}</h6>
+                                {% for grade in level.gradelevel_set.all %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" 
+                                           name="applicable_to_grades" value="{{ grade.id }}" 
+                                           id="grade_{{ grade.id }}">
+                                    <label class="form-check-label" for="grade_{{ grade.id }}">
+                                        {{ grade.name }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- إعدادات إضافية -->
+                    <h6 class="text-secondary border-bottom pb-2 mb-3">
+                        <i class="fas fa-cog me-1"></i>إعدادات إضافية
+                    </h6>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="requiresApproval" 
+                                       name="requires_approval">
+                                <label class="form-check-label" for="requiresApproval">
+                                    يتطلب موافقة من الإدارة
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="discountIsActive" 
+                                       name="is_active" checked>
+                                <label class="form-check-label" for="discountIsActive">
+                                    الخصم نشط
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- معاينة حساب الخصم -->
+                    <div class="mt-4 p-3 bg-light rounded" id="discountPreview" style="display: none;">
+                        <h6 class="text-primary mb-2">
+                            <i class="fas fa-eye me-1"></i>معاينة حساب الخصم
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">مبلغ تجريبي للحساب:</label>
+                                <input type="number" class="form-control" id="testAmount" 
+                                       placeholder="1000" onchange="calculateDiscountPreview()">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">مبلغ الخصم المحسوب:</label>
+                                <div class="form-control bg-white" id="calculatedDiscount">0 ج.م</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>حفظ الخصم
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// إظهار/إخفاء حقول قيمة الخصم
+function toggleDiscountValueFields() {
+    const discountType = document.getElementById('discountType').value;
+    const percentageField = document.getElementById('percentageField');
+    const fixedAmountField = document.getElementById('fixedAmountField');
+    const discountPreview = document.getElementById('discountPreview');
+    
+    if (discountType === 'PERCENTAGE') {
+        percentageField.style.display = 'block';
+        fixedAmountField.style.display = 'none';
+        document.getElementById('percentageValue').required = true;
+        document.getElementById('fixedAmount').required = false;
+        document.getElementById('fixedAmount').value = '';
+        discountPreview.style.display = 'block';
+    } else if (discountType === 'FIXED_AMOUNT') {
+        percentageField.style.display = 'none';
+        fixedAmountField.style.display = 'block';
+        document.getElementById('percentageValue').required = false;
+        document.getElementById('fixedAmount').required = true;
+        document.getElementById('percentageValue').value = '';
+        discountPreview.style.display = 'block';
+    } else {
+        percentageField.style.display = 'none';
+        fixedAmountField.style.display = 'none';
+        discountPreview.style.display = 'none';
+        document.getElementById('percentageValue').required = false;
+        document.getElementById('fixedAmount').required = false;
+    }
+}
+
+// حساب معاينة الخصم
+function calculateDiscountPreview() {
+    const testAmount = parseFloat(document.getElementById('testAmount').value) || 0;
+    const discountType = document.getElementById('discountType').value;
+    const percentageValue = parseFloat(document.getElementById('percentageValue').value) || 0;
+    const fixedAmount = parseFloat(document.getElementById('fixedAmount').value) || 0;
+    const maxDiscountAmount = parseFloat(document.getElementById('maxDiscountAmount').value) || 0;
+    
+    let calculatedDiscount = 0;
+    
+    if (testAmount > 0) {
+        if (discountType === 'PERCENTAGE') {
+            calculatedDiscount = testAmount * (percentageValue / 100);
+        } else if (discountType === 'FIXED_AMOUNT') {
+            calculatedDiscount = fixedAmount;
+        }
+        
+        // تطبيق الحد الأقصى
+        if (maxDiscountAmount > 0) {
+            calculatedDiscount = Math.min(calculatedDiscount, maxDiscountAmount);
+        }
+    }
+    
+    document.getElementById('calculatedDiscount').textContent = calculatedDiscount.toFixed(2) + ' ج.م';
+}
+
+// ربط الأحداث
+document.getElementById('percentageValue').addEventListener('input', calculateDiscountPreview);
+document.getElementById('fixedAmount').addEventListener('input', calculateDiscountPreview);
+document.getElementById('maxDiscountAmount').addEventListener('input', calculateDiscountPreview);
+
+// إرسال النموذج
+document.getElementById('addDiscountForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>جاري الحفظ...';
+    submitBtn.disabled = true;
+    
+    fetch('/settings/create-discount/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage('success', data.message);
+            bootstrap.Modal.getInstance(document.getElementById('addDiscountModal')).hide();
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showMessage('error', data.message);
+        }
+    })
+    .catch(error => {
+        showMessage('error', 'حدث خطأ في الاتصال');
+    })
+    .finally(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+});
+
+// تحديد التواريخ الافتراضية
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date();
+    const nextYear = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
+    
+    document.getElementById('validFromDate').value = today.toISOString().split('T')[0];
+    document.getElementById('validToDate').value = nextYear.toISOString().split('T')[0];
+});
+</script>

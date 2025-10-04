@@ -1,0 +1,215 @@
+{% extends 'books_inventory/base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:inventory_home' %}">الرئيسية</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:distributions_list' %}">توزيعات الطلاب</a></li>
+                <li class="breadcrumb-item active">{{ distribution.student.name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- معلومات التوزيع الأساسية -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4><i class="fas fa-user"></i> توزيع الطالب</h4>
+                <div>
+                    <a href="{% url 'books_inventory:edit_distribution' distribution.pk %}" class="btn btn-light btn-sm">
+                        <i class="fas fa-edit"></i> تعديل
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">اسم الطالب:</th>
+                                <td><strong>{{ distribution.student.name }}</strong></td>
+                            </tr>
+                            <tr>
+                                <th>الرقم القومي:</th>
+                                <td>{{ distribution.student.national_number|default:"غير محدد" }}</td>
+                            </tr>
+                            <tr>
+                                <th>الصف الدراسي:</th>
+                                <td>
+                                    {% if distribution.student.current_group %}
+                                        <span class="badge bg-primary">{{ distribution.student.current_group.name }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">غير محدد</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>تاريخ التوزيع:</th>
+                                <td><strong>{{ distribution.distribution_date|date:"Y-m-d" }}</strong></td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">حالة الدفع:</th>
+                                <td>
+                                    {% if distribution.first_installment_verified %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check-circle"></i> مدفوع
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-times-circle"></i> غير مدفوع
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>حالة التوزيع:</th>
+                                <td>
+                                    {% if distribution.status == 'COMPLETED' %}
+                                        <span class="badge bg-success">مكتمل</span>
+                                    {% elif distribution.status == 'PARTIAL' %}
+                                        <span class="badge bg-warning">موزع جزئياً</span>
+                                    {% elif distribution.status == 'PENDING' %}
+                                        <span class="badge bg-primary">في الانتظار</span>
+                                    {% elif distribution.status == 'CANCELLED' %}
+                                        <span class="badge bg-danger">ملغي</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>موزع بواسطة:</th>
+                                <td>{{ distribution.distributed_by.get_full_name|default:distribution.distributed_by.username }}</td>
+                            </tr>
+                            <tr>
+                                <th>إجمالي العناصر:</th>
+                                <td><span class="badge bg-info">{{ distribution.total_items }}</span></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                {% if distribution.notes %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6><i class="fas fa-sticky-note text-warning"></i> ملاحظات:</h6>
+                        <div class="alert alert-light">
+                            {{ distribution.notes|linebreaks }}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- إحصائيات التوزيع -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-pie text-success"></i> إحصائيات التوزيع</h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <h4 class="text-primary">{{ total_books }}</h4>
+                    <p class="text-muted mb-0">عدد الكتب</p>
+                    <small class="text-muted">({{ total_books_qty }} نسخة)</small>
+                </div>
+                
+                <hr>
+                
+                <div class="mb-3">
+                    <h4 class="text-info">{{ total_notebooks }}</h4>
+                    <p class="text-muted mb-0">عدد الكراسات</p>
+                    <small class="text-muted">({{ total_notebooks_qty }} كراسة)</small>
+                </div>
+                
+                <hr>
+                
+                <div class="mb-3">
+                    <h4 class="text-success">{{ total_supplies }}</h4>
+                    <p class="text-muted mb-0">عدد الأدوات</p>
+                    <small class="text-muted">({{ total_supplies_qty }} قطعة)</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- أزرار الإجراءات -->
+        <div class="card mt-3">
+            <div class="card-body text-center">
+                {% if not distribution.first_installment_verified %}
+                <a href="{% url 'books_inventory:verify_payment' distribution.pk %}" class="btn btn-success w-100 mb-2">
+                    <i class="fas fa-check"></i> تأكيد الدفع
+                </a>
+                {% endif %}
+                
+                <a href="{% url 'books_inventory:edit_distribution' distribution.pk %}" class="btn btn-warning w-100 mb-2">
+                    <i class="fas fa-edit"></i> تعديل التوزيع
+                </a>
+                
+                <a href="{% url 'books_inventory:distributions_list' %}" class="btn btn-outline-secondary w-100">
+                    <i class="fas fa-arrow-left"></i> العودة للقائمة
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- تفاصيل العناصر الموزعة -->
+{% if book_items %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-book text-primary"></i> الكتب الموزعة</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>الكتاب</th>
+                                <th>المادة</th>
+                                <th>الكمية المطلوبة</th>
+                                <th>الكمية الموزعة</th>
+                                <th>تاريخ التوزيع</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in book_items %}
+                            <tr>
+                                <td><strong>{{ item.book.title }}</strong></td>
+                                <td>{{ item.book.subject.name }}</td>
+                                <td><span class="badge bg-secondary">{{ item.quantity_requested }}</span></td>
+                                <td><span class="badge bg-success">{{ item.quantity_distributed }}</span></td>
+                                <td>{{ item.distribution_date|date:"Y-m-d H:i"|default:"لم يتم" }}</td>
+                                <td>
+                                    {% if item.is_distributed %}
+                                        <span class="badge bg-success">تم التوزيع</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">في الانتظار</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- باقي العناصر مماثلة... -->
+{% endblock %}

@@ -1,0 +1,854 @@
+<!-- templates/payments/pay_student_fees.html -->
+{% extends 'payments/base.html' %}
+
+{% block title %}دفع مصروفات للطالب {{ student.name }} - مدرسة المنار{% endblock %}
+{% block page_title %}دفع مصروفات مدرسية{% endblock %}
+{% block page_subtitle %}دفع المصروفات المستحقة للطالب {{ student.name }} - {{ current_year.name|default:"العام الدراسي الحالي" }}{% endblock %}
+{% block page_icon %}<i class="fas fa-money-check-alt me-3"></i>{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'payments:payments_home' %}">لوحة التحكم</a></li>
+<li class="breadcrumb-item"><a href="{% url 'payments:all_payments' %}">جميع المدفوعات</a></li>
+<li class="breadcrumb-item active">دفع مصروفات</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group me-3">
+    <a href="{% url 'payments:all_payments' %}" class="btn btn-outline-secondary btn-custom">
+        <i class="fas fa-list me-1"></i>جميع المدفوعات
+    </a>
+</div>
+{% if student_payments %}
+<button class="btn btn-outline-primary btn-custom" onclick="showPaymentHistory()">
+    <i class="fas fa-history me-1"></i>تاريخ المدفوعات
+</button>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<!-- بيانات الطالب -->
+<div class="content-card mb-4">
+    <div class="content-card-header">
+        <h5>
+            <i class="fas fa-user-graduate me-2 text-primary"></i>
+            بيانات الطالب
+        </h5>
+    </div>
+    <div class="content-card-body">
+        <div class="row">
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="d-flex align-items-center">
+                    <div class="user-avatar me-3" style="width: 60px; height: 60px; font-size: 1.5rem;">
+                        {{ student.name.0|upper }}
+                    </div>
+                    <div>
+                        <h6 class="mb-1">{{ student.name }}</h6>
+                        <small class="text-muted">{{ student.national_number }}</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-6 mb-3">
+                <div class="text-center">
+                    <div class="small text-muted">الصف الدراسي</div>
+                    <div class="fw-bold">{{ student.grade_level.name|default:"غير محدد" }}</div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-6 mb-3">
+                <div class="text-center">
+                    <div class="small text-muted">المرحلة التعليمية</div>
+                    <div class="fw-bold">{{ student.grade_level.education_level.name|default:"غير محدد" }}</div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-6 mb-3">
+                <div class="text-center">
+                    <div class="small text-muted">العام الدراسي</div>
+                    <div class="fw-bold">{{ current_year.name|default:"غير محدد" }}</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-12 mb-3">
+                <div class="text-center">
+                    <button class="btn btn-outline-info btn-sm" onclick="showStudentSummary()">
+                        <i class="fas fa-chart-pie me-1"></i>ملخص المدفوعات
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- المصروفات المستحقة -->
+{% if student_fees %}
+<div class="content-card mb-4">
+    <div class="content-card-header">
+        <h5>
+            <i class="fas fa-clipboard-list me-2 text-warning"></i>
+            المصروفات المستحقة
+        </h5>
+    </div>
+    <div class="content-card-body">
+        <div class="row">
+            {% for fee in student_fees %}
+            <div class="col-lg-6 col-xl-4 mb-4">
+                <div class="fee-card" data-fee-type="{{ fee.setting.fee_type }}">
+                    <div class="fee-header">
+                        <h6>{{ fee.setting.get_fee_type_display }}</h6>
+                        <span class="fee-badge">{{ fee.installments_remaining }} أقساط متبقية</span>
+                    </div>
+                    
+                    <div class="fee-details">
+                        <div class="fee-row">
+                            <span>الإجمالي:</span>
+                            <strong>{{ fee.total_amount|floatformat:2 }} ج.م</strong>
+                        </div>
+                        <div class="fee-row">
+                            <span>المدفوع:</span>
+                            <span class="text-success">{{ fee.total_paid|floatformat:2 }} ج.م</span>
+                        </div>
+                        <div class="fee-row">
+                            <span>المتبقي:</span>
+                            <span class="text-warning">{{ fee.remaining_amount|floatformat:2 }} ج.م</span>
+                        </div>
+                        <div class="fee-row">
+                            <span>مبلغ القسط:</span>
+                            <strong class="text-primary">{{ fee.installment_amount|floatformat:2 }} ج.م</strong>
+                        </div>
+                    </div>
+                    
+                    <div class="fee-progress">
+                        {% widthratio fee.total_paid fee.total_amount 100 as progress_percentage %}
+                        <div class="progress mb-2" style="height: 8px;">
+                            <div class="progress-bar bg-success" style="width: {{ progress_percentage }}%"></div>
+                        </div>
+                        <small class="text-muted">{{ progress_percentage }}% مكتمل</small>
+                    </div>
+                    
+                    <div class="fee-actions">
+                        <button class="btn btn-success btn-sm btn-block" 
+                                onclick="payFee('{{ fee.setting.fee_type }}', '{{ fee.setting.fee_name }}', {{ fee.installment_amount }}, {{ fee.installments_paid|add:1 }})">
+                            <i class="fas fa-credit-card me-1"></i>
+                            دفع القسط #{{ fee.installments_paid|add:1 }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="content-card mb-4">
+    <div class="content-card-body text-center py-5">
+        <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
+        <h5 class="text-muted">لا توجد مصروفات مستحقة</h5>
+        {% if not current_year %}
+        <p class="text-muted">لا يوجد عام دراسي نشط. يرجى إعداد العام الدراسي في الإعدادات.</p>
+        {% else %}
+        <p class="text-muted">تم سداد جميع المصروفات للطالب أو لم يتم إعداد مصروفات لهذا الصف.</p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- تاريخ المدفوعات -->
+{% if student_payments %}
+<div class="content-card" id="paymentHistory" style="display: none;">
+    <div class="content-card-header">
+        <h5>
+            <i class="fas fa-history me-2 text-primary"></i>
+            تاريخ مدفوعات الطالب
+        </h5>
+    </div>
+    <div class="content-card-body">
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>نوع المصروفات</th>
+                        <th>رقم القسط</th>
+                        <th>المبلغ المطلوب</th>
+                        <th>المدفوع</th>
+                        <th>الخصم</th>
+                        <th>تاريخ الدفع</th>
+                        <th>الحالة</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in student_payments %}
+                    <tr>
+                        <td>
+                            <span class="badge bg-info">{{ payment.get_fee_type_display }}</span>
+                        </td>
+                        <td>
+                            <span class="badge bg-primary">#{{ payment.installment_number }}</span>
+                        </td>
+                        <td>{{ payment.amount_tuition|floatformat:2 }} ج.م</td>
+                        <td class="text-success fw-bold">{{ payment.amount_paid|floatformat:2 }} ج.م</td>
+                        <td>
+                            {% if payment.discount_amount > 0 %}
+                            <span class="text-warning">{{ payment.discount_amount|floatformat:2 }} ج.م</span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if payment.payment_date %}
+                            {{ payment.payment_date|date:"d M Y" }}
+                            {% else %}
+                            <span class="text-muted">غير محدد</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="payment-status-badge {{ payment.payment_status|lower }}">
+                                {{ payment.get_payment_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                {% if payment.payment_status == 'PAID' %}
+                                <a href="{% url 'payments:receipt' payment.pk %}" class="btn btn-outline-success" title="إيصال">
+                                    <i class="fas fa-print"></i>
+                                </a>
+                                {% endif %}
+                                {% if permissions.can_edit %}
+                                <a href="{% url 'payments:edit_payment' payment.id %}" class="btn btn-outline-warning" title="تعديل">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal دفع المصروفات -->
+<div class="modal fade" id="payFeeModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-money-check-alt me-2"></i>دفع مصروفات
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="payFeeForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" id="fee_type" name="fee_type">
+                    <input type="hidden" id="installment_number" name="installment_number">
+                    
+                    <!-- تفاصيل المصروفات -->
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading">
+                            <i class="fas fa-info-circle me-2"></i>تفاصيل المصروفات
+                        </h6>
+                        <div class="row">
+                            <div class="col-6">
+                                <strong>نوع المصروفات:</strong> <span id="fee_display"></span>
+                            </div>
+                            <div class="col-6">
+                                <strong>رقم القسط:</strong> <span id="installment_display"></span>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-6">
+                                <strong>المبلغ المطلوب:</strong> <span id="amount_display"></span> ج.م
+                            </div>
+                            <div class="col-6">
+                                <strong>بعد الخصم:</strong> <span id="final_amount_display"></span> ج.م
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- الخصومات المتاحة -->
+                    {% if available_discounts %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-percent me-1"></i>تطبيق خصم
+                        </label>
+                        <select class="form-select" id="apply_discount" name="apply_discount" onchange="calculateDiscount()">
+                            <option value="">بدون خصم</option>
+                            {% for discount in available_discounts %}
+                            <option value="{{ discount.id }}" 
+                                    data-type="{{ discount.discount_setting.discount_type }}"
+                                    data-percentage="{{ discount.discount_setting.percentage_value }}"
+                                    data-fixed="{{ discount.discount_setting.fixed_amount }}">
+                                {{ discount.discount_setting.name }} - {{ discount.discount_setting.get_category_display }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- المبلغ المدفوع -->
+                    <div class="mb-3">
+                        <label for="amount_paid" class="form-label fw-bold">
+                            <i class="fas fa-hand-holding-usd me-1"></i>المبلغ المدفوع *
+                        </label>
+                        <div class="input-group input-group-lg">
+                            <input type="number" class="form-control" id="amount_paid" name="amount_paid" 
+                                   step="0.01" required min="0" onchange="validatePaymentAmount()">
+                            <span class="input-group-text">ج.م</span>
+                        </div>
+                        <div class="form-text">
+                            <button type="button" class="btn btn-link btn-sm p-0" onclick="setFullAmount()">
+                                <i class="fas fa-magic me-1"></i>دفع كامل
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- طريقة الدفع -->
+                    <div class="mb-3">
+                        <label for="payment_method" class="form-label fw-bold">
+                            <i class="fas fa-credit-card me-1"></i>طريقة الدفع *
+                        </label>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="payment_method" 
+                                           id="cash" value="cash" checked>
+                                    <label class="form-check-label" for="cash">
+                                        <i class="fas fa-money-bill-wave text-success me-2"></i>نقدي
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="payment_method" 
+                                           id="transfer" value="transfer">
+                                    <label class="form-check-label" for="transfer">
+                                        <i class="fas fa-university text-primary me-2"></i>تحويل بنكي
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="payment_method" 
+                                           id="card" value="card">
+                                    <label class="form-check-label" for="card">
+                                        <i class="fas fa-credit-card text-info me-2"></i>بطاقة ائتمان
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="payment_method" 
+                                           id="check" value="check">
+                                    <label class="form-check-label" for="check">
+                                        <i class="fas fa-file-invoice text-warning me-2"></i>شيك
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- ملاحظات -->
+                    <div class="mb-3">
+                        <label for="notes" class="form-label fw-bold">
+                            <i class="fas fa-sticky-note me-1"></i>ملاحظات
+                        </label>
+                        <textarea class="form-control" id="notes" name="notes" rows="2" 
+                                  placeholder="أي ملاحظات إضافية..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>إلغاء
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save me-1"></i>تأكيد الدفع
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+{% block extra_css %}
+<style>
+.fee-card {
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+}
+
+.fee-card:hover {
+    border-color: #007bff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,123,255,0.1);
+}
+
+.fee-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.fee-header h6 {
+    margin: 0;
+    color: #2c5aa0;
+    font-weight: 700;
+}
+
+.fee-badge {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.fee-details {
+    margin-bottom: 15px;
+}
+
+.fee-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+.fee-progress {
+    margin-bottom: 15px;
+}
+
+.fee-actions .btn {
+    width: 100%;
+    font-weight: 600;
+}
+
+/* تحسينات للرسائل المنبثقة */
+.fixed-alert {
+    transform: translateX(100%);
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.fixed-alert.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+/* تحسينات للـ modal */
+.modal-header.bg-success {
+    background: linear-gradient(45deg, #28a745, #20c997) !important;
+}
+
+.form-control:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+.btn-success {
+    background: linear-gradient(45deg, #28a745, #20c997);
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.btn-success:hover {
+    background: linear-gradient(45deg, #218838, #1abc9c);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+</style>
+{% endblock %}
+
+<!-- في templates/payments/pay_student_fees.html - الـ JavaScript الكامل المحسن -->
+
+{% block extra_js %}
+<script>
+let currentFeeAmount = 0;
+let currentFinalAmount = 0;
+
+// عرض نموذج دفع المصروفات
+function payFee(feeType, feeName, amount, installmentNumber) {
+    currentFeeAmount = parseFloat(amount);
+    currentFinalAmount = currentFeeAmount;
+    
+    document.getElementById('fee_type').value = feeType;
+    document.getElementById('fee_display').textContent = feeName;
+    document.getElementById('installment_number').value = installmentNumber;
+    document.getElementById('installment_display').textContent = '#' + installmentNumber;
+    document.getElementById('amount_display').textContent = amount.toFixed(2);
+    document.getElementById('final_amount_display').textContent = amount.toFixed(2);
+    document.getElementById('amount_paid').value = amount.toFixed(2);
+    
+    // إعادة تعيين الخصم
+    const discountSelect = document.getElementById('apply_discount');
+    if (discountSelect) {
+        discountSelect.value = '';
+    }
+    
+    // إعادة تعيين طريقة الدفع للنقدي
+    document.getElementById('cash').checked = true;
+    
+    // مسح الملاحظات
+    document.getElementById('notes').value = '';
+    
+    const modal = new bootstrap.Modal(document.getElementById('payFeeModal'));
+    modal.show();
+}
+
+// حساب الخصم
+function calculateDiscount() {
+    const discountSelect = document.getElementById('apply_discount');
+    if (!discountSelect) return;
+    
+    const selectedOption = discountSelect.options[discountSelect.selectedIndex];
+    let discountAmount = 0;
+    
+    if (selectedOption.value) {
+        const discountType = selectedOption.dataset.type;
+        
+        if (discountType === 'PERCENTAGE') {
+            const percentage = parseFloat(selectedOption.dataset.percentage || 0);
+            discountAmount = currentFeeAmount * (percentage / 100);
+        } else if (discountType === 'FIXED_AMOUNT') {
+            discountAmount = parseFloat(selectedOption.dataset.fixed || 0);
+        }
+    }
+    
+    currentFinalAmount = Math.max(0, currentFeeAmount - discountAmount);
+    
+    document.getElementById('final_amount_display').textContent = currentFinalAmount.toFixed(2);
+    document.getElementById('amount_paid').value = currentFinalAmount.toFixed(2);
+}
+
+// تعيين المبلغ الكامل
+function setFullAmount() {
+    document.getElementById('amount_paid').value = currentFinalAmount.toFixed(2);
+}
+
+// التحقق من صحة مبلغ الدفع
+function validatePaymentAmount() {
+    const amountPaid = parseFloat(document.getElementById('amount_paid').value || 0);
+    const submitBtn = document.querySelector('#payFeeForm button[type="submit"]');
+    
+    if (amountPaid > currentFinalAmount) {
+        showPaymentMessage('warning', 'المبلغ المدفوع أكبر من المطلوب');
+        submitBtn.disabled = true;
+    } else if (amountPaid <= 0) {
+        showPaymentMessage('error', 'يجب إدخال مبلغ أكبر من صفر');
+        submitBtn.disabled = true;
+    } else {
+        submitBtn.disabled = false;
+    }
+}
+
+// عرض/إخفاء تاريخ المدفوعات
+function showPaymentHistory() {
+    const historyDiv = document.getElementById('paymentHistory');
+    if (historyDiv.style.display === 'none') {
+        historyDiv.style.display = 'block';
+        historyDiv.scrollIntoView({ behavior: 'smooth' });
+    } else {
+        historyDiv.style.display = 'none';
+    }
+}
+
+// عرض ملخص مدفوعات الطالب
+function showStudentSummary() {
+    showPaymentMessage('info', 'عرض ملخص المدفوعات - قيد التطوير...');
+}
+
+// معالجة إرسال النموذج - الحل الأول المحسن
+document.getElementById('payFeeForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    // التحقق من البيانات المطلوبة
+    const feeType = document.getElementById('fee_type').value;
+    const installmentNumber = document.getElementById('installment_number').value;
+    const amountPaid = document.getElementById('amount_paid').value;
+    
+    if (!feeType || !installmentNumber || !amountPaid) {
+        showPaymentMessage('error', 'يرجى ملء جميع البيانات المطلوبة');
+        return;
+    }
+    
+    if (parseFloat(amountPaid) <= 0) {
+        showPaymentMessage('error', 'يجب إدخال مبلغ أكبر من صفر');
+        return;
+    }
+    
+    // تعطيل الزر وإظهار التحميل
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>جاري المعالجة...';
+    
+    // إخفاء الرسائل السابقة
+    clearPreviousMessages();
+    
+    // إعداد البيانات
+    const formData = new FormData(this);
+    
+    console.log('=== بيانات الإرسال ===');
+    for (let pair of formData.entries()) {
+        console.log(pair[0] + ': ' + pair[1]);
+    }
+    console.log('===================');
+    
+    // إرسال الطلب مع تتبع redirects محسن
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        redirect: 'manual'  // معالجة redirects يدوياً
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        console.log('Response type:', response.type);
+        
+        // معالجة حالات الـ redirect
+        if (response.status >= 300 && response.status < 400) {
+            const redirectUrl = response.headers.get('Location');
+            console.log('Redirect detected to:', redirectUrl);
+            
+            if (redirectUrl && redirectUrl.includes('/receipt/')) {
+                // تم التحويل لصفحة الإيصال = نجاح مؤكد
+                showPaymentMessage('success', 'تم تسجيل المدفوع بنجاح! 🎉 جاري التحويل للإيصال...');
+                
+                // إغلاق الـ modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('payFeeModal'));
+                if (modal) {
+                    modal.hide();
+                }
+                
+                // التحويل للإيصال بعد ثانيتين
+                setTimeout(() => {
+                    window.location.href = redirectUrl;
+                }, 2000);
+                
+                return Promise.resolve('redirect_handled');
+            }
+        }
+        
+        // معالجة الاستجابة العادية
+        if (response.ok) {
+            return response.text();
+        } else {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+    })
+    .then(result => {
+        if (result === 'redirect_handled') {
+            return; // تم التعامل مع الـ redirect
+        }
+        
+        const html = result;
+        console.log('HTML response received, length:', html.length);
+        
+        // فحص المحتوى للتحقق من النجاح أو الفشل
+        let isSuccess = false;
+        let message = '';
+        
+        // البحث عن علامات النجاح
+        const successIndicators = [
+            'تم تسجيل',
+            'بنجاح',
+            'alert-success',
+            'success',
+            'تم الحفظ',
+            'تم إضافة'
+        ];
+        
+        const errorIndicators = [
+            'alert-danger',
+            'alert-error',
+            'error',
+            'خطأ',
+            'فشل',
+            'لم يتم'
+        ];
+        
+        // فحص النجاح
+        const lowerHtml = html.toLowerCase();
+        for (const indicator of successIndicators) {
+            if (lowerHtml.includes(indicator.toLowerCase())) {
+                isSuccess = true;
+                message = 'تم تسجيل المدفوع بنجاح!';
+                break;
+            }
+        }
+        
+        // فحص الأخطاء إذا لم يتم تحديد النجاح
+        if (!isSuccess) {
+            for (const indicator of errorIndicators) {
+                if (lowerHtml.includes(indicator.toLowerCase())) {
+                    isSuccess = false;
+                    message = 'حدث خطأ في تسجيل المدفوع';
+                    break;
+                }
+            }
+        }
+        
+        // استخراج رسائل Django المحددة
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        
+        const successMessages = tempDiv.querySelectorAll('.messages .alert-success, .alert.alert-success');
+        const errorMessages = tempDiv.querySelectorAll('.messages .alert-danger, .alert.alert-danger, .alert.alert-error');
+        
+        if (successMessages.length > 0) {
+            isSuccess = true;
+            message = successMessages[0].textContent.trim().replace(/\s+/g, ' ');
+        } else if (errorMessages.length > 0) {
+            isSuccess = false;
+            message = errorMessages[0].textContent.trim().replace(/\s+/g, ' ');
+        }
+        
+        // عرض النتيجة
+        if (isSuccess) {
+            showPaymentMessage('success', message || 'تم تسجيل المدفوع بنجاح! 🎉');
+            
+            // إغلاق modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('payFeeModal'));
+            if (modal) {
+                modal.hide();
+            }
+            
+            // إعادة تحميل الصفحة بعد قليل
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+            
+        } else {
+            showPaymentMessage('error', message || 'حدث خطأ غير متوقع في التسجيل');
+        }
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+        showPaymentMessage('error', `حدث خطأ في الاتصال: ${error.message}`);
+    })
+    .finally(() => {
+        // إعادة تفعيل الزر
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    });
+});
+
+// دالة مسح الرسائل السابقة
+function clearPreviousMessages() {
+    const existingAlerts = document.querySelectorAll('.alert.fixed-alert');
+    existingAlerts.forEach(alert => alert.remove());
+}
+
+// دالة الحصول على CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// دالة عرض الرسائل - محسنة ومطورة
+function showPaymentMessage(type, message) {
+    // إزالة الرسائل السابقة
+    clearPreviousMessages();
+    
+    // تحديد الأيقونة واللون
+    const icons = {
+        success: 'fas fa-check-circle',
+        error: 'fas fa-exclamation-circle',
+        warning: 'fas fa-exclamation-triangle',
+        info: 'fas fa-info-circle'
+    };
+    
+    const colors = {
+        success: 'success',
+        error: 'danger',
+        warning: 'warning',
+        info: 'info'
+    };
+    
+    // إنشاء alert محسن
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${colors[type] || 'info'} alert-dismissible fade show fixed-alert`;
+    alertDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 350px;
+        max-width: 500px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        border-radius: 10px;
+        font-weight: 500;
+    `;
+    
+    alertDiv.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="${icons[type] || icons.info} me-3" style="font-size: 1.2rem;"></i>
+            <div class="flex-grow-1">${message}</div>
+            <button type="button" class="btn-close ms-2" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+    
+    // إضافة للصفحة
+    document.body.appendChild(alertDiv);
+    
+    // تأثير الظهور
+    setTimeout(() => {
+        alertDiv.style.transform = 'translateX(0)';
+        alertDiv.style.opacity = '1';
+    }, 100);
+    
+    // إزالة تلقائية بعد 6 ثوانِ
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.style.opacity = '0';
+            alertDiv.style.transform = 'translateX(100%)';
+            setTimeout(() => alertDiv.remove(), 300);
+        }
+    }, 6000);
+}
+
+// تحسينات إضافية عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    // إضافة مستمعي الأحداث للتحقق من الإدخال
+    const amountInput = document.getElementById('amount_paid');
+    if (amountInput) {
+        amountInput.addEventListener('input', validatePaymentAmount);
+        amountInput.addEventListener('change', validatePaymentAmount);
+    }
+    
+    // إضافة مستمع للخصم
+    const discountSelect = document.getElementById('apply_discount');
+    if (discountSelect) {
+        discountSelect.addEventListener('change', calculateDiscount);
+    }
+    
+    // تنشيط tooltips إذا كانت متاحة
+    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    }
+});
+</script>
+{% endblock %}

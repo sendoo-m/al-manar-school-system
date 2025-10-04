@@ -1,0 +1,1013 @@
+{% extends 'school_settings/base.html' %}
+{% load static %}
+
+{% block title %}لوحة تحكم الإعدادات - {{ system_settings.school_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .dashboard-hero {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 25px;
+        padding: 50px;
+        margin-bottom: 40px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(102, 126, 234, 0.3);
+    }
+
+    .dashboard-hero::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="3" fill="rgba(255,255,255,0.03)"/></svg>') repeat;
+        animation: float 25s linear infinite;
+    }
+
+    @keyframes float {
+        0% { transform: translateX(-100px) translateY(-100px) rotate(0deg); }
+        100% { transform: translateX(100px) translateY(100px) rotate(360deg); }
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 2;
+        text-align: center;
+    }
+
+    .hero-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 15px;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .hero-subtitle {
+        font-size: 1.2rem;
+        opacity: 0.9;
+        margin-bottom: 20px;
+    }
+
+    .hero-badge {
+        background: rgba(255,255,255,0.2);
+        backdrop-filter: blur(10px);
+        padding: 12px 25px;
+        border-radius: 25px;
+        font-weight: 600;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .stats-container {
+        margin-bottom: 40px;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 25px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        transition: all 0.4s ease;
+        border: 2px solid transparent;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 5px;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-10px) scale(1.02);
+        box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+        border-color: #667eea;
+    }
+
+    .stat-icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 20px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover .stat-icon {
+        transform: scale(1.1) rotate(5deg);
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+    }
+
+    .stat-number {
+        font-size: 2.8rem;
+        font-weight: 800;
+        margin-bottom: 10px;
+        background: linear-gradient(45deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .stat-label {
+        color: #495057;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 10px;
+    }
+
+    .stat-details {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .actions-section {
+        margin-bottom: 40px;
+    }
+
+    .section-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .section-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #495057;
+        margin-bottom: 10px;
+    }
+
+    .section-subtitle {
+        color: #6c757d;
+        font-size: 1.1rem;
+    }
+
+    .actions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 25px;
+    }
+
+    .action-card {
+        background: white;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        transition: all 0.4s ease;
+        text-decoration: none;
+        color: inherit;
+        position: relative;
+        border: 2px solid transparent;
+    }
+
+    .action-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+        transition: left 0.6s ease;
+    }
+
+    .action-card:hover::before {
+        left: 100%;
+    }
+
+    .action-card:hover {
+        transform: translateY(-10px) scale(1.02);
+        box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+        text-decoration: none;
+        color: inherit;
+        border-color: #667eea;
+    }
+
+    .action-header {
+        padding: 25px;
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .action-card.primary .action-header { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+    .action-card.success .action-header { background: linear-gradient(135deg, #28a745, #20c997); color: white; }
+    .action-card.info .action-header { background: linear-gradient(135deg, #17a2b8, #6610f2); color: white; }
+    .action-card.warning .action-header { background: linear-gradient(135deg, #ffc107, #fd7e14); color: white; }
+    .action-card.danger .action-header { background: linear-gradient(135deg, #dc3545, #e83e8c); color: white; }
+    .action-card.dark .action-header { background: linear-gradient(135deg, #343a40, #6c757d); color: white; }
+
+    .action-icon {
+        width: 70px;
+        height: 70px;
+        margin: 0 auto 15px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        background: rgba(255,255,255,0.2);
+        backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
+    }
+
+    .action-card:hover .action-icon {
+        transform: scale(1.1) rotate(10deg);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+
+    .action-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+        text-align: center;
+    }
+
+    .action-desc {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        text-align: center;
+    }
+
+    .action-body {
+        padding: 20px 25px;
+        background: white;
+    }
+
+    .action-stats {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .mini-stat {
+        text-align: center;
+    }
+
+    .mini-stat-number {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #667eea;
+    }
+
+    .mini-stat-label {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+
+    .charts-section {
+        margin-bottom: 40px;
+    }
+
+    .chart-container {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        margin-bottom: 25px;
+        transition: all 0.3s ease;
+    }
+
+    .chart-container:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    }
+
+    .chart-title {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #495057;
+        margin-bottom: 25px;
+        text-align: center;
+    }
+
+    .chart-bar {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+        padding: 12px;
+        border-radius: 12px;
+        background: #f8f9fa;
+        transition: all 0.3s ease;
+    }
+
+    .chart-bar:hover {
+        background: #e9ecef;
+        transform: translateX(5px);
+    }
+
+    .bar-label {
+        min-width: 140px;
+        font-weight: 600;
+        color: #495057;
+    }
+
+    .bar-visual {
+        flex: 1;
+        height: 12px;
+        background: #e9ecef;
+        border-radius: 6px;
+        margin: 0 15px;
+        overflow: hidden;
+    }
+
+    .bar-fill {
+        height: 100%;
+        border-radius: 6px;
+        transition: width 1.5s ease;
+    }
+
+    .bar-value {
+        min-width: 80px;
+        text-align: center;
+        font-weight: 700;
+        color: #495057;
+        background: white;
+        padding: 4px 12px;
+        border-radius: 15px;
+        font-size: 0.9rem;
+    }
+
+    .empty-chart {
+        text-align: center;
+        padding: 40px;
+        color: #adb5bd;
+    }
+
+    .empty-chart i {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        opacity: 0.5;
+    }
+
+    .school-info-section {
+        margin-bottom: 40px;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 30px;
+    }
+
+    .info-card {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+
+    .info-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    }
+
+    .info-item {
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #f1f3f4;
+    }
+
+    .info-item:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+    }
+
+    .info-value {
+        color: #6c757d;
+        padding: 12px 15px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        border-left: 4px solid #667eea;
+        font-weight: 500;
+    }
+
+    .logo-card {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .logo-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    }
+
+    .logo-container {
+        padding: 30px;
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-radius: 15px;
+        margin-bottom: 20px;
+    }
+
+    .update-btn {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 25px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .update-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+
+    .activities-section {
+        margin-bottom: 40px;
+    }
+
+    .activity-card {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+
+    .activity-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    }
+
+    .activity-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 0;
+        border-bottom: 1px solid #f1f3f4;
+    }
+
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+
+    .activity-badge {
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .alert-modern {
+        border-radius: 15px;
+        border: none;
+        padding: 20px 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+
+    .bar-fill-1 { background: linear-gradient(90deg, #667eea, #764ba2); }
+    .bar-fill-2 { background: linear-gradient(90deg, #28a745, #20c997); }
+    .bar-fill-3 { background: linear-gradient(90deg, #ffc107, #ff8c00); }
+    .bar-fill-4 { background: linear-gradient(90deg, #dc3545, #fd7e14); }
+    .bar-fill-5 { background: linear-gradient(90deg, #17a2b8, #138496); }
+    .bar-fill-6 { background: linear-gradient(90deg, #6f42c1, #e83e8c); }
+
+    @media (max-width: 768px) {
+        .dashboard-hero {
+            padding: 30px 20px;
+        }
+        
+        .hero-title {
+            font-size: 2rem;
+        }
+        
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .actions-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .stat-number {
+            font-size: 2.2rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- رأس الصفحة المحسن -->
+    <div class="dashboard-hero">
+        <div class="hero-content">
+            <h1 class="hero-title">
+                <i class="fas fa-tachometer-alt me-3"></i>
+                لوحة تحكم الإعدادات
+            </h1>
+            <p class="hero-subtitle">{{ system_settings.school_name }}</p>
+            {% if current_academic_year %}
+            <div class="hero-badge">
+                <i class="fas fa-calendar me-2"></i>
+                العام الدراسي: {{ current_academic_year.name }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- التنبيهات المحسنة -->
+    {% if alerts %}
+    <div class="alerts-section mb-4">
+        {% for alert in alerts %}
+        <div class="alert alert-{{ alert.type }} alert-modern">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-info-circle fa-2x me-3"></i>
+                <div class="flex-grow-1">
+                    <h5 class="mb-1">{{ alert.title }}</h5>
+                    <p class="mb-0">{{ alert.message }}</p>
+                </div>
+                {% if alert.action_url %}
+                <a href="{{ alert.action_url }}" class="btn btn-outline-{{ alert.type }}">
+                    {{ alert.action_text }}
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- الإحصائيات المحسنة -->
+    <div class="stats-container">
+        <div class="section-header">
+            <h2 class="section-title">الإحصائيات الرئيسية</h2>
+            <p class="section-subtitle">نظرة شاملة على أداء النظام</p>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon color-primary">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-number">{{ total_students|default:0 }}</div>
+                <div class="stat-label">إجمالي الطلاب</div>
+                <div class="stat-details">
+                    ذكور: {{ students_by_gender.males|default:0 }} | إناث: {{ students_by_gender.females|default:0 }}
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon color-success">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <div class="stat-number">{{ active_academic_years|default:0 }}</div>
+                <div class="stat-label">الأعوام الدراسية</div>
+                <div class="stat-details">نشطة حالياً</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon color-warning">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+                <div class="stat-number">{{ grade_levels|default:0 }}</div>
+                <div class="stat-label">الصفوف الدراسية</div>
+                <div class="stat-details">في {{ education_levels|default:0 }} مراحل</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon color-danger">
+                    <i class="fas fa-money-bill-wave"></i>
+                </div>
+                <div class="stat-number">{{ financial_stats.total_expected_revenue|floatformat:0|default:0 }}</div>
+                <div class="stat-label">الإيرادات المتوقعة</div>
+                <div class="stat-details">جنيه مصري</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- الإجراءات السريعة المحسنة -->
+    <div class="actions-section">
+        <div class="section-header">
+            <h2 class="section-title">الإجراءات السريعة</h2>
+            <p class="section-subtitle">الوصول المباشر للوظائف الأساسية</p>
+        </div>
+        
+        <div class="actions-grid">
+            <a href="{% url 'school_settings:academic_years_list' %}" class="action-card primary">
+                <div class="action-header">
+                    <div class="action-icon">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <div class="action-title">الأعوام الدراسية</div>
+                    <div class="action-desc">إدارة وتنظيم الأعوام</div>
+                </div>
+                <div class="action-body">
+                    <div class="action-stats">
+                        <div class="mini-stat">
+                            <div class="mini-stat-number">{{ academic_years_count|default:0 }}</div>
+                            <div class="mini-stat-label">إجمالي</div>
+                        </div>
+                        <div class="mini-stat">
+                            <div class="mini-stat-number">{{ active_academic_years|default:0 }}</div>
+                            <div class="mini-stat-label">نشط</div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+            
+            <a href="{% url 'school_settings:education_levels_list' %}" class="action-card info">
+                <div class="action-header">
+                    <div class="action-icon">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <div class="action-title">المراحل التعليمية</div>
+                    <div class="action-desc">تنظيم المراحل والصفوف</div>
+                </div>
+                <div class="action-body">
+                    <div class="action-stats">
+                        <div class="mini-stat">
+                            <div class="mini-stat-number">{{ education_levels_count|default:0 }}</div>
+                            <div class="mini-stat-label">مراحل</div>
+                        </div>
+                        <div class="mini-stat">
+                            <div class="mini-stat-number">{{ grade_levels_count|default:0 }}</div>
+                            <div class="mini-stat-label">صفوف</div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+            
+            <a href="{% url 'school_settings:school_fees_list' %}" class="action-card success">
+                <div class="action-header">
+                    <div class="action-icon">
+                        <i class="fas fa-money-bill"></i>
+                    </div>
+                    <div class="action-title">إدارة المصروفات</div>
+                    <div class="action-desc">تحديد المصروفات الدراسية</div>
+                </div>
+                <div class="action-body">
+                    <div class="action-stats">
+                        <div class="mini-stat">
+                            <div class="mini-stat-number">{{ school_fees_count|default:0 }}</div>
+                            <div class="mini-stat-label">إجمالي</div>
+                        </div>
+                        <div class="mini-stat">
+                            <div class="mini-stat-number">{{ active_fees|default:0 }}</div>
+                            <div class="mini-stat-label">نشط</div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+            
+            <a href="{% url 'school_settings:discounts_list' %}" class="action-card warning">
+                <div class="action-header">
+                    <div class="action-icon">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                    <div class="action-title">إدارة الخصومات</div>
+                    <div class="action-desc">أنواع وقواعد الخصومات</div>
+                </div>
+                <div class="action-body">
+                    <div class="action-stats">
+                        <div class="mini-stat">
+                            <div class="mini-stat-number">{{ discounts_count|default:0 }}</div>
+                            <div class="mini-stat-label">إجمالي</div>
+                        </div>
+                        <div class="mini-stat">
+                            <div class="mini-stat-number">{{ active_discounts_count|default:0 }}</div>
+                            <div class="mini-stat-label">نشط</div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+            
+            <a href="{% url 'school_settings:system_settings' %}" class="action-card dark">
+                <div class="action-header">
+                    <div class="action-icon">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                    <div class="action-title">إعدادات النظام</div>
+                    <div class="action-desc">الإعدادات العامة والأمان</div>
+                </div>
+                <div class="action-body">
+                    <div class="action-stats">
+                        <div class="mini-stat">
+                            <div class="mini-stat-number">{{ system_stats.total_users|default:0 }}</div>
+                            <div class="mini-stat-label">مستخدمين</div>
+                        </div>
+                        <div class="mini-stat">
+                            <div class="mini-stat-number">{{ active_roles|default:0 }}</div>
+                            <div class="mini-stat-label">أدوار</div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+            
+            <a href="{% url 'school_settings:roles_list' %}" class="action-card danger">
+                <div class="action-header">
+                    <div class="action-icon">
+                        <i class="fas fa-users-cog"></i>
+                    </div>
+                    <div class="action-title">إدارة الأدوار</div>
+                    <div class="action-desc">صلاحيات المستخدمين</div>
+                </div>
+                <div class="action-body">
+                    <div class="action-stats">
+                        <div class="mini-stat">
+                            <div class="mini-stat-number">{{ total_users|default:0 }}</div>
+                            <div class="mini-stat-label">مستخدمين</div>
+                        </div>
+                        <div class="mini-stat">
+                            <div class="mini-stat-number">{{ pending_roles|default:0 }}</div>
+                            <div class="mini-stat-label">معلق</div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- الرسوم البيانية المحسنة -->
+    <div class="charts-section">
+        <div class="section-header">
+            <h2 class="section-title">التحليلات والإحصائيات</h2>
+            <p class="section-subtitle">رؤية تفصيلية للبيانات</p>
+        </div>
+        
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="chart-container">
+                    <h3 class="chart-title">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        توزيع الطلاب حسب المرحلة
+                    </h3>
+                    {% if students_by_education_level %}
+                        {% for level in students_by_education_level %}
+                        <div class="chart-bar">
+                            <div class="bar-label">{{ level.name }}</div>
+                            <div class="bar-visual">
+                                <div class="bar-fill bar-fill-{{ forloop.counter }}" 
+                                     style="width: {{ level.percentage }}%;"></div>
+                            </div>
+                            <div class="bar-value">{{ level.count }}</div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="empty-chart">
+                        <i class="fas fa-chart-bar"></i>
+                        <p>لا توجد بيانات للعرض</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="col-lg-6">
+                <div class="chart-container">
+                    <h3 class="chart-title">
+                        <i class="fas fa-money-bill-wave me-2"></i>
+                        المصروفات حسب النوع
+                    </h3>
+                    {% if fees_by_type %}
+                        {% for fee in fees_by_type|slice:":5" %}
+                        <div class="chart-bar">
+                            <div class="bar-label">{{ fee.type }}</div>
+                            <div class="bar-visual">
+                                <div class="bar-fill bar-fill-{{ forloop.counter }}" 
+                                     style="width: {{ fee.percentage }}%;"></div>
+                            </div>
+                            <div class="bar-value">{{ fee.total_amount|floatformat:0 }}</div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="empty-chart">
+                        <i class="fas fa-money-bill-wave"></i>
+                        <p>لا توجد مصروفات محددة</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- معلومات المدرسة المحسنة -->
+    <div class="school-info-section">
+        <div class="section-header">
+            <h2 class="section-title">معلومات المؤسسة التعليمية</h2>
+            <p class="section-subtitle">البيانات الأساسية والإعدادات</p>
+        </div>
+        
+        <div class="info-grid">
+            <div class="info-card">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="info-item">
+                            <div class="info-label">اسم المدرسة</div>
+                            <div class="info-value">{{ system_settings.school_name|default:"غير محدد" }}</div>
+                        </div>
+                        
+                        <div class="info-item">
+                            <div class="info-label">الاسم بالإنجليزية</div>
+                            <div class="info-value">{{ system_settings.school_name_en|default:"غير محدد" }}</div>
+                        </div>
+                        
+                        <div class="info-item">
+                            <div class="info-label">العنوان</div>
+                            <div class="info-value">{{ system_settings.school_address|default:"غير محدد" }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="info-item">
+                            <div class="info-label">الهاتف</div>
+                            <div class="info-value">{{ system_settings.school_phone|default:"غير محدد" }}</div>
+                        </div>
+                        
+                        <div class="info-item">
+                            <div class="info-label">البريد الإلكتروني</div>
+                            <div class="info-value">{{ system_settings.school_email|default:"غير محدد" }}</div>
+                        </div>
+                        
+                        <div class="info-item">
+                            <div class="info-label">العملة</div>
+                            <div class="info-value">{{ system_settings.currency_name|default:"جنيه مصري" }} ({{ system_settings.currency_symbol|default:"ج.م" }})</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <a href="{% url 'school_settings:update_school_settings' %}" class="update-btn">
+                        <i class="fas fa-edit me-2"></i>تحديث معلومات المدرسة
+                    </a>
+                </div>
+            </div>
+            
+            <div class="logo-card">
+                <div class="logo-container">
+                    {% if system_settings.school_logo %}
+                    <img src="{{ system_settings.school_logo.url }}" alt="شعار المدرسة" 
+                         class="img-fluid rounded" style="max-height: 120px;">
+                    {% else %}
+                    <i class="fas fa-image fa-4x text-muted mb-3"></i>
+                    <p class="text-muted">لا يوجد شعار</p>
+                    {% endif %}
+                </div>
+                <a href="{% url 'school_settings:update_school_settings' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-upload me-2"></i>
+                    {% if system_settings.school_logo %}تغيير الشعار{% else %}إضافة شعار{% endif %}
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- الأنشطة الأخيرة المحسنة -->
+    {% if system_stats.total_users > 0 or recent_stats.students_added_last_week > 0 %}
+    <div class="activities-section">
+        <div class="section-header">
+            <h2 class="section-title">الأنشطة والإحصائيات</h2>
+            <p class="section-subtitle">متابعة النشاط والتحديثات الأخيرة</p>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="activity-card">
+                    <h4 class="mb-4">
+                        <i class="fas fa-users-cog me-2"></i>
+                        إحصائيات المستخدمين
+                    </h4>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="stat-number color-primary" style="font-size: 2rem;">{{ system_stats.total_users|default:0 }}</div>
+                            <div class="stat-label">إجمالي المستخدمين</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stat-number color-success" style="font-size: 2rem;">{{ system_stats.active_users|default:0 }}</div>
+                            <div class="stat-label">المستخدمين النشطين</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="activity-card">
+                    <h4 class="mb-4">
+                        <i class="fas fa-clock me-2"></i>
+                        الأنشطة الأخيرة
+                    </h4>
+                    <div class="activity-item">
+                        <span>طلاب جدد (آخر أسبوع)</span>
+                        <span class="activity-badge bg-success text-white">{{ recent_stats.students_added_last_week|default:0 }}</span>
+                    </div>
+                    <div class="activity-item">
+                        <span>مصروفات محدثة (آخر شهر)</span>
+                        <span class="activity-badge bg-warning text-white">{{ recent_stats.fees_updated_last_month|default:0 }}</span>
+                    </div>
+                    <div class="activity-item">
+                        <span>خصومات جديدة (آخر شهر)</span>
+                        <span class="activity-badge bg-info text-white">{{ recent_stats.new_discounts_last_month|default:0 }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // تأثيرات ظهور العناصر
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry, index) => {
+            if (entry.isIntersecting) {
+                setTimeout(() => {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }, index * 100);
+            }
+        });
+    }, { threshold: 0.1 });
+
+    // تطبيق التأثير على جميع العناصر
+    const elements = document.querySelectorAll('.stat-card, .action-card, .chart-container, .info-card, .activity-card');
+    elements.forEach(element => {
+        element.style.opacity = '0';
+        element.style.transform = 'translateY(30px)';
+        element.style.transition = 'all 0.6s ease';
+        observer.observe(element);
+    });
+
+    // تأثير الأرقام المتحركة
+    const animateNumbers = () => {
+        const numbers = document.querySelectorAll('.stat-number');
+        numbers.forEach(number => {
+            const finalValue = parseInt(number.textContent) || 0;
+            const duration = 2000;
+            const increment = finalValue / (duration / 50);
+            let current = 0;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= finalValue) {
+                    current = finalValue;
+                    clearInterval(timer);
+                }
+                number.textContent = Math.floor(current);
+            }, 50);
+        });
+    };
+
+    // تشغيل الأرقام بعد تحميل الصفحة
+    setTimeout(animateNumbers, 500);
+    
+    console.log('✅ تم تحميل لوحة التحكم بنجاح!');
+});
+
+// تأثيرات إضافية للتفاعل
+document.querySelectorAll('.action-card').forEach(card => {
+    card.addEventListener('mouseenter', function() {
+        this.style.zIndex = '10';
+    });
+    
+    card.addEventListener('mouseleave', function() {
+        this.style.zIndex = '1';
+    });
+});
+</script>
+{% endblock %}

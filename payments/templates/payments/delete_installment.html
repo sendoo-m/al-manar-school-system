@@ -1,0 +1,60 @@
+<!-- templates/payments/delete_installment.html -->
+{% extends 'payments/base.html' %}
+
+{% block title %}حذف مدفوع - مدرسة المنار{% endblock %}
+{% block page_title %}حذف مدفوع للطالب {{ student.name }}{% endblock %}
+{% block page_subtitle %}حذف القسط رقم {{ tuition.installment_number }} - {{ warning_message }}{% endblock %}
+{% block page_icon %}<i class="fas fa-trash me-3 text-danger"></i>{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'payments:payments_home' %}">لوحة التحكم</a></li>
+<li class="breadcrumb-item"><a href="{% url 'payments:all_payments' %}">جميع المدفوعات</a></li>
+<li class="breadcrumb-item active">حذف مدفوع</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'payments:all_payments' %}" class="btn btn-outline-secondary btn-custom">
+        <i class="fas fa-arrow-right me-1"></i>العودة للقائمة
+    </a>
+    <a href="{% url 'payments:receipt' tuition.pk %}" class="btn btn-outline-info btn-custom">
+        <i class="fas fa-eye me-1"></i>عرض الإيصال
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <div class="content-card-body">
+        <div class="alert alert-danger">
+            <h5 class="alert-heading">
+                <i class="fas fa-exclamation-triangle me-2"></i>تحذير!
+            </h5>
+            <p class="mb-3">{{ warning_message }}</p>
+            <hr>
+            <div class="mb-0">
+                <strong>تفاصيل المدفوع المراد حذفه:</strong>
+                <ul class="mt-2 mb-0">
+                    <li><strong>الطالب:</strong> {{ tuition.student.name }}</li>
+                    <li><strong>رقم القسط:</strong> #{{ tuition.installment_number }}</li>
+                    <li><strong>المبلغ المدفوع:</strong> {{ tuition.amount_paid }} ج.م</li>
+                    <li><strong>تاريخ الدفع:</strong> {{ tuition.payment_date|date:"d M Y H:i" }}</li>
+                    <li><strong>طريقة الدفع:</strong> {{ tuition.get_payment_method_display }}</li>
+                </ul>
+            </div>
+        </div>
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="d-flex gap-3 justify-content-center">
+                <button type="submit" class="btn btn-danger btn-lg">
+                    <i class="fas fa-trash me-2"></i>تأكيد الحذف
+                </button>
+                <a href="{% url 'payments:all_payments' %}" class="btn btn-outline-secondary btn-lg">
+                    <i class="fas fa-times me-2"></i>إلغاء
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

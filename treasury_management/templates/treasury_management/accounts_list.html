@@ -1,0 +1,684 @@
+<!-- treasury_management/templates/treasury_management/accounts_list.html -->
+{% extends 'treasury_management/base.html' %}
+{% load static %}
+
+{% block title %}الحسابات المالية{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">الحسابات المالية</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-card {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .pagination-wrapper {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        margin-top: 1rem;
+    }
+    
+    .pagination .page-link {
+        border: none;
+        color: #6c757d;
+        padding: 0.5rem 0.75rem;
+        margin: 0 2px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .pagination .page-link:hover {
+        background-color: #e9ecef;
+        color: #495057;
+        transform: translateY(-1px);
+    }
+    
+    .pagination .page-item.active .page-link {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border-color: transparent;
+        color: white;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .results-info {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+    
+    .balance-positive { color: #28a745; font-weight: 600; }
+    .balance-negative { color: #dc3545; font-weight: 600; }
+    .balance-zero { color: #6c757d; }
+    
+    .account-code {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 6px;
+        font-family: monospace;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2><i class="fas fa-list-alt me-2"></i>الحسابات المالية</h2>
+                <p class="text-muted mb-0">جميع الحسابات المالية ومعلوماتها</p>
+            </div>
+            <div>
+                <a href="{% url 'treasury_management:add_account' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>إضافة حساب جديد
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- إحصائيات سريعة -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <div class="h4 mb-1">{{ stats.total_accounts }}</div>
+                <div class="opacity-75">إجمالي الحسابات</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <div class="h4 mb-1">{{ stats.active_accounts }}</div>
+                <div class="opacity-75">حسابات نشطة</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="card bg-warning text-white">
+            <div class="card-body text-center">
+                <div class="h4 mb-1">{{ stats.total_balance|floatformat:0 }}</div>
+                <div class="opacity-75">إجمالي الأرصدة</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <div class="h4 mb-1">{{ stats.accounts_with_balance }}</div>
+                <div class="opacity-75">حسابات لها أرصدة</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- فلاتر البحث -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card filter-card">
+            <div class="card-body">
+                <form method="GET" id="filterForm">
+                    <div class="row align-items-end">
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <label class="form-label">البحث</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" class="form-control" name="search" 
+                                       value="{{ search }}" placeholder="ابحث بالاسم أو الكود">
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-2 col-md-6 mb-3">
+                            <label class="form-label">نوع التصنيف</label>
+                            <select class="form-select" name="type">
+                                <option value="">جميع الأنواع</option>
+                                {% for type_code, type_name in category_types %}
+                                <option value="{{ type_code }}" {% if category_type == type_code %}selected{% endif %}>
+                                    {{ type_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-lg-2 col-md-6 mb-3">
+                            <label class="form-label">التصنيف</label>
+                            <select class="form-select" name="category">
+                                <option value="">جميع التصنيفات</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}" {% if category_id == category.id|stringformat:'s' %}selected{% endif %}>
+                                    {{ category.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-lg-2 col-md-6 mb-3">
+                            <label class="form-label">الحالة</label>
+                            <select class="form-select" name="active">
+                                <option value="">الكل</option>
+                                <option value="true" {% if is_active == 'true' %}selected{% endif %}>نشط</option>
+                                <option value="false" {% if is_active == 'false' %}selected{% endif %}>غير نشط</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-lg-1 col-md-6 mb-3">
+                            <label class="form-label">الرصيد</label>
+                            <select class="form-select" name="has_balance">
+                                <option value="">الكل</option>
+                                <option value="true" {% if has_balance == 'true' %}selected{% endif %}>له رصيد</option>
+                                <option value="false" {% if has_balance == 'false' %}selected{% endif %}>صفر</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-lg-2 col-md-6 mb-3">
+                            <div class="btn-group w-100">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-filter"></i> تطبيق
+                                </button>
+                                <a href="?" class="btn btn-outline-secondary">
+                                    <i class="fas fa-refresh"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- خيارات الترتيب -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">ترتيب حسب:</label>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <input type="radio" class="btn-check" name="order_by" value="code" id="order_code" {% if order_by == 'code' %}checked{% endif %}>
+                                <label class="btn btn-outline-primary" for="order_code">الكود</label>
+                                
+                                <input type="radio" class="btn-check" name="order_by" value="name" id="order_name" {% if order_by == 'name' %}checked{% endif %}>
+                                <label class="btn btn-outline-primary" for="order_name">الاسم</label>
+                                
+                                <input type="radio" class="btn-check" name="order_by" value="current_balance" id="order_balance" {% if order_by == 'current_balance' %}checked{% endif %}>
+                                <label class="btn btn-outline-primary" for="order_balance">الرصيد</label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">اتجاه الترتيب:</label>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <input type="radio" class="btn-check" name="desc" value="false" id="asc" {% if desc == 'false' %}checked{% endif %}>
+                                <label class="btn btn-outline-secondary" for="asc">تصاعدي</label>
+                                
+                                <input type="radio" class="btn-check" name="desc" value="true" id="desc_order" {% if desc == 'true' %}checked{% endif %}>
+                                <label class="btn btn-outline-secondary" for="desc_order">تنازلي</label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if not accounts %}
+<!-- محتوى عند عدم وجود نتائج -->
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center py-5">
+                <div class="mb-4">
+                    <i class="fas fa-list-alt fa-5x text-muted mb-3"></i>
+                    <h3 class="text-muted">
+                        {% if search or category_type or category_id or is_active %}
+                            لا توجد نتائج للبحث
+                        {% else %}
+                            لا توجد حسابات مالية
+                        {% endif %}
+                    </h3>
+                    <p class="lead text-muted">
+                        {% if search or category_type or category_id or is_active %}
+                            جرب تعديل معايير البحث أو الفلاتر
+                        {% else %}
+                            ابدأ بإضافة حساب مالي جديد
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <div class="d-flex justify-content-center gap-3">
+                    {% if search or category_type or category_id or is_active %}
+                        <a href="?" class="btn btn-outline-primary">
+                            <i class="fas fa-refresh me-1"></i>إعادة تعيين الفلاتر
+                        </a>
+                    {% else %}
+                        <a href="{% url 'treasury_management:add_account' %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>إضافة حساب جديد
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+
+<!-- معلومات النتائج -->
+<div class="results-info">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>{{ paginator.count }}</strong> حساب مالي
+            {% if search %}
+                - نتائج البحث عن "<strong>{{ search }}</strong>"
+            {% endif %}
+            {% if category_type %}
+                - النوع: <strong>{{ category_type }}</strong>
+            {% endif %}
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="input-group input-group-sm" style="width: 120px; display: inline-flex;">
+                <span class="input-group-text">عرض</span>
+                <select class="form-select" name="per_page" onchange="changeItemsPerPage(this.value)">
+                    <option value="5" {% if items_per_page == 5 %}selected{% endif %}>5</option>
+                    <option value="10" {% if items_per_page == 10 %}selected{% endif %}>10</option>
+                    <option value="15" {% if items_per_page == 15 %}selected{% endif %}>15</option>
+                    <option value="25" {% if items_per_page == 25 %}selected{% endif %}>25</option>
+                    <option value="50" {% if items_per_page == 50 %}selected{% endif %}>50</option>
+                    <option value="100" {% if items_per_page == 100 %}selected{% endif %}>100</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- جدول الحسابات -->
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0" id="accountsTable">
+            <thead class="table-light">
+                <tr>
+                    <th>كود الحساب</th>
+                    <th>اسم الحساب</th>
+                    <th>التصنيف</th>
+                    <th>الرصيد الافتتاحي</th>
+                    <th>الرصيد الحالي</th>
+                    <th>العمليات</th>
+                    <th>الحالة</th>
+                    <th class="no-print">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for account in accounts %}
+                <tr>
+                    <td>
+                        <span class="account-code">{{ account.code }}</span>
+                    </td>
+                    <td>
+                        <strong>{{ account.name }}</strong>
+                        {% if account.description %}
+                        <br><small class="text-muted">{{ account.description|truncatechars:40 }}</small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge 
+                            {% if account.category.category_type == 'REVENUE' %}bg-success
+                            {% elif account.category.category_type == 'EXPENSE' %}bg-danger
+                            {% elif account.category.category_type == 'ASSET' %}bg-info
+                            {% elif account.category.category_type == 'LIABILITY' %}bg-warning
+                            {% else %}bg-secondary{% endif %}">
+                            {{ account.category.get_category_type_display }}
+                        </span>
+                        <br><small class="text-muted">{{ account.category.name }}</small>
+                    </td>
+                    <td class="text-center">
+                        <span class="{% if account.opening_balance > 0 %}balance-positive{% elif account.opening_balance < 0 %}balance-negative{% else %}balance-zero{% endif %}">
+                            {{ account.opening_balance|floatformat:2 }}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <span class="{% if account.current_balance > 0 %}balance-positive{% elif account.current_balance < 0 %}balance-negative{% else %}balance-zero{% endif %}">
+                            {{ account.current_balance|floatformat:2 }}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge bg-primary">{{ account.transactions_count }}</span>
+                    </td>
+                    <td class="text-center">
+                        {% if account.is_active %}
+                        <span class="badge bg-success">✓ نشط</span>
+                        {% else %}
+                        <span class="badge bg-secondary">✗ غير نشط</span>
+                        {% endif %}
+                    </td>
+                    <td class="no-print">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-outline-info" 
+                                    onclick="showAccountDetails({{ account.id }})"
+                                    title="تفاصيل">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <a href="{% url 'treasury_management:add_transaction' %}?account={{ account.id }}" 
+                               class="btn btn-sm btn-outline-success"
+                               title="إضافة عملية">
+                                <i class="fas fa-plus"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot class="table-light">
+                <tr>
+                    <th colspan="4">الإجمالي</th>
+                    <th class="text-center">
+                        <span class="{% if stats.total_balance > 0 %}balance-positive{% elif stats.total_balance < 0 %}balance-negative{% else %}balance-zero{% endif %}">
+                            {{ stats.total_balance|floatformat:2 }}
+                        </span>
+                    </th>
+                    <th class="text-center">
+                        <span class="badge bg-info">{{ stats.total_accounts }}</span>
+                    </th>
+                    <th colspan="2"></th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination الراقي -->
+<div class="pagination-wrapper">
+    <div class="row align-items-center">
+        <div class="col-md-4">
+            <div class="pagination-info">
+                <small class="text-muted">
+                    عرض {{ accounts.start_index }}-{{ accounts.end_index }} من {{ paginator.count }} حساب
+                </small>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            {% if paginator.num_pages > 1 %}
+            <nav aria-label="تنقل الصفحات">
+                <ul class="pagination justify-content-end mb-0">
+                    <!-- الصفحة الأولى -->
+                    {% if accounts.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page=1" title="الصفحة الأولى">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ accounts.previous_page_number }}" title="السابق">
+                                <i class="fas fa-angle-left"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="fas fa-angle-double-left"></i></span>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="fas fa-angle-left"></i></span>
+                        </li>
+                    {% endif %}
+
+                    <!-- أرقام الصفحات -->
+                    {% for page_num in paginator.page_range %}
+                        {% if page_num == accounts.number %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                        {% elif page_num > accounts.number|add:'-3' and page_num < accounts.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_num }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                        {% elif page_num == 1 or page_num == paginator.num_pages %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_num }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                        {% elif page_num == 2 or page_num == paginator.num_pages|add:'-1' %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    <!-- الصفحة الأخيرة -->
+                    {% if accounts.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ accounts.next_page_number }}" title="التالي">
+                                <i class="fas fa-angle-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ paginator.num_pages }}" title="الصفحة الأخيرة">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="fas fa-angle-right"></i></span>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="fas fa-angle-double-right"></i></span>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- انتقال سريع -->
+    <div class="row mt-3">
+        <div class="col-md-6">
+            <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-primary" onclick="exportData('excel')">
+                    <i class="fas fa-file-excel me-1"></i>Excel
+                </button>
+                <button class="btn btn-outline-danger" onclick="exportData('pdf')">
+                    <i class="fas fa-file-pdf me-1"></i>PDF
+                </button>
+                <button class="btn btn-outline-info" onclick="printTable()">
+                    <i class="fas fa-print me-1"></i>طباعة
+                </button>
+            </div>
+        </div>
+        
+        <div class="col-md-6 text-end">
+            <div class="input-group input-group-sm" style="width: 150px; display: inline-flex;">
+                <span class="input-group-text">انتقل إلى</span>
+                <input type="number" class="form-control" id="pageJump" 
+                       min="1" max="{{ paginator.num_pages }}" 
+                       placeholder="{{ accounts.number }}">
+                <button class="btn btn-primary" onclick="jumpToPage()">
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal لتفاصيل الحساب -->
+<div class="modal fade" id="accountModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-list-alt me-2"></i>تفاصيل الحساب المالي</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="accountDetails">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">جاري التحميل...</span>
+                    </div>
+                    <div class="mt-2">جاري تحميل التفاصيل...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// وظائف التفاعل
+function showAccountDetails(accountId) {
+    const modal = new bootstrap.Modal(document.getElementById('accountModal'));
+    const detailsContainer = document.getElementById('accountDetails');
+    
+    detailsContainer.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">جاري التحميل...</span>
+            </div>
+            <div class="mt-2">جاري تحميل التفاصيل...</div>
+        </div>
+    `;
+    
+    modal.show();
+    
+    fetch(`/treasury/account-detail/${accountId}/`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            detailsContainer.innerHTML = data.html;
+        } else {
+            detailsContainer.innerHTML = `
+                <div class="alert alert-danger text-center">
+                    <i class="fas fa-exclamation-circle fa-2x mb-2"></i>
+                    <h5>خطأ في تحميل التفاصيل</h5>
+                    <p>${data.error || 'حدث خطأ غير متوقع'}</p>
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        detailsContainer.innerHTML = `
+            <div class="alert alert-warning text-center">
+                <i class="fas fa-wifi fa-2x mb-2"></i>
+                <h5>خطأ في الاتصال</h5>
+                <p>تعذر الاتصال بالخادم. يرجى المحاولة مرة أخرى.</p>
+                <button class="btn btn-primary" onclick="showAccountDetails(${accountId})">
+                    <i class="fas fa-refresh me-1"></i>إعادة المحاولة
+                </button>
+            </div>
+        `;
+    });
+}
+
+// وظائف التنقل
+function jumpToPage() {
+    const pageNum = document.getElementById('pageJump').value;
+    const maxPages = {{ paginator.num_pages }};
+    
+    if (pageNum && pageNum >= 1 && pageNum <= maxPages) {
+        const currentParams = new URLSearchParams(window.location.search);
+        currentParams.set('page', pageNum);
+        window.location.href = '?' + currentParams.toString();
+    } else {
+        alert('يرجى إدخال رقم صفحة صحيح بين 1 و ' + maxPages);
+    }
+}
+
+function changeItemsPerPage(value) {
+    const currentParams = new URLSearchParams(window.location.search);
+    currentParams.set('per_page', value);
+    currentParams.delete('page'); // إعادة تعيين إلى الصفحة الأولى
+    window.location.href = '?' + currentParams.toString();
+}
+
+// تطبيق الفلاتر تلقائياً
+document.addEventListener('DOMContentLoaded', function() {
+    const filterForm = document.getElementById('filterForm');
+    const searchInput = filterForm.querySelector('[name="search"]');
+    
+    // البحث التلقائي بعد التوقف عن الكتابة
+    let searchTimeout;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            filterForm.submit();
+        }, 800);
+    });
+    
+    // تطبيق الفلاتر عند التغيير
+    filterForm.querySelectorAll('select').forEach(select => {
+        select.addEventListener('change', function() {
+            filterForm.submit();
+        });
+    });
+    
+    // تطبيق الترتيب عند التغيير
+    filterForm.querySelectorAll('input[name="order_by"], input[name="desc"]').forEach(input => {
+        input.addEventListener('change', function() {
+            filterForm.submit();
+        });
+    });
+});
+
+// وظائف التصدير
+function exportData(format) {
+    const currentParams = new URLSearchParams(window.location.search);
+    currentParams.set('export', format);
+    window.location.href = '?' + currentParams.toString();
+}
+
+function printTable() {
+    const printContent = document.getElementById('accountsTable').outerHTML;
+    const originalContent = document.body.innerHTML;
+    
+    document.body.innerHTML = `
+        <div class="container-fluid">
+            <h2 class="text-center mb-4">الحسابات المالية</h2>
+            <style>
+                .no-print { display: none !important; }
+                table { width: 100%; border-collapse: collapse; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+                th { background-color: #f8f9fa; }
+                .account-code { background: #333; color: white; padding: 2px 6px; }
+                .balance-positive { color: green; }
+                .balance-negative { color: red; }
+            </style>
+            ${printContent}
+        </div>
+    `;
+    
+    window.print();
+    document.body.innerHTML = originalContent;
+    window.location.reload();
+}
+
+// تأثيرات الحركة
+document.addEventListener('DOMContentLoaded', function() {
+    const rows = document.querySelectorAll('tbody tr');
+    rows.forEach((row, index) => {
+        row.style.opacity = '0';
+        row.style.transform = 'translateX(-20px)';
+        
+        setTimeout(() => {
+            row.style.transition = 'all 0.3s ease';
+            row.style.opacity = '1';
+            row.style.transform = 'translateX(0)';
+        }, index * 50);
+    });
+});
+</script>
+{% endblock %}

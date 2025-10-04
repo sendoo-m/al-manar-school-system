@@ -1,0 +1,268 @@
+{% extends 'books_inventory/base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:inventory_home' %}">الرئيسية</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:subjects_list' %}">المواد الدراسية</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:subject_detail' subject.pk %}">{{ subject.name }}</a></li>
+                <li class="breadcrumb-item active">تعديل</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <div class="card shadow">
+            <div class="card-header bg-warning text-dark">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>تعديل المادة: {{ subject.name }}
+                    </h4>
+                    <span class="badge bg-primary">{{ subject.subject_code|default:"لا يوجد كود" }}</span>
+                </div>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="card-body">
+                    
+                    <!-- البيانات الأساسية -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">اسم المادة <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="name" value="{{ subject.name }}" required maxlength="100">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">الاسم بالإنجليزية</label>
+                            <input type="text" class="form-control" name="name_en" value="{{ subject.name_en }}" maxlength="100">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">كود المادة</label>
+                            <input type="text" class="form-control" name="subject_code" value="{{ subject.subject_code }}" maxlength="20">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">عدد الحصص الأسبوعية</label>
+                            <input type="number" class="form-control" name="weekly_hours" value="{{ subject.weekly_hours }}" min="1" max="20">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">لون المادة</label>
+                            <div class="input-group">
+                                <input type="color" class="form-control form-control-color" name="color" value="{{ subject.color }}">
+                                <span class="input-group-text">{{ subject.color }}</span>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold">وصف المادة</label>
+                            <textarea class="form-control" name="description" rows="3">{{ subject.description }}</textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- الإعدادات -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_core_subject" id="isCoreSubject" 
+                                       {% if subject.is_core_subject %}checked{% endif %}>
+                                <label class="form-check-label fw-bold" for="isCoreSubject">
+                                    مادة أساسية
+                                </label>
+                                <div class="form-text">المواد الأساسية تظهر بأولوية في النظام</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_active" id="isActive" 
+                                       {% if subject.is_active %}checked{% endif %}>
+                                <label class="form-check-label fw-bold" for="isActive">
+                                    المادة نشطة
+                                </label>
+                                <div class="form-text">يمكن استخدامها في إضافة الكتب والتوزيعات</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- إحصائيات المادة الحالية -->
+                    <div class="alert alert-info">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <strong class="text-primary">{{ subject.books_count }}</strong>
+                                <br><small>كتاب مرتبط</small>
+                            </div>
+                            <div class="col-md-3">
+                                <strong class="text-success">{{ subject.grade_levels.count }}</strong>
+                                <br><small>صف دراسي</small>
+                            </div>
+                            <div class="col-md-3">
+                                <strong class="text-info">{{ subject.education_levels.count }}</strong>
+                                <br><small>مرحلة تعليمية</small>
+                            </div>
+                            <div class="col-md-3">
+                                <strong class="text-warning">{{ subject.total_books_stock }}</strong>
+                                <br><small>إجمالي المخزون</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- المراحل والصفوف -->
+                    <h5 class="text-primary mb-3">
+                        <i class="fas fa-layer-group me-2"></i>المراحل والصفوف الدراسية
+                    </h5>
+                    
+                    <!-- المراحل التعليمية -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">المراحل التعليمية:</label>
+                        <div class="row g-2">
+                            {% for education_level in education_levels %}
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input education-level-checkbox" type="checkbox" 
+                                           name="education_levels" value="{{ education_level.id }}" 
+                                           id="education_{{ education_level.id }}"
+                                           {% if education_level.id in selected_education_levels %}checked{% endif %}
+                                           onchange="toggleGradesByEducation({{ education_level.id }})">
+                                    <label class="form-check-label" for="education_{{ education_level.id }}">
+                                        <strong>{{ education_level.name }}</strong>
+                                    </label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- الصفوف الدراسية -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">الصفوف الدراسية:</label>
+                        <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
+                            {% regroup grade_levels by education_level as education_groups %}
+                            {% for group in education_groups %}
+                            <div class="mb-3" id="grades-group-{{ group.grouper.id }}">
+                                <h6 class="text-info border-bottom pb-2">
+                                    {{ group.grouper.name }}
+                                    <small class="text-muted">({{ group.list|length }} صف)</small>
+                                </h6>
+                                <div class="row g-2">
+                                    {% for grade in group.list %}
+                                    <div class="col-md-4 col-lg-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input grade-checkbox grade-education-{{ group.grouper.id }}" 
+                                                   type="checkbox" name="grade_levels" value="{{ grade.id }}" 
+                                                   id="grade_{{ grade.id }}"
+                                                   {% if grade.id in selected_grade_levels %}checked{% endif %}>
+                                            <label class="form-check-label small" for="grade_{{ grade.id }}">
+                                                {{ grade.name }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            اختر المراحل التعليمية أولاً لتسهيل اختيار الصفوف
+                        </div>
+                    </div>
+                    
+                </div>
+                
+                <div class="card-footer bg-light">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'books_inventory:subject_detail' subject.pk %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i>إلغاء
+                        </a>
+                        <div>
+                            {% if subject.books_count > 0 %}
+                            <span class="text-warning me-3">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                تحذير: توجد {{ subject.books_count }} كتاب مرتبط بهذه المادة
+                            </span>
+                            {% endif %}
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-save me-1"></i>حفظ التغييرات
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// نفس الـ JavaScript من قالب الإضافة
+function toggleGradesByEducation(educationId) {
+    const educationCheckbox = document.getElementById(`education_${educationId}`);
+    const gradeCheckboxes = document.querySelectorAll(`.grade-education-${educationId}`);
+    
+    gradeCheckboxes.forEach(checkbox => {
+        checkbox.checked = educationCheckbox.checked;
+    });
+}
+
+document.querySelectorAll('.grade-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+        const educationId = this.className.match(/grade-education-(\d+)/)[1];
+        const educationCheckbox = document.getElementById(`education_${educationId}`);
+        const gradesInEducation = document.querySelectorAll(`.grade-education-${educationId}`);
+        
+        const checkedGrades = Array.from(gradesInEducation).filter(cb => cb.checked);
+        
+        if (checkedGrades.length === gradesInEducation.length) {
+            educationCheckbox.checked = true;
+            educationCheckbox.indeterminate = false;
+        } else if (checkedGrades.length > 0) {
+            educationCheckbox.checked = false;
+            educationCheckbox.indeterminate = true;
+        } else {
+            educationCheckbox.checked = false;
+            educationCheckbox.indeterminate = false;
+        }
+    });
+});
+
+// تهيئة حالة المراحل عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.education-level-checkbox').forEach(educationCheckbox => {
+        const educationId = educationCheckbox.value;
+        const gradesInEducation = document.querySelectorAll(`.grade-education-${educationId}`);
+        const checkedGrades = Array.from(gradesInEducation).filter(cb => cb.checked);
+        
+        if (checkedGrades.length === gradesInEducation.length && gradesInEducation.length > 0) {
+            educationCheckbox.checked = true;
+            educationCheckbox.indeterminate = false;
+        } else if (checkedGrades.length > 0) {
+            educationCheckbox.checked = false;
+            educationCheckbox.indeterminate = true;
+        } else {
+            educationCheckbox.checked = false;
+            educationCheckbox.indeterminate = false;
+        }
+    });
+});
+
+// تأكيد الحفظ
+document.querySelector('form').addEventListener('submit', function(e) {
+    const subjectName = document.querySelector('input[name="name"]').value.trim();
+    if (!subjectName) {
+        alert('يرجى إدخال اسم المادة');
+        e.preventDefault();
+        return;
+    }
+    
+    if (!confirm('هل أنت متأكد من حفظ التغييرات؟')) {
+        e.preventDefault();
+    }
+});
+</script>
+{% endblock %}

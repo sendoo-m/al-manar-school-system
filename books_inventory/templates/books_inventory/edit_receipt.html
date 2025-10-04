@@ -1,0 +1,476 @@
+{% extends 'books_inventory/base.html' %}
+{% load static %}
+
+{% block title %}تعديل إيصال الاستلام - {{ receipt.receipt_number }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:inventory_home' %}">الرئيسية</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:receipts_list' %}">إيصالات الاستلام</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:receipt_detail' receipt.pk %}">{{ receipt.receipt_number }}</a></li>
+                <li class="breadcrumb-item active">تعديل</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h4><i class="fas fa-edit"></i> تعديل إيصال الاستلام</h4>
+                <small>رقم الإيصال: {{ receipt.receipt_number }}</small>
+            </div>
+            <form method="POST" id="editReceiptForm">
+                {% csrf_token %}
+                <div class="card-body">
+                    
+                    <!-- معلومات الإيصال الأساسية -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">المورد <span class="text-danger">*</span></label>
+                                <select class="form-select" name="supplier" required>
+                                    <option value="">اختر المورد</option>
+                                    {% for supplier in suppliers %}
+                                    <option value="{{ supplier.id }}" {% if supplier.id == receipt.supplier.id %}selected{% endif %}>{{ supplier.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">نوع البضاعة</label>
+                                <select class="form-select" name="receipt_type" id="receiptType" disabled>
+                                    {% for type_code, type_name in receipt_type_choices %}
+                                    <option value="{{ type_code }}" {% if receipt.receipt_type == type_code %}selected{% endif %}>{{ type_name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">لا يمكن تغيير نوع البضاعة بعد الإنشاء</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">تاريخ الاستلام <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" name="receipt_date" value="{{ receipt.receipt_date|date:'Y-m-d' }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">رقم الفاتورة</label>
+                                <input type="text" class="form-control" name="invoice_number" value="{{ receipt.invoice_number|default:'' }}" placeholder="رقم فاتورة المورد (اختياري)">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">مستلم بواسطة</label>
+                                <input type="text" class="form-control" value="{{ receipt.received_by.get_full_name|default:receipt.received_by.username }}" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label">ملاحظات</label>
+                        <textarea class="form-control" name="notes" rows="3" placeholder="ملاحظات عامة حول الإيصال (اختياري)">{{ receipt.notes|default:'' }}</textarea>
+                    </div>
+                    
+                    <!-- قسم العناصر -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-list text-primary"></i> العناصر المستلمة</h5>
+                        </div>
+                        <div class="card-body">
+                            
+                            <!-- عناصر الكتب -->
+                            <div id="booksSection" style="display: {% if receipt.receipt_type == 'BOOKS' %}block{% else %}none{% endif %};">
+                                <h6 class="mb-3"><i class="fas fa-book text-primary"></i> الكتب</h6>
+                                <div id="booksContainer">
+                                    <!-- سيتم إضافة العناصر هنا ديناميكياً -->
+                                </div>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="addBookItem()">
+                                    <i class="fas fa-plus"></i> إضافة كتاب
+                                </button>
+                            </div>
+                            
+                            <!-- عناصر الكراسات -->
+                            <div id="notebooksSection" style="display: {% if receipt.receipt_type == 'NOTEBOOKS' %}block{% else %}none{% endif %};">
+                                <h6 class="mb-3"><i class="fas fa-book-open text-info"></i> الكراسات</h6>
+                                <div id="notebooksContainer">
+                                    <!-- سيتم إضافة العناصر هنا ديناميكياً -->
+                                </div>
+                                <button type="button" class="btn btn-outline-info btn-sm" onclick="addNotebookItem()">
+                                    <i class="fas fa-plus"></i> إضافة كراسة
+                                </button>
+                            </div>
+                            
+                            <!-- عناصر الأدوات المدرسية -->
+                            <div id="suppliesSection" style="display: {% if receipt.receipt_type == 'SUPPLIES' %}block{% else %}none{% endif %};">
+                                <h6 class="mb-3"><i class="fas fa-pen text-success"></i> الأدوات المدرسية</h6>
+                                <div id="suppliesContainer">
+                                    <!-- سيتم إضافة العناصر هنا ديناميكياً -->
+                                </div>
+                                <button type="button" class="btn btn-outline-success btn-sm" onclick="addSupplyItem()">
+                                    <i class="fas fa-plus"></i> إضافة أداة مدرسية
+                                </button>
+                            </div>
+                            
+                        </div>
+                    </div>
+                    
+                    <!-- ملخص الإجمالي -->
+                    <div class="card mt-4">
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-md-4">
+                                    <h5>إجمالي العناصر: <span id="totalItems" class="text-primary">{{ receipt.total_items }}</span></h5>
+                                </div>
+                                <div class="col-md-4">
+                                    <h5>العناصر التالفة: <span id="totalDamaged" class="text-danger">{{ receipt.damaged_items }}</span></h5>
+                                </div>
+                                <div class="col-md-4">
+                                    <h5>إجمالي التكلفة: <span id="totalCost" class="text-success">{{ receipt.total_cost }}</span> ج.م</h5>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <input type="hidden" name="item_count" id="itemCount" value="0">
+                </div>
+                
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'books_inventory:receipt_detail' receipt.pk %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> إلغاء
+                        </a>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-save"></i> حفظ التغييرات
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- بيانات للجافا سكريبت -->
+<script type="application/json" id="booksData">{{ books|safe }}</script>
+<script type="application/json" id="notebooksData">{{ notebooks|safe }}</script>
+<script type="application/json" id="suppliesData">{{ supplies|safe }}</script>
+<script type="application/json" id="currentItems">{{ current_items|safe }}</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// بيانات العناصر
+const booksData = JSON.parse(document.getElementById('booksData').textContent || '[]');
+const notebooksData = JSON.parse(document.getElementById('notebooksData').textContent || '[]');
+const suppliesData = JSON.parse(document.getElementById('suppliesData').textContent || '[]');
+const currentItems = JSON.parse(document.getElementById('currentItems').textContent || '[]');
+
+let itemCounter = 0;
+const receiptType = '{{ receipt.receipt_type }}';
+
+// تحميل العناصر الحالية عند فتح الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    loadCurrentItems();
+});
+
+function loadCurrentItems() {
+    currentItems.forEach(function(item, index) {
+        if (receiptType === 'BOOKS' && item.type === 'book') {
+            addBookItemWithData(item);
+        } else if (receiptType === 'NOTEBOOKS' && item.type === 'notebook') {
+            addNotebookItemWithData(item);
+        } else if (receiptType === 'SUPPLIES' && item.type === 'supply') {
+            addSupplyItemWithData(item);
+        }
+    });
+    updateTotals();
+}
+
+function addBookItemWithData(itemData) {
+    const container = document.getElementById('booksContainer');
+    const itemHtml = `
+        <div class="row mb-3 item-row" data-index="${itemCounter}">
+            <div class="col-md-4">
+                <label class="form-label">الكتاب</label>
+                <select class="form-select book-select" name="book_${itemCounter}" required>
+                    <option value="">اختر الكتاب</option>
+                    ${booksData.map(book => `
+                        <option value="${book.id}" ${book.id == itemData.id ? 'selected' : ''} data-cost="${book.cost_price}">${book.title} - ${book.subject}</option>
+                    `).join('')}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">الكمية المستلمة</label>
+                <input type="number" class="form-control quantity-input" name="quantity_${itemCounter}" value="${itemData.quantity_received}" min="1" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">التالف</label>
+                <input type="number" class="form-control damaged-input" name="damaged_${itemCounter}" value="${itemData.quantity_damaged}" min="0">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">سعر الوحدة</label>
+                <input type="number" class="form-control cost-input" name="unit_cost_${itemCounter}" value="${itemData.unit_cost}" min="0" step="0.01">
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">إجمالي</label>
+                <input type="text" class="form-control total-display" readonly value="${itemData.total_cost}">
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">&nbsp;</label>
+                <button type="button" class="btn btn-danger btn-sm w-100" onclick="removeItem(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', itemHtml);
+    addCalculationListeners(itemCounter);
+    addItemSelectionListener(itemCounter);
+    itemCounter++;
+    updateItemCount();
+}
+
+// إضافة عنصر كتاب جديد (فارغ)
+function addBookItem() {
+    const container = document.getElementById('booksContainer');
+    const itemHtml = `
+        <div class="row mb-3 item-row" data-index="${itemCounter}">
+            <div class="col-md-4">
+                <label class="form-label">الكتاب</label>
+                <select class="form-select book-select" name="book_${itemCounter}" required>
+                    <option value="">اختر الكتاب</option>
+                    ${booksData.map(book => `
+                        <option value="${book.id}" data-cost="${book.cost_price}">${book.title} - ${book.subject}</option>
+                    `).join('')}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">الكمية المستلمة</label>
+                <input type="number" class="form-control quantity-input" name="quantity_${itemCounter}" min="1" value="1" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">التالف</label>
+                <input type="number" class="form-control damaged-input" name="damaged_${itemCounter}" min="0" value="0">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">سعر الوحدة</label>
+                <input type="number" class="form-control cost-input" name="unit_cost_${itemCounter}" min="0" step="0.01" value="0">
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">إجمالي</label>
+                <input type="text" class="form-control total-display" readonly value="0">
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">&nbsp;</label>
+                <button type="button" class="btn btn-danger btn-sm w-100" onclick="removeItem(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', itemHtml);
+    addCalculationListeners(itemCounter);
+    addItemSelectionListener(itemCounter);
+    itemCounter++;
+    updateItemCount();
+}
+
+// إضافة عنصر كراسة جديد
+function addNotebookItem() {
+    const container = document.getElementById('notebooksContainer');
+    const itemHtml = `
+        <div class="row mb-3 item-row" data-index="${itemCounter}">
+            <div class="col-md-4">
+                <label class="form-label">الكراسة</label>
+                <select class="form-select notebook-select" name="notebook_${itemCounter}" required>
+                    <option value="">اختر الكراسة</option>
+                    ${notebooksData.map(notebook => `
+                        <option value="${notebook.id}" data-cost="${notebook.cost_price}">${notebook.name} - ${notebook.type}</option>
+                    `).join('')}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">الكمية المستلمة</label>
+                <input type="number" class="form-control quantity-input" name="quantity_${itemCounter}" min="1" value="1" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">التالف</label>
+                <input type="number" class="form-control damaged-input" name="damaged_${itemCounter}" min="0" value="0">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">سعر الوحدة</label>
+                <input type="number" class="form-control cost-input" name="unit_cost_${itemCounter}" min="0" step="0.01" value="0">
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">إجمالي</label>
+                <input type="text" class="form-control total-display" readonly value="0">
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">&nbsp;</label>
+                <button type="button" class="btn btn-danger btn-sm w-100" onclick="removeItem(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', itemHtml);
+    addCalculationListeners(itemCounter);
+    addItemSelectionListener(itemCounter);
+    itemCounter++;
+    updateItemCount();
+}
+
+// إضافة عنصر أداة مدرسية جديد
+function addSupplyItem() {
+    const container = document.getElementById('suppliesContainer');
+    const itemHtml = `
+        <div class="row mb-3 item-row" data-index="${itemCounter}">
+            <div class="col-md-4">
+                <label class="form-label">الأداة المدرسية</label>
+                <select class="form-select supply-select" name="supply_${itemCounter}" required>
+                    <option value="">اختر الأداة</option>
+                    ${suppliesData.map(supply => `
+                        <option value="${supply.id}" data-cost="${supply.cost_price}">${supply.name} - ${supply.category}</option>
+                    `).join('')}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">الكمية المستلمة</label>
+                <input type="number" class="form-control quantity-input" name="quantity_${itemCounter}" min="1" value="1" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">التالف</label>
+                <input type="number" class="form-control damaged-input" name="damaged_${itemCounter}" min="0" value="0">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">سعر الوحدة</label>
+                <input type="number" class="form-control cost-input" name="unit_cost_${itemCounter}" min="0" step="0.01" value="0">
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">إجمالي</label>
+                <input type="text" class="form-control total-display" readonly value="0">
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">&nbsp;</label>
+                <button type="button" class="btn btn-danger btn-sm w-100" onclick="removeItem(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', itemHtml);
+    addCalculationListeners(itemCounter);
+    addItemSelectionListener(itemCounter);
+    itemCounter++;
+    updateItemCount();
+}
+
+// إضافة listeners للحسابات
+function addCalculationListeners(index) {
+    const row = document.querySelector(`[data-index="${index}"]`);
+    const quantityInput = row.querySelector('.quantity-input');
+    const costInput = row.querySelector('.cost-input');
+    const totalDisplay = row.querySelector('.total-display');
+    
+    function calculateTotal() {
+        const quantity = parseFloat(quantityInput.value) || 0;
+        const cost = parseFloat(costInput.value) || 0;
+        const total = quantity * cost;
+        totalDisplay.value = total.toFixed(2);
+        updateTotals();
+    }
+    
+    quantityInput.addEventListener('input', calculateTotal);
+    costInput.addEventListener('input', calculateTotal);
+}
+
+// إضافة listener لتحديث السعر عند اختيار العنصر
+function addItemSelectionListener(index) {
+    const row = document.querySelector(`[data-index="${index}"]`);
+    const select = row.querySelector('select');  
+    const costInput = row.querySelector('.cost-input');
+    
+    if (select) {
+        select.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const cost = selectedOption.getAttribute('data-cost') || '0';
+            costInput.value = cost;
+            
+            // تحديث الإجمالي
+            const quantityInput = row.querySelector('.quantity-input');
+            const totalDisplay = row.querySelector('.total-display');
+            const quantity = parseFloat(quantityInput.value) || 0;
+            const total = quantity * parseFloat(cost);
+            totalDisplay.value = total.toFixed(2);
+            updateTotals();
+        });
+    }
+}
+
+// حذف عنصر
+function removeItem(button) {
+    button.closest('.item-row').remove();
+    updateTotals();
+    updateItemCount();
+}
+
+// تحديث الإجماليات
+function updateTotals() {
+    let totalItems = 0;
+    let totalDamaged = 0;
+    let totalCost = 0;
+    
+    document.querySelectorAll('.item-row').forEach(row => {
+        const quantity = parseFloat(row.querySelector('.quantity-input').value) || 0;
+        const damaged = parseFloat(row.querySelector('.damaged-input').value) || 0;
+        const cost = parseFloat(row.querySelector('.cost-input').value) || 0;
+        
+        totalItems += quantity;
+        totalDamaged += damaged;
+        totalCost += quantity * cost;
+    });
+    
+    document.getElementById('totalItems').textContent = totalItems;
+    document.getElementById('totalDamaged').textContent = totalDamaged;
+    document.getElementById('totalCost').textContent = totalCost.toFixed(2);
+}
+
+// تحديث عدد العناصر
+function updateItemCount() {
+    const count = document.querySelectorAll('.item-row').length;
+    document.getElementById('itemCount').value = count;
+}
+
+// التحقق من صحة النموذج
+document.getElementById('editReceiptForm').addEventListener('submit', function(e) {
+    const itemCount = document.querySelectorAll('.item-row').length;
+    if (itemCount === 0) {
+        e.preventDefault();
+        alert('يجب إضافة عنصر واحد على الأقل للإيصال');
+        return false;
+    }
+    
+    // التحقق من اختيار العناصر
+    let hasEmptySelects = false;
+    document.querySelectorAll('.item-row select').forEach(select => {
+        if (!select.value) {
+            hasEmptySelects = true;
+        }
+    });
+    
+    if (hasEmptySelects) {
+        e.preventDefault();
+        alert('يجب اختيار جميع العناصر');
+        return false;
+    }
+});
+</script>
+{% endblock %}

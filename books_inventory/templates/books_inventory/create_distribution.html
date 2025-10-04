@@ -1,0 +1,1068 @@
+{% extends 'books_inventory/base.html' %}
+{% load static %}
+
+{% block title %}إنشاء توزيع جديد - مخزن الكتب{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:inventory_home' %}">الرئيسية</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:distributions_list' %}">التوزيعات</a></li>
+                <li class="breadcrumb-item active">إنشاء توزيع جديد</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- شريط التقدم -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="progress-steps">
+                    <div class="step active" id="step1">
+                        <div class="step-number">1</div>
+                        <div class="step-title">اختيار الطالب</div>
+                    </div>
+                    <div class="step" id="step2">
+                        <div class="step-number">2</div>
+                        <div class="step-title">اختيار العناصر</div>
+                    </div>
+                    <div class="step" id="step3">
+                        <div class="step-number">3</div>
+                        <div class="step-title">مراجعة وإنشاء</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        
+        <!-- الخطوة الأولى: البحث عن الطالب -->
+        <div class="card step-content" id="stepContent1">
+            <div class="card-header bg-primary text-white">
+                <h4><i class="fas fa-search"></i> الخطوة 1: اختيار الطالب</h4>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label class="form-label">البحث عن الطالب</label>
+                        <input type="text" id="studentSearch" class="form-control" placeholder="أدخل اسم الطالب أو الرقم القومي (على الأقل 2 حرف)..." autocomplete="off">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="button" id="searchBtn" class="btn btn-primary w-100">
+                            <i class="fas fa-search"></i> البحث
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- نتائج البحث -->
+                <div id="searchResults" class="mt-3" style="display: none;"></div>
+            </div>
+        </div>
+        
+        <!-- الخطوة الثانية: اختيار العناصر بـ checkboxes -->
+        <div class="card step-content" id="stepContent2" style="display: none;">
+            <div class="card-header bg-success text-white">
+                <h4><i class="fas fa-check-square"></i> الخطوة 2: اختيار العناصر للتوزيع</h4>
+            </div>
+            <div class="card-body">
+                
+                <!-- معلومات الطالب المختار -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5><i class="fas fa-user text-primary"></i> بيانات الطالب المختار</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="selectedStudentInfo"></div>
+                    </div>
+                </div>
+                
+                <!-- رسالة تحميل العناصر -->
+                <div id="loadingItems" class="text-center py-4" style="display: none;">
+                    <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+                    <h5 class="mt-3">جاري تحميل العناصر المناسبة للصف الدراسي...</h5>
+                </div>
+                
+                <!-- محتوى العناصر -->
+                <div id="itemsContent" style="display: none;">
+                    
+                    <!-- أزرار الاختيار السريع -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6><i class="fas fa-magic text-warning"></i> اختيار سريع:</h6>
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <button type="button" class="btn btn-outline-primary w-100" onclick="selectAllBooks()">
+                                                <i class="fas fa-books"></i> جميع الكتب
+                                            </button>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <button type="button" class="btn btn-outline-info w-100" onclick="selectAllNotebooks()">
+                                                <i class="fas fa-book-open"></i> جميع الكراسات
+                                            </button>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <button type="button" class="btn btn-outline-success w-100" onclick="selectAllSupplies()">
+                                                <i class="fas fa-tools"></i> جميع الأدوات
+                                            </button>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <button type="button" class="btn btn-outline-secondary w-100" onclick="clearAllSelections()">
+                                                <i class="fas fa-times"></i> إلغاء الكل
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- تبويب العناصر -->
+                    <ul class="nav nav-tabs" id="itemsTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="books-tab" data-bs-toggle="tab" data-bs-target="#books-panel" type="button" role="tab">
+                                <i class="fas fa-book text-primary"></i> الكتب (<span id="booksCount">0</span>)
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="notebooks-tab" data-bs-toggle="tab" data-bs-target="#notebooks-panel" type="button" role="tab">
+                                <i class="fas fa-book-open text-info"></i> الكراسات (<span id="notebooksCount">0</span>)
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="supplies-tab" data-bs-toggle="tab" data-bs-target="#supplies-panel" type="button" role="tab">
+                                <i class="fas fa-pen text-success"></i> الأدوات (<span id="suppliesCount">0</span>)
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content" id="itemsTabContent">
+                        
+                        <!-- تبويب الكتب -->
+                        <div class="tab-pane fade show active" id="books-panel" role="tabpanel">
+                            <div class="card">
+                                <div class="card-header">
+                                    <div class="row align-items-center">
+                                        <div class="col">
+                                            <h6 class="mb-0"><i class="fas fa-book text-primary"></i> كتب الصف الدراسي</h6>
+                                        </div>
+                                        <div class="col-auto">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="selectAllBooksCheck" onchange="toggleAllBooks()">
+                                                <label class="form-check-label" for="selectAllBooksCheck">
+                                                    اختيار الكل
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div id="booksList" class="row">
+                                        <!-- سيتم ملؤها بـ JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- تبويب الكراسات -->
+                        <div class="tab-pane fade" id="notebooks-panel" role="tabpanel">
+                            <div class="card">
+                                <div class="card-header">
+                                    <div class="row align-items-center">
+                                        <div class="col">
+                                            <h6 class="mb-0"><i class="fas fa-book-open text-info"></i> كراسات الصف الدراسي</h6>
+                                        </div>
+                                        <div class="col-auto">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="selectAllNotebooksCheck" onchange="toggleAllNotebooks()">
+                                                <label class="form-check-label" for="selectAllNotebooksCheck">
+                                                    اختيار الكل
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div id="notebooksList" class="row">
+                                        <!-- سيتم ملؤها بـ JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- تبويب الأدوات -->
+                        <div class="tab-pane fade" id="supplies-panel" role="tabpanel">
+                            <div class="card">
+                                <div class="card-header">
+                                    <div class="row align-items-center">
+                                        <div class="col">
+                                            <h6 class="mb-0"><i class="fas fa-pen text-success"></i> أدوات الصف الدراسي</h6>
+                                        </div>
+                                        <div class="col-auto">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="selectAllSuppliesCheck" onchange="toggleAllSupplies()">
+                                                <label class="form-check-label" for="selectAllSuppliesCheck">
+                                                    اختيار الكل
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div id="suppliesList" class="row">
+                                        <!-- سيتم ملؤها بـ JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- ملخص العناصر المختارة -->
+                    <div class="card mt-4">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0"><i class="fas fa-check-circle"></i> ملخص العناصر المختارة</h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="selectionSummary" class="row text-center">
+                                <div class="col-md-4">
+                                    <h4 class="text-primary" id="selectedBooksCount">0</h4>
+                                    <p class="mb-0">كتاب مختار</p>
+                                </div>
+                                <div class="col-md-4">
+                                    <h4 class="text-info" id="selectedNotebooksCount">0</h4>
+                                    <p class="mb-0">كراسة مختارة</p>
+                                </div>
+                                <div class="col-md-4">
+                                    <h4 class="text-success" id="selectedSuppliesCount">0</h4>
+                                    <p class="mb-0">أداة مختارة</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- رسالة عدم وجود عناصر -->
+                <div id="noItemsMessage" class="text-center py-5" style="display: none;">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">لا توجد عناصر متاحة لهذا الصف</h5>
+                    <p class="text-muted">لم يتم العثور على كتب أو كراسات أو أدوات مناسبة لهذا الصف الدراسي</p>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <button type="button" class="btn btn-secondary me-2" onclick="goToStep(1)">
+                        <i class="fas fa-arrow-left"></i> السابق
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="goToStep(3)" id="nextToReviewBtn" disabled>
+                        <i class="fas fa-arrow-right"></i> التالي - المراجعة
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- الخطوة الثالثة: المراجعة والإنشاء -->
+        <div class="card step-content" id="stepContent3" style="display: none;">
+            <div class="card-header bg-warning text-dark">
+                <h4><i class="fas fa-clipboard-check"></i> الخطوة 3: مراجعة وإنشاء التوزيع</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="createDistributionForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="student_id" id="finalStudentId">
+                    <input type="hidden" name="selected_items" id="selectedItems">
+                    
+                    <!-- معلومات الطالب النهائية -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5><i class="fas fa-user"></i> معلومات الطالب</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="finalStudentInfo"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- ملخص العناصر المختارة -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-success text-white">
+                            <h5><i class="fas fa-list"></i> العناصر المختارة للتوزيع</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="finalItemsList"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- إعدادات التوزيع -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5><i class="fas fa-cogs"></i> إعدادات التوزيع</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">تاريخ التوزيع <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" name="distribution_date" value="{{ today|date:'Y-m-d' }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">حالة التوزيع</label>
+                                    <select class="form-select" name="status">
+                                        <option value="PENDING">في الانتظار</option>
+                                        <option value="COMPLETED" selected>مكتمل</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <label class="form-label">ملاحظات</label>
+                                <textarea class="form-control" name="notes" rows="3" placeholder="ملاحظات إضافية حول التوزيع (اختياري)"></textarea>
+                            </div>
+                            
+                            <div class="form-check mt-3">
+                                <input class="form-check-input" type="checkbox" name="mark_as_distributed" id="markAsDistributed" checked>
+                                <label class="form-check-label" for="markAsDistributed">
+                                    <strong>وضع علامة "تم التوزيع" على جميع العناصر</strong>
+                                    <br><small class="text-muted">سيتم تحديث المخزون تلقائياً</small>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button type="button" class="btn btn-secondary me-2" onclick="goToStep(2)">
+                            <i class="fas fa-arrow-left"></i> السابق
+                        </button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-check"></i> إنشاء التوزيع
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// متغيرات عامة
+let selectedStudent = null;
+let availableItems = {
+    books: [],
+    notebooks: [],
+    supplies: []
+};
+let selectedItems = {
+    books: [],
+    notebooks: [],
+    supplies: []
+};
+let searchTimeout;
+
+// تهيئة الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('تم تحميل الصفحة');
+    goToStep(1);
+    
+    // Event listeners
+    document.getElementById('studentSearch').addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(searchStudents, 300);
+    });
+
+    document.getElementById('searchBtn').addEventListener('click', searchStudents);
+    
+    document.getElementById('createDistributionForm').addEventListener('submit', handleFormSubmit);
+});
+
+// الانتقال بين الخطوات
+function goToStep(stepNumber) {
+    console.log(`الانتقال إلى الخطوة ${stepNumber}`);
+    
+    // إخفاء جميع الخطوات
+    document.querySelectorAll('.step-content').forEach(content => {
+        content.style.display = 'none';
+    });
+    
+    // إزالة الفئة النشطة من جميع الخطوات
+    document.querySelectorAll('.step').forEach(step => {
+        step.classList.remove('active');
+    });
+    
+    // إظهار الخطوة المطلوبة
+    document.getElementById(`stepContent${stepNumber}`).style.display = 'block';
+    document.getElementById(`step${stepNumber}`).classList.add('active');
+    
+    if (stepNumber === 3) {
+        updateFinalReview();
+    }
+}
+
+// البحث عن الطلاب
+function searchStudents() {
+    const query = document.getElementById('studentSearch').value.trim();
+    const resultsDiv = document.getElementById('searchResults');
+    
+    if (query.length < 2) {
+        resultsDiv.style.display = 'none';
+        return;
+    }
+    
+    resultsDiv.style.display = 'block';
+    resultsDiv.innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin"></i> جاري البحث...</div>';
+    
+    fetch(`{% url "books_inventory:student_search_api" %}?q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                resultsDiv.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                return;
+            }
+            
+            if (data.results.length === 0) {
+                resultsDiv.innerHTML = '<div class="alert alert-warning">لا توجد نتائج للبحث المدخل</div>';
+                return;
+            }
+            
+            let html = '<h6 class="mb-3">نتائج البحث:</h6><div class="row">';
+            
+            data.results.forEach(student => {
+                const canDistributeClass = student.can_distribute ? 'border-success' : 'border-warning';
+                const paymentStatus = student.first_installment_paid ? 
+                    '<span class="badge bg-success"><i class="fas fa-check"></i> مدفوع</span>' :
+                    '<span class="badge bg-danger"><i class="fas fa-times"></i> غير مدفوع</span>';
+                
+                html += `
+                    <div class="col-md-6 mb-3">
+                        <div class="card ${canDistributeClass}" style="cursor: pointer;" onclick="selectStudent('${student.id}', '${student.name.replace(/'/g, "\\'")}', '${student.national_number}', '${student.grade_level}', '${student.education_level}', ${student.first_installment_paid}, ${student.can_distribute}, '${student.grade_level_id || ''}')">
+                            <div class="card-body">
+                                <h6 class="card-title">${student.name}</h6>
+                                <p class="card-text">
+                                    <strong>الرقم القومي:</strong> ${student.national_number}<br>
+                                    <strong>الصف:</strong> ${student.education_level} - ${student.grade_level}<br>
+                                    <strong>حالة الدفع:</strong> ${paymentStatus}
+                                </p>
+                                ${student.can_distribute ? 
+                                    '<span class="badge bg-success">يمكن التوزيع</span>' :
+                                    '<span class="badge bg-warning">لا يمكن التوزيع</span>'
+                                }
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            resultsDiv.innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            resultsDiv.innerHTML = '<div class="alert alert-danger">حدث خطأ في البحث</div>';
+        });
+}
+
+// اختيار طالب
+function selectStudent(id, name, nationalNumber, gradeLevel, educationLevel, firstInstallmentPaid, canDistribute, gradeLevelId) {
+    if (!canDistribute) {
+        alert('لا يمكن إنشاء توزيع لهذا الطالب. تأكد من دفع القسط الأول وعدم وجود توزيع سابق اليوم.');
+        return;
+    }
+    
+    selectedStudent = {
+        id: id,
+        name: name,
+        national_number: nationalNumber,
+        grade_level: gradeLevel,
+        education_level: educationLevel,
+        first_installment_paid: firstInstallmentPaid,
+        can_distribute: canDistribute,
+        grade_level_id: gradeLevelId
+    };
+    
+    // تحديث معلومات الطالب
+    updateStudentInfo();
+    
+    // تحميل العناصر المناسبة للصف
+    loadItemsForGrade(gradeLevelId);
+    
+    // الانتقال للخطوة التالية
+    goToStep(2);
+}
+
+// تحديث معلومات الطالب
+function updateStudentInfo() {
+    const paymentStatus = selectedStudent.first_installment_paid ? 
+        '<span class="badge bg-success"><i class="fas fa-check-circle"></i> القسط الأول مدفوع</span>' :
+        '<span class="badge bg-danger"><i class="fas fa-times-circle"></i> القسط الأول غير مدفوع</span>';
+    
+    const studentInfoHtml = `
+        <div class="row">
+            <div class="col-md-6">
+                <table class="table table-borderless">
+                    <tr>
+                        <th width="40%">اسم الطالب:</th>
+                        <td><strong>${selectedStudent.name}</strong></td>
+                    </tr>
+                    <tr>
+                        <th>الرقم القومي:</th>
+                        <td>${selectedStudent.national_number || 'غير محدد'}</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <table class="table table-borderless">
+                    <tr>
+                        <th width="40%">الصف الدراسي:</th>
+                        <td><span class="badge bg-primary">${selectedStudent.education_level} - ${selectedStudent.grade_level}</span></td>
+                    </tr>
+                    <tr>
+                        <th>حالة الدفع:</th>
+                        <td>${paymentStatus}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('selectedStudentInfo').innerHTML = studentInfoHtml;
+    document.getElementById('finalStudentInfo').innerHTML = studentInfoHtml;
+}
+
+// تحميل العناصر المناسبة للصف
+function loadItemsForGrade(gradeLevelId) {
+    if (!gradeLevelId) {
+        document.getElementById('noItemsMessage').style.display = 'block';
+        document.getElementById('itemsContent').style.display = 'none';
+        return;
+    }
+    
+    document.getElementById('loadingItems').style.display = 'block';
+    document.getElementById('itemsContent').style.display = 'none';
+    document.getElementById('noItemsMessage').style.display = 'none';
+    
+    fetch(`/inventory/api/get-items-for-grade/?grade_level_id=${gradeLevelId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                availableItems = {
+                    books: data.books || [],
+                    notebooks: data.notebooks || [],
+                    supplies: data.supplies || []
+                };
+                
+                displayItems();
+                document.getElementById('loadingItems').style.display = 'none';
+                
+                if (data.total_items > 0) {
+                    document.getElementById('itemsContent').style.display = 'block';
+                } else {
+                    document.getElementById('noItemsMessage').style.display = 'block';
+                }
+            } else {
+                document.getElementById('loadingItems').style.display = 'none';
+                document.getElementById('noItemsMessage').style.display = 'block';
+                console.error('خطأ في تحميل العناصر:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading items:', error);
+            document.getElementById('loadingItems').style.display = 'none';
+            document.getElementById('noItemsMessage').style.display = 'block';
+        });
+}
+
+// عرض العناصر مع checkboxes
+function displayItems() {
+    displayBooks();
+    displayNotebooks();
+    displaySupplies();
+    updateCounts();
+}
+
+// عرض الكتب
+function displayBooks() {
+    const booksList = document.getElementById('booksList');
+    const booksCount = document.getElementById('booksCount');
+    
+    booksCount.textContent = availableItems.books.length;
+    
+    if (availableItems.books.length === 0) {
+        booksList.innerHTML = '<div class="col-12"><div class="alert alert-info">لا توجد كتب متاحة لهذا الصف</div></div>';
+        return;
+    }
+    
+    let html = '';
+    availableItems.books.forEach(book => {
+        html += `
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input book-checkbox" type="checkbox" 
+                                   id="book_${book.id}" value="${book.id}" 
+                                   onchange="updateSelections()">
+                            <label class="form-check-label fw-bold" for="book_${book.id}">
+                                ${book.title}
+                            </label>
+                        </div>
+                        <small class="text-muted d-block">المادة: ${book.subject}</small>
+                        <small class="text-muted d-block">النوع: ${book.book_type}</small>
+                        <small class="text-success d-block">متاح: ${book.available_stock}</small>
+                        ${book.term ? `<small class="text-info d-block">الفترة: ${book.term}</small>` : ''}
+                        
+                        <!-- حقل الكمية -->
+                        <div class="mt-2" id="quantity_book_${book.id}" style="display: none;">
+                            <label class="form-label small">الكمية:</label>
+                            <input type="number" class="form-control form-control-sm" 
+                                   min="1" max="${book.available_stock}" value="1" 
+                                   id="qty_book_${book.id}" onchange="updateSelections()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    booksList.innerHTML = html;
+}
+
+// عرض الكراسات
+function displayNotebooks() {
+    const notebooksList = document.getElementById('notebooksList');
+    const notebooksCount = document.getElementById('notebooksCount');
+    
+    notebooksCount.textContent = availableItems.notebooks.length;
+    
+    if (availableItems.notebooks.length === 0) {
+        notebooksList.innerHTML = '<div class="col-12"><div class="alert alert-info">لا توجد كراسات متاحة لهذا الصف</div></div>';
+        return;
+    }
+    
+    let html = '';
+    availableItems.notebooks.forEach(notebook => {
+        html += `
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input notebook-checkbox" type="checkbox" 
+                                   id="notebook_${notebook.id}" value="${notebook.id}" 
+                                   onchange="updateSelections()">
+                            <label class="form-check-label fw-bold" for="notebook_${notebook.id}">
+                                ${notebook.name}
+                            </label>
+                        </div>
+                        <small class="text-muted d-block">النوع: ${notebook.type}</small>
+                        <small class="text-muted d-block">الحجم: ${notebook.size}</small>
+                        <small class="text-muted d-block">الصفحات: ${notebook.pages_count}</small>
+                        <small class="text-success d-block">متاح: ${notebook.available_stock}</small>
+                        
+                        <!-- حقل الكمية -->
+                        <div class="mt-2" id="quantity_notebook_${notebook.id}" style="display: none;">
+                            <label class="form-label small">الكمية:</label>
+                            <input type="number" class="form-control form-control-sm" 
+                                   min="1" max="${notebook.available_stock}" value="1" 
+                                   id="qty_notebook_${notebook.id}" onchange="updateSelections()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    notebooksList.innerHTML = html;
+}
+
+// عرض الأدوات
+function displaySupplies() {
+    const suppliesList = document.getElementById('suppliesList');
+    const suppliesCount = document.getElementById('suppliesCount');
+    
+    suppliesCount.textContent = availableItems.supplies.length;
+    
+    if (availableItems.supplies.length === 0) {
+        suppliesList.innerHTML = '<div class="col-12"><div class="alert alert-info">لا توجد أدوات متاحة لهذا الصف</div></div>';
+        return;
+    }
+    
+    let html = '';
+    availableItems.supplies.forEach(supply => {
+        html += `
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input supply-checkbox" type="checkbox" 
+                                   id="supply_${supply.id}" value="${supply.id}" 
+                                   onchange="updateSelections()">
+                            <label class="form-check-label fw-bold" for="supply_${supply.id}">
+                                ${supply.name}
+                            </label>
+                        </div>
+                        <small class="text-muted d-block">الفئة: ${supply.category}</small>
+                        <small class="text-muted d-block">الوحدة: ${supply.unit}</small>
+                        <small class="text-success d-block">متاح: ${supply.available_stock}</small>
+                        ${supply.description ? `<small class="text-info d-block">${supply.description}</small>` : ''}
+                        
+                        <!-- حقل الكمية -->
+                        <div class="mt-2" id="quantity_supply_${supply.id}" style="display: none;">
+                            <label class="form-label small">الكمية:</label>
+                            <input type="number" class="form-control form-control-sm" 
+                                   min="1" max="${supply.available_stock}" value="1" 
+                                   id="qty_supply_${supply.id}" onchange="updateSelections()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    suppliesList.innerHTML = html;
+}
+
+// تحديث تعداد العناصر
+function updateCounts() {
+    document.getElementById('booksCount').textContent = availableItems.books.length;
+    document.getElementById('notebooksCount').textContent = availableItems.notebooks.length;
+    document.getElementById('suppliesCount').textContent = availableItems.supplies.length;
+}
+
+// تحديث الاختيارات
+function updateSelections() {
+    // جمع العناصر المختارة
+    selectedItems.books = [];
+    selectedItems.notebooks = [];
+    selectedItems.supplies = [];
+    
+    // الكتب المختارة
+    document.querySelectorAll('.book-checkbox:checked').forEach(checkbox => {
+        const bookId = parseInt(checkbox.value);
+        const book = availableItems.books.find(b => b.id === bookId);
+        const quantity = parseInt(document.getElementById(`qty_book_${bookId}`).value) || 1;
+        
+        if (book) {
+            selectedItems.books.push({
+                id: bookId,
+                title: book.title,
+                subject: book.subject,
+                quantity: quantity
+            });
+        }
+        
+        // إظهار/إخفاء حقل الكمية
+        document.getElementById(`quantity_book_${bookId}`).style.display = 'block';
+    });
+    
+    // إخفاء حقول الكمية للكتب غير المختارة
+    document.querySelectorAll('.book-checkbox:not(:checked)').forEach(checkbox => {
+        const bookId = checkbox.value;
+        document.getElementById(`quantity_book_${bookId}`).style.display = 'none';
+    });
+    
+    // الكراسات المختارة
+    document.querySelectorAll('.notebook-checkbox:checked').forEach(checkbox => {
+        const notebookId = parseInt(checkbox.value);
+        const notebook = availableItems.notebooks.find(n => n.id === notebookId);
+        const quantity = parseInt(document.getElementById(`qty_notebook_${notebookId}`).value) || 1;
+        
+        if (notebook) {
+            selectedItems.notebooks.push({
+                id: notebookId,
+                name: notebook.name,
+                type: notebook.type,
+                quantity: quantity
+            });
+        }
+        
+        document.getElementById(`quantity_notebook_${notebookId}`).style.display = 'block';
+    });
+    
+    document.querySelectorAll('.notebook-checkbox:not(:checked)').forEach(checkbox => {
+        const notebookId = checkbox.value;
+        document.getElementById(`quantity_notebook_${notebookId}`).style.display = 'none';
+    });
+    
+    // الأدوات المختارة
+    document.querySelectorAll('.supply-checkbox:checked').forEach(checkbox => {
+        const supplyId = parseInt(checkbox.value);
+        const supply = availableItems.supplies.find(s => s.id === supplyId);
+        const quantity = parseInt(document.getElementById(`qty_supply_${supplyId}`).value) || 1;
+        
+        if (supply) {
+            selectedItems.supplies.push({
+                id: supplyId,
+                name: supply.name,
+                category: supply.category,
+                quantity: quantity
+            });
+        }
+        
+        document.getElementById(`quantity_supply_${supplyId}`).style.display = 'block';
+    });
+    
+    document.querySelectorAll('.supply-checkbox:not(:checked)').forEach(checkbox => {
+        const supplyId = checkbox.value;
+        document.getElementById(`quantity_supply_${supplyId}`).style.display = 'none';
+    });
+    
+    // تحديث ملخص الاختيارات
+    updateSelectionSummary();
+}
+
+// تحديث ملخص الاختيارات
+function updateSelectionSummary() {
+    document.getElementById('selectedBooksCount').textContent = selectedItems.books.length;
+    document.getElementById('selectedNotebooksCount').textContent = selectedItems.notebooks.length;
+    document.getElementById('selectedSuppliesCount').textContent = selectedItems.supplies.length;
+    
+    const totalSelected = selectedItems.books.length + selectedItems.notebooks.length + selectedItems.supplies.length;
+    document.getElementById('nextToReviewBtn').disabled = totalSelected === 0;
+}
+
+// وظائف الاختيار السريع
+function selectAllBooks() {
+    document.querySelectorAll('.book-checkbox').forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    updateSelections();
+}
+
+function selectAllNotebooks() {
+    document.querySelectorAll('.notebook-checkbox').forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    updateSelections();
+}
+
+function selectAllSupplies() {
+    document.querySelectorAll('.supply-checkbox').forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    updateSelections();
+}
+
+function clearAllSelections() {
+    document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        if (checkbox.classList.contains('book-checkbox') || 
+            checkbox.classList.contains('notebook-checkbox') || 
+            checkbox.classList.contains('supply-checkbox')) {
+            checkbox.checked = false;
+        }
+    });
+    updateSelections();
+}
+
+// وظائف Toggle All للأقسام
+function toggleAllBooks() {
+    const selectAll = document.getElementById('selectAllBooksCheck').checked;
+    document.querySelectorAll('.book-checkbox').forEach(checkbox => {
+        checkbox.checked = selectAll;
+    });
+    updateSelections();
+}
+
+function toggleAllNotebooks() {
+    const selectAll = document.getElementById('selectAllNotebooksCheck').checked;
+    document.querySelectorAll('.notebook-checkbox').forEach(checkbox => {
+        checkbox.checked = selectAll;
+    });
+    updateSelections();
+}
+
+function toggleAllSupplies() {
+    const selectAll = document.getElementById('selectAllSuppliesCheck').checked;
+    document.querySelectorAll('.supply-checkbox').forEach(checkbox => {
+        checkbox.checked = selectAll;
+    });
+    updateSelections();
+}
+
+// تحديث المراجعة النهائية
+function updateFinalReview() {
+    // معلومات الطالب
+    document.getElementById('finalStudentId').value = selectedStudent.id;
+    
+    // قائمة العناصر المختارة
+    let itemsHtml = '';
+    
+    if (selectedItems.books.length > 0) {
+        itemsHtml += `
+            <h6 class="text-primary"><i class="fas fa-book"></i> الكتب (${selectedItems.books.length})</h6>
+            <ul class="list-group list-group-flush mb-3">
+        `;
+        selectedItems.books.forEach(book => {
+            itemsHtml += `
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${book.title}</strong>
+                        <br><small class="text-muted">${book.subject}</small>
+                    </div>
+                    <span class="badge bg-primary rounded-pill">${book.quantity}</span>
+                </li>
+            `;
+        });
+        itemsHtml += '</ul>';
+    }
+    
+    if (selectedItems.notebooks.length > 0) {
+        itemsHtml += `
+            <h6 class="text-info"><i class="fas fa-book-open"></i> الكراسات (${selectedItems.notebooks.length})</h6>
+            <ul class="list-group list-group-flush mb-3">
+        `;
+        selectedItems.notebooks.forEach(notebook => {
+            itemsHtml += `
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${notebook.name}</strong>
+                        <br><small class="text-muted">${notebook.type}</small>
+                    </div>
+                    <span class="badge bg-info rounded-pill">${notebook.quantity}</span>
+                </li>
+            `;
+        });
+        itemsHtml += '</ul>';
+    }
+    
+    if (selectedItems.supplies.length > 0) {
+        itemsHtml += `
+            <h6 class="text-success"><i class="fas fa-pen"></i> الأدوات المدرسية (${selectedItems.supplies.length})</h6>
+            <ul class="list-group list-group-flush mb-3">
+        `;
+        selectedItems.supplies.forEach(supply => {
+            itemsHtml += `
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${supply.name}</strong>
+                        <br><small class="text-muted">${supply.category}</small>
+                    </div>
+                    <span class="badge bg-success rounded-pill">${supply.quantity}</span>
+                </li>
+            `;
+        });
+        itemsHtml += '</ul>';
+    }
+    
+    if (itemsHtml === '') {
+        itemsHtml = '<div class="alert alert-warning">لم يتم اختيار أي عناصر</div>';
+    }
+    
+    document.getElementById('finalItemsList').innerHTML = itemsHtml;
+    
+    // تحديث الحقل المخفي
+    document.getElementById('selectedItems').value = JSON.stringify(selectedItems);
+}
+
+// معالجة إرسال النموذج
+function handleFormSubmit(e) {
+    e.preventDefault();
+    
+    if (!selectedStudent) {
+        alert('يرجى اختيار طالب');
+        return;
+    }
+    
+    const totalItems = selectedItems.books.length + selectedItems.notebooks.length + selectedItems.supplies.length;
+    if (totalItems === 0) {
+        alert('يرجى اختيار عنصر واحد على الأقل للتوزيع');
+        return;
+    }
+    
+    if (confirm(`هل أنت متأكد من إنشاء التوزيع للطالب ${selectedStudent.name}؟\n\nالعناصر المختارة:\n- ${selectedItems.books.length} كتاب\n- ${selectedItems.notebooks.length} كراسة\n- ${selectedItems.supplies.length} أداة مدرسية`)) {
+        e.target.submit();
+    }
+}
+</script>
+
+<style>
+.progress-steps {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0;
+    position: relative;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    opacity: 0.5;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.step.active {
+    opacity: 1;
+}
+
+.step-number {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #6c757d;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-bottom: 8px;
+    position: relative;
+    z-index: 2;
+}
+
+.step.active .step-number {
+    background-color: #0d6efd;
+}
+
+.step-title {
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+}
+
+.progress-steps::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    height: 2px;
+    background-color: #dee2e6;
+    z-index: 1;
+}
+
+.card.h-100 {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card.h-100:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.form-check-input:checked ~ .form-check-label {
+    color: #0d6efd;
+    font-weight: bold;
+}
+
+.tab-content {
+    border: 1px solid #dee2e6;
+    border-top: none;
+    padding: 1rem;
+}
+
+.nav-tabs .nav-link {
+    border-bottom: 2px solid transparent;
+}
+
+.nav-tabs .nav-link.active {
+    border-bottom-color: #0d6efd;
+}
+</style>
+{% endblock %}

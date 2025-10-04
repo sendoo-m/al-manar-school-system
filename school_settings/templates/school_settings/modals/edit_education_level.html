@@ -1,0 +1,153 @@
+<!-- school_settings/templates/school_settings/modals/edit_education_level.html -->
+<!-- Modal تعديل المرحلة التعليمية -->
+<div class="modal fade" id="editEducationLevelModal" tabindex="-1" aria-labelledby="editEducationLevelModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editEducationLevelModalLabel">
+                    <i class="fas fa-edit me-2"></i>تعديل المرحلة التعليمية
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <form id="editEducationLevelForm" method="post">
+                {% csrf_token %}
+                <input type="hidden" id="editLevelId" name="level_id">
+                
+                <div class="modal-body">
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="editLevelName" class="form-label">اسم المرحلة التعليمية *</label>
+                            <input type="text" class="form-control" id="editLevelName" name="name" required>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="editLevelNameEn" class="form-label">الاسم بالإنجليزية</label>
+                            <input type="text" class="form-control" id="editLevelNameEn" name="name_en">
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="editMinAge" class="form-label">العمر الأدنى *</label>
+                            <input type="number" class="form-control" id="editMinAge" name="min_age" 
+                                   min="3" max="25" required>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="editMaxAge" class="form-label">العمر الأقصى *</label>
+                            <input type="number" class="form-control" id="editMaxAge" name="max_age" 
+                                   min="3" max="25" required>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="editLevelOrder" class="form-label">ترتيب العرض *</label>
+                            <input type="number" class="form-control" id="editLevelOrder" name="order" 
+                                   min="1" required>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="editLevelDescription" class="form-label">وصف المرحلة</label>
+                            <textarea class="form-control" id="editLevelDescription" name="description" rows="3"></textarea>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="editLevelIsActive" name="is_active">
+                                <label class="form-check-label" for="editLevelIsActive">
+                                    المرحلة نشطة
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-save me-1"></i>حفظ التغييرات
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// تحميل بيانات المرحلة التعليمية للتعديل
+function loadEducationLevelForEdit(levelId) {
+    fetch(`/settings/education-level/${levelId}/json/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const level = data.level;
+                document.getElementById('editLevelId').value = level.id;
+                document.getElementById('editLevelName').value = level.name;
+                document.getElementById('editLevelNameEn').value = level.name_en || '';
+                document.getElementById('editMinAge').value = level.min_age;
+                document.getElementById('editMaxAge').value = level.max_age;
+                document.getElementById('editLevelOrder').value = level.order;
+                document.getElementById('editLevelDescription').value = level.description || '';
+                document.getElementById('editLevelIsActive').checked = level.is_active;
+                
+                document.getElementById('editEducationLevelModalLabel').innerHTML = 
+                    '<i class="fas fa-edit me-2"></i>تعديل المرحلة التعليمية: ' + level.name;
+                
+                new bootstrap.Modal(document.getElementById('editEducationLevelModal')).show();
+            } else {
+                showMessage('error', 'لا يمكن تحميل بيانات المرحلة التعليمية');
+            }
+        })
+        .catch(error => {
+            showMessage('error', 'حدث خطأ في تحميل البيانات');
+        });
+}
+
+// إرسال نموذج التعديل
+document.getElementById('editEducationLevelForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const levelId = document.getElementById('editLevelId').value;
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>جاري الحفظ...';
+    submitBtn.disabled = true;
+    
+    fetch(`/settings/edit-education-level/${levelId}/`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage('success', data.message);
+            bootstrap.Modal.getInstance(document.getElementById('editEducationLevelModal')).hide();
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showMessage('error', data.message);
+        }
+    })
+    .catch(error => {
+        showMessage('error', 'حدث خطأ في الاتصال');
+    })
+    .finally(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+});
+
+// التحقق من صحة الأعمار
+document.getElementById('editMaxAge').addEventListener('change', function() {
+    const minAge = parseInt(document.getElementById('editMinAge').value);
+    const maxAge = parseInt(this.value);
+    
+    if (minAge && maxAge && maxAge <= minAge) {
+        this.setCustomValidity('العمر الأقصى يجب أن يكون أكبر من العمر الأدنى');
+    } else {
+        this.setCustomValidity('');
+    }
+});
+</script>

@@ -1,0 +1,480 @@
+{% extends 'books_inventory/base.html' %}
+{% load static %}
+
+{% block title %}{{ supplier.name }} - تفاصيل المورد{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:inventory_home' %}">الرئيسية</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:suppliers_list' %}">الموردين</a></li>
+                <li class="breadcrumb-item active">{{ supplier.name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- معلومات المورد الأساسية -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="fas fa-truck text-primary"></i> {{ supplier.name }}</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">اسم المورد:</th>
+                                <td><strong>{{ supplier.name }}</strong></td>
+                            </tr>
+                            <tr>
+                                <th>الشخص المسؤول:</th>
+                                <td>{{ supplier.contact_person|default:"غير محدد" }}</td>
+                            </tr>
+                            <tr>
+                                <th>رقم الهاتف:</th>
+                                <td>
+                                    {% if supplier.phone_number %}
+                                    <a href="tel:{{ supplier.phone_number }}">{{ supplier.phone_number }}</a>
+                                    {% else %}
+                                    غير محدد
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>البريد الإلكتروني:</th>
+                                <td>
+                                    {% if supplier.email %}
+                                    <a href="mailto:{{ supplier.email }}">{{ supplier.email }}</a>
+                                    {% else %}
+                                    غير محدد
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted">العنوان:</h6>
+                        <p>{{ supplier.address|default:"غير محدد" }}</p>
+                        
+                        {% if supplier.notes %}
+                        <h6 class="text-muted">ملاحظات:</h6>
+                        <p class="text-muted">{{ supplier.notes }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- إحصائيات المورد -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-bar text-success"></i> إحصائيات المورد</h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <h3 class="text-primary">{{ total_receipts }}</h3>
+                    <p class="text-muted mb-0">إجمالي الإيصالات</p>
+                </div>
+                <hr>
+                <div class="mb-3">
+                    <h4 class="text-success">{{ total_cost }} ج.م</h4>
+                    <p class="text-muted mb-0">إجمالي التكلفة</p>
+                </div>
+                <hr>
+                <div class="mb-3">
+                    <h4 class="text-info">{{ total_items }}</h4>
+                    <p class="text-muted mb-0">إجمالي العناصر</p>
+                </div>
+                <hr>
+                <div>
+                    <small class="text-muted">عضو منذ: {{ supplier.created_at|date:"Y-m-d" }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- إحصائيات حسب النوع -->
+{% if receipts_by_type %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-pie text-info"></i> توزيع الإيصالات حسب النوع</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for type_stat in receipts_by_type %}
+                    <div class="col-md-4 mb-3">
+                        <div class="text-center p-3 bg-light rounded">
+                            <h5 class="text-primary">{{ type_stat.count }}</h5>
+                            <p class="mb-1">
+                                {% if type_stat.receipt_type == 'BOOKS' %}
+                                    <i class="fas fa-book"></i> كتب
+                                {% elif type_stat.receipt_type == 'NOTEBOOKS' %}
+                                    <i class="fas fa-book-open"></i> كراسات
+                                {% else %}
+                                    <i class="fas fa-pen"></i> أدوات مدرسية
+                                {% endif %}
+                            </p>
+                            <small class="text-muted">{{ type_stat.total_items }} عنصر - {{ type_stat.total_cost }} ج.م</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- الإحصائيات الشهرية -->
+{% if monthly_stats %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-calendar text-warning"></i> الأنشطة الشهرية (آخر 6 أشهر)</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>الشهر</th>
+                                <th>عدد الإيصالات</th>
+                                <th>إجمالي العناصر</th>
+                                <th>إجمالي التكلفة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for month in monthly_stats %}
+                            <tr>
+                                <td>{{ month.month_name }}</td>
+                                <td><span class="badge bg-primary">{{ month.count }}</span></td>
+                                <td><span class="badge bg-info">{{ month.total_items }}</span></td>
+                                <td><strong>{{ month.total_cost }} ج.م</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- أحدث الإيصالات -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-receipt text-primary"></i> أحدث الإيصالات</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_receipts %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>رقم الإيصال</th>
+                                <th>النوع</th>
+                                <th>التاريخ</th>
+                                <th>إجمالي العناصر</th>
+                                <th>التكلفة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for receipt in recent_receipts %}
+                            <tr>
+                                <td><strong>{{ receipt.receipt_number }}</strong></td>
+                                <td>
+                                    <span class="badge bg-{% if receipt.receipt_type == 'BOOKS' %}primary{% elif receipt.receipt_type == 'NOTEBOOKS' %}info{% else %}success{% endif %}">
+                                        {{ receipt.get_receipt_type_display }}
+                                    </span>
+                                </td>
+                                <td>{{ receipt.receipt_date|date:"Y-m-d" }}</td>
+                                <td>
+                                    <span class="badge bg-info">{{ receipt.total_items }}</span>
+                                    {% if receipt.damaged_items > 0 %}
+                                    <span class="badge bg-danger ms-1">{{ receipt.damaged_items }} تالف</span>
+                                    {% endif %}
+                                </td>
+                                <td><strong>{{ receipt.total_cost }} ج.م</strong></td>
+                                <td>
+                                    <a href="{% url 'books_inventory:receipt_detail' receipt.pk %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i> عرض
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="text-center mt-3">
+                    <a href="{% url 'books_inventory:receipts_list' %}?supplier={{ supplier.pk }}" class="btn btn-outline-primary">
+                        <i class="fas fa-list"></i> عرض جميع إيصالات {{ supplier.name }}
+                    </a>
+                </div>
+                {% else %}
+                <p class="text-muted text-center">لا توجد إيصالات سابقة لهذا المورد</p>
+                <div class="text-center">
+                    <a href="{% url 'books_inventory:add_receipt' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> إضافة إيصال جديد
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% comment %} 
+{% extends 'books_inventory/base.html' %}
+{% load static %}
+
+{% block title %}{{ supplier.name }} - تفاصيل المورد{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:inventory_home' %}">الرئيسية</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:suppliers_list' %}">قائمة الموردين</a></li>
+                <li class="breadcrumb-item active">{{ supplier.name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- معلومات المورد الأساسية -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4><i class="fas fa-building"></i> {{ supplier.name }}</h4>
+                <div>
+                    <a href="{% url 'books_inventory:edit_supplier' supplier.pk %}" class="btn btn-light btn-sm">
+                        <i class="fas fa-edit"></i> تعديل
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">اسم المورد:</th>
+                                <td><strong>{{ supplier.name }}</strong></td>
+                            </tr>
+                            {% if supplier.contact_person %}
+                            <tr>
+                                <th>الشخص المسؤول:</th>
+                                <td>{{ supplier.contact_person }}</td>
+                            </tr>
+                            {% endif %}
+                            {% if supplier.phone_number %}
+                            <tr>
+                                <th>رقم الهاتف:</th>
+                                <td>
+                                    <a href="tel:{{ supplier.phone_number }}">{{ supplier.phone_number }}</a>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% if supplier.email %}
+                            <tr>
+                                <th>البريد الإلكتروني:</th>
+                                <td>
+                                    <a href="mailto:{{ supplier.email }}">{{ supplier.email }}</a>
+                                </td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">حالة المورد:</th>
+                                <td>
+                                    {% if supplier.is_active %}
+                                    <span class="badge bg-success">نشط</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">غير نشط</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>تاريخ التسجيل:</th>
+                                <td>{{ supplier.created_at|date:"Y-m-d" }}</td>
+                            </tr>
+                            {% if supplier.updated_at != supplier.created_at %}
+                            <tr>
+                                <th>آخر تحديث:</th>
+                                <td>{{ supplier.updated_at|date:"Y-m-d H:i" }}</td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                </div>
+                
+                {% if supplier.address %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6><i class="fas fa-map-marker-alt text-primary"></i> العنوان:</h6>
+                        <p class="text-muted">{{ supplier.address }}</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if supplier.notes %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6><i class="fas fa-sticky-note text-info"></i> ملاحظات:</h6>
+                        <p class="text-muted">{{ supplier.notes }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- إحصائيات المورد -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-bar text-success"></i> إحصائيات المورد</h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <h3 class="text-primary">{{ total_receipts }}</h3>
+                    <p class="text-muted mb-0">إجمالي الإيصالات</p>
+                </div>
+                
+                <hr>
+                
+                <div class="mb-3">
+                    <h4 class="text-info">{{ total_items }}</h4>
+                    <p class="text-muted mb-0">إجمالي العناصر</p>
+                </div>
+                
+                <hr>
+                
+                <div class="mb-3">
+                    <h4 class="text-success">{{ total_cost }} ج.م</h4>
+                    <p class="text-muted mb-0">إجمالي التكلفة</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-body text-center">
+                <a href="{% url 'books_inventory:add_receipt' %}?supplier={{ supplier.pk }}" class="btn btn-success w-100 mb-2">
+                    <i class="fas fa-plus"></i> إضافة إيصال استلام
+                </a>
+                <a href="{% url 'books_inventory:receipts_list' %}?supplier={{ supplier.pk }}" class="btn btn-outline-primary w-100">
+                    <i class="fas fa-list"></i> عرض جميع الإيصالات
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- أحدث الإيصالات -->
+{% if recent_receipts %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-history text-info"></i> أحدث الإيصالات</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>رقم الإيصال</th>
+                                <th>التاريخ</th>
+                                <th>النوع</th>
+                                <th>إجمالي العناصر</th>
+                                <th>التكلفة</th>
+                                <th>مستلم بواسطة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for receipt in recent_receipts %}
+                            <tr>
+                                <td>
+                                    <strong class="text-primary">{{ receipt.receipt_number }}</strong>
+                                </td>
+                                <td>{{ receipt.receipt_date|date:"Y-m-d" }}</td>
+                                <td>
+                                    {% if receipt.receipt_type == 'BOOKS' %}
+                                        <span class="badge bg-primary">كتب</span>
+                                    {% elif receipt.receipt_type == 'NOTEBOOKS' %}
+                                        <span class="badge bg-info">كراسات</span>
+                                    {% elif receipt.receipt_type == 'SUPPLIES' %}
+                                        <span class="badge bg-success">أدوات مدرسية</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">{{ receipt.total_items }}</span>
+                                </td>
+                                <td>
+                                    <strong class="text-success">{{ receipt.total_cost }} ج.م</strong>
+                                </td>
+                                <td>
+                                    <small>{{ receipt.received_by.get_full_name|default:receipt.received_by.username }}</small>
+                                </td>
+                                <td>
+                                    <a href="{% url 'books_inventory:receipt_detail' receipt.pk %}" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-eye"></i> التفاصيل
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                {% if total_receipts > 5 %}
+                <div class="text-center mt-3">
+                    <a href="{% url 'books_inventory:receipts_list' %}?supplier={{ supplier.pk }}" class="btn btn-outline-primary">
+                        عرض جميع الإيصالات ({{ total_receipts }})
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-truck fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">لا توجد إيصالات من هذا المورد</h5>
+                <p class="text-muted">لم يتم استلام أي مواد من هذا المورد بعد</p>
+                <a href="{% url 'books_inventory:add_receipt' %}?supplier={{ supplier.pk }}" class="btn btn-success">
+                    <i class="fas fa-plus"></i> إضافة أول إيصال استلام
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %} {% endcomment %}

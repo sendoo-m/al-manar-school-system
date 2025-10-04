@@ -1,0 +1,109 @@
+<!-- Modal إضافة صف دراسي جديد -->
+<div class="modal fade" id="addGradeLevelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-chalkboard me-2"></i>إضافة صف دراسي جديد
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            
+            <form id="addGradeLevelForm" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="gradeEducationLevel" class="form-label">المرحلة التعليمية *</label>
+                        <select class="form-select" id="gradeEducationLevel" name="education_level" required>
+                            <option value="">اختر المرحلة التعليمية</option>
+                            {% for level in education_levels %}
+                                <option value="{{ level.id }}">{{ level.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="gradeName" class="form-label">اسم الصف الدراسي *</label>
+                        <input type="text" class="form-control" id="gradeName" name="name" 
+                               placeholder="مثال: الصف الأول الابتدائي" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="gradeNameEn" class="form-label">الاسم بالإنجليزية</label>
+                        <input type="text" class="form-control" id="gradeNameEn" name="name_en" 
+                               placeholder="First Grade">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="gradeNumber" class="form-label">رقم الصف *</label>
+                                <input type="number" class="form-control" id="gradeNumber" name="grade_number" 
+                                       min="1" max="12" required>
+                                <div class="form-text">مثال: 1 للصف الأول</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="typicalAge" class="form-label">العمر المعتاد *</label>
+                                <input type="number" class="form-control" id="typicalAge" name="typical_age" 
+                                       min="3" max="20" required>
+                                <div class="form-text">العمر المتوقع للطلاب</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="gradeOrder" class="form-label">ترتيب العرض</label>
+                        <input type="number" class="form-control" id="gradeOrder" name="order" 
+                               value="1" min="1">
+                        <div class="form-text">يحدد ترتيب ظهور الصف في القوائم</div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>حفظ الصف
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('addGradeLevelForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>جاري الحفظ...';
+    submitBtn.disabled = true;
+    
+    fetch('/settings/create-grade-level/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage('success', data.message);
+            bootstrap.Modal.getInstance(document.getElementById('addGradeLevelModal')).hide();
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showMessage('error', data.message);
+        }
+    })
+    .finally(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+});
+</script>

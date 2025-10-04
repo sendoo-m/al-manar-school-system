@@ -1,0 +1,315 @@
+{% extends 'books_inventory/base.html' %}
+{% load static %}
+
+{% block title %}إيصال الاستلام {{ receipt.receipt_number }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:inventory_home' %}">الرئيسية</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:receipts_list' %}">إيصالات الاستلام</a></li>
+                <li class="breadcrumb-item active">{{ receipt.receipt_number }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- معلومات الإيصال الأساسية -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4><i class="fas fa-receipt"></i> إيصال الاستلام {{ receipt.receipt_number }}</h4>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">رقم الإيصال:</th>
+                                <td><strong class="text-primary">{{ receipt.receipt_number }}</strong></td>
+                            </tr>
+                            <tr>
+                                <th>المورد:</th>
+                                <td>
+                                    <a href="{% url 'books_inventory:supplier_detail' receipt.supplier.pk %}">
+                                        <strong>{{ receipt.supplier.name }}</strong>
+                                    </a>
+                                    {% if receipt.supplier.contact_person %}
+                                    <br><small class="text-muted">{{ receipt.supplier.contact_person }}</small>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>نوع البضاعة:</th>
+                                <td>
+                                    {% if receipt.receipt_type == 'BOOKS' %}
+                                        <span class="badge bg-primary">
+                                            <i class="fas fa-book"></i> كتب
+                                        </span>
+                                    {% elif receipt.receipt_type == 'NOTEBOOKS' %}
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-book-open"></i> كراسات
+                                        </span>
+                                    {% elif receipt.receipt_type == 'SUPPLIES' %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-pen"></i> أدوات مدرسية
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>تاريخ الاستلام:</th>
+                                <td>{{ receipt.receipt_date|date:"Y-m-d" }} ({{ receipt.receipt_date|date:"D" }})</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">مستلم بواسطة:</th>
+                                <td>{{ receipt.received_by.get_full_name|default:receipt.received_by.username }}</td>
+                            </tr>
+                            {% if receipt.invoice_number %}
+                            <tr>
+                                <th>رقم الفاتورة:</th>
+                                <td>{{ receipt.invoice_number }}</td>
+                            </tr>
+                            {% endif %}
+                            <tr>
+                                <th>تاريخ الإنشاء:</th>
+                                <td>{{ receipt.created_at|date:"Y-m-d H:i" }}</td>
+                            </tr>
+                            {% if receipt.updated_at != receipt.created_at %}
+                            <tr>
+                                <th>آخر تحديث:</th>
+                                <td>{{ receipt.updated_at|date:"Y-m-d H:i" }}</td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                </div>
+                
+                {% if receipt.notes %}
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-sticky-note"></i> ملاحظات:</h6>
+                    <p class="mb-0">{{ receipt.notes }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- ملخص الإيصال -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-bar text-success"></i> ملخص الإيصال</h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <h3 class="text-primary">{{ receipt.total_items }}</h3>
+                    <p class="text-muted mb-0">إجمالي العناصر</p>
+                </div>
+                
+                {% if receipt.damaged_items > 0 %}
+                <div class="mb-3">
+                    <h4 class="text-danger">{{ receipt.damaged_items }}</h4>
+                    <p class="text-muted mb-0">عناصر تالفة</p>
+                </div>
+                {% endif %}
+                
+                <hr>
+                
+                <div class="mb-3">
+                    <h3 class="text-success">{{ receipt.total_cost }} ج.م</h3>
+                    <p class="text-muted mb-0">إجمالي التكلفة</p>
+                </div>
+                
+                                <div class="text-center">
+                    <small class="text-muted">
+                        متوسط سعر الوحدة: {{ average_unit_cost }} ج.م
+                    </small>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- تفاصيل العناصر -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-list text-info"></i> تفاصيل العناصر المستلمة</h5>
+            </div>
+            <!-- في card-header أضف زر التعديل -->
+<div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+    <h4><i class="fas fa-receipt"></i> {{ receipt.receipt_number }}</h4>
+    <div>
+        <a href="{% url 'books_inventory:edit_receipt' receipt.pk %}" class="btn btn-light btn-sm">
+            <i class="fas fa-edit"></i> تعديل
+        </a>
+    </div>
+</div>
+
+            <div class="card-body">
+                
+                <!-- عرض الكتب -->
+                {% if book_items %}
+                <h6 class="mb-3"><i class="fas fa-book text-primary"></i> الكتب المستلمة</h6>
+                <div class="table-responsive mb-4">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>الكتاب</th>
+                                <th>المادة</th>
+                                <th>الكمية المستلمة</th>
+                                <th>التالف</th>
+                                <th>سعر الوحدة</th>
+                                <th>الإجمالي</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in book_items %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'books_inventory:book_detail' item.book.pk %}">
+                                        <strong>{{ item.book.title }}</strong>
+                                    </a>
+                                    {% if item.book.book_type != 'MINISTRY' %}
+                                    <br><small class="text-muted">{{ item.book.get_book_type_display }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">{{ item.book.subject.name }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-success">{{ item.quantity_received }}</span>
+                                </td>
+                                <td>
+                                    {% if item.quantity_damaged > 0 %}
+                                    <span class="badge bg-danger">{{ item.quantity_damaged }}</span>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ item.unit_cost }} ج.م</td>
+                                <td><strong>{{ item.total_cost }} ج.م</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+                
+                <!-- عرض الكراسات -->
+                {% if notebook_items %}
+                <h6 class="mb-3"><i class="fas fa-book-open text-info"></i> الكراسات المستلمة</h6>
+                <div class="table-responsive mb-4">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>الكراسة</th>
+                                <th>النوع والحجم</th>
+                                <th>الكمية المستلمة</th>
+                                <th>التالف</th>
+                                <th>سعر الوحدة</th>
+                                <th>الإجمالي</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in notebook_items %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'books_inventory:notebook_detail' item.notebook.pk %}">
+                                        <strong>{{ item.notebook.name }}</strong>
+                                    </a>
+                                    <br><small class="text-muted">{{ item.notebook.pages_count }} صفحة</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ item.notebook.get_notebook_type_display }}</span>
+                                    <br><small>{{ item.notebook.get_size_display }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-success">{{ item.quantity_received }}</span>
+                                </td>
+                                <td>
+                                    {% if item.quantity_damaged > 0 %}
+                                    <span class="badge bg-danger">{{ item.quantity_damaged }}</span>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ item.unit_cost }} ج.م</td>
+                                <td><strong>{{ item.total_cost }} ج.م</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+                
+                <!-- عرض الأدوات المدرسية -->
+                {% if supply_items %}
+                <h6 class="mb-3"><i class="fas fa-pen text-success"></i> الأدوات المدرسية المستلمة</h6>
+                <div class="table-responsive mb-4">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>الأداة</th>
+                                <th>الفئة</th>
+                                <th>الكمية المستلمة</th>
+                                <th>التالف</th>
+                                <th>سعر الوحدة</th>
+                                <th>الإجمالي</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in supply_items %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'books_inventory:supply_detail' item.supply.pk %}">
+                                        <strong>{{ item.supply.name }}</strong>
+                                    </a>
+                                    {% if item.supply.description %}
+                                    <br><small class="text-muted">{{ item.supply.description|truncatechars:50 }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-success">{{ item.supply.get_category_display }}</span>
+                                    <br><small>{{ item.supply.unit }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-success">{{ item.quantity_received }}</span>
+                                </td>
+                                <td>
+                                    {% if item.quantity_damaged > 0 %}
+                                    <span class="badge bg-danger">{{ item.quantity_damaged }}</span>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ item.unit_cost }} ج.م</td>
+                                <td><strong>{{ item.total_cost }} ج.م</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+                
+                {% if not book_items and not notebook_items and not supply_items %}
+                <div class="text-center py-4">
+                    <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">لا توجد عناصر في هذا الإيصال</h5>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

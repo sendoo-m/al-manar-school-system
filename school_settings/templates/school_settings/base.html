@@ -1,0 +1,1020 @@
+<!-- school_settings/templates/school_settings/base.html -->
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}نظام إدارة الإعدادات - مدرسة المنار{% endblock %}</title>
+    
+    <!-- Bootstrap RTL CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --accent-color: #3b82f6;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --info-color: #17a2b8;
+            --light-color: #f8f9fa;
+            --dark-color: #1f2937;
+            --sidebar-width: 320px;
+            --header-height: 85px;
+            --content-padding: 25px;
+        }
+
+        * {
+            font-family: 'Cairo', sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ===================================
+           🎨 MODERN SIDEBAR DESIGN
+        =================================== */
+        .sidebar {
+            position: fixed;
+            right: 0;
+            top: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            z-index: 1000;
+            overflow-y: auto;
+            transition: transform 0.4s ease;
+            box-shadow: -8px 0 40px rgba(102, 126, 234, 0.3);
+            backdrop-filter: blur(20px);
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.3);
+            border-radius: 3px;
+        }
+
+        .sidebar-header {
+            padding: 30px 25px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.15);
+            background: rgba(0,0,0,0.2);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            backdrop-filter: blur(10px);
+        }
+
+        .sidebar-header .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1));
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .sidebar-header h4 {
+            margin-bottom: 10px;
+            font-weight: 800;
+            color: white;
+            font-size: 1.3rem;
+            line-height: 1.2;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .sidebar-header p {
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            opacity: 0.9;
+            line-height: 1.3;
+        }
+
+        .user-role-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .sidebar-menu {
+            padding: 25px 0 40px 0;
+        }
+
+        .menu-section {
+            margin-bottom: 25px;
+        }
+
+        .menu-section-title {
+            padding: 12px 30px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: rgba(255,255,255,0.7);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 15px;
+            position: relative;
+            background: rgba(0,0,0,0.1);
+        }
+
+        .menu-section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            right: 30px;
+            width: 40px;
+            height: 3px;
+            background: linear-gradient(90deg, rgba(255,255,255,0.8), transparent);
+            border-radius: 2px;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 16px 30px;
+            color: rgba(255,255,255,0.9);
+            text-decoration: none;
+            transition: all 0.4s ease;
+            position: relative;
+            margin: 3px 20px;
+            border-radius: 15px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            overflow: hidden;
+        }
+
+        .menu-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: right 0.6s ease;
+        }
+
+        .menu-item:hover::before {
+            right: 100%;
+        }
+
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            text-decoration: none;
+            transform: translateX(-5px) scale(1.02);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+
+        .menu-item.active {
+            background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1));
+            color: white;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .menu-item i {
+            width: 25px;
+            text-align: center;
+            margin-left: 15px;
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .stats-widget {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 25px 20px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .stats-amount {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .stats-label {
+            font-size: 0.8rem;
+            opacity: 0.9;
+        }
+
+        /* ===================================
+           📱 MODERN MAIN CONTENT
+        =================================== */
+        .main-content {
+            margin-right: var(--sidebar-width);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: margin-right 0.4s ease;
+        }
+
+        .top-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 25px 35px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 0 4px 30px rgba(0,0,0,0.08);
+            position: sticky;
+            top: 0;
+            z-index: 999;
+            min-height: var(--header-height);
+            display: flex;
+            align-items: center;
+        }
+
+        .header-content {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .breadcrumb-nav {
+            background: none;
+            padding: 0;
+            margin: 0 0 10px 0;
+            font-size: 0.9rem;
+        }
+
+        .breadcrumb-nav .breadcrumb-item a {
+            color: #6c757d;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .breadcrumb-nav .breadcrumb-item a:hover {
+            color: var(--primary-color);
+        }
+
+        .breadcrumb-nav .breadcrumb-item.active {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--dark-color);
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            line-height: 1.2;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .page-subtitle {
+            color: #6c757d;
+            font-size: 0.95rem;
+            margin-bottom: 0;
+            line-height: 1.3;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-shrink: 0;
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 15px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        /* ===================================
+           🎨 ENHANCED CONTENT AREA
+        =================================== */
+        .content-area {
+            flex: 1;
+            padding: var(--content-padding);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .content-wrapper {
+            flex: 1;
+            max-width: 100%;
+        }
+
+        .content-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            box-shadow: 0 8px 35px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.5);
+            margin-bottom: 30px;
+            overflow: hidden;
+            transition: all 0.4s ease;
+        }
+
+        .content-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 50px rgba(0,0,0,0.15);
+        }
+
+        .content-card-header {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 25px 30px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .content-card-body {
+            padding: 30px;
+        }
+
+        /* ===================================
+           🎨 ENHANCED BUTTONS
+        =================================== */
+        .btn-custom {
+            border-radius: 15px;
+            font-weight: 600;
+            padding: 12px 25px;
+            transition: all 0.4s ease;
+            border: none;
+            position: relative;
+            overflow: hidden;
+            text-transform: none;
+        }
+
+        .btn-custom::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .btn-custom:hover::before {
+            left: 100%;
+        }
+
+        .btn-custom:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary-custom {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+
+        .btn-primary-custom:hover {
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: white;
+        }
+
+        /* ===================================
+           🎨 ENHANCED ALERTS
+        =================================== */
+        .alert {
+            border-radius: 18px;
+            border: none;
+            padding: 20px 25px;
+            margin-bottom: 25px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 6px 25px rgba(0,0,0,0.1);
+        }
+
+        .alert-info {
+            background: linear-gradient(135deg, rgba(23, 162, 184, 0.1), rgba(23, 162, 184, 0.05));
+            color: #17a2b8;
+            border-left: 4px solid #17a2b8;
+        }
+
+        .alert-warning {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05));
+            color: #f59e0b;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+            color: #10b981;
+            border-left: 4px solid #10b981;
+        }
+
+        .alert-danger {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+            color: #ef4444;
+            border-left: 4px solid #ef4444;
+        }
+
+        /* ===================================
+           📱 RESPONSIVE DESIGN
+        =================================== */
+        .sidebar-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1001;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            border-radius: 15px;
+            width: 55px;
+            height: 55px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 25px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-toggle:hover {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 10px 35px rgba(102, 126, 234, 0.6);
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.4s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* ===================================
+           🎨 ANIMATIONS
+        =================================== */
+        .fade-in {
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from { 
+                opacity: 0; 
+                transform: translateY(40px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+
+        .animate-slide-in {
+            animation: slideInRight 0.8s ease-out;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* ===================================
+           📱 MOBILE RESPONSIVE
+        =================================== */
+        @media (max-width: 992px) {
+            .sidebar {
+                transform: translateX(100%);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-right: 0;
+            }
+
+            .sidebar-toggle {
+                display: flex;
+            }
+
+            .top-header {
+                padding: 20px 75px 20px 25px;
+            }
+
+            .content-area {
+                padding: 20px 15px;
+            }
+
+            .page-title {
+                font-size: 1.5rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            :root {
+                --content-padding: 15px;
+            }
+
+            .content-card-body {
+                padding: 25px;
+            }
+
+            .page-title {
+                font-size: 1.4rem;
+            }
+
+            .user-info {
+                gap: 15px;
+            }
+        }
+
+        {% block extra_css %}{% endblock %}
+    </style>
+</head>
+<body>
+    <!-- Mobile Sidebar Toggle -->
+    <button class="sidebar-toggle" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <!-- Sidebar Header -->
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-graduation-cap fa-2x"></i>
+            </div>
+            <h4>نظام إدارة الإعدادات</h4>
+            <p>مدرسة المنار للغات</p>
+            {% if user.is_superuser %}
+            <div class="user-role-badge">
+                <i class="fas fa-crown me-2"></i>مدير النظام
+            </div>
+            {% elif user.is_staff %}
+            <div class="user-role-badge">
+                <i class="fas fa-user-cog me-2"></i>موظف الإعدادات
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Stats Widget -->
+        <div class="stats-widget">
+            <div class="stats-amount">
+                <i class="fas fa-cogs me-2"></i>
+                {{ total_settings|default:"12" }}
+            </div>
+            <div class="stats-label">إجمالي الإعدادات النشطة</div>
+        </div>
+
+        <!-- Sidebar Menu -->
+        <div class="sidebar-menu">
+            <!-- الصفحات الرئيسية -->
+            <div class="menu-section">
+                <div class="menu-section-title">
+                    <i class="fas fa-home me-2"></i>الصفحات الرئيسية
+                </div>
+                <a href="{% url 'school_settings:comprehensive_settings' %}" class="menu-item">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>لوحة التحكم</span>
+                </a>
+            </div>
+
+            <!-- الإعدادات الأساسية -->
+            <div class="menu-section">
+                <div class="menu-section-title">
+                    <i class="fas fa-cog me-2"></i>الإعدادات الأساسية
+                </div>
+                
+                <a href="{% url 'school_settings:academic_years_list' %}" class="menu-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>الأعوام الدراسية</span>
+                </a>
+                
+                <a href="{% url 'school_settings:education_levels_list' %}" class="menu-item">
+                    <i class="fas fa-layer-group"></i>
+                    <span>المراحل التعليمية</span>
+                </a>
+                
+                <a href="{% url 'school_settings:grade_levels_list' %}" class="menu-item">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>الصفوف الدراسية</span>
+                </a>
+            </div>
+
+            <!-- الإعدادات المالية -->
+            <div class="menu-section">
+                <div class="menu-section-title">
+                    <i class="fas fa-money-bill me-2"></i>الإعدادات المالية
+                </div>
+                
+                <a href="{% url 'school_settings:school_fees_list' %}" class="menu-item">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span>إعدادات المصروفات</span>
+                </a>
+                
+                <a href="{% url 'school_settings:discounts_list' %}" class="menu-item">
+                    <i class="fas fa-percentage"></i>
+                    <span>إعدادات الخصومات</span>
+                </a>
+            </div>
+
+            <!-- إدارة المستخدمين -->
+            {% if user.is_superuser %}
+            <div class="menu-section">
+                <div class="menu-section-title">
+                    <i class="fas fa-users me-2"></i>إدارة المستخدمين
+                </div>
+                
+                <a href="{% url 'school_settings:roles_list' %}" class="menu-item">
+                    <i class="fas fa-users-cog"></i>
+                    <span>أدوار النظام</span>
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- إعدادات النظام -->
+            <div class="menu-section">
+                <div class="menu-section-title">
+                    <i class="fas fa-server me-2"></i>إعدادات النظام
+                </div>
+                
+                <a href="{% url 'school_settings:system_settings' %}" class="menu-item">
+                    <i class="fas fa-cog"></i>
+                    <span>الإعدادات العامة</span>
+                </a>
+                
+                <a href="{% url 'school_settings:settings_logs' %}" class="menu-item">
+                    <i class="fas fa-history"></i>
+                    <span>سجل التغييرات</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Header -->
+        <div class="top-header">
+            <div class="header-content">
+                <div class="page-header">
+                    <!-- Breadcrumb -->
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb breadcrumb-nav">
+                            <li class="breadcrumb-item">
+                                <a href="{% url 'school_settings:comprehensive_settings' %}">
+                                    <i class="fas fa-graduation-cap me-1"></i>الإعدادات
+                                </a>
+                            </li>
+                            {% block breadcrumb %}
+                            <li class="breadcrumb-item active">لوحة التحكم</li>
+                            {% endblock %}
+                        </ol>
+                    </nav>
+
+                    <!-- Page Title -->
+                    <h1 class="page-title">
+                        {% block header_icon %}<i class="fas fa-graduation-cap me-3"></i>{% endblock %}
+                        {% block header_title %}نظام إدارة الإعدادات{% endblock %}
+                    </h1>
+                    <p class="page-subtitle">
+                        {% block page_description %}إدارة شاملة وذكية لإعدادات النظام المدرسي{% endblock %}
+                    </p>
+                </div>
+
+                <div class="user-info">
+                    <!-- Quick Actions -->
+                    {% block page_actions %}
+                    {% if user.is_staff %}
+                    <div class="btn-group me-3">
+                        <button class="btn btn-primary-custom btn-custom" onclick="showQuickSettings()">
+                            <i class="fas fa-plus me-2"></i>إعداد سريع
+                        </button>
+                    </div>
+                    {% endif %}
+                    {% endblock %}
+
+                    <!-- User Dropdown -->
+                    <div class="dropdown">
+                        <button class="btn btn-outline-primary dropdown-toggle d-flex align-items-center" 
+                                type="button" data-bs-toggle="dropdown">
+                            <div class="user-avatar me-2">
+                                {{ user.username.0|upper }}
+                            </div>
+                            <div class="d-none d-md-block text-start">
+                                <div class="fw-bold text-truncate" style="max-width: 120px;">
+                                    {{ user.get_full_name|default:user.username }}
+                                </div>
+                                <small class="text-muted text-truncate d-block" style="max-width: 120px;">
+                                    {% if user.is_superuser %}مدير النظام{% else %}موظف الإعدادات{% endif %}
+                                </small>
+                            </div>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow">
+                            <li class="dropdown-header">
+                                <i class="fas fa-user-cog me-2"></i>حساب المدير
+                            </li>
+                            <li><a class="dropdown-item" href="#">
+                                <i class="fas fa-chart-line me-2"></i>إحصائياتي
+                            </a></li>
+                            <li><a class="dropdown-item" href="#">
+                                <i class="fas fa-user-edit me-2"></i>إعدادات الحساب
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="/accounts/logout/">
+                                <i class="fas fa-sign-out-alt me-2"></i>تسجيل الخروج
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="content-area">
+            <div class="content-wrapper">
+                <!-- Messages -->
+                {% if messages %}
+                <div class="fade-in">
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {% if message.tags == 'error' %}
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                        {% elif message.tags == 'success' %}
+                            <i class="fas fa-check-circle me-2"></i>
+                        {% elif message.tags == 'warning' %}
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                        {% else %}
+                            <i class="fas fa-info-circle me-2"></i>
+                        {% endif %}
+                        <strong>{{ message }}</strong>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Permission Notice -->
+                {% if user.is_superuser %}
+                <div class="alert alert-info fade-in">
+                    <i class="fas fa-crown me-2"></i>
+                    <strong>مرحباً مدير النظام:</strong> لديك صلاحيات كاملة لإدارة جميع إعدادات النظام المدرسي.
+                </div>
+                {% elif user.is_staff %}
+                <div class="alert alert-warning fade-in">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>مرحباً موظف الإعدادات:</strong> يمكنك إدارة الإعدادات الأساسية للنظام.
+                </div>
+                {% endif %}
+
+                <!-- Page Content -->
+                <div class="fade-in animate-slide-in">
+                    {% block content %}
+                    <!-- Default Content -->
+                    <div class="content-card">
+                        <div class="content-card-body text-center py-5">
+                            <div class="mb-4">
+                                <i class="fas fa-graduation-cap fa-5x" style="background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
+                            </div>
+                            <h3 class="mb-3" style="color: #1f2937;">مرحباً بك في نظام إدارة الإعدادات</h3>
+                            <p class="text-muted mb-4">منصة شاملة وحديثة لإدارة وتخصيص إعدادات النظام المدرسي</p>
+                            <div class="row justify-content-center">
+                                <div class="col-md-10">
+                                    <div class="d-flex justify-content-center gap-3 flex-wrap">
+                                        <a href="{% url 'school_settings:academic_years_list' %}" class="btn btn-primary-custom btn-custom">
+                                            <i class="fas fa-calendar-alt me-2"></i>الأعوام الدراسية
+                                        </a>
+                                        <a href="{% url 'school_settings:education_levels_list' %}" class="btn btn-primary-custom btn-custom">
+                                            <i class="fas fa-layer-group me-2"></i>المراحل التعليمية
+                                        </a>
+                                        <a href="{% url 'school_settings:school_fees_list' %}" class="btn btn-primary-custom btn-custom">
+                                            <i class="fas fa-money-bill-wave me-2"></i>إعدادات المصروفات
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endblock %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Enhanced Sidebar functionality
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+            
+            // Add animation class
+            sidebar.style.transform = sidebar.classList.contains('active') 
+                ? 'translateX(0)' 
+                : 'translateX(100%)';
+        }
+
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+            sidebar.style.transform = 'translateX(100%)';
+        }
+
+        // Enhanced Settings functionality
+        function showQuickSettings() {
+            showMessage('info', 'جاري تحضير نافذة الإعدادات السريعة...', 3000);
+        }
+
+        // Enhanced Message system
+        function showMessage(type, message, duration = 5000) {
+            const alertTypes = {
+                'success': 'success',
+                'error': 'danger',
+                'warning': 'warning',
+                'info': 'info'
+            };
+            
+            const icons = {
+                'success': 'check-circle',
+                'error': 'exclamation-triangle', 
+                'warning': 'exclamation-circle',
+                'info': 'info-circle'
+            };
+            
+            const alertHTML = `
+                <div class="alert alert-${alertTypes[type]} alert-dismissible fade show" role="alert" style="animation: fadeInUp 0.6s ease;">
+                    <i class="fas fa-${icons[type]} me-2"></i>
+                    <strong>${message}</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            const contentArea = document.querySelector('.content-wrapper');
+            contentArea.insertAdjacentHTML('afterbegin', alertHTML);
+            
+            if (duration > 0) {
+                const newAlert = contentArea.querySelector('.alert:first-child');
+                setTimeout(() => {
+                    if (newAlert && newAlert.parentNode) {
+                        newAlert.style.animation = 'fadeOut 0.4s ease';
+                        setTimeout(() => newAlert.remove(), 400);
+                    }
+                }, duration);
+            }
+        }
+
+        // Enhanced page initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentPath = window.location.pathname;
+            const menuItems = document.querySelectorAll('.menu-item');
+            
+            // Set active menu item with animation
+            menuItems.forEach(item => {
+                const href = item.getAttribute('href');
+                if (href && href !== '#' && currentPath.includes(href)) {
+                    menuItems.forEach(mi => mi.classList.remove('active'));
+                    item.classList.add('active');
+                    
+                    // Animate active item
+                    item.style.transform = 'translateX(-5px) scale(1.02)';
+                }
+            });
+
+            // Auto close mobile sidebar when clicking menu items
+            menuItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    // Add click animation
+                    this.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        this.style.transform = '';
+                        if (window.innerWidth < 992) {
+                            closeSidebar();
+                        }
+                    }, 150);
+                });
+            });
+
+            // Initialize tooltips
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+
+            // Enhanced fade-in animation
+            const fadeElements = document.querySelectorAll('.fade-in');
+            fadeElements.forEach((element, index) => {
+                element.style.opacity = '0';
+                element.style.transform = 'translateY(30px)';
+                
+                setTimeout(() => {
+                    element.style.transition = 'all 0.8s ease';
+                    element.style.opacity = '1';
+                    element.style.transform = 'translateY(0)';
+                }, index * 200);
+            });
+        });
+
+        // Add enhanced visual feedback for interactions
+        document.addEventListener('click', function(e) {
+            if (e.target.matches('.btn-custom')) {
+                const btn = e.target;
+                const ripple = document.createElement('span');
+                ripple.style.position = 'absolute';
+                ripple.style.borderRadius = '50%';
+                ripple.style.background = 'rgba(255,255,255,0.6)';
+                ripple.style.transform = 'scale(0)';
+                ripple.style.animation = 'ripple 0.6s linear';
+                ripple.style.left = (e.offsetX - 10) + 'px';
+                ripple.style.top = (e.offsetY - 10) + 'px';
+                ripple.style.width = '20px';
+                ripple.style.height = '20px';
+                
+                btn.style.position = 'relative';
+                btn.appendChild(ripple);
+                
+                setTimeout(() => ripple.remove(), 600);
+            }
+        });
+
+        // Add ripple animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes ripple {
+                to {
+                    transform: scale(4);
+                    opacity: 0;
+                }
+            }
+            @keyframes fadeOut {
+                from { opacity: 1; transform: translateY(0); }
+                to { opacity: 0; transform: translateY(-20px); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

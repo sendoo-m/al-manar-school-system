@@ -1,0 +1,132 @@
+{% extends 'books_inventory/base.html' %}
+{% load static %}
+
+{% block title %}إضافة كراسة جديدة - مخزن الكتب{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:inventory_home' %}">الرئيسية</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'books_inventory:notebooks_list' %}">قائمة الكراسات</a></li>
+                <li class="breadcrumb-item active">إضافة كراسة جديدة</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h4><i class="fas fa-plus"></i> إضافة كراسة جديدة</h4>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="card-body">
+                    
+                    <!-- معلومات الكراسة الأساسية -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">اسم الكراسة <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="name" required placeholder="أدخل اسم الكراسة">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="form-label">نوع الكراسة <span class="text-danger">*</span></label>
+                                <select class="form-select" name="notebook_type" required>
+                                    <option value="">اختر النوع</option>
+                                    {% for type_code, type_name in notebook_type_choices %}
+                                    <option value="{{ type_code }}">{{ type_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="form-label">الحجم <span class="text-danger">*</span></label>
+                                <select class="form-select" name="size" required>
+                                    <option value="">اختر الحجم</option>
+                                    {% for size_code, size_name in size_choices %}
+                                    <option value="{{ size_code }}">{{ size_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- تفاصيل الكراسة -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">عدد الصفحات <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" name="pages_count" min="1" value="100" required placeholder="عدد صفحات الكراسة">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">سعر التكلفة (ج.م)</label>
+                                <input type="number" class="form-control" name="cost_price" min="0" step="0.01" value="0" placeholder="0.00">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">الحد الأدنى للمخزون</label>
+                                <input type="number" class="form-control" name="minimum_stock_level" min="0" value="10">
+                                <div class="form-text">سيتم التنبيه عند انخفاض المخزون عن هذا الرقم</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- الصفوف الدراسية -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <label class="form-label">الصفوف الدراسية المرتبطة</label>
+                            <div class="row">
+                                {% for grade in grade_levels %}
+                                <div class="col-md-4 col-lg-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="grade_levels" value="{{ grade.id }}" id="grade_{{ grade.id }}">
+                                        <label class="form-check-label" for="grade_{{ grade.id }}">
+                                            {{ grade.education_level.name }} - {{ grade.name }}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- الحالة -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="is_active" id="is_active" checked>
+                                <label class="form-check-label" for="is_active">
+                                    <strong>كراسة نشطة</strong>
+                                    <br><small class="text-muted">يمكن استلامها وتوزيعها</small>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+                
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'books_inventory:notebooks_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> إلغاء
+                        </a>
+                        <button type="submit" class="btn btn-info">
+                            <i class="fas fa-save"></i> حفظ الكراسة
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
