@@ -13,7 +13,7 @@
 
 **نظام إدارة مدرسي شامل ومتطور مبني بـ Django**
 
-[العربية](#arabic) • [English](#english) • [التوثيق](docs/) • [العرض التوضيحي](#demo)
+[العربية](#arabic) • [English](#english) •)
 
 </div>
 
