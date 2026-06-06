@@ -1,0 +1,294 @@
+{% extends 'payments/base.html' %}
+
+{% block title %}دليل الاستخدام - مدرسة المنار{% endblock %}
+{% block page_title %}دليل استخدام المدفوعات{% endblock %}
+{% block page_subtitle %}شرح مبسط لأهم خطوات استخدام نظام المدفوعات والخصومات والتقارير{% endblock %}
+{% block page_icon %}<i class="fas fa-book me-3"></i>{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'payments:payments_home' %}">لوحة المدفوعات</a></li>
+<li class="breadcrumb-item active">دليل الاستخدام</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'payments:payments_home' %}" class="btn btn-outline-primary btn-custom">
+        <i class="fas fa-home me-1"></i>
+        لوحة المدفوعات
+    </a>
+
+    <button type="button" class="btn btn-success btn-custom" onclick="window.print()">
+        <i class="fas fa-print me-1"></i>
+        طباعة الدليل
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .guide-hero {
+        background: linear-gradient(135deg, #198754, #0dcaf0);
+        color: white;
+        border-radius: 22px;
+        padding: 30px;
+        margin-bottom: 25px;
+        box-shadow: 0 10px 28px rgba(25, 135, 84, 0.22);
+    }
+
+    .guide-card {
+        background: white;
+        border-radius: 18px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+        margin-bottom: 22px;
+        overflow: hidden;
+    }
+
+    .guide-card-header {
+        background: #f8f9fa;
+        padding: 18px 22px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .guide-card-header h5 {
+        margin: 0;
+        font-weight: 900;
+    }
+
+    .guide-card-body {
+        padding: 24px;
+    }
+
+    .guide-step {
+        display: flex;
+        gap: 14px;
+        padding: 14px 0;
+        border-bottom: 1px dashed #e5e7eb;
+    }
+
+    .guide-step:last-child {
+        border-bottom: none;
+    }
+
+    .step-number {
+        width: 38px;
+        height: 38px;
+        min-width: 38px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #198754, #20c997);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+    }
+
+    .step-content strong {
+        display: block;
+        margin-bottom: 4px;
+        font-weight: 900;
+    }
+
+    .step-content p {
+        margin: 0;
+        color: #64748b;
+        font-weight: 700;
+    }
+
+    .quick-link-card {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 18px;
+        height: 100%;
+        transition: 0.2s ease;
+    }
+
+    .quick-link-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    }
+
+    @media print {
+        .quick-links,
+        .page-actions,
+        .btn {
+            display: none !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="guide-hero">
+    <h3 class="mb-2">
+        <i class="fas fa-book me-2"></i>
+        دليل استخدام نظام المدفوعات
+    </h3>
+    <p class="mb-0 opacity-75">
+        هذا الدليل يوضح أهم الخطوات اليومية للمحاسب والمدير داخل تطبيق المدفوعات.
+    </p>
+</div>
+
+<div class="row quick-links mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <a href="{% url 'payments:all_payments' %}" class="text-decoration-none text-dark">
+            <div class="quick-link-card">
+                <i class="fas fa-list fa-2x text-primary mb-2"></i>
+                <h6 class="fw-bold">كل المدفوعات</h6>
+                <small class="text-muted">بحث وفلترة وتعديل وطباعة.</small>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <a href="{% url 'payments:student_search' %}" class="text-decoration-none text-dark">
+            <div class="quick-link-card">
+                <i class="fas fa-search fa-2x text-success mb-2"></i>
+                <h6 class="fw-bold">البحث عن طالب</h6>
+                <small class="text-muted">الوصول السريع لمدفوعات طالب.</small>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <a href="{% url 'payments:financial_reports' %}" class="text-decoration-none text-dark">
+            <div class="quick-link-card">
+                <i class="fas fa-chart-line fa-2x text-info mb-2"></i>
+                <h6 class="fw-bold">التقارير المالية</h6>
+                <small class="text-muted">ملخص شامل للتحصيل والخصومات.</small>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <a href="{% url 'payments:overdue_payments' %}" class="text-decoration-none text-dark">
+            <div class="quick-link-card">
+                <i class="fas fa-exclamation-triangle fa-2x text-danger mb-2"></i>
+                <h6 class="fw-bold">المتأخرات</h6>
+                <small class="text-muted">متابعة الأقساط المتأخرة.</small>
+            </div>
+        </a>
+    </div>
+</div>
+
+<div class="guide-card">
+    <div class="guide-card-header">
+        <h5>
+            <i class="fas fa-money-bill-wave me-2 text-success"></i>
+            تسجيل دفعة لطالب
+        </h5>
+    </div>
+
+    <div class="guide-card-body">
+        <div class="guide-step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+                <strong>ابحث عن الطالب</strong>
+                <p>من القائمة الجانبية اختر البحث عن طالب، ثم اكتب اسم الطالب أو الرقم القومي.</p>
+            </div>
+        </div>
+
+        <div class="guide-step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+                <strong>افتح صفحة مدفوعات الطالب</strong>
+                <p>راجع الأقساط الموجودة، المدفوع، المتبقي، وأي خصومات معتمدة أو منتظرة.</p>
+            </div>
+        </div>
+
+        <div class="guide-step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+                <strong>سجل الدفعة</strong>
+                <p>اختر القسط، أدخل المبلغ وطريقة الدفع، ثم احفظ العملية.</p>
+            </div>
+        </div>
+
+        <div class="guide-step">
+            <div class="step-number">4</div>
+            <div class="step-content">
+                <strong>اطبع الإيصال</strong>
+                <p>بعد الحفظ يمكنك فتح الإيصال وطباعته، وسيظهر الخصم إن وجد.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="guide-card">
+    <div class="guide-card-header">
+        <h5>
+            <i class="fas fa-user-tag me-2 text-warning"></i>
+            التعامل مع الخصومات
+        </h5>
+    </div>
+
+    <div class="guide-card-body">
+        <div class="guide-step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+                <strong>طلب خصم</strong>
+                <p>المحاسب يمكنه طلب خصم لطالب من صفحة مدفوعات الطالب إذا كانت الصلاحيات تسمح.</p>
+            </div>
+        </div>
+
+        <div class="guide-step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+                <strong>موافقة الإدارة</strong>
+                <p>المدير يراجع الطلبات من صفحة طلبات الخصومات في إعدادات المدرسة أو لوحة التقارير.</p>
+            </div>
+        </div>
+
+        <div class="guide-step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+                <strong>تطبيق الخصم</strong>
+                <p>بعد الموافقة يظهر الخصم كخصم معتمد ويمكن تطبيقه على القسط حسب نطاقه.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="guide-card">
+    <div class="guide-card-header">
+        <h5>
+            <i class="fas fa-chart-bar me-2 text-primary"></i>
+            التقارير والمتابعة
+        </h5>
+    </div>
+
+    <div class="guide-card-body">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="alert alert-success mb-0">
+                    <strong>التقرير اليومي:</strong>
+                    لمتابعة تحصيل يوم محدد وطرق الدفع والخصومات.
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <div class="alert alert-info mb-0">
+                    <strong>التقرير الشهري:</strong>
+                    لمتابعة تحصيل شهر كامل وإجمالي الخصومات.
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <div class="alert alert-warning mb-0">
+                    <strong>التقارير المالية:</strong>
+                    شاشة شاملة للمدير تعرض التحصيل والمتأخرات والخصومات.
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <div class="alert alert-danger mb-0">
+                    <strong>المتأخرات:</strong>
+                    لمتابعة الأقساط التي تجاوزت تاريخ الاستحقاق.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

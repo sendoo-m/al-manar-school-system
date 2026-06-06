@@ -1,0 +1,261 @@
+{% extends 'payments/base.html' %}
+
+{% block title %}الدعم الفني - مدرسة المنار{% endblock %}
+{% block page_title %}الدعم الفني{% endblock %}
+{% block page_subtitle %}صفحة مساعدة لتسجيل المشكلات الشائعة وخطوات حلها داخل نظام المدفوعات{% endblock %}
+{% block page_icon %}<i class="fas fa-headset me-3"></i>{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'payments:payments_home' %}">لوحة المدفوعات</a></li>
+<li class="breadcrumb-item active">الدعم الفني</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'payments:user_guide' %}" class="btn btn-outline-primary btn-custom">
+        <i class="fas fa-book me-1"></i>
+        دليل الاستخدام
+    </a>
+
+    <button type="button" class="btn btn-success btn-custom" onclick="copySupportInfo()">
+        <i class="fas fa-copy me-1"></i>
+        نسخ بيانات الدعم
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .support-hero {
+        background: linear-gradient(135deg, #6f42c1, #0d6efd);
+        color: white;
+        border-radius: 22px;
+        padding: 30px;
+        margin-bottom: 25px;
+        box-shadow: 0 10px 28px rgba(111, 66, 193, 0.22);
+    }
+
+    .support-card {
+        background: white;
+        border-radius: 18px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+        margin-bottom: 22px;
+        overflow: hidden;
+    }
+
+    .support-card-header {
+        background: #f8f9fa;
+        padding: 18px 22px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .support-card-header h5 {
+        margin: 0;
+        font-weight: 900;
+    }
+
+    .support-card-body {
+        padding: 24px;
+    }
+
+    .support-box {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-right: 5px solid #0d6efd;
+        border-radius: 16px;
+        padding: 18px;
+        height: 100%;
+    }
+
+    .issue-item {
+        padding: 14px 0;
+        border-bottom: 1px dashed #e5e7eb;
+    }
+
+    .issue-item:last-child {
+        border-bottom: none;
+    }
+
+    .issue-item strong {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 900;
+    }
+
+    .issue-item p {
+        color: #64748b;
+        margin-bottom: 0;
+        font-weight: 700;
+    }
+
+    .support-data {
+        background: #111827;
+        color: #f9fafb;
+        border-radius: 14px;
+        padding: 16px;
+        direction: ltr;
+        text-align: left;
+        font-family: Consolas, monospace;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="support-hero">
+    <h3 class="mb-2">
+        <i class="fas fa-headset me-2"></i>
+        الدعم الفني لنظام المدفوعات
+    </h3>
+    <p class="mb-0 opacity-75">
+        استخدم هذه الصفحة لمعرفة حلول المشكلات المتكررة وتجهيز بيانات المشكلة قبل إرسالها للدعم.
+    </p>
+</div>
+
+<div class="row mb-4">
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="support-box">
+            <i class="fas fa-bug fa-2x text-danger mb-3"></i>
+            <h6 class="fw-bold">مشكلة في صفحة</h6>
+            <p class="text-muted mb-0">صوّر الخطأ أو انسخ Traceback كاملًا وأرسل رابط الصفحة.</p>
+        </div>
+    </div>
+
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="support-box">
+            <i class="fas fa-calculator fa-2x text-primary mb-3"></i>
+            <h6 class="fw-bold">مشكلة حسابات</h6>
+            <p class="text-muted mb-0">أرسل اسم الطالب، رقم القسط، المبلغ، والخصم الظاهر.</p>
+        </div>
+    </div>
+
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="support-box">
+            <i class="fas fa-print fa-2x text-success mb-3"></i>
+            <h6 class="fw-bold">مشكلة طباعة</h6>
+            <p class="text-muted mb-0">حدد نوع المستند: إيصال، تقرير يومي، أو تقرير شهري.</p>
+        </div>
+    </div>
+</div>
+
+<div class="support-card">
+    <div class="support-card-header">
+        <h5>
+            <i class="fas fa-tools me-2 text-primary"></i>
+            حلول سريعة لمشكلات شائعة
+        </h5>
+    </div>
+
+    <div class="support-card-body">
+        <div class="issue-item">
+            <strong>الصفحة لا تفتح أو تظهر Page not found</strong>
+            <p>تأكد من وجود الرابط في `payments/urls.py`، ثم شغّل `python manage.py check`.</p>
+        </div>
+
+        <div class="issue-item">
+            <strong>TemplateDoesNotExist</strong>
+            <p>تأكد من اسم القالب ومساره داخل `payments/templates/payments/`.</p>
+        </div>
+
+        <div class="issue-item">
+            <strong>Reverse for ... not found</strong>
+            <p>معناه أن اسم الرابط داخل كود url غير موجود في <code>payments/urls.py</code> أو اسم الـ app مختلف.</p>
+        </div>
+
+        <div class="issue-item">
+            <strong>الخصم لا يظهر في الإيصال أو التقرير</strong>
+            <p>تأكد أن القسط يحتوي على `discount_amount` وأن `applied_discount` مرتبط لو الخصم معتمد.</p>
+        </div>
+
+        <div class="issue-item">
+            <strong>مشكلة في الطباعة</strong>
+            <p>جرّب من المتصفح Ctrl + P، وتأكد أن حجم الصفحة A4 وأن الهوامش Default أو None حسب القالب.</p>
+        </div>
+    </div>
+</div>
+
+<div class="support-card">
+    <div class="support-card-header">
+        <h5>
+            <i class="fas fa-clipboard-list me-2 text-success"></i>
+            بيانات أرسلها عند وجود خطأ
+        </h5>
+    </div>
+
+    <div class="support-card-body">
+        <p class="text-muted fw-bold">
+            عند إرسال مشكلة، انسخ البيانات التالية وأكمل الناقص:
+        </p>
+
+        <div class="support-data" id="supportInfo">
+URL: {{ request.path }}
+User: {{ user.username }}
+Role: {{ user_role|default:"-" }}
+Page: {% block support_page_name %}Payments Support{% endblock %}
+Error Type:
+Traceback:
+Steps To Reproduce:
+Expected Result:
+Actual Result:
+        </div>
+
+        <div class="mt-3">
+            <button type="button" class="btn btn-success btn-custom" onclick="copySupportInfo()">
+                <i class="fas fa-copy me-1"></i>
+                نسخ البيانات
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="support-card">
+    <div class="support-card-header">
+        <h5>
+            <i class="fas fa-link me-2 text-info"></i>
+            روابط مفيدة
+        </h5>
+    </div>
+
+    <div class="support-card-body">
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'payments:user_guide' %}" class="btn btn-outline-primary btn-custom">
+                <i class="fas fa-book me-1"></i>
+                دليل الاستخدام
+            </a>
+
+            <a href="{% url 'payments:payment_calculator' %}" class="btn btn-outline-success btn-custom">
+                <i class="fas fa-calculator me-1"></i>
+                حاسبة المدفوعات
+            </a>
+
+            <a href="{% url 'payments:financial_reports' %}" class="btn btn-outline-info btn-custom">
+                <i class="fas fa-chart-line me-1"></i>
+                التقارير المالية
+            </a>
+
+            <a href="{% url 'payments:all_payments' %}" class="btn btn-outline-secondary btn-custom">
+                <i class="fas fa-list me-1"></i>
+                كل المدفوعات
+            </a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function copySupportInfo() {
+    const text = document.getElementById('supportInfo').innerText;
+
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(function() {
+            showPaymentMessage('success', 'تم نسخ بيانات الدعم الفني', 3000);
+        });
+    } else {
+        alert(text);
+    }
+}
+</script>
+{% endblock %}

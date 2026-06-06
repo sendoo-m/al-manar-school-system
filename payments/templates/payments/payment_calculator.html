@@ -1,0 +1,286 @@
+{% extends 'payments/base.html' %}
+{% load humanize %}
+
+{% block title %}حاسبة المدفوعات - مدرسة المنار{% endblock %}
+{% block page_title %}حاسبة المدفوعات{% endblock %}
+{% block page_subtitle %}أداة مساعدة لحساب الخصم، المدفوع، والمتبقي قبل تسجيل القسط{% endblock %}
+{% block page_icon %}<i class="fas fa-calculator me-3"></i>{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'payments:payments_home' %}">لوحة المدفوعات</a></li>
+<li class="breadcrumb-item active">حاسبة المدفوعات</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'payments:all_payments' %}" class="btn btn-outline-primary btn-custom">
+        <i class="fas fa-list me-1"></i>
+        كل المدفوعات
+    </a>
+
+    {% if permissions.can_add %}
+    <a href="{% url 'payments:quick_payment' %}" class="btn btn-success btn-custom">
+        <i class="fas fa-plus me-1"></i>
+        دفع سريع
+    </a>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .calculator-hero {
+        background: linear-gradient(135deg, #0d6efd, #6610f2);
+        color: white;
+        border-radius: 22px;
+        padding: 30px;
+        margin-bottom: 25px;
+        box-shadow: 0 10px 28px rgba(13, 110, 253, 0.22);
+    }
+
+    .calculator-card {
+        background: white;
+        border-radius: 18px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+        overflow: hidden;
+        margin-bottom: 25px;
+    }
+
+    .calculator-card-header {
+        background: #f8f9fa;
+        padding: 18px 22px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .calculator-card-header h5 {
+        margin: 0;
+        font-weight: 900;
+    }
+
+    .calculator-card-body {
+        padding: 24px;
+    }
+
+    .result-box {
+        border-radius: 16px;
+        padding: 18px;
+        height: 100%;
+        text-align: center;
+        background: #f8fafc;
+        border-top: 5px solid #0d6efd;
+    }
+
+    .result-box.success { border-top-color: #198754; }
+    .result-box.warning { border-top-color: #ffc107; }
+    .result-box.danger { border-top-color: #dc3545; }
+    .result-box.info { border-top-color: #0dcaf0; }
+
+    .result-value {
+        font-size: 1.7rem;
+        font-weight: 900;
+        margin-bottom: 6px;
+    }
+
+    .result-label {
+        color: #64748b;
+        font-weight: 800;
+    }
+
+    .hint-box {
+        background: #f8fafc;
+        border-right: 5px solid #0d6efd;
+        border-radius: 14px;
+        padding: 16px;
+        margin-top: 18px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="calculator-hero">
+    <h3 class="mb-2">
+        <i class="fas fa-calculator me-2"></i>
+        حاسبة المدفوعات والخصومات
+    </h3>
+    <p class="mb-0 opacity-75">
+        استخدم هذه الأداة لحساب قيمة الخصم والمبلغ النهائي والمتبقي قبل تسجيل القسط فعليًا.
+    </p>
+</div>
+
+<div class="calculator-card">
+    <div class="calculator-card-header">
+        <h5>
+            <i class="fas fa-sliders-h me-2 text-primary"></i>
+            بيانات الحساب
+        </h5>
+    </div>
+
+    <div class="calculator-card-body">
+        <div class="row g-3">
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label fw-bold">المبلغ الأصلي</label>
+                <input type="number" id="originalAmount" class="form-control" step="0.01" min="0" placeholder="مثال: 10000">
+            </div>
+
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label fw-bold">نسبة الخصم %</label>
+                <input type="number" id="discountPercentage" class="form-control" step="0.01" min="0" max="100" placeholder="مثال: 10">
+            </div>
+
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label fw-bold">خصم مبلغ ثابت</label>
+                <input type="number" id="fixedDiscount" class="form-control" step="0.01" min="0" placeholder="مثال: 500">
+            </div>
+
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label fw-bold">المبلغ المدفوع</label>
+                <input type="number" id="paidAmount" class="form-control" step="0.01" min="0" placeholder="مثال: 2000">
+            </div>
+
+            <div class="col-12 d-flex gap-2 justify-content-center flex-wrap mt-4">
+                <button type="button" class="btn btn-primary btn-custom" onclick="calculatePayment()">
+                    <i class="fas fa-calculator me-1"></i>
+                    احسب
+                </button>
+
+                <button type="button" class="btn btn-outline-secondary btn-custom" onclick="resetCalculator()">
+                    <i class="fas fa-eraser me-1"></i>
+                    مسح
+                </button>
+            </div>
+        </div>
+
+        <div class="hint-box">
+            <strong>ملاحظة:</strong>
+            لو أدخلت نسبة خصم ومبلغ خصم ثابت معًا، سيتم جمع الخصمين معًا ثم حساب المبلغ النهائي.
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="result-box info">
+            <div class="result-value text-info" id="resultOriginal">0.00</div>
+            <div class="result-label">المبلغ الأصلي</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="result-box warning">
+            <div class="result-value text-warning" id="resultDiscount">0.00</div>
+            <div class="result-label">إجمالي الخصم</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="result-box success">
+            <div class="result-value text-success" id="resultFinal">0.00</div>
+            <div class="result-label">المطلوب بعد الخصم</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="result-box danger">
+            <div class="result-value text-danger" id="resultRemaining">0.00</div>
+            <div class="result-label">المتبقي</div>
+        </div>
+    </div>
+</div>
+
+<div class="calculator-card">
+    <div class="calculator-card-header">
+        <h5>
+            <i class="fas fa-info-circle me-2 text-success"></i>
+            شرح سريع
+        </h5>
+    </div>
+
+    <div class="calculator-card-body">
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <div class="alert alert-info mb-0">
+                    <strong>الخصم النسبي:</strong>
+                    يحسب كنسبة من المبلغ الأصلي.
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-3">
+                <div class="alert alert-warning mb-0">
+                    <strong>الخصم الثابت:</strong>
+                    يخصم كمبلغ مباشر من القسط.
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-3">
+                <div class="alert alert-success mb-0">
+                    <strong>المتبقي:</strong>
+                    المطلوب بعد الخصم ناقص المدفوع.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toNumber(value) {
+    const number = parseFloat(value);
+    return isNaN(number) ? 0 : number;
+}
+
+function formatMoney(value) {
+    return value.toLocaleString('ar-EG', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }) + ' ج.م';
+}
+
+function calculatePayment() {
+    const originalAmount = toNumber(document.getElementById('originalAmount').value);
+    const discountPercentage = toNumber(document.getElementById('discountPercentage').value);
+    const fixedDiscount = toNumber(document.getElementById('fixedDiscount').value);
+    const paidAmount = toNumber(document.getElementById('paidAmount').value);
+
+    let percentageDiscount = originalAmount * (discountPercentage / 100);
+    let totalDiscount = percentageDiscount + fixedDiscount;
+
+    if (totalDiscount > originalAmount) {
+        totalDiscount = originalAmount;
+    }
+
+    const finalAmount = Math.max(0, originalAmount - totalDiscount);
+    const remainingAmount = Math.max(0, finalAmount - paidAmount);
+
+    document.getElementById('resultOriginal').innerText = formatMoney(originalAmount);
+    document.getElementById('resultDiscount').innerText = formatMoney(totalDiscount);
+    document.getElementById('resultFinal').innerText = formatMoney(finalAmount);
+    document.getElementById('resultRemaining').innerText = formatMoney(remainingAmount);
+}
+
+function resetCalculator() {
+    document.getElementById('originalAmount').value = '';
+    document.getElementById('discountPercentage').value = '';
+    document.getElementById('fixedDiscount').value = '';
+    document.getElementById('paidAmount').value = '';
+
+    document.getElementById('resultOriginal').innerText = '0.00';
+    document.getElementById('resultDiscount').innerText = '0.00';
+    document.getElementById('resultFinal').innerText = '0.00';
+    document.getElementById('resultRemaining').innerText = '0.00';
+}
+
+document.addEventListener('input', function(event) {
+    if (
+        event.target.id === 'originalAmount' ||
+        event.target.id === 'discountPercentage' ||
+        event.target.id === 'fixedDiscount' ||
+        event.target.id === 'paidAmount'
+    ) {
+        calculatePayment();
+    }
+});
+</script>
+{% endblock %}

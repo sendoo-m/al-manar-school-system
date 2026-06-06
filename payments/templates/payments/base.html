@@ -5,17 +5,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}نظام إدارة المدفوعات - مدرسة المنار{% endblock %}</title>
-    
+
     <!-- Bootstrap RTL CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+
     <style>
         :root {
             --primary-color: #28a745;
+            --primary-dark: #1e7e34;
             --secondary-color: #2c3e50;
             --accent-color: #dc3545;
             --success-color: #28a745;
@@ -30,6 +33,9 @@
             --payment-success: #4caf50;
             --payment-pending: #ff9800;
             --payment-overdue: #f44336;
+            --border-color: rgba(0,0,0,0.08);
+            --shadow-soft: 0 4px 25px rgba(0,0,0,0.08);
+            --shadow-medium: 0 8px 35px rgba(0,0,0,0.12);
         }
 
         * {
@@ -45,8 +51,12 @@
             overflow-x: hidden;
         }
 
+        a {
+            text-decoration: none;
+        }
+
         /* ===================================
-           🎨 SIDEBAR STYLES - مخصص للمدفوعات
+           Sidebar
         =================================== */
         .sidebar {
             position: fixed;
@@ -99,7 +109,7 @@
 
         .sidebar-header h4 {
             margin-bottom: 8px;
-            font-weight: 700;
+            font-weight: 900;
             color: #4caf50;
             font-size: 1.2rem;
             line-height: 1.2;
@@ -108,23 +118,45 @@
         .sidebar-header p {
             margin-bottom: 8px;
             font-size: 0.85rem;
-            opacity: 0.8;
+            opacity: 0.85;
             line-height: 1.3;
         }
 
         .user-role-badge {
             display: inline-block;
             background: rgba(76, 175, 80, 0.2);
-            color: #4caf50;
+            color: #8de19a;
             padding: 5px 15px;
             border-radius: 20px;
             font-size: 0.75rem;
-            font-weight: 600;
+            font-weight: 800;
             border: 1px solid rgba(76, 175, 80, 0.3);
         }
 
+        .balance-widget {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid rgba(76, 175, 80, 0.2);
+            border-radius: 12px;
+            padding: 15px;
+            margin: 20px 15px;
+            text-align: center;
+        }
+
+        .balance-amount {
+            font-size: 1.1rem;
+            font-weight: 900;
+            color: #8de19a;
+            margin-bottom: 5px;
+        }
+
+        .balance-label {
+            font-size: 0.75rem;
+            opacity: 0.85;
+            font-weight: 700;
+        }
+
         .sidebar-menu {
-            padding: 20px 0 30px 0;
+            padding: 0 0 30px 0;
         }
 
         .menu-section {
@@ -134,7 +166,7 @@
         .menu-section-title {
             padding: 8px 25px;
             font-size: 0.7rem;
-            font-weight: 700;
+            font-weight: 900;
             text-transform: uppercase;
             letter-spacing: 1.2px;
             color: rgba(255,255,255,0.6);
@@ -156,21 +188,20 @@
         .menu-item {
             display: flex;
             align-items: center;
-            padding: 14px 25px;
+            padding: 13px 25px;
             color: rgba(255,255,255,0.9);
             text-decoration: none;
             transition: all 0.3s ease;
             position: relative;
             margin: 2px 15px;
             border-radius: 12px;
-            font-weight: 500;
+            font-weight: 700;
             font-size: 0.9rem;
         }
 
         .menu-item:hover {
-            background: rgba(76, 175, 80, 0.15);
+            background: rgba(76, 175, 80, 0.16);
             color: white;
-            text-decoration: none;
             transform: translateX(-3px);
         }
 
@@ -185,48 +216,22 @@
             text-align: center;
             margin-left: 12px;
             font-size: 1rem;
-            opacity: 0.9;
-        }
-
-        .menu-item.disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            pointer-events: none;
+            opacity: 0.95;
         }
 
         .permission-badge {
             background: rgba(255, 193, 7, 0.2);
             color: #ffc107;
-            font-size: 0.6rem;
+            font-size: 0.62rem;
             padding: 2px 6px;
             border-radius: 8px;
             margin-right: auto;
             border: 1px solid rgba(255, 193, 7, 0.3);
-        }
-
-        .balance-widget {
-            background: rgba(76, 175, 80, 0.1);
-            border: 1px solid rgba(76, 175, 80, 0.2);
-            border-radius: 12px;
-            padding: 15px;
-            margin: 20px 15px;
-            text-align: center;
-        }
-
-        .balance-amount {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #4caf50;
-            margin-bottom: 5px;
-        }
-
-        .balance-label {
-            font-size: 0.75rem;
-            opacity: 0.8;
+            font-weight: 900;
         }
 
         /* ===================================
-           📱 MAIN CONTENT - تحسينات للمدفوعات
+           Main Layout
         =================================== */
         .main-content {
             margin-right: var(--sidebar-width);
@@ -240,7 +245,7 @@
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             padding: 20px 30px;
-            border-bottom: 1px solid rgba(0,0,0,0.08);
+            border-bottom: 1px solid var(--border-color);
             box-shadow: 0 2px 20px rgba(0,0,0,0.05);
             position: sticky;
             top: 0;
@@ -255,6 +260,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 20px;
         }
 
         .breadcrumb-nav {
@@ -266,22 +272,22 @@
 
         .breadcrumb-nav .breadcrumb-item a {
             color: #6c757d;
-            text-decoration: none;
         }
 
         .breadcrumb-nav .breadcrumb-item.active {
             color: var(--primary-color);
-            font-weight: 600;
+            font-weight: 800;
         }
 
         .page-header {
             margin-bottom: 0;
             flex: 1;
+            min-width: 0;
         }
 
         .page-title {
             font-size: 1.7rem;
-            font-weight: 700;
+            font-weight: 900;
             color: var(--dark-color);
             margin-bottom: 4px;
             display: flex;
@@ -312,14 +318,11 @@
             align-items: center;
             justify-content: center;
             color: white;
-            font-weight: bold;
+            font-weight: 900;
             font-size: 1rem;
             box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
         }
 
-        /* ===================================
-           🎨 CONTENT AREA - مخصص للمدفوعات
-        =================================== */
         .content-area {
             flex: 1;
             padding: var(--content-padding);
@@ -332,11 +335,14 @@
             max-width: 100%;
         }
 
+        /* ===================================
+           Reusable Components
+        =================================== */
         .content-card {
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(255, 255, 255, 0.96);
             backdrop-filter: blur(10px);
             border-radius: 18px;
-            box-shadow: 0 4px 25px rgba(0,0,0,0.08);
+            box-shadow: var(--shadow-soft);
             border: 1px solid rgba(255,255,255,0.3);
             margin-bottom: 25px;
             overflow: hidden;
@@ -345,7 +351,7 @@
 
         .content-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 35px rgba(0,0,0,0.12);
+            box-shadow: var(--shadow-medium);
         }
 
         .content-card-header {
@@ -356,7 +362,7 @@
 
         .content-card-header h5 {
             margin: 0;
-            font-weight: 600;
+            font-weight: 900;
             color: var(--dark-color);
             display: flex;
             align-items: center;
@@ -366,9 +372,6 @@
             padding: 25px;
         }
 
-        /* ===================================
-           💰 مكونات خاصة بالمدفوعات
-        =================================== */
         .payment-stats-card {
             background: white;
             border-radius: 15px;
@@ -395,21 +398,13 @@
             box-shadow: 0 8px 25px rgba(0,0,0,0.15);
         }
 
-        .payment-stats-card.success {
-            border-left-color: var(--payment-success);
-        }
-
-        .payment-stats-card.warning {
-            border-left-color: var(--payment-pending);
-        }
-
-        .payment-stats-card.danger {
-            border-left-color: var(--payment-overdue);
-        }
+        .payment-stats-card.success { border-left-color: var(--payment-success); }
+        .payment-stats-card.warning { border-left-color: var(--payment-pending); }
+        .payment-stats-card.danger { border-left-color: var(--payment-overdue); }
 
         .payment-amount {
             font-size: 1.8rem;
-            font-weight: 700;
+            font-weight: 900;
             color: var(--money-color);
             margin-bottom: 5px;
             font-family: 'Courier New', monospace;
@@ -419,6 +414,7 @@
             color: #6c757d;
             font-size: 0.9rem;
             margin-bottom: 8px;
+            font-weight: 800;
         }
 
         .payment-change {
@@ -428,20 +424,14 @@
             gap: 5px;
         }
 
-        .payment-change.positive {
-            color: var(--success-color);
-        }
-
-        .payment-change.negative {
-            color: var(--accent-color);
-        }
+        .payment-change.positive { color: var(--success-color); }
+        .payment-change.negative { color: var(--accent-color); }
 
         .currency-symbol {
             font-size: 0.8em;
             opacity: 0.8;
         }
 
-        /* جدول المدفوعات */
         .payments-table {
             background: white;
             border-radius: 15px;
@@ -461,14 +451,13 @@
 
         .payments-table tbody tr:hover {
             background: rgba(76, 175, 80, 0.05);
-            transform: scale(1.01);
         }
 
         .payment-status-badge {
             padding: 6px 12px;
             border-radius: 20px;
             font-size: 0.8rem;
-            font-weight: 600;
+            font-weight: 800;
             border: none;
         }
 
@@ -490,9 +479,112 @@
             border: 1px solid rgba(244, 67, 54, 0.3);
         }
 
-        /* ===================================
-           📱 MOBILE RESPONSIVE
-        =================================== */
+        .form-control,
+        .form-select {
+            border-radius: 12px;
+            border: 2px solid #e9ecef;
+            padding: 12px 16px;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(76, 175, 80, 0.15);
+        }
+
+        .btn-custom {
+            border-radius: 12px;
+            font-weight: 800;
+            padding: 10px 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .btn-success-custom {
+            background: linear-gradient(135deg, var(--primary-color), var(--success-color));
+            color: white;
+            border: none;
+        }
+
+        .btn-success-custom:hover {
+            color: white;
+        }
+
+        .btn-money {
+            background: linear-gradient(135deg, #2e7d32, #4caf50);
+            color: white;
+            font-weight: 900;
+        }
+
+        .btn-money:hover {
+            background: linear-gradient(135deg, #1b5e20, #2e7d32);
+            color: white;
+        }
+
+        .alert {
+            border-radius: 15px;
+            border: none;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            font-weight: 700;
+        }
+
+        .fade-in {
+            animation: fadeInUp 0.45s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(22px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .dropdown-menu {
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .dropdown-item {
+            padding: 10px 20px;
+            transition: all 0.2s ease;
+            font-weight: 700;
+        }
+
+        .dropdown-item:hover {
+            background: rgba(76, 175, 80, 0.1);
+            transform: translateX(5px);
+        }
+
+        .payment-spinner {
+            border: 3px solid rgba(76, 175, 80, 0.1);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: paymentSpin 1s linear infinite;
+        }
+
+        @keyframes paymentSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         .sidebar-overlay {
             position: fixed;
             top: 0;
@@ -552,7 +644,18 @@
             }
 
             .top-header {
-                padding: 15px 70px 15px 20px;
+                padding: 15px 75px 15px 20px;
+            }
+
+            .header-content {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .user-info {
+                width: 100%;
+                justify-content: space-between;
+                flex-wrap: wrap;
             }
 
             .content-area {
@@ -582,169 +685,85 @@
             }
         }
 
-        /* ===================================
-           🎨 ENHANCED COMPONENTS
-        =================================== */
-        .form-control, .form-select {
-            border-radius: 12px;
-            border: 2px solid #e9ecef;
-            padding: 12px 16px;
-            transition: all 0.3s ease;
-            font-weight: 500;
-        }
-
-        .form-control:focus, .form-select:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.2rem rgba(76, 175, 80, 0.15);
-        }
-
-        .btn-custom {
-            border-radius: 12px;
-            font-weight: 600;
-            padding: 10px 20px;
-            transition: all 0.3s ease;
-            border: none;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn-custom:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-        }
-
-        .btn-success-custom {
-            background: linear-gradient(135deg, var(--primary-color), var(--success-color));
-            color: white;
-        }
-
-        .btn-money {
-            background: linear-gradient(135deg, #2e7d32, #4caf50);
-            color: white;
-            font-weight: 700;
-        }
-
-        .btn-money:hover {
-            background: linear-gradient(135deg, #1b5e20, #2e7d32);
-            color: white;
-        }
-
-        .alert {
-            border-radius: 15px;
-            border: none;
-            padding: 16px 20px;
-            margin-bottom: 20px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-
-        .fade-in {
-            animation: fadeInUp 0.6s ease-out;
-        }
-
-        @keyframes fadeInUp {
-            from { 
-                opacity: 0; 
-                transform: translateY(30px); 
+        @media print {
+            .sidebar,
+            .sidebar-toggle,
+            .sidebar-overlay,
+            .top-header,
+            .page-actions,
+            .breadcrumb-nav,
+            .btn,
+            .no-print {
+                display: none !important;
             }
-            to { 
-                opacity: 1; 
-                transform: translateY(0); 
+
+            .main-content {
+                margin-right: 0 !important;
             }
-        }
 
-        /* تحسينات إضافية */
-        .dropdown-menu {
-            border-radius: 12px;
-            border: none;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-        }
+            .content-area {
+                padding: 0 !important;
+            }
 
-        .dropdown-item {
-            padding: 10px 20px;
-            transition: all 0.2s ease;
-        }
-
-        .dropdown-item:hover {
-            background: rgba(76, 175, 80, 0.1);
-            transform: translateX(5px);
-        }
-
-        .text-truncate {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        /* Loading spinner مخصص */
-        .payment-spinner {
-            border: 3px solid rgba(76, 175, 80, 0.1);
-            border-top: 3px solid var(--primary-color);
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: paymentSpin 1s linear infinite;
-        }
-
-        @keyframes paymentSpin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            body {
+                background: white !important;
+            }
         }
     </style>
 
     {% block extra_css %}{% endblock %}
 </head>
+
 <body>
     <!-- Mobile Sidebar Toggle -->
-    <button class="sidebar-toggle" onclick="toggleSidebar()">
+    <button class="sidebar-toggle" type="button" onclick="toggleSidebar()" aria-label="فتح القائمة">
         <i class="fas fa-bars"></i>
     </button>
 
     <!-- Sidebar Overlay -->
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
-<!-- في templates/payments/base.html - تحديث الـ sidebar -->
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-coins fa-2x"></i>
+            </div>
 
-<!-- Sidebar -->
-<div class="sidebar" id="sidebar">
-    <!-- Sidebar Header -->
-    <div class="sidebar-header">
-        <div class="logo">
-            <i class="fas fa-coins fa-2x"></i>
-        </div>
-        <h4>نظام إدارة المدفوعات</h4>
-        <p>مدرسة المنار للغات</p>
-        {% if user_role %}
-        <div class="user-role-badge">
-            {{ user_role|default:"محاسب" }}
-        </div>
-        {% endif %}
-    </div>
+            <h4>نظام إدارة المدفوعات</h4>
+            <p>مدرسة المنار للغات</p>
 
-    <!-- Balance Widget -->
-    <div class="balance-widget">
-        <div class="balance-amount">
-            <i class="fas fa-coins me-1"></i>
-            {{ today_total|default:"0"|floatformat:2 }} <span class="currency-symbol">ج.م</span>
+            {% if user_role %}
+            <div class="user-role-badge">
+                {{ user_role|default:"محاسب" }}
+            </div>
+            {% endif %}
         </div>
-        <div class="balance-label">إجمالي اليوم</div>
-    </div>
 
-        <!-- Sidebar Menu -->
-        <div class="sidebar-menu">
+        <div class="balance-widget">
+            <div class="balance-amount">
+                <i class="fas fa-coins me-1"></i>
+                {{ today_total|default:"0"|floatformat:2 }}
+                <span class="currency-symbol">ج.م</span>
+            </div>
+            <div class="balance-label">إجمالي اليوم</div>
+        </div>
+
+        <nav class="sidebar-menu">
             <!-- الصفحات الرئيسية -->
             <div class="menu-section">
                 <div class="menu-section-title">الصفحات الرئيسية</div>
+
                 <a href="{% url 'payments:payments_home' %}" class="menu-item">
                     <i class="fas fa-tachometer-alt"></i>
                     <span>لوحة التحكم</span>
                 </a>
-                
+
                 <a href="{% url 'payments:all_payments' %}" class="menu-item">
                     <i class="fas fa-list"></i>
                     <span>جميع المدفوعات</span>
                 </a>
-                
+
                 {% if permissions.can_add %}
                 <a href="{% url 'payments:quick_payment' %}" class="menu-item">
                     <i class="fas fa-plus-circle"></i>
@@ -758,17 +777,17 @@
             {% if permissions.can_add %}
             <div class="menu-section">
                 <div class="menu-section-title">عمليات المدفوعات</div>
-                
+
                 <a href="{% url 'payments:student_search' %}" class="menu-item">
                     <i class="fas fa-search"></i>
                     <span>البحث عن طالب</span>
                 </a>
-                
+
                 <a href="{% url 'payments:print_receipts' %}" class="menu-item">
                     <i class="fas fa-receipt"></i>
                     <span>طباعة إيصالات</span>
                 </a>
-                
+
                 {% if permissions.can_edit %}
                 <a href="{% url 'payments:all_payments' %}?filter=editable" class="menu-item">
                     <i class="fas fa-edit"></i>
@@ -783,14 +802,27 @@
             {% if permissions.can_reports %}
             <div class="menu-section">
                 <div class="menu-section-title">التقارير المالية</div>
-                <a href="{% url 'payments:daily_report' %}" class="menu-item">
+
+                <a href="{% url 'payments:financial_reports' %}" class="menu-item">
                     <i class="fas fa-chart-line"></i>
+                    <span>التقارير المالية</span>
+                </a>
+
+                <a href="{% url 'payments:daily_report' %}" class="menu-item">
+                    <i class="fas fa-calendar-day"></i>
                     <span>تقرير يومي</span>
                 </a>
+
                 <a href="{% url 'payments:monthly_report' %}" class="menu-item">
-                    <i class="fas fa-chart-bar"></i>
+                    <i class="fas fa-calendar-alt"></i>
                     <span>تقرير شهري</span>
                 </a>
+
+                <a href="{% url 'payments:overdue_payments' %}" class="menu-item">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>الأقساط المتأخرة</span>
+                </a>
+
                 {% if permissions.can_advanced_reports %}
                 <a href="{% url 'payments:advanced_statistics' %}" class="menu-item">
                     <i class="fas fa-chart-pie"></i>
@@ -801,11 +833,11 @@
             </div>
             {% endif %}
 
-            <!-- إدارة متقدمة -->
-            {% if permissions.can_delete or permissions.can_discounts %}
+            <!-- الخصومات والإعدادات -->
+            {% if permissions.can_discounts or permissions.can_settings %}
             <div class="menu-section">
-                <div class="menu-section-title">الإدارة المتقدمة</div>
-                
+                <div class="menu-section-title">الخصومات والإعدادات</div>
+
                 {% if permissions.can_discounts %}
                 <a href="{% url 'payments:manage_discounts' %}" class="menu-item">
                     <i class="fas fa-percentage"></i>
@@ -813,105 +845,139 @@
                     <span class="permission-badge">مدير</span>
                 </a>
                 {% endif %}
-                
-                {% if permissions.can_delete %}
-                <a href="{% url 'payments:overdue_payments' %}" class="menu-item">
-                    <i class="fas fa-clock"></i>
-                    <span>المتأخرات</span>
-                    <span class="permission-badge">حساس</span>
+
+                {% if permissions.can_settings %}
+                <a href="{% url 'payments:payment_settings' %}" class="menu-item">
+                    <i class="fas fa-cogs"></i>
+                    <span>إعدادات المدفوعات</span>
                 </a>
                 {% endif %}
-                
-                
             </div>
             {% endif %}
 
+            <!-- المساعدة والأدوات -->
+            <div class="menu-section">
+                <div class="menu-section-title">المساعدة والأدوات</div>
 
-        </div>
-    </div>
-    <!-- End Sidebar -->
+                <a href="{% url 'payments:payment_calculator' %}" class="menu-item">
+                    <i class="fas fa-calculator"></i>
+                    <span>حاسبة المدفوعات</span>
+                </a>
+
+                <a href="{% url 'payments:user_guide' %}" class="menu-item">
+                    <i class="fas fa-book"></i>
+                    <span>دليل الاستخدام</span>
+                </a>
+
+                <a href="{% url 'payments:technical_support' %}" class="menu-item">
+                    <i class="fas fa-headset"></i>
+                    <span>الدعم الفني</span>
+                </a>
+            </div>
+        </nav>
+    </aside>
+
     <!-- Main Content -->
-    <div class="main-content">
+    <main class="main-content">
         <!-- Top Header -->
-        <div class="top-header">
+        <header class="top-header">
             <div class="header-content">
                 <div class="page-header">
-                    <!-- Breadcrumb -->
                     <nav aria-label="breadcrumb">
                         <ol class="breadcrumb breadcrumb-nav">
                             <li class="breadcrumb-item">
                                 <a href="{% url 'payments:payments_home' %}">
-                                    <i class="fas fa-coins me-1"></i>المدفوعات
+                                    <i class="fas fa-coins me-1"></i>
+                                    المدفوعات
                                 </a>
                             </li>
+
                             {% block breadcrumb %}
                             <li class="breadcrumb-item active">لوحة التحكم</li>
                             {% endblock %}
                         </ol>
                     </nav>
 
-                    <!-- Page Title -->
                     <h1 class="page-title">
                         {% block page_icon %}<i class="fas fa-coins me-2"></i>{% endblock %}
                         {% block page_title %}نظام إدارة المدفوعات{% endblock %}
                     </h1>
+
                     <p class="page-subtitle">
                         {% block page_subtitle %}إدارة شاملة للمدفوعات والرسوم المدرسية{% endblock %}
                     </p>
                 </div>
 
                 <div class="user-info">
-                    <!-- Quick Actions -->
-                    {% block page_actions %}
-                    {% if permissions.can_add %}
-                    <div class="btn-group me-3">
-                        <button class="btn btn-success-custom btn-custom" onclick="showQuickPayment()">
-                            <i class="fas fa-plus me-1"></i>دفع سريع
-                        </button>
+                    <div class="page-actions">
+                        {% block page_actions %}
+                            {% if permissions.can_add %}
+                            <a href="{% url 'payments:quick_payment' %}" class="btn btn-success-custom btn-custom">
+                                <i class="fas fa-plus me-1"></i>
+                                دفع سريع
+                            </a>
+                            {% endif %}
+                        {% endblock %}
                     </div>
-                    {% endif %}
-                    {% endblock %}
 
-                    <!-- User Dropdown -->
                     <div class="dropdown">
-                        <button class="btn btn-outline-secondary dropdown-toggle d-flex align-items-center" 
-                                type="button" data-bs-toggle="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle d-flex align-items-center"
+                                type="button"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false">
                             <div class="user-avatar me-2">
                                 {{ user.username.0|upper }}
                             </div>
+
                             <div class="d-none d-md-block text-start">
-                                <div class="fw-bold text-truncate" style="max-width: 120px;">
+                                <div class="fw-bold text-truncate" style="max-width: 135px;">
                                     {{ user.get_full_name|default:user.username }}
                                 </div>
-                                <small class="text-muted text-truncate d-block" style="max-width: 120px;">
+                                <small class="text-muted text-truncate d-block" style="max-width: 135px;">
                                     {{ user_role|default:"محاسب النظام" }}
                                 </small>
                             </div>
                         </button>
+
                         <ul class="dropdown-menu dropdown-menu-end shadow">
                             <li class="dropdown-header">
-                                <i class="fas fa-user-tie me-2"></i>حساب المحاسب
+                                <i class="fas fa-user-tie me-2"></i>
+                                حساب المستخدم
                             </li>
-                            <li><a class="dropdown-item" href="#">
-                                <i class="fas fa-chart-line me-2"></i>إحصائياتي
-                            </a></li>
-                            <li><a class="dropdown-item" href="#">
-                                <i class="fas fa-cog me-2"></i>الإعدادات
-                            </a></li>
+
+                            <li>
+                                <a class="dropdown-item" href="{% url 'payments:financial_reports' %}">
+                                    <i class="fas fa-chart-line me-2"></i>
+                                    التقارير المالية
+                                </a>
+                            </li>
+
+                            {% if permissions.can_settings %}
+                            <li>
+                                <a class="dropdown-item" href="{% url 'payments:payment_settings' %}">
+                                    <i class="fas fa-cog me-2"></i>
+                                    إعدادات المدفوعات
+                                </a>
+                            </li>
+                            {% endif %}
+
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-danger" href="{% url 'home:logout' %}">
-                                <i class="fas fa-sign-out-alt me-2"></i>تسجيل الخروج
-                            </a></li>
+
+                            <li>
+                                <a class="dropdown-item text-danger" href="{% url 'home:logout' %}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>
+                                    تسجيل الخروج
+                                </a>
+                            </li>
                         </ul>
                     </div>
                 </div>
             </div>
-        </div>
+        </header>
 
         <!-- Content Area -->
-        <div class="content-area">
+        <section class="content-area">
             <div class="content-wrapper">
-                <!-- Messages -->
                 {% if messages %}
                 <div class="fade-in">
                     {% for message in messages %}
@@ -925,6 +991,7 @@
                         {% else %}
                             <i class="fas fa-info-circle me-2"></i>
                         {% endif %}
+
                         <strong>{{ message }}</strong>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
@@ -932,222 +999,180 @@
                 </div>
                 {% endif %}
 
-                <!-- Permission Notice -->
                 {% if permissions.is_accountant_only %}
                 <div class="alert alert-info fade-in">
                     <i class="fas fa-info-circle me-2"></i>
-                    <strong>مرحباً محاسب النظام:</strong> يمكنك إدارة جميع المدفوعات والرسوم المدرسية. 
-                    لأي استفسارات، راجع مدير النظام.
+                    <strong>مرحباً محاسب النظام:</strong>
+                    يمكنك إدارة المدفوعات والرسوم المدرسية حسب الصلاحيات الممنوحة لك.
                 </div>
                 {% endif %}
 
-                <!-- Page Content -->
                 <div class="fade-in">
                     {% block content %}
-                    <!-- Default Content -->
                     <div class="content-card">
                         <div class="content-card-body text-center py-5">
                             <div class="mb-4">
                                 <i class="fas fa-coins fa-5x text-success opacity-75"></i>
                             </div>
+
                             <h3 class="text-dark mb-3">مرحباً بك في نظام إدارة المدفوعات</h3>
                             <p class="text-muted mb-4">منصة شاملة لإدارة المدفوعات والرسوم المدرسية</p>
-                            <div class="row justify-content-center">
-                                <div class="col-md-8">
-                                    <div class="d-flex justify-content-center gap-3 flex-wrap">
-                                        {% if permissions.can_add %}
-                                        <button class="btn btn-success-custom btn-custom" onclick="showQuickPayment()">
-                                            <i class="fas fa-plus me-2"></i>دفع سريع
-                                        </button>
-                                        {% endif %}
-                                        <a href="{% url 'payments:all_payments' %}" class="btn btn-outline-success btn-custom">
-                                            <i class="fas fa-list me-2"></i>عرض المدفوعات
-                                        </a>
-                                    </div>
-                                </div>
+
+                            <div class="d-flex justify-content-center gap-3 flex-wrap">
+                                {% if permissions.can_add %}
+                                <a href="{% url 'payments:quick_payment' %}" class="btn btn-success-custom btn-custom">
+                                    <i class="fas fa-plus me-2"></i>
+                                    دفع سريع
+                                </a>
+                                {% endif %}
+
+                                <a href="{% url 'payments:all_payments' %}" class="btn btn-outline-success btn-custom">
+                                    <i class="fas fa-list me-2"></i>
+                                    عرض المدفوعات
+                                </a>
                             </div>
                         </div>
                     </div>
                     {% endblock %}
                 </div>
             </div>
-        </div>
-    </div>
+        </section>
+    </main>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-<!-- في templates/payments/base.html - تحديث JavaScript -->
 
-<script>
-// إزالة السكريبت الذي يخفي الرسائل تلقائياً
-document.addEventListener('DOMContentLoaded', function() {
-    const currentPath = window.location.pathname;
-    const menuItems = document.querySelectorAll('.menu-item:not(.disabled)');
-    
-    // Set active menu
-    menuItems.forEach(item => {
-        const href = item.getAttribute('href');
-        if (href && href !== '#' && currentPath.includes(href)) {
-            menuItems.forEach(mi => mi.classList.remove('active'));
-            item.classList.add('active');
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            if (sidebar) {
+                sidebar.classList.toggle('active');
+            }
+
+            if (overlay) {
+                overlay.classList.toggle('active');
+            }
         }
-    });
 
-    // Auto close mobile sidebar
-    menuItems.forEach(item => {
-        item.addEventListener('click', function() {
-            if (window.innerWidth < 992 && !this.classList.contains('disabled')) {
-                closeSidebar();
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            if (sidebar) {
+                sidebar.classList.remove('active');
             }
-        });
-    });
 
-});
-
-// تحسين وظيفة showPaymentMessage لتكون ثابتة
-window.showPaymentMessage = function(type, message, duration = 0) {  // duration = 0 يعني ثابتة
-    const alertTypes = {
-        'success': 'success',
-        'error': 'danger',
-        'warning': 'warning',
-        'info': 'info'
-    };
-    
-    const icons = {
-        'success': 'check-circle',
-        'error': 'exclamation-triangle', 
-        'warning': 'exclamation-circle',
-        'info': 'coins'
-    };
-    
-    const alertHTML = `
-        <div class="alert alert-${alertTypes[type]} alert-dismissible fade show shadow-sm sticky-alert" role="alert">
-            <i class="fas fa-${icons[type]} me-2"></i>
-            <strong>${message}</strong>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    `;
-    
-    const contentArea = document.querySelector('.content-wrapper');
-    contentArea.insertAdjacentHTML('afterbegin', alertHTML);
-    
-    // إزالة تلقائية فقط إذا تم تحديد duration
-    if (duration > 0) {
-        const newAlert = contentArea.querySelector('.alert:first-child');
-        setTimeout(() => {
-            if (newAlert && newAlert.parentNode) {
-                newAlert.remove();
+            if (overlay) {
+                overlay.classList.remove('active');
             }
-        }, duration);
-    }
-};
-
-// إضافة زر لإزالة جميع الرسائل يدوياً
-window.clearAllMessages = function() {
-    const alerts = document.querySelectorAll('.alert');
-    alerts.forEach(alert => {
-        alert.style.animation = 'fadeOutUp 0.5s ease-out';
-        setTimeout(() => {
-            if (alert && alert.parentNode) {
-                alert.remove();
-            }
-        }, 500);
-    });
-};
-
-<!-- في templates/payments/base.html - تحديث JavaScript -->
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const currentPath = window.location.pathname;
-    const menuItems = document.querySelectorAll('.menu-item');
-    
-    // تفعيل الرابط الحالي
-    menuItems.forEach(item => {
-        const href = item.getAttribute('href');
-        if (href && href !== '#' && currentPath.includes(href)) {
-            menuItems.forEach(mi => mi.classList.remove('active'));
-            item.classList.add('active');
         }
-    });
 
-    // إغلاق الـ sidebar التلقائي على الموبايل
-    menuItems.forEach(item => {
-        item.addEventListener('click', function() {
-            if (window.innerWidth < 992) {
-                closeSidebar();
+        function normalizePath(path) {
+            if (!path) {
+                return '';
             }
+
+            return path.split('?')[0].replace(/\/+$/, '') + '/';
+        }
+
+        function setActiveMenuItem() {
+            const currentPath = normalizePath(window.location.pathname);
+            const menuItems = document.querySelectorAll('.menu-item');
+
+            let bestMatch = null;
+            let bestLength = 0;
+
+            menuItems.forEach(item => {
+                const href = item.getAttribute('href');
+
+                if (!href || href === '#') {
+                    return;
+                }
+
+                const link = new URL(href, window.location.origin);
+                const linkPath = normalizePath(link.pathname);
+
+                if (currentPath === linkPath || currentPath.startsWith(linkPath)) {
+                    if (linkPath.length > bestLength) {
+                        bestMatch = item;
+                        bestLength = linkPath.length;
+                    }
+                }
+            });
+
+            if (bestMatch) {
+                menuItems.forEach(item => item.classList.remove('active'));
+                bestMatch.classList.add('active');
+            }
+        }
+
+        window.showPaymentMessage = function(type, message, duration = 0) {
+            const alertTypes = {
+                success: 'success',
+                error: 'danger',
+                warning: 'warning',
+                info: 'info'
+            };
+
+            const icons = {
+                success: 'check-circle',
+                error: 'exclamation-triangle',
+                warning: 'exclamation-circle',
+                info: 'info-circle'
+            };
+
+            const contentWrapper = document.querySelector('.content-wrapper');
+
+            if (!contentWrapper) {
+                alert(message);
+                return;
+            }
+
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${alertTypes[type] || 'info'} alert-dismissible fade show shadow-sm`;
+            alertDiv.setAttribute('role', 'alert');
+
+            alertDiv.innerHTML = `
+                <i class="fas fa-${icons[type] || icons.info} me-2"></i>
+                <strong>${message}</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+
+            contentWrapper.prepend(alertDiv);
+
+            if (duration > 0) {
+                setTimeout(() => {
+                    if (alertDiv && alertDiv.parentNode) {
+                        alertDiv.remove();
+                    }
+                }, duration);
+            }
+        };
+
+        window.clearAllMessages = function() {
+            const alerts = document.querySelectorAll('.alert');
+
+            alerts.forEach(alert => {
+                if (alert && alert.parentNode) {
+                    alert.remove();
+                }
+            });
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            setActiveMenuItem();
+
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    if (window.innerWidth < 992) {
+                        closeSidebar();
+                    }
+                });
+            });
         });
-    });
-});
-</script>
-
-<!-- إضافة CSS للرسائل الثابتة -->
-<style>
-.sticky-alert {
-    position: sticky;
-    top: var(--header-height, 85px);
-    z-index: 1050;
-    margin-bottom: 0 !important;
-    border-radius: 0 !important;
-    animation: slideDownAlert 0.5s ease-out;
-}
-
-@keyframes slideDownAlert {
-    from {
-        transform: translateY(-100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-.alert-container {
-    position: fixed;
-    top: calc(var(--header-height, 85px) + 10px);
-    left: 20px;
-    right: 20px;
-    z-index: 1055;
-    pointer-events: none;
-}
-
-.alert-container .alert {
-    pointer-events: auto;
-    margin-bottom: 10px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-}
-
-/* Clear Messages Button */
-.clear-messages-btn {
-    position: fixed;
-    top: calc(var(--header-height, 85px) + 10px);
-    left: 20px;
-    z-index: 1060;
-    background: rgba(108, 117, 125, 0.9);
-    color: white;
-    border: none;
-    border-radius: 20px;
-    padding: 8px 15px;
-    font-size: 0.8rem;
-    cursor: pointer;
-    backdrop-filter: blur(5px);
-    transition: all 0.3s ease;
-    display: none;
-}
-
-.clear-messages-btn:hover {
-    background: rgba(73, 80, 87, 0.9);
-    transform: scale(1.05);
-}
-
-.clear-messages-btn.show {
-    display: block;
-}
-</style>
-
+    </script>
 
     {% block extra_js %}{% endblock %}
 </body>
