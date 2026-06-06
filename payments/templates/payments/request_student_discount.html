@@ -1,0 +1,566 @@
+{% extends 'payments/base.html' %}
+{% load humanize %}
+
+{% block title %}طلب خصم للطالب - {{ student.name }}{% endblock %}
+{% block page_title %}طلب خصم للطالب: {{ student.name }}{% endblock %}
+{% block page_subtitle %}إرسال طلب خصم للإدارة للمراجعة والموافقة{% endblock %}
+{% block page_icon %}<i class="fas fa-user-tag me-3"></i>{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'payments:payments_home' %}">لوحة المدفوعات</a></li>
+<li class="breadcrumb-item"><a href="{% url 'payments:pay_installment' student.pk %}">مدفوعات الطالب</a></li>
+<li class="breadcrumb-item active">طلب خصم</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'payments:pay_installment' student.pk %}" class="btn btn-outline-secondary btn-custom">
+        <i class="fas fa-arrow-right me-1"></i>
+        رجوع لمدفوعات الطالب
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .discount-request-hero {
+        background: linear-gradient(135deg, #198754, #20c997);
+        color: white;
+        border-radius: 22px;
+        padding: 30px;
+        margin-bottom: 25px;
+        box-shadow: 0 10px 28px rgba(25, 135, 84, 0.25);
+    }
+
+    .student-avatar-lg {
+        width: 74px;
+        height: 74px;
+        min-width: 74px;
+        border-radius: 22px;
+        background: rgba(255,255,255,0.18);
+        border: 1px solid rgba(255,255,255,0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        font-weight: 900;
+    }
+
+    .content-panel {
+        background: white;
+        border-radius: 18px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+        overflow: hidden;
+    }
+
+    .content-panel-header {
+        background: #f8f9fa;
+        padding: 18px 22px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .content-panel-header h5,
+    .content-panel-header h6 {
+        margin: 0;
+        font-weight: 900;
+    }
+
+    .content-panel-body {
+        padding: 24px;
+    }
+
+    .section-title {
+        font-weight: 900;
+        color: #198754;
+        border-bottom: 2px solid #f1f3f5;
+        padding-bottom: 12px;
+        margin-bottom: 18px;
+    }
+
+    .form-control,
+    .form-select {
+        border-radius: 12px;
+        padding: 11px 14px;
+        border: 2px solid #e9ecef;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #198754;
+        box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.15);
+    }
+
+    .required-asterisk {
+        color: #dc3545;
+    }
+
+    .preview-card {
+        background: white;
+        border-radius: 18px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+        overflow: hidden;
+        position: sticky;
+        top: 90px;
+    }
+
+    .preview-card-header {
+        background: linear-gradient(135deg, #198754, #20c997);
+        color: white;
+        padding: 18px 22px;
+    }
+
+    .preview-card-header h5 {
+        margin: 0;
+        font-weight: 900;
+    }
+
+    .preview-card-body {
+        padding: 22px;
+    }
+
+    .preview-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 10px 0;
+        border-bottom: 1px dashed #e5e7eb;
+        font-weight: 800;
+    }
+
+    .preview-row:last-child {
+        border-bottom: none;
+    }
+
+    .preview-total {
+        background: linear-gradient(135deg, rgba(25,135,84,0.10), rgba(32,201,151,0.08));
+        border: 1px solid rgba(25,135,84,0.20);
+        border-radius: 16px;
+        padding: 16px;
+        margin-top: 15px;
+    }
+
+    .help-box {
+        background: #f8fafc;
+        border-right: 4px solid #198754;
+        border-radius: 14px;
+        padding: 14px;
+        color: #64748b;
+        font-weight: 700;
+        font-size: 0.9rem;
+    }
+
+    .status-box {
+        background: #fff8e1;
+        border-right: 4px solid #ffc107;
+        border-radius: 14px;
+        padding: 14px;
+        color: #856404;
+        font-weight: 800;
+        margin-bottom: 20px;
+    }
+
+    .btn-submit-request {
+        background: linear-gradient(135deg, #198754, #20c997);
+        color: white;
+        border: none;
+        border-radius: 14px;
+        padding: 12px 22px;
+        font-weight: 900;
+    }
+
+    .btn-submit-request:hover {
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(25, 135, 84, 0.25);
+    }
+
+    @media (max-width: 992px) {
+        .preview-card {
+            position: static;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="discount-request-hero">
+    <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
+        <div class="d-flex align-items-center gap-3">
+            <div class="student-avatar-lg">
+                {{ student.name.0|upper }}
+            </div>
+
+            <div>
+                <h3 class="mb-1">{{ student.name }}</h3>
+
+                <div class="opacity-75">
+                    <i class="fas fa-id-card me-1"></i>
+                    <span dir="ltr">{{ student.national_number|default:"غير محدد" }}</span>
+                </div>
+
+                <div class="mt-2">
+                    {% if student.grade_level %}
+                        <span class="badge bg-light text-dark">
+                            {% if student.grade_level.education_level %}
+                                {{ student.grade_level.education_level.name }} -
+                            {% endif %}
+                            {{ student.grade_level.name }}
+                        </span>
+                    {% else %}
+                        <span class="badge bg-warning text-dark">بدون صف دراسي</span>
+                    {% endif %}
+
+                    {% if current_year %}
+                        <span class="badge bg-info">{{ current_year.name }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="text-lg-end">
+            <div class="mb-1">
+                <i class="fas fa-phone me-1"></i>
+                <span dir="ltr">{{ student.phone_number|default:"غير محدد" }}</span>
+            </div>
+
+            <div>
+                <i class="fas fa-user-tie me-1"></i>
+                {{ student.parent_name|default:"ولي الأمر غير محدد" }}
+            </div>
+
+            {% if student.parent_phone %}
+            <div>
+                <i class="fas fa-mobile-alt me-1"></i>
+                <span dir="ltr">{{ student.parent_phone }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="content-panel">
+            <div class="content-panel-header">
+                <h5>
+                    <i class="fas fa-paper-plane me-2 text-success"></i>
+                    بيانات طلب الخصم
+                </h5>
+            </div>
+
+            <div class="content-panel-body">
+                <div class="status-box">
+                    <i class="fas fa-clock me-1"></i>
+                    سيتم إرسال هذا الطلب للإدارة بحالة <strong>في الانتظار</strong>، ولن يظهر كخصم قابل للتطبيق إلا بعد الموافقة.
+                </div>
+
+                <form method="post" id="requestDiscountForm">
+                    {% csrf_token %}
+
+                    <div class="section-title">
+                        <i class="fas fa-user-tag me-1"></i>
+                        تفاصيل الخصم المطلوب
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">
+                                الخصم المطلوب <span class="required-asterisk">*</span>
+                            </label>
+
+                            <select name="discount_setting" id="discountSelect" class="form-select" required>
+                                <option value="">اختر الخصم</option>
+
+                                {% for discount in discounts %}
+                                <option value="{{ discount.id }}"
+                                        data-type="{{ discount.discount_type }}"
+                                        data-type-display="{{ discount.get_discount_type_display }}"
+                                        data-scope="{{ discount.application_scope }}"
+                                        data-scope-display="{{ discount.get_application_scope_display }}"
+                                        data-percentage="{{ discount.percentage_value|default:0 }}"
+                                        data-fixed="{{ discount.fixed_amount|default:0 }}"
+                                        data-max="{{ discount.max_discount_amount|default:0 }}"
+                                        data-min="{{ discount.min_payment_amount|default:0 }}"
+                                        data-requires-approval="{% if discount.requires_approval %}yes{% else %}no{% endif %}">
+                                    {{ discount.name }} - {{ discount.get_category_display }} - {{ discount.get_application_scope_display }}
+                                </option>
+                                {% endfor %}
+                            </select>
+
+                            <small class="text-muted">
+                                اختر نوع الخصم الذي تريد إرساله للإدارة للموافقة عليه.
+                            </small>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">
+                                العام الدراسي
+                            </label>
+
+                            <input type="text"
+                                   class="form-control"
+                                   value="{% if current_year %}{{ current_year.name }}{% else %}غير محدد{% endif %}"
+                                   readonly>
+
+                            <small class="text-muted">
+                                سيتم ربط الطلب بالعام الدراسي الحالي للطالب.
+                            </small>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">
+                                المبلغ الأصلي <span class="required-asterisk">*</span>
+                            </label>
+
+                            <div class="input-group">
+                                <input type="number"
+                                       name="original_amount"
+                                       id="originalAmountInput"
+                                       class="form-control"
+                                       step="0.01"
+                                       min="0.01"
+                                       placeholder="0.00"
+                                       required>
+                                <span class="input-group-text">ج.م</span>
+                            </div>
+
+                            <small class="text-muted">
+                                اكتب المبلغ الذي سيتم حساب الخصم عليه.
+                            </small>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">
+                                سبب طلب الخصم <span class="required-asterisk">*</span>
+                            </label>
+
+                            <textarea name="application_reason"
+                                      id="applicationReason"
+                                      class="form-control"
+                                      rows="4"
+                                      placeholder="مثال: ولي الأمر طلب خصم بسبب وجود أشقاء / حالة اجتماعية / اعتماد شفهي..."
+                                      required></textarea>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">
+                                ملاحظات إضافية
+                            </label>
+
+                            <textarea name="admin_notes"
+                                      class="form-control"
+                                      rows="3"
+                                      placeholder="أي ملاحظات يرغب المحاسب في إرسالها للإدارة"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="help-box mt-4">
+                        <i class="fas fa-info-circle me-1"></i>
+                        بعد إرسال الطلب، يستطيع المدير الموافقة أو الرفض من صفحة طلبات الخصومات. عند الموافقة سيظهر الخصم في صفحة مدفوعات الطالب.
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-4">
+                        <a href="{% url 'payments:pay_installment' student.pk %}" class="btn btn-outline-secondary btn-lg">
+                            إلغاء
+                        </a>
+
+                        <button type="submit" class="btn btn-submit-request btn-lg">
+                            <i class="fas fa-paper-plane me-2"></i>
+                            إرسال طلب الخصم
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="preview-card">
+            <div class="preview-card-header">
+                <h5>
+                    <i class="fas fa-eye me-2"></i>
+                    معاينة الطلب
+                </h5>
+            </div>
+
+            <div class="preview-card-body">
+                <div class="preview-row">
+                    <span>نوع الخصم:</span>
+                    <strong id="previewType">-</strong>
+                </div>
+
+                <div class="preview-row">
+                    <span>نطاق التطبيق:</span>
+                    <strong id="previewScope">-</strong>
+                </div>
+
+                <div class="preview-row">
+                    <span>قيمة الخصم:</span>
+                    <strong id="previewValue">-</strong>
+                </div>
+
+                <div class="preview-row">
+                    <span>يتطلب موافقة:</span>
+                    <strong id="previewApproval">نعم</strong>
+                </div>
+
+                <div class="preview-row">
+                    <span>الحد الأدنى:</span>
+                    <strong id="previewMin">-</strong>
+                </div>
+
+                <div class="preview-row">
+                    <span>الحد الأقصى:</span>
+                    <strong id="previewMax">-</strong>
+                </div>
+
+                <div class="preview-total">
+                    <div class="preview-row">
+                        <span>المبلغ الأصلي:</span>
+                        <strong><span id="previewOriginal">0.00</span> ج.م</strong>
+                    </div>
+
+                    <div class="preview-row">
+                        <span>قيمة الخصم المتوقعة:</span>
+                        <strong class="text-danger"><span id="previewDiscount">0.00</span> ج.م</strong>
+                    </div>
+
+                    <div class="preview-row">
+                        <span>المبلغ بعد الخصم:</span>
+                        <strong class="text-success"><span id="previewFinal">0.00</span> ج.م</strong>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning mt-3 mb-0">
+                    <i class="fas fa-exclamation-circle me-1"></i>
+                    هذا الطلب سيُحفظ في انتظار موافقة الإدارة.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('requestDiscountForm');
+    const discountSelect = document.getElementById('discountSelect');
+    const originalInput = document.getElementById('originalAmountInput');
+
+    if (discountSelect) {
+        discountSelect.addEventListener('change', updateDiscountPreview);
+    }
+
+    if (originalInput) {
+        originalInput.addEventListener('input', updateDiscountPreview);
+    }
+
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const discount = document.getElementById('discountSelect').value;
+            const original = parseFloat(originalInput.value || 0);
+            const reason = document.getElementById('applicationReason').value.trim();
+
+            if (!discount) {
+                e.preventDefault();
+                alert('يرجى اختيار الخصم المطلوب');
+                return;
+            }
+
+            if (original <= 0) {
+                e.preventDefault();
+                alert('يرجى إدخال مبلغ أصلي أكبر من صفر');
+                return;
+            }
+
+            if (!reason) {
+                e.preventDefault();
+                alert('يرجى كتابة سبب طلب الخصم');
+                return;
+            }
+        });
+    }
+
+    updateDiscountPreview();
+});
+
+function updateDiscountPreview() {
+    const discountSelect = document.getElementById('discountSelect');
+    const originalInput = document.getElementById('originalAmountInput');
+
+    const selected = discountSelect && discountSelect.selectedOptions.length
+        ? discountSelect.selectedOptions[0]
+        : null;
+
+    const original = parseFloat(originalInput ? originalInput.value || 0 : 0);
+
+    let typeDisplay = '-';
+    let scopeDisplay = '-';
+    let valueDisplay = '-';
+    let approvalDisplay = 'نعم';
+    let minDisplay = '-';
+    let maxDisplay = '-';
+    let discountAmount = 0;
+
+    if (selected && selected.value) {
+        const type = selected.getAttribute('data-type') || '';
+        typeDisplay = selected.getAttribute('data-type-display') || '-';
+        scopeDisplay = selected.getAttribute('data-scope-display') || '-';
+
+        const percentage = parseFloat(selected.getAttribute('data-percentage') || 0);
+        const fixed = parseFloat(selected.getAttribute('data-fixed') || 0);
+        const maxAmount = parseFloat(selected.getAttribute('data-max') || 0);
+        const minAmount = parseFloat(selected.getAttribute('data-min') || 0);
+
+        valueDisplay = '-';
+
+        if (type === 'PERCENTAGE') {
+            valueDisplay = percentage.toFixed(2) + '%';
+            discountAmount = original * percentage / 100;
+        } else if (type === 'FIXED_AMOUNT') {
+            valueDisplay = fixed.toFixed(2) + ' ج.م';
+            discountAmount = fixed;
+        }
+
+        minDisplay = minAmount > 0 ? minAmount.toFixed(2) + ' ج.م' : 'غير محدد';
+        maxDisplay = maxAmount > 0 ? maxAmount.toFixed(2) + ' ج.م' : 'غير محدد';
+
+        if (minAmount > 0 && original < minAmount) {
+            discountAmount = 0;
+        }
+
+        if (maxAmount > 0 && discountAmount > maxAmount) {
+            discountAmount = maxAmount;
+        }
+
+        if (discountAmount > original) {
+            discountAmount = original;
+        }
+    }
+
+    const finalAmount = Math.max(0, original - discountAmount);
+
+    setText('previewType', typeDisplay);
+    setText('previewScope', scopeDisplay);
+    setText('previewValue', valueDisplay);
+    setText('previewApproval', approvalDisplay);
+    setText('previewMin', minDisplay);
+    setText('previewMax', maxDisplay);
+    setText('previewOriginal', original.toFixed(2));
+    setText('previewDiscount', discountAmount.toFixed(2));
+    setText('previewFinal', finalAmount.toFixed(2));
+}
+
+function setText(id, value) {
+    const element = document.getElementById(id);
+
+    if (element) {
+        element.textContent = value;
+    }
+}
+</script>
+{% endblock %}

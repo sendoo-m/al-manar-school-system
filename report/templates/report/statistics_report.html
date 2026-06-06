@@ -1,0 +1,529 @@
+{% extends 'report/base.html' %}
+{% load humanize %}
+
+{% block title %}تقرير الإحصائيات العام{% endblock %}
+{% block page_title %}تقرير الإحصائيات العام{% endblock %}
+{% block page_subtitle %}تحليل شامل للطلاب والمراحل والصفوف والحالة المالية{% endblock %}
+{% block page_icon %}<i class="fas fa-chart-pie me-3"></i>{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'report:reports_home' %}">مركز التقارير</a></li>
+<li class="breadcrumb-item active">الإحصائيات</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'report:reports_home' %}" class="btn btn-outline-primary btn-custom">
+        <i class="fas fa-arrow-right me-1"></i>مركز التقارير
+    </a>
+
+    <a href="{% url 'report:student_list_report' %}" class="btn btn-outline-info btn-custom">
+        <i class="fas fa-users me-1"></i>قائمة الطلاب
+    </a>
+
+    <a href="{% url 'report:financial_report' %}" class="btn btn-outline-success btn-custom">
+        <i class="fas fa-chart-line me-1"></i>المالي
+    </a>
+
+    <button type="button" onclick="window.print()" class="btn btn-outline-secondary btn-custom">
+        <i class="fas fa-print me-1"></i>طباعة
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .statistics-hero {
+        background: linear-gradient(135deg, #6610f2, #0d6efd);
+        color: white;
+        border-radius: 24px;
+        padding: 32px;
+        margin-bottom: 26px;
+        box-shadow: 0 10px 28px rgba(102, 16, 242, 0.25);
+    }
+
+    .statistics-hero h2 {
+        font-weight: 900;
+        margin-bottom: 8px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 18px;
+        padding: 22px;
+        height: 100%;
+        box-shadow: 0 5px 16px rgba(0,0,0,0.08);
+        border-top: 5px solid #6610f2;
+        text-align: center;
+        transition: 0.25s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+    }
+
+    .stat-card.primary { border-top-color: #0d6efd; }
+    .stat-card.success { border-top-color: #198754; }
+    .stat-card.warning { border-top-color: #ffc107; }
+    .stat-card.danger { border-top-color: #dc3545; }
+    .stat-card.info { border-top-color: #0dcaf0; }
+    .stat-card.dark { border-top-color: #212529; }
+
+    .stat-value {
+        font-size: 1.85rem;
+        font-weight: 900;
+        margin-bottom: 5px;
+    }
+
+    .stat-label {
+        color: #64748b;
+        font-weight: 800;
+        font-size: 0.9rem;
+    }
+
+    .content-panel {
+        background: white;
+        border-radius: 18px;
+        box-shadow: 0 5px 16px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+        overflow: hidden;
+    }
+
+    .content-panel-header {
+        background: #f8f9fa;
+        padding: 18px 22px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .content-panel-header h5 {
+        margin: 0;
+        font-weight: 900;
+    }
+
+    .content-panel-body {
+        padding: 22px;
+    }
+
+    .statistics-table thead th {
+        background: linear-gradient(135deg, #6610f2, #0d6efd);
+        color: white;
+        border: none;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    .statistics-table td {
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .progress-wrap {
+        height: 12px;
+        background: #e9ecef;
+        border-radius: 30px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(135deg, #6610f2, #0d6efd);
+        border-radius: 30px;
+    }
+
+    .mini-box {
+        background: #f8f9fa;
+        border-radius: 14px;
+        padding: 15px;
+        margin-bottom: 12px;
+        border-right: 5px solid #6610f2;
+    }
+
+    @media print {
+        .page-actions,
+        .breadcrumb,
+        .breadcrumb-nav,
+        .statistics-hero,
+        .btn {
+            display: none !important;
+        }
+
+        .stat-card,
+        .content-panel {
+            box-shadow: none !important;
+            border: 1px solid #ddd !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="statistics-hero">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h2>
+                <i class="fas fa-chart-pie me-2"></i>
+                تقرير الإحصائيات العام
+            </h2>
+            <p class="mb-0">
+                تحليل شامل لحالة الطلاب والتوزيع التعليمي والمالي حتى {{ today|date:"Y/m/d" }}.
+            </p>
+        </div>
+
+        <div class="text-lg-end">
+            <div><strong>تاريخ التقرير:</strong> {{ today|date:"Y/m/d" }}</div>
+            <div><strong>إجمالي الطلاب:</strong> {{ total_students }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- ملخص الطلاب -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-lg-6 mb-3">
+        <div class="stat-card primary">
+            <div class="stat-value text-primary">{{ total_students }}</div>
+            <div class="stat-label">إجمالي الطلاب النشطين</div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 mb-3">
+        <div class="stat-card info">
+            <div class="stat-value text-info">{{ male_students }}</div>
+            <div class="stat-label">طلاب ذكور</div>
+            <small class="text-muted">{{ male_percentage|floatformat:1 }}%</small>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 mb-3">
+        <div class="stat-card warning">
+            <div class="stat-value text-warning">{{ female_students }}</div>
+            <div class="stat-label">طالبات إناث</div>
+            <small class="text-muted">{{ female_percentage|floatformat:1 }}%</small>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 mb-3">
+        <div class="stat-card dark">
+            <div class="stat-value text-dark">{{ archived_students_count }}</div>
+            <div class="stat-label">طلاب مؤرشفون</div>
+        </div>
+    </div>
+</div>
+
+<!-- ملخص مالي -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stat-card success">
+            <div class="stat-value text-success">{{ student_financial_stats.students_paid }}</div>
+            <div class="stat-label">طلاب مسددون</div>
+            <small class="text-muted">{{ student_financial_stats.paid_percentage|floatformat:1 }}%</small>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stat-card danger">
+            <div class="stat-value text-danger">{{ student_financial_stats.students_owing }}</div>
+            <div class="stat-label">طلاب عليهم مستحقات</div>
+            <small class="text-muted">{{ student_financial_stats.owing_percentage|floatformat:1 }}%</small>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stat-card primary">
+            <div class="stat-value text-primary">{{ student_financial_stats.total_fees|floatformat:2 }}</div>
+            <div class="stat-label">إجمالي المطلوب</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stat-card warning">
+            <div class="stat-value text-warning">{{ student_financial_stats.total_owed|floatformat:2 }}</div>
+            <div class="stat-label">إجمالي المستحقات</div>
+        </div>
+    </div>
+</div>
+
+<!-- توزيع النوع -->
+<div class="content-panel">
+    <div class="content-panel-header">
+        <h5>
+            <i class="fas fa-venus-mars me-2 text-info"></i>
+            توزيع الطلاب حسب النوع
+        </h5>
+    </div>
+
+    <div class="content-panel-body">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="mini-box">
+                    <div class="d-flex justify-content-between mb-2">
+                        <strong>الذكور</strong>
+                        <strong>{{ male_percentage|floatformat:1 }}%</strong>
+                    </div>
+                    <div class="progress-wrap">
+                        <div class="progress-fill" style="width: {{ male_percentage|floatformat:0 }}%"></div>
+                    </div>
+                    <small class="text-muted">{{ male_students }} طالب</small>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <div class="mini-box">
+                    <div class="d-flex justify-content-between mb-2">
+                        <strong>الإناث</strong>
+                        <strong>{{ female_percentage|floatformat:1 }}%</strong>
+                    </div>
+                    <div class="progress-wrap">
+                        <div class="progress-fill" style="width: {{ female_percentage|floatformat:0 }}%"></div>
+                    </div>
+                    <small class="text-muted">{{ female_students }} طالبة</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- المراحل -->
+    <div class="col-lg-6">
+        <div class="content-panel">
+            <div class="content-panel-header">
+                <h5>
+                    <i class="fas fa-layer-group me-2 text-primary"></i>
+                    توزيع الطلاب حسب المراحل
+                </h5>
+            </div>
+
+            <div class="content-panel-body p-0">
+                <table class="table statistics-table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>المرحلة</th>
+                            <th>عدد الطلاب</th>
+                            <th>النسبة</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for level in education_levels_stats %}
+                        <tr>
+                            <td><strong>{{ level.name }}</strong></td>
+                            <td>{{ level.student_count }}</td>
+                            <td>
+                                {% if total_students > 0 %}
+                                    {% widthratio level.student_count total_students 100 %}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-muted py-4">لا توجد بيانات مراحل</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- أعلى الصفوف كثافة -->
+    <div class="col-lg-6">
+        <div class="content-panel">
+            <div class="content-panel-header">
+                <h5>
+                    <i class="fas fa-school me-2 text-success"></i>
+                    أعلى الصفوف كثافة
+                </h5>
+            </div>
+
+            <div class="content-panel-body p-0">
+                <table class="table statistics-table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>المرحلة</th>
+                            <th>الصف</th>
+                            <th>عدد الطلاب</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for grade in top_grades %}
+                        <tr>
+                            <td>
+                                {% if grade.education_level %}
+                                    {{ grade.education_level.name }}
+                                {% else %}
+                                    غير محدد
+                                {% endif %}
+                            </td>
+                            <td><strong>{{ grade.name }}</strong></td>
+                            <td>{{ grade.student_count }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-muted py-4">لا توجد بيانات صفوف</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- جميع الصفوف -->
+<div class="content-panel">
+    <div class="content-panel-header">
+        <h5>
+            <i class="fas fa-list me-2 text-primary"></i>
+            توزيع جميع الصفوف
+        </h5>
+    </div>
+
+    <div class="content-panel-body p-0">
+        <div class="table-responsive">
+            <table class="table statistics-table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>المرحلة</th>
+                        <th>الصف</th>
+                        <th>عدد الطلاب</th>
+                        <th>النسبة من الإجمالي</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for grade in grade_levels_stats %}
+                    <tr>
+                        <td>
+                            {% if grade.education_level %}
+                                {{ grade.education_level.name }}
+                            {% else %}
+                                غير محدد
+                            {% endif %}
+                        </td>
+                        <td><strong>{{ grade.name }}</strong></td>
+                        <td>{{ grade.student_count }}</td>
+                        <td>
+                            {% if total_students > 0 %}
+                                {% widthratio grade.student_count total_students 100 %}%
+                            {% else %}
+                                0%
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-muted py-4">لا توجد بيانات صفوف</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- حالة الأقساط -->
+{% if payment_overview.available %}
+<div class="content-panel">
+    <div class="content-panel-header">
+        <h5>
+            <i class="fas fa-file-invoice-dollar me-2 text-success"></i>
+            إحصائيات الأقساط والمدفوعات
+        </h5>
+    </div>
+
+    <div class="content-panel-body">
+        <div class="row mb-3">
+            <div class="col-lg-2 col-md-4 col-6 mb-3">
+                <div class="stat-card success">
+                    <div class="stat-value text-success">{{ payment_overview.paid_installments }}</div>
+                    <div class="stat-label">مدفوع</div>
+                </div>
+            </div>
+
+            <div class="col-lg-2 col-md-4 col-6 mb-3">
+                <div class="stat-card warning">
+                    <div class="stat-value text-warning">{{ payment_overview.partial_installments }}</div>
+                    <div class="stat-label">جزئي</div>
+                </div>
+            </div>
+
+            <div class="col-lg-2 col-md-4 col-6 mb-3">
+                <div class="stat-card primary">
+                    <div class="stat-value text-primary">{{ payment_overview.pending_installments }}</div>
+                    <div class="stat-label">معلق</div>
+                </div>
+            </div>
+
+            <div class="col-lg-2 col-md-4 col-6 mb-3">
+                <div class="stat-card danger">
+                    <div class="stat-value text-danger">{{ payment_overview.overdue_installments }}</div>
+                    <div class="stat-label">متأخر</div>
+                </div>
+            </div>
+
+            <div class="col-lg-2 col-md-4 col-6 mb-3">
+                <div class="stat-card dark">
+                    <div class="stat-value text-dark">{{ payment_overview.cancelled_installments }}</div>
+                    <div class="stat-label">ملغي</div>
+                </div>
+            </div>
+
+            <div class="col-lg-2 col-md-4 col-6 mb-3">
+                <div class="stat-card info">
+                    <div class="stat-value text-info">{{ payment_overview.collection_percentage|floatformat:1 }}%</div>
+                    <div class="stat-label">تحصيل</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mini-box">
+            <div class="d-flex justify-content-between mb-2">
+                <strong>نسبة التحصيل من إجمالي الأقساط</strong>
+                <strong>{{ payment_overview.collection_percentage|floatformat:1 }}%</strong>
+            </div>
+            <div class="progress-wrap">
+                <div class="progress-fill" style="width: {{ payment_overview.collection_percentage|floatformat:0 }}%"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- الأعوام الدراسية -->
+{% if academic_year_stats %}
+<div class="content-panel">
+    <div class="content-panel-header">
+        <h5>
+            <i class="fas fa-calendar-alt me-2 text-info"></i>
+            توزيع الطلاب حسب العام الدراسي
+        </h5>
+    </div>
+
+    <div class="content-panel-body p-0">
+        <table class="table statistics-table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>العام الدراسي</th>
+                    <th>عدد الطلاب</th>
+                    <th>النسبة</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in academic_year_stats %}
+                <tr>
+                    <td><strong>{{ item.year.name }}</strong></td>
+                    <td>{{ item.student_count }}</td>
+                    <td>{{ item.percentage|floatformat:1 }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -3088,329 +3088,140 @@ def delete_school_fee(request, pk):
 # إدارة الخصومات
 # ============================================================================
 
-@never_cache
 @login_required
 @settings_admin_required
 def discounts_list(request):
-    """قائمة الخصومات والتخفيضات محسنة"""
+    """قائمة الخصومات والتخفيضات"""
     try:
-        context = get_base_context(request)
-        
-        # استيراد آمن للـ Student model
-        try:
-            from students.models import Student
-        except ImportError:
-            Student = None
-        
-        # معايير البحث والفلترة المتقدمة
-        search_query = request.GET.get('search', '').strip()
+        today = timezone.now().date()
+
+        # ============================================================
+        # قراءة الفلاتر
+        # ============================================================
         category_filter = request.GET.get('category', '').strip()
         discount_type_filter = request.GET.get('discount_type', '').strip()
+        scope_filter = request.GET.get('application_scope', '').strip()
         is_active_filter = request.GET.get('is_active', '').strip()
-        status_filter = request.GET.get('status', '').strip()
-        view_type = request.GET.get('view', 'cards').strip()
-        sort_by = request.GET.get('sort_by', 'name').strip()
-        
-        # الاستعلام الأساسي مع العلاقات
-        discounts_queryset = DiscountSettings.objects.prefetch_related(
-            'applicable_to_grades',
-            'applicable_to_grades__education_level'
-        )
-        
+
+        discounts = DiscountSettings.objects.all().order_by('category', 'name')
+
+        # ============================================================
         # تطبيق الفلاتر
-        if search_query:
-            discounts_queryset = discounts_queryset.filter(
-                Q(name__icontains=search_query) |
-                Q(description__icontains=search_query) |
-                Q(applicable_to_grades__name__icontains=search_query)
-            ).distinct()
-        
+        # ============================================================
         if category_filter:
-            discounts_queryset = discounts_queryset.filter(category=category_filter)
-        
+            discounts = discounts.filter(category=category_filter)
+
         if discount_type_filter:
-            discounts_queryset = discounts_queryset.filter(discount_type=discount_type_filter)
-        
-        if is_active_filter:
-            if is_active_filter == 'active':
-                discounts_queryset = discounts_queryset.filter(is_active=True)
-            elif is_active_filter == 'inactive':
-                discounts_queryset = discounts_queryset.filter(is_active=False)
-        
-        # فلترة حسب صلاحية التاريخ
-        if status_filter:
-            from django.utils import timezone
-            today = timezone.now().date()
-            
-            if status_filter == 'valid':
-                discounts_queryset = discounts_queryset.filter(
-                    valid_from_date__lte=today,
-                    valid_to_date__gte=today,
-                    is_active=True
-                )
-            elif status_filter == 'expired':
-                discounts_queryset = discounts_queryset.filter(
-                    valid_to_date__lt=today
-                )
-            elif status_filter == 'upcoming':
-                discounts_queryset = discounts_queryset.filter(
-                    valid_from_date__gt=today
-                )
-        
-        # الترتيب
-        sort_mapping = {
-            'name': 'name',
-            'category': 'category',
-            'value': '-percentage_value',
-            'valid_from': 'valid_from_date',
-            'valid_to': 'valid_to_date',
-        }
-        
-        order_field = sort_mapping.get(sort_by, 'name')
-        discounts_queryset = discounts_queryset.order_by(order_field)
-        
-        # الترقيم
-        items_per_page = 12 if view_type == 'cards' else 15
-        paginator = Paginator(discounts_queryset, items_per_page)
-        page_number = request.GET.get('page', 1)
-        
-        try:
-            discounts = paginator.page(page_number)
-        except PageNotAnInteger:
-            discounts = paginator.page(1)
-        except EmptyPage:
-            discounts = paginator.page(paginator.num_pages)
-        
-        # إضافة إحصائيات مفصلة لكل خصم
-        from django.utils import timezone
-        today = timezone.now().date()
-        
+            discounts = discounts.filter(discount_type=discount_type_filter)
+
+        if scope_filter:
+            discounts = discounts.filter(application_scope=scope_filter)
+
+        if is_active_filter == 'true':
+            discounts = discounts.filter(is_active=True)
+        elif is_active_filter == 'false':
+            discounts = discounts.filter(is_active=False)
+
+        # ============================================================
+        # إحصائيات عامة
+        # ============================================================
+        all_discounts = DiscountSettings.objects.all()
+
+        total_discounts = all_discounts.count()
+        active_discounts_count = all_discounts.filter(is_active=True).count()
+
+        applied_discounts_count = StudentDiscount.objects.filter(
+            status='APPROVED'
+        ).count()
+
+        total_savings = StudentDiscount.objects.filter(
+            status='APPROVED'
+        ).aggregate(
+            total=Sum('applied_amount')
+        )['total'] or Decimal('0.00')
+
+        # ============================================================
+        # تجهيز بيانات كل خصم للعرض
+        # ============================================================
         for discount in discounts:
-            # حساب حالة الصلاحية
-            if discount.valid_to_date < today:
-                discount.validity_status = 'expired'
-                discount.validity_class = 'danger'
-                discount.validity_text = 'منتهي الصلاحية'
-            elif discount.valid_from_date > today:
-                discount.validity_status = 'upcoming'
-                discount.validity_class = 'info'
-                discount.validity_text = 'قريباً'
-            else:
-                discount.validity_status = 'valid'
-                discount.validity_class = 'success'
-                discount.validity_text = 'ساري'
-            
-            # حساب الأيام المتبقية
-            if discount.validity_status == 'valid':
-                remaining_days = (discount.valid_to_date - today).days
-                discount.remaining_days = remaining_days
-            else:
-                discount.remaining_days = 0
-            
-            # إحصائيات التطبيق
-            try:
-                discount.applied_count = StudentDiscount.objects.filter(
-                    discount_setting=discount,
-                    status='APPROVED'
-                ).count()
-                
-                discount.pending_count = StudentDiscount.objects.filter(
-                    discount_setting=discount,
-                    status='PENDING'
-                ).count()
-                
-                # إجمالي الوفر المحقق
-                discount.total_savings = StudentDiscount.objects.filter(
-                    discount_setting=discount,
-                    status='APPROVED'
-                ).aggregate(
-                    total=Sum('applied_amount')
-                )['total'] or 0
-                
-            except Exception as e:
-                discount.applied_count = 0
-                discount.pending_count = 0
-                discount.total_savings = 0
-            
-            # معلومات الصفوف المطبق عليها
-            discount.applicable_grades_list = list(
-                discount.applicable_to_grades.values_list('name', flat=True)
+            student_discounts = StudentDiscount.objects.filter(
+                discount_setting=discount
             )
-            
-            # نوع الخصم مع القيمة
-            if discount.discount_type == 'PERCENTAGE':
-                discount.display_value = f"{discount.percentage_value}%"
-                discount.value_type = 'percentage'
-            else:
-                discount.display_value = f"{discount.fixed_amount or 0} ج.م"
-                discount.value_type = 'fixed'
-        
-        # إحصائيات شاملة
-        total_discounts = DiscountSettings.objects.count()
-        active_discounts_count = DiscountSettings.objects.filter(is_active=True).count()
-        
-        # إحصائيات التطبيق الإجمالية
-        try:
-            applied_discounts_count = StudentDiscount.objects.filter(
+
+            discount.applied_count = student_discounts.filter(
                 status='APPROVED'
-            ).values('discount_setting').distinct().count()
-            
-            total_savings = StudentDiscount.objects.filter(
+            ).count()
+
+            discount.pending_count = student_discounts.filter(
+                status='PENDING'
+            ).count()
+
+            discount.total_savings = student_discounts.filter(
                 status='APPROVED'
             ).aggregate(
                 total=Sum('applied_amount')
-            )['total'] or 0
-            
-            pending_applications = StudentDiscount.objects.filter(
-                status='PENDING'
-            ).count()
-            
-        except Exception as e:
-            applied_discounts_count = 0
-            total_savings = 0
-            pending_applications = 0
-        
-        # إحصائيات حسب الفئة
-        category_stats = {}
-        for category_code, category_name in DiscountSettings.DISCOUNT_CATEGORY_CHOICES:
-            category_count = DiscountSettings.objects.filter(category=category_code).count()
-            if category_count > 0:
-                category_stats[category_code] = {
-                    'name': category_name,
-                    'count': category_count,
-                    'active_count': DiscountSettings.objects.filter(
-                        category=category_code, is_active=True
-                    ).count(),
-                }
-        
-        # إحصائيات حسب نوع الخصم
-        type_stats = {}
-        for type_code, type_name in DiscountSettings.DISCOUNT_TYPE_CHOICES:
-            type_count = DiscountSettings.objects.filter(discount_type=type_code).count()
-            if type_count > 0:
-                type_stats[type_code] = {
-                    'name': type_name,
-                    'count': type_count,
-                    'active_count': DiscountSettings.objects.filter(
-                        discount_type=type_code, is_active=True
-                    ).count(),
-                }
-        
-        # إحصائيات الصلاحية
-        validity_stats = {
-            'valid': DiscountSettings.objects.filter(
-                valid_from_date__lte=today,
-                valid_to_date__gte=today,
-                is_active=True
-            ).count(),
-            'expired': DiscountSettings.objects.filter(
-                valid_to_date__lt=today
-            ).count(),
-            'upcoming': DiscountSettings.objects.filter(
-                valid_from_date__gt=today
-            ).count(),
-        }
-        
-        # معلومات الترقيم
-        page_info = {
-            'current_page': discounts.number,
-            'total_pages': paginator.num_pages,
-            'total_items': paginator.count,
-            'start_index': discounts.start_index(),
-            'end_index': discounts.end_index(),
-            'has_previous': discounts.has_previous(),
-            'has_next': discounts.has_next(),
-        }
-        
-        # تحديث السياق
+            )['total'] or Decimal('0.00')
+
+            if discount.valid_to_date:
+                remaining_days = (discount.valid_to_date - today).days
+                discount.remaining_days = max(0, remaining_days)
+            else:
+                discount.remaining_days = 0
+
+            try:
+                discount.scope_display = discount.get_application_scope_display()
+            except Exception:
+                discount.scope_display = 'على كل قسط'
+
+            try:
+                discount.type_display = discount.get_discount_type_display()
+            except Exception:
+                discount.type_display = discount.discount_type
+
+            try:
+                discount.category_display = discount.get_category_display()
+            except Exception:
+                discount.category_display = discount.category
+
+        # ============================================================
+        # Pagination
+        # ============================================================
+        paginator = Paginator(discounts, 12)
+        page_number = request.GET.get('page')
+        discounts_page = paginator.get_page(page_number)
+
+        context = get_base_context(request)
+
         context.update({
-            # البيانات الأساسية
-            'discounts': discounts,
-            
-            # معايير البحث والفلترة
-            'search_query': search_query,
-            'category_filter': category_filter,
-            'discount_type_filter': discount_type_filter,
-            'is_active_filter': is_active_filter,
-            'status_filter': status_filter,
-            'view_type': view_type,
-            'sort_by': sort_by,
-            
-            # خيارات الفلاتر
-            'category_choices': DiscountSettings.DISCOUNT_CATEGORY_CHOICES,
-            'discount_type_choices': DiscountSettings.DISCOUNT_TYPE_CHOICES,
-            'status_choices': [
-                ('valid', 'سارية حالياً'),
-                ('expired', 'منتهية الصلاحية'),
-                ('upcoming', 'قريباً'),
-            ],
-            
-            # الإحصائيات الأساسية
+            'discounts': discounts_page,
+
             'total_discounts': total_discounts,
             'active_discounts_count': active_discounts_count,
             'applied_discounts_count': applied_discounts_count,
             'total_savings': total_savings,
-            'pending_applications': pending_applications,
-            'inactive_discounts': total_discounts - active_discounts_count,
-            
-            # إحصائيات متقدمة
-            'category_stats': category_stats,
-            'type_stats': type_stats,
-            'validity_stats': validity_stats,
-            
-            # معلومات العرض والترقيم
-            'page_info': page_info,
-            'view_options': ['cards', 'table'],
-            'sort_options': [
-                ('name', 'حسب الاسم'),
-                ('category', 'حسب الفئة'),
-                ('value', 'حسب القيمة'),
-                ('valid_from', 'حسب بداية الصلاحية'),
-                ('valid_to', 'حسب انتهاء الصلاحية'),
-                ('created', 'الأحدث أولاً'),
-            ],
-            
-            # معلومات الصفحة
-            'page_title': 'إدارة الخصومات والتخفيضات',
-            'page_description': f'إدارة {total_discounts} خصم بإجمالي وفر {total_savings:,.0f} ج.م',
-            'has_filters_applied': bool(
-                search_query or category_filter or discount_type_filter or 
-                is_active_filter or status_filter
-            ),
-            
-            # توفر النماذج
-            'student_model_available': Student is not None,
-        })
-        
-        # رسائل إعلامية ذكية
-        if not discounts:
-            if context['has_filters_applied']:
-                messages.info(request, 'لم يتم العثور على خصومات تطابق معايير البحث المحددة.')
-            else:
-                messages.info(request, 'لا توجد خصومات مضافة بعد. يمكنك إضافة أول خصم الآن.')
-        elif context['has_filters_applied']:
-            messages.success(request, f'تم العثور على {paginator.count} خصم يطابق معايير البحث.')
-        
-        # تحذيرات ذكية
-        if validity_stats['expired'] > 0:
-            messages.warning(request, f'يوجد {validity_stats["expired"]} خصم منتهي الصلاحية.')
-        
-        if pending_applications > 0:
-            messages.info(request, f'يوجد {pending_applications} طلب خصم في انتظار الموافقة.')
-        
-        return render(request, 'school_settings/discounts_list.html', context)
-        
-    except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"خطأ في قائمة الخصومات: {str(e)}", exc_info=True)
-        
-        messages.error(
-            request, 
-            'حدث خطأ في تحميل قائمة الخصومات. يرجى المحاولة مرة أخرى.'
-        )
-        return redirect('school_settings:comprehensive_settings')
 
+            'category_choices': DiscountSettings.DISCOUNT_CATEGORY_CHOICES,
+            'discount_type_choices': DiscountSettings.DISCOUNT_TYPE_CHOICES,
+            'discount_scope_choices': DiscountSettings.DISCOUNT_SCOPE_CHOICES,
+
+            'category_filter': category_filter,
+            'discount_type_filter': discount_type_filter,
+            'scope_filter': scope_filter,
+            'is_active_filter': is_active_filter,
+
+            'page_title': 'إدارة الخصومات والتخفيضات',
+        })
+
+        return render(request, 'school_settings/discounts_list.html', context)
+
+    except Exception as e:
+        print(f"خطأ في عرض قائمة الخصومات: {e}")
+
+        import traceback
+        traceback.print_exc()
+
+        messages.error(request, f'حدث خطأ في تحميل قائمة الخصومات: {str(e)}')
+        return redirect('school_settings:settings_home')
 
 # دالة API للإحصائيات السريعة
 @never_cache
@@ -3525,394 +3336,430 @@ def create_discount(request):
     """إنشاء خصم جديد"""
     try:
         context = get_base_context(request)
+
+        # اختيارات القوائم
         context['discount_categories'] = DiscountSettings.DISCOUNT_CATEGORY_CHOICES
         context['discount_types'] = DiscountSettings.DISCOUNT_TYPE_CHOICES
-        
+        context['discount_scopes'] = DiscountSettings.DISCOUNT_SCOPE_CHOICES
+
         if request.method == 'POST':
-            # البيانات الأساسية حسب الـ Template
+            # ============================================================
+            # البيانات الأساسية
+            # ============================================================
             name = request.POST.get('name', '').strip()
             category = request.POST.get('category', '').strip()
             discount_type = request.POST.get('discount_type', '').strip()
+            application_scope = request.POST.get('application_scope', 'PER_INSTALLMENT').strip()
             description = request.POST.get('description', '').strip()
-            
+
+            # ============================================================
             # قيم الخصم
+            # ============================================================
             percentage_value_str = request.POST.get('percentage_value', '').strip()
             fixed_amount_str = request.POST.get('fixed_amount', '').strip()
             max_discount_amount_str = request.POST.get('max_discount_amount', '').strip()
-            
+            min_payment_amount_str = request.POST.get('min_payment_amount', '').strip()
+
+            # ============================================================
+            # شروط التطبيق الاختيارية
+            # ============================================================
+            applicable_to_fee_types = request.POST.get('applicable_to_fee_types', '').strip()
+            applicable_to_grades_ids = request.POST.getlist('applicable_to_grades')
+
+            # ============================================================
             # التواريخ
-            valid_from_date = request.POST.get('valid_from_date')
-            valid_to_date = request.POST.get('valid_to_date')
-            
+            # ============================================================
+            valid_from_date = request.POST.get('valid_from_date', '').strip()
+            valid_to_date = request.POST.get('valid_to_date', '').strip()
+
+            # ============================================================
             # الإعدادات
+            # ============================================================
             is_active = request.POST.get('is_active') == 'on'
             requires_approval = request.POST.get('requires_approval') == 'on'
-            
-            print(f"البيانات المستلمة:")
-            print(f"name: {name}")
-            print(f"category: {category}")
-            print(f"discount_type: {discount_type}")
-            print(f"percentage_value_str: {percentage_value_str}")
-            print(f"fixed_amount_str: {fixed_amount_str}")
-            print(f"max_discount_amount_str: {max_discount_amount_str}")
-            print(f"valid_from_date: {valid_from_date}")
-            print(f"valid_to_date: {valid_to_date}")
-            print(f"is_active: {is_active}")
-            print(f"requires_approval: {requires_approval}")
-            
-            # التحقق من البيانات المطلوبة
+
+            # ============================================================
+            # تحقق البيانات الأساسية
+            # ============================================================
             if not name:
                 messages.error(request, 'اسم الخصم مطلوب')
                 return render(request, 'school_settings/create_discount.html', context)
-            
+
             if not category:
                 messages.error(request, 'فئة الخصم مطلوبة')
                 return render(request, 'school_settings/create_discount.html', context)
-            
+
+            valid_categories = [choice[0] for choice in DiscountSettings.DISCOUNT_CATEGORY_CHOICES]
+            if category not in valid_categories:
+                messages.error(request, 'فئة الخصم غير صحيحة')
+                return render(request, 'school_settings/create_discount.html', context)
+
             if not discount_type:
                 messages.error(request, 'نوع الخصم مطلوب')
                 return render(request, 'school_settings/create_discount.html', context)
-            
+
+            valid_types = [choice[0] for choice in DiscountSettings.DISCOUNT_TYPE_CHOICES]
+            if discount_type not in valid_types:
+                messages.error(request, 'نوع الخصم غير صحيح')
+                return render(request, 'school_settings/create_discount.html', context)
+
+            valid_scopes = [choice[0] for choice in DiscountSettings.DISCOUNT_SCOPE_CHOICES]
+            if application_scope not in valid_scopes:
+                messages.error(request, 'نطاق تطبيق الخصم غير صحيح')
+                return render(request, 'school_settings/create_discount.html', context)
+
             if not valid_from_date:
                 messages.error(request, 'تاريخ بداية الصلاحية مطلوب')
                 return render(request, 'school_settings/create_discount.html', context)
-            
+
             if not valid_to_date:
                 messages.error(request, 'تاريخ انتهاء الصلاحية مطلوب')
                 return render(request, 'school_settings/create_discount.html', context)
-            
-            # التحقق من قيمة الخصم حسب النوع
+
+            # ============================================================
+            # تحقق قيمة الخصم حسب النوع
+            # ============================================================
             percentage_value = None
             fixed_amount = None
-            
+
             if discount_type == 'PERCENTAGE':
                 if not percentage_value_str:
                     messages.error(request, 'النسبة المئوية مطلوبة')
                     return render(request, 'school_settings/create_discount.html', context)
-                
+
                 try:
-                    percentage_value = Decimal(percentage_value_str)
+                    percentage_value = Decimal(str(percentage_value_str))
+
                     if percentage_value <= 0 or percentage_value > 100:
-                        messages.error(request, 'النسبة المئوية يجب أن تكون بين 0 و 100')
+                        messages.error(request, 'النسبة المئوية يجب أن تكون أكبر من 0 ولا تتجاوز 100')
                         return render(request, 'school_settings/create_discount.html', context)
-                except (ValueError, InvalidOperation) as e:
-                    print(f"خطأ في تحويل النسبة المئوية: {e}")
+
+                except (ValueError, InvalidOperation):
                     messages.error(request, 'تنسيق النسبة المئوية غير صحيح')
                     return render(request, 'school_settings/create_discount.html', context)
-                    
+
             elif discount_type == 'FIXED_AMOUNT':
                 if not fixed_amount_str:
                     messages.error(request, 'المبلغ الثابت مطلوب')
                     return render(request, 'school_settings/create_discount.html', context)
-                
+
                 try:
-                    fixed_amount = Decimal(fixed_amount_str)
+                    fixed_amount = Decimal(str(fixed_amount_str))
+
                     if fixed_amount <= 0:
                         messages.error(request, 'المبلغ الثابت يجب أن يكون أكبر من صفر')
                         return render(request, 'school_settings/create_discount.html', context)
-                except (ValueError, InvalidOperation) as e:
-                    print(f"خطأ في تحويل المبلغ الثابت: {e}")
+
+                except (ValueError, InvalidOperation):
                     messages.error(request, 'تنسيق المبلغ الثابت غير صحيح')
                     return render(request, 'school_settings/create_discount.html', context)
-            
-            # التحقق من الحد الأقصى للخصم
+
+            # ============================================================
+            # الحد الأقصى للخصم
+            # ============================================================
             max_discount_amount = None
+
             if max_discount_amount_str:
                 try:
-                    max_discount_amount = Decimal(max_discount_amount_str)
+                    max_discount_amount = Decimal(str(max_discount_amount_str))
+
                     if max_discount_amount <= 0:
                         messages.error(request, 'الحد الأقصى للخصم يجب أن يكون أكبر من صفر')
                         return render(request, 'school_settings/create_discount.html', context)
-                except (ValueError, InvalidOperation) as e:
-                    print(f"خطأ في تحويل الحد الأقصى: {e}")
+
+                except (ValueError, InvalidOperation):
                     messages.error(request, 'تنسيق الحد الأقصى للخصم غير صحيح')
                     return render(request, 'school_settings/create_discount.html', context)
-            
+
+            # ============================================================
+            # الحد الأدنى للمبلغ لتطبيق الخصم
+            # ============================================================
+            min_payment_amount = None
+
+            if min_payment_amount_str:
+                try:
+                    min_payment_amount = Decimal(str(min_payment_amount_str))
+
+                    if min_payment_amount < 0:
+                        messages.error(request, 'الحد الأدنى للمبلغ لا يمكن أن يكون أقل من صفر')
+                        return render(request, 'school_settings/create_discount.html', context)
+
+                except (ValueError, InvalidOperation):
+                    messages.error(request, 'تنسيق الحد الأدنى للمبلغ غير صحيح')
+                    return render(request, 'school_settings/create_discount.html', context)
+
+            # ============================================================
             # تحويل التواريخ
+            # ============================================================
             try:
                 valid_from_obj = datetime.strptime(valid_from_date, '%Y-%m-%d').date()
                 valid_to_obj = datetime.strptime(valid_to_date, '%Y-%m-%d').date()
-                
-                print(f"التواريخ بعد التحويل:")
-                print(f"valid_from_obj: {valid_from_obj}")
-                print(f"valid_to_obj: {valid_to_obj}")
-                
+
                 if valid_from_obj >= valid_to_obj:
                     messages.error(request, 'تاريخ البداية يجب أن يكون قبل تاريخ النهاية')
                     return render(request, 'school_settings/create_discount.html', context)
-                
-            except ValueError as e:
-                print(f"خطأ في تحويل التاريخ: {e}")
+
+            except ValueError:
                 messages.error(request, 'تنسيق التاريخ غير صحيح')
                 return render(request, 'school_settings/create_discount.html', context)
-            
-            # التحقق من عدم وجود خصم بنفس الاسم
+
+            # ============================================================
+            # منع تكرار الاسم
+            # ============================================================
             if DiscountSettings.objects.filter(name=name).exists():
                 messages.error(request, 'يوجد خصم بهذا الاسم بالفعل')
                 return render(request, 'school_settings/create_discount.html', context)
-            
+
+            # ============================================================
+            # إنشاء الخصم
+            # ============================================================
             try:
-                # إنشاء الخصم الجديد
                 discount = DiscountSettings.objects.create(
                     name=name,
                     category=category,
                     discount_type=discount_type,
+                    application_scope=application_scope,
+
                     percentage_value=percentage_value,
                     fixed_amount=fixed_amount,
+
+                    applicable_to_fee_types=applicable_to_fee_types,
+
                     max_discount_amount=max_discount_amount,
+                    min_payment_amount=min_payment_amount,
+
                     valid_from_date=valid_from_obj,
                     valid_to_date=valid_to_obj,
+
                     description=description,
                     is_active=is_active,
                     requires_approval=requires_approval,
                 )
-                
-                print(f"تم إنشاء الخصم: {discount.id} - {discount.name}")
-                
-                # تسجيل العملية (اختياري)
+
+                # ربط الصفوف المطبق عليها إذا أُرسلت من القالب
+                if applicable_to_grades_ids:
+                    try:
+                        discount.applicable_to_grades.set(applicable_to_grades_ids)
+                    except Exception as grades_error:
+                        print(f"تعذر ربط الصفوف بالخصم: {grades_error}")
+
+                # تسجيل العملية
                 try:
                     log_settings_change(
                         user=request.user,
                         action='CREATE',
                         setting_type='DISCOUNT',
                         obj=discount,
-                        new_value=f'{name} - {discount_type}',
+                        new_value=f'{name} - {discount_type} - {application_scope}',
                         description=f'إنشاء خصم جديد: {name}',
                         request=request
                     )
-                    print("تم تسجيل العملية في السجل")
                 except Exception as log_error:
-                    print(f"خطأ في تسجيل السجل (لن يؤثر على الحفظ): {log_error}")
-                
+                    print(f"خطأ في تسجيل السجل، لن يؤثر على الحفظ: {log_error}")
+
                 messages.success(request, f'تم إنشاء الخصم "{name}" بنجاح')
-                print("تم إرسال رسالة النجاح")
-                
                 return redirect('school_settings:discounts_list')
-                
+
             except Exception as e:
                 print(f"خطأ في إنشاء الخصم: {e}")
+
                 import traceback
                 traceback.print_exc()
+
                 messages.error(request, f'حدث خطأ في حفظ البيانات: {str(e)}')
-        
+                return render(request, 'school_settings/create_discount.html', context)
+
         return render(request, 'school_settings/create_discount.html', context)
-        
+
     except Exception as e:
         print(f"خطأ عام في إنشاء الخصم: {e}")
+
         import traceback
         traceback.print_exc()
-        messages.error(request, f'حدث خطأ في تحميل الصفحة: {str(e)}')
-        return redirect('school_settings:discounts_list')
 
+        messages.error(request, f'حدث خطأ في تحميل صفحة إنشاء الخصم: {str(e)}')
+        return redirect('school_settings:discounts_list')
 
 @login_required
 @settings_admin_required
 @require_http_methods(["GET", "POST"])
+@csrf_protect
 def edit_discount(request, pk):
     """تعديل خصم"""
     try:
         discount = get_object_or_404(DiscountSettings, pk=pk)
         context = get_base_context(request)
-        context['discount'] = discount
-        
+
+        context.update({
+            'discount': discount,
+            'discount_categories': DiscountSettings.DISCOUNT_CATEGORY_CHOICES,
+            'discount_types': DiscountSettings.DISCOUNT_TYPE_CHOICES,
+            'discount_scopes': DiscountSettings.DISCOUNT_SCOPE_CHOICES,
+        })
+
         if request.method == 'POST':
-            # حفظ القيم القديمة للمقارنة
-            old_values = {
-                'name': discount.name,
-                'category': discount.category,
-                'discount_type': discount.discount_type,
-                'percentage_value': discount.percentage_value,
-                'fixed_amount': discount.fixed_amount,
-                'max_discount_amount': discount.max_discount_amount,
-                'description': discount.description,
-                'is_active': discount.is_active,
-                'requires_approval': discount.requires_approval,
-                'valid_from_date': discount.valid_from_date,
-                'valid_to_date': discount.valid_to_date,
-            }
-            
-            # البيانات الأساسية حسب الـ Template
             name = request.POST.get('name', '').strip()
             category = request.POST.get('category', '').strip()
             discount_type = request.POST.get('discount_type', '').strip()
+            application_scope = request.POST.get('application_scope', 'PER_INSTALLMENT').strip()
             description = request.POST.get('description', '').strip()
-            
-            # قيم الخصم
+
             percentage_value_str = request.POST.get('percentage_value', '').strip()
             fixed_amount_str = request.POST.get('fixed_amount', '').strip()
             max_discount_amount_str = request.POST.get('max_discount_amount', '').strip()
-            
-            # التواريخ
-            valid_from_date = request.POST.get('valid_from_date')
-            valid_to_date = request.POST.get('valid_to_date')
-            
-            # الإعدادات
+            min_payment_amount_str = request.POST.get('min_payment_amount', '').strip()
+
+            valid_from_date = request.POST.get('valid_from_date', '').strip()
+            valid_to_date = request.POST.get('valid_to_date', '').strip()
+
             is_active = request.POST.get('is_active') == 'on'
             requires_approval = request.POST.get('requires_approval') == 'on'
-            
-            print(f"البيانات المستلمة للتعديل:")
-            print(f"name: {name}")
-            print(f"category: {category}")
-            print(f"discount_type: {discount_type}")
-            print(f"percentage_value_str: {percentage_value_str}")
-            print(f"fixed_amount_str: {fixed_amount_str}")
-            print(f"max_discount_amount_str: {max_discount_amount_str}")
-            print(f"valid_from_date: {valid_from_date}")
-            print(f"valid_to_date: {valid_to_date}")
-            print(f"is_active: {is_active}")
-            print(f"requires_approval: {requires_approval}")
-            
-            # التحقق من البيانات المطلوبة
+
             if not name:
                 messages.error(request, 'اسم الخصم مطلوب')
                 return render(request, 'school_settings/edit_discount.html', context)
-            
+
             if not category:
                 messages.error(request, 'فئة الخصم مطلوبة')
                 return render(request, 'school_settings/edit_discount.html', context)
-            
+
+            if category not in [choice[0] for choice in DiscountSettings.DISCOUNT_CATEGORY_CHOICES]:
+                messages.error(request, 'فئة الخصم غير صحيحة')
+                return render(request, 'school_settings/edit_discount.html', context)
+
             if not discount_type:
                 messages.error(request, 'نوع الخصم مطلوب')
                 return render(request, 'school_settings/edit_discount.html', context)
-            
+
+            if discount_type not in [choice[0] for choice in DiscountSettings.DISCOUNT_TYPE_CHOICES]:
+                messages.error(request, 'نوع الخصم غير صحيح')
+                return render(request, 'school_settings/edit_discount.html', context)
+
+            if application_scope not in [choice[0] for choice in DiscountSettings.DISCOUNT_SCOPE_CHOICES]:
+                messages.error(request, 'نطاق تطبيق الخصم غير صحيح')
+                return render(request, 'school_settings/edit_discount.html', context)
+
             if not valid_from_date:
                 messages.error(request, 'تاريخ بداية الصلاحية مطلوب')
                 return render(request, 'school_settings/edit_discount.html', context)
-            
+
             if not valid_to_date:
                 messages.error(request, 'تاريخ انتهاء الصلاحية مطلوب')
                 return render(request, 'school_settings/edit_discount.html', context)
-            
-            # التحقق من قيمة الخصم حسب النوع
+
             percentage_value = None
             fixed_amount = None
-            
+
             if discount_type == 'PERCENTAGE':
                 if not percentage_value_str:
                     messages.error(request, 'النسبة المئوية مطلوبة')
                     return render(request, 'school_settings/edit_discount.html', context)
-                
+
                 try:
-                    percentage_value = Decimal(percentage_value_str)
+                    percentage_value = Decimal(str(percentage_value_str))
                     if percentage_value <= 0 or percentage_value > 100:
-                        messages.error(request, 'النسبة المئوية يجب أن تكون بين 0 و 100')
+                        messages.error(request, 'النسبة المئوية يجب أن تكون أكبر من 0 ولا تتجاوز 100')
                         return render(request, 'school_settings/edit_discount.html', context)
-                except (ValueError, InvalidOperation) as e:
-                    print(f"خطأ في تحويل النسبة المئوية: {e}")
+                except (ValueError, InvalidOperation):
                     messages.error(request, 'تنسيق النسبة المئوية غير صحيح')
                     return render(request, 'school_settings/edit_discount.html', context)
-                    
+
             elif discount_type == 'FIXED_AMOUNT':
                 if not fixed_amount_str:
                     messages.error(request, 'المبلغ الثابت مطلوب')
                     return render(request, 'school_settings/edit_discount.html', context)
-                
+
                 try:
-                    fixed_amount = Decimal(fixed_amount_str)
+                    fixed_amount = Decimal(str(fixed_amount_str))
                     if fixed_amount <= 0:
                         messages.error(request, 'المبلغ الثابت يجب أن يكون أكبر من صفر')
                         return render(request, 'school_settings/edit_discount.html', context)
-                except (ValueError, InvalidOperation) as e:
-                    print(f"خطأ في تحويل المبلغ الثابت: {e}")
+                except (ValueError, InvalidOperation):
                     messages.error(request, 'تنسيق المبلغ الثابت غير صحيح')
                     return render(request, 'school_settings/edit_discount.html', context)
-            
-            # التحقق من الحد الأقصى للخصم
+
             max_discount_amount = None
             if max_discount_amount_str:
                 try:
-                    max_discount_amount = Decimal(max_discount_amount_str)
+                    max_discount_amount = Decimal(str(max_discount_amount_str))
                     if max_discount_amount <= 0:
                         messages.error(request, 'الحد الأقصى للخصم يجب أن يكون أكبر من صفر')
                         return render(request, 'school_settings/edit_discount.html', context)
-                except (ValueError, InvalidOperation) as e:
-                    print(f"خطأ في تحويل الحد الأقصى: {e}")
+                except (ValueError, InvalidOperation):
                     messages.error(request, 'تنسيق الحد الأقصى للخصم غير صحيح')
                     return render(request, 'school_settings/edit_discount.html', context)
-            
-            # تحويل التواريخ
+
+            min_payment_amount = None
+            if min_payment_amount_str:
+                try:
+                    min_payment_amount = Decimal(str(min_payment_amount_str))
+                    if min_payment_amount < 0:
+                        messages.error(request, 'الحد الأدنى للمبلغ لا يمكن أن يكون أقل من صفر')
+                        return render(request, 'school_settings/edit_discount.html', context)
+                except (ValueError, InvalidOperation):
+                    messages.error(request, 'تنسيق الحد الأدنى للمبلغ غير صحيح')
+                    return render(request, 'school_settings/edit_discount.html', context)
+
             try:
                 valid_from_obj = datetime.strptime(valid_from_date, '%Y-%m-%d').date()
                 valid_to_obj = datetime.strptime(valid_to_date, '%Y-%m-%d').date()
-                
-                print(f"التواريخ بعد التحويل:")
-                print(f"valid_from_obj: {valid_from_obj}")
-                print(f"valid_to_obj: {valid_to_obj}")
-                
+
                 if valid_from_obj >= valid_to_obj:
                     messages.error(request, 'تاريخ البداية يجب أن يكون قبل تاريخ النهاية')
                     return render(request, 'school_settings/edit_discount.html', context)
-                
-            except ValueError as e:
-                print(f"خطأ في تحويل التاريخ: {e}")
+
+            except ValueError:
                 messages.error(request, 'تنسيق التاريخ غير صحيح')
                 return render(request, 'school_settings/edit_discount.html', context)
-            
-            # التحقق من عدم وجود خصم آخر بنفس الاسم
-            existing = DiscountSettings.objects.filter(name=name).exclude(pk=pk)
-            if existing.exists():
-                messages.error(request, 'يوجد خصم آخر بهذا الاسم')
+
+            if DiscountSettings.objects.filter(name=name).exclude(pk=discount.pk).exists():
+                messages.error(request, 'يوجد خصم آخر بهذا الاسم بالفعل')
                 return render(request, 'school_settings/edit_discount.html', context)
-            
+
+            old_value = str(discount)
+
+            discount.name = name
+            discount.category = category
+            discount.discount_type = discount_type
+            discount.application_scope = application_scope
+            discount.percentage_value = percentage_value
+            discount.fixed_amount = fixed_amount
+            discount.max_discount_amount = max_discount_amount
+            discount.min_payment_amount = min_payment_amount
+            discount.valid_from_date = valid_from_obj
+            discount.valid_to_date = valid_to_obj
+            discount.description = description
+            discount.is_active = is_active
+            discount.requires_approval = requires_approval
+
+            discount.save()
+
             try:
-                # تحديث البيانات
-                discount.name = name
-                discount.category = category
-                discount.discount_type = discount_type
-                discount.percentage_value = percentage_value
-                discount.fixed_amount = fixed_amount
-                discount.max_discount_amount = max_discount_amount
-                discount.description = description
-                discount.is_active = is_active
-                discount.requires_approval = requires_approval
-                discount.valid_from_date = valid_from_obj
-                discount.valid_to_date = valid_to_obj
-                discount.save()
-                
-                print(f"تم تحديث الخصم: {discount.id} - {discount.name}")
-                
-                # تسجيل التغييرات (اختياري)
-                try:
-                    changes = []
-                    for field, old_value in old_values.items():
-                        new_value = getattr(discount, field)
-                        if str(old_value) != str(new_value):
-                            changes.append(f'{field}: {old_value} -> {new_value}')
-                    
-                    if changes:
-                        log_settings_change(
-                            user=request.user,
-                            action='UPDATE',
-                            setting_type='DISCOUNT',
-                            obj=discount,
-                            old_value=str(old_values),
-                            new_value='; '.join(changes),
-                            description=f'تحديث الخصم: {name}',
-                            request=request
-                        )
-                        print("تم تسجيل التغييرات في السجل")
-                except Exception as log_error:
-                    print(f"خطأ في تسجيل السجل (لن يؤثر على التحديث): {log_error}")
-                
-                messages.success(request, f'تم تحديث الخصم "{name}" بنجاح')
-                print("تم إرسال رسالة النجاح")
-                
-                return redirect('school_settings:discounts_list')
-                
-            except Exception as e:
-                print(f"خطأ في تحديث الخصم: {e}")
-                import traceback
-                traceback.print_exc()
-                messages.error(request, f'حدث خطأ في تحديث البيانات: {str(e)}')
-        
+                log_settings_change(
+                    user=request.user,
+                    action='UPDATE',
+                    setting_type='DISCOUNT',
+                    obj=discount,
+                    old_value=old_value,
+                    new_value=f'{discount.name} - {discount.discount_type} - {discount.application_scope}',
+                    description=f'تعديل الخصم: {discount.name}',
+                    request=request
+                )
+            except Exception as log_error:
+                print(f"خطأ في تسجيل السجل، لن يؤثر على الحفظ: {log_error}")
+
+            messages.success(request, f'تم تعديل الخصم "{discount.name}" بنجاح')
+            return redirect('school_settings:discounts_list')
+
         return render(request, 'school_settings/edit_discount.html', context)
-        
+
     except Exception as e:
         print(f"خطأ في تعديل الخصم: {e}")
         import traceback
         traceback.print_exc()
-        messages.error(request, f'حدث خطأ في تحميل صفحة التعديل: {str(e)}')
+        messages.error(request, f'حدث خطأ في تعديل الخصم: {str(e)}')
         return redirect('school_settings:discounts_list')
+
 
 
 @login_required
@@ -5714,3 +5561,378 @@ def log_settings_change(user, action, setting_type, obj=None, old_value='', new_
         request=request
     )
 
+
+
+@login_required
+@settings_admin_required
+@require_http_methods(["GET", "POST"])
+@csrf_protect
+def apply_discount_to_student(request):
+    """تطبيق خصم على طالب"""
+    try:
+        context = get_base_context(request)
+
+        from students.models import Student
+        from decimal import Decimal, InvalidOperation
+
+        students = Student.objects.filter(is_active=True).select_related(
+            'grade_level',
+            'grade_level__education_level',
+            'academic_year'
+        ).order_by('name')
+
+        discounts = DiscountSettings.objects.filter(
+            is_active=True
+        ).order_by('category', 'name')
+
+        academic_years = AcademicYear.objects.filter(
+            is_active=True
+        ).order_by('-start_date', '-id')
+
+        context.update({
+            'students': students,
+            'discounts': discounts,
+            'academic_years': academic_years,
+            'page_title': 'تطبيق خصم على طالب',
+        })
+
+        if request.method == 'POST':
+            student_id = request.POST.get('student')
+            discount_id = request.POST.get('discount_setting')
+            academic_year_id = request.POST.get('academic_year')
+            original_amount_str = request.POST.get('original_amount', '').strip()
+            application_reason = request.POST.get('application_reason', '').strip()
+            admin_notes = request.POST.get('admin_notes', '').strip()
+
+            if not student_id:
+                messages.error(request, 'يرجى اختيار الطالب')
+                return render(request, 'school_settings/apply_discount_to_student.html', context)
+
+            if not discount_id:
+                messages.error(request, 'يرجى اختيار الخصم')
+                return render(request, 'school_settings/apply_discount_to_student.html', context)
+
+            if not academic_year_id:
+                messages.error(request, 'يرجى اختيار العام الدراسي')
+                return render(request, 'school_settings/apply_discount_to_student.html', context)
+
+            if not original_amount_str:
+                messages.error(request, 'يرجى إدخال المبلغ الأصلي')
+                return render(request, 'school_settings/apply_discount_to_student.html', context)
+
+            try:
+                original_amount = Decimal(str(original_amount_str))
+
+                if original_amount <= 0:
+                    messages.error(request, 'المبلغ الأصلي يجب أن يكون أكبر من صفر')
+                    return render(request, 'school_settings/apply_discount_to_student.html', context)
+
+            except (ValueError, InvalidOperation):
+                messages.error(request, 'تنسيق المبلغ الأصلي غير صحيح')
+                return render(request, 'school_settings/apply_discount_to_student.html', context)
+
+            student = get_object_or_404(Student, pk=student_id, is_active=True)
+            discount_setting = get_object_or_404(DiscountSettings, pk=discount_id, is_active=True)
+            academic_year = get_object_or_404(AcademicYear, pk=academic_year_id)
+
+            if not discount_setting.is_valid_now:
+                messages.error(request, 'هذا الخصم غير صالح حاليًا أو خارج فترة الصلاحية')
+                return render(request, 'school_settings/apply_discount_to_student.html', context)
+
+            existing_discount = StudentDiscount.objects.filter(
+                student=student,
+                discount_setting=discount_setting,
+                academic_year=academic_year
+            ).first()
+
+            if existing_discount:
+                messages.error(request, 'هذا الخصم مطبق بالفعل على هذا الطالب في نفس العام الدراسي')
+                return render(request, 'school_settings/apply_discount_to_student.html', context)
+
+            applied_amount = discount_setting.calculate_discount(original_amount)
+            final_amount = max(Decimal('0.00'), original_amount - applied_amount)
+
+            status = 'PENDING' if discount_setting.requires_approval else 'APPROVED'
+
+            student_discount = StudentDiscount.objects.create(
+                student=student,
+                discount_setting=discount_setting,
+                academic_year=academic_year,
+
+                original_amount=original_amount,
+                applied_amount=applied_amount,
+                final_amount=final_amount,
+
+                application_scope=discount_setting.application_scope,
+
+                status=status,
+                approved_by=request.user if status == 'APPROVED' else None,
+                approval_date=timezone.now() if status == 'APPROVED' else None,
+
+                application_reason=application_reason or 'تطبيق خصم من الإدارة',
+                admin_notes=admin_notes,
+                created_by=request.user,
+            )
+
+            try:
+                log_settings_change(
+                    user=request.user,
+                    action='CREATE',
+                    setting_type='STUDENT_DISCOUNT',
+                    obj=student_discount,
+                    new_value=f'{student.name} - {discount_setting.name} - {applied_amount}',
+                    description=f'تطبيق خصم على الطالب: {student.name}',
+                    request=request
+                )
+            except Exception as log_error:
+                print(f"خطأ في تسجيل السجل، لن يؤثر على الحفظ: {log_error}")
+
+            if status == 'APPROVED':
+                messages.success(
+                    request,
+                    f'تم تطبيق الخصم على الطالب {student.name} واعتماده مباشرة'
+                )
+            else:
+                messages.success(
+                    request,
+                    f'تم إرسال الخصم للطالب {student.name} وفي انتظار الموافقة'
+                )
+
+            return redirect('school_settings:discounts_list')
+
+        return render(request, 'school_settings/apply_discount_to_student.html', context)
+
+    except Exception as e:
+        print(f"خطأ في تطبيق الخصم على الطالب: {e}")
+        import traceback
+        traceback.print_exc()
+        messages.error(request, f'حدث خطأ أثناء تطبيق الخصم: {str(e)}')
+        return redirect('school_settings:discounts_list')
+    
+@never_cache
+@login_required
+@settings_admin_required
+def ajax_student_search_for_discount(request):
+    """بحث سريع عن الطلاب لتطبيق الخصم"""
+    try:
+        from students.models import Student
+
+        query = request.GET.get('q', '').strip()
+
+        if len(query) < 2:
+            return JsonResponse({
+                'success': True,
+                'students': [],
+                'count': 0,
+            })
+
+        students = Student.objects.filter(
+            is_active=True
+        ).select_related(
+            'grade_level',
+            'grade_level__education_level'
+        ).filter(
+            Q(name__icontains=query) |
+            Q(national_number__icontains=query) |
+            Q(phone_number__icontains=query) |
+            Q(parent_name__icontains=query) |
+            Q(parent_phone__icontains=query)
+        ).order_by(
+            'name'
+        )[:20]
+
+        students_data = []
+
+        for student in students:
+            grade_name = ''
+            education_level_name = ''
+
+            if student.grade_level:
+                grade_name = student.grade_level.name
+
+                if student.grade_level.education_level:
+                    education_level_name = student.grade_level.education_level.name
+
+            students_data.append({
+                'id': student.id,
+                'name': student.name or '',
+                'national_number': student.national_number or '',
+                'phone_number': student.phone_number or '',
+                'parent_name': student.parent_name or '',
+                'parent_phone': student.parent_phone or '',
+                'grade_name': grade_name,
+                'education_level_name': education_level_name,
+            })
+
+        return JsonResponse({
+            'success': True,
+            'students': students_data,
+            'count': len(students_data),
+        })
+
+    except Exception as e:
+        print(f"خطأ في بحث الطلاب لتطبيق الخصم: {e}")
+        return JsonResponse({
+            'success': False,
+            'error': 'حدث خطأ أثناء البحث عن الطلاب',
+        })
+    
+
+@login_required
+@settings_admin_required
+def discount_requests_list(request):
+    """طلبات الخصومات المنتظرة للمراجعة"""
+    try:
+        context = get_base_context(request)
+
+        requests_qs = StudentDiscount.objects.filter(
+            status='PENDING'
+        ).select_related(
+            'student',
+            'student__grade_level',
+            'student__grade_level__education_level',
+            'discount_setting',
+            'academic_year',
+            'created_by'
+        ).order_by('-created_date')
+
+        total_pending = requests_qs.count()
+        total_requested_amount = requests_qs.aggregate(
+            total=Sum('applied_amount')
+        )['total'] or Decimal('0.00')
+
+        context.update({
+            'discount_requests': requests_qs,
+            'total_pending': total_pending,
+            'total_requested_amount': total_requested_amount,
+            'page_title': 'طلبات الخصومات',
+        })
+
+        return render(request, 'school_settings/discount_requests_list.html', context)
+
+    except Exception as e:
+        print(f"خطأ في عرض طلبات الخصومات: {e}")
+        messages.error(request, f'حدث خطأ في تحميل طلبات الخصومات: {str(e)}')
+        return redirect('school_settings:discounts_list')
+
+
+@login_required
+@settings_admin_required
+@require_POST
+@csrf_protect
+def approve_student_discount(request, discount_id):
+    """الموافقة على طلب خصم طالب"""
+    try:
+        student_discount = get_object_or_404(
+            StudentDiscount.objects.select_related(
+                'student',
+                'discount_setting'
+            ),
+            pk=discount_id,
+            status='PENDING'
+        )
+
+        notes = request.POST.get('admin_notes', '').strip()
+
+        student_discount.status = 'APPROVED'
+        student_discount.approved_by = request.user
+        student_discount.approval_date = timezone.now()
+
+        if notes:
+            student_discount.admin_notes = notes
+
+        student_discount.save(update_fields=[
+            'status',
+            'approved_by',
+            'approval_date',
+            'admin_notes',
+            'updated_date',
+        ])
+
+        try:
+            log_settings_change(
+                user=request.user,
+                action='APPROVE',
+                setting_type='STUDENT_DISCOUNT',
+                obj=student_discount,
+                old_value='PENDING',
+                new_value='APPROVED',
+                description=f'الموافقة على خصم الطالب: {student_discount.student.name}',
+                request=request
+            )
+        except Exception as log_error:
+            print(f"خطأ في تسجيل الموافقة، لن يؤثر على العملية: {log_error}")
+
+        messages.success(
+            request,
+            f'تمت الموافقة على خصم الطالب {student_discount.student.name} بنجاح'
+        )
+
+        return redirect('school_settings:discount_requests_list')
+
+    except Exception as e:
+        print(f"خطأ في الموافقة على الخصم: {e}")
+        messages.error(request, f'حدث خطأ أثناء الموافقة على الخصم: {str(e)}')
+        return redirect('school_settings:discount_requests_list')
+
+
+@login_required
+@settings_admin_required
+@require_POST
+@csrf_protect
+def reject_student_discount(request, discount_id):
+    """رفض طلب خصم طالب"""
+    try:
+        student_discount = get_object_or_404(
+            StudentDiscount.objects.select_related(
+                'student',
+                'discount_setting'
+            ),
+            pk=discount_id,
+            status='PENDING'
+        )
+
+        notes = request.POST.get('admin_notes', '').strip()
+
+        if not notes:
+            messages.error(request, 'يرجى كتابة سبب الرفض')
+            return redirect('school_settings:discount_requests_list')
+
+        student_discount.status = 'REJECTED'
+        student_discount.approved_by = request.user
+        student_discount.approval_date = timezone.now()
+        student_discount.admin_notes = notes
+
+        student_discount.save(update_fields=[
+            'status',
+            'approved_by',
+            'approval_date',
+            'admin_notes',
+            'updated_date',
+        ])
+
+        try:
+            log_settings_change(
+                user=request.user,
+                action='REJECT',
+                setting_type='STUDENT_DISCOUNT',
+                obj=student_discount,
+                old_value='PENDING',
+                new_value='REJECTED',
+                description=f'رفض خصم الطالب: {student_discount.student.name}',
+                request=request
+            )
+        except Exception as log_error:
+            print(f"خطأ في تسجيل الرفض، لن يؤثر على العملية: {log_error}")
+
+        messages.success(
+            request,
+            f'تم رفض خصم الطالب {student_discount.student.name}'
+        )
+
+        return redirect('school_settings:discount_requests_list')
+
+    except Exception as e:
+        print(f"خطأ في رفض الخصم: {e}")
+        messages.error(request, f'حدث خطأ أثناء رفض الخصم: {str(e)}')
+        return redirect('school_settings:discount_requests_list')

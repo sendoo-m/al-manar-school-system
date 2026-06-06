@@ -1,0 +1,505 @@
+{% extends 'report/base.html' %}
+{% load humanize %}
+
+{% block title %}مركز التقارير{% endblock %}
+{% block page_title %}مركز التقارير{% endblock %}
+{% block page_subtitle %}لوحة موحدة لمدير المدرسة تعرض أهم التقارير والمؤشرات من مختلف التطبيقات{% endblock %}
+{% block page_icon %}<i class="fas fa-chart-line me-3"></i>{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">مركز التقارير</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'report:daily_report' %}" class="btn btn-outline-primary btn-custom">
+        <i class="fas fa-calendar-day me-1"></i>اليومي
+    </a>
+
+    <a href="{% url 'report:monthly_report' %}" class="btn btn-outline-info btn-custom">
+        <i class="fas fa-calendar-alt me-1"></i>الشهري
+    </a>
+
+    <a href="{% url 'report:financial_report' %}" class="btn btn-outline-success btn-custom">
+        <i class="fas fa-money-bill-wave me-1"></i>المالي
+    </a>
+
+    <button type="button" onclick="window.print()" class="btn btn-outline-secondary btn-custom">
+        <i class="fas fa-print me-1"></i>طباعة
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .reports-hero {
+        background: linear-gradient(135deg, #243b55, #141e30);
+        color: white;
+        border-radius: 24px;
+        padding: 32px;
+        margin-bottom: 26px;
+        box-shadow: 0 10px 28px rgba(20, 30, 48, 0.25);
+    }
+
+    .reports-hero h2 {
+        font-weight: 900;
+        margin-bottom: 8px;
+    }
+
+    .main-stat-card {
+        background: white;
+        border-radius: 18px;
+        padding: 22px;
+        height: 100%;
+        box-shadow: 0 5px 16px rgba(0,0,0,0.08);
+        border-top: 5px solid #0d6efd;
+        text-align: center;
+        transition: 0.25s ease;
+    }
+
+    .main-stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+    }
+
+    .main-stat-card.success { border-top-color: #198754; }
+    .main-stat-card.warning { border-top-color: #ffc107; }
+    .main-stat-card.danger { border-top-color: #dc3545; }
+    .main-stat-card.info { border-top-color: #0dcaf0; }
+    .main-stat-card.dark { border-top-color: #212529; }
+
+    .main-stat-value {
+        font-size: 1.85rem;
+        font-weight: 900;
+        margin-bottom: 5px;
+    }
+
+    .main-stat-label {
+        color: #64748b;
+        font-weight: 800;
+        font-size: 0.9rem;
+    }
+
+    .report-card {
+        background: white;
+        border-radius: 18px;
+        padding: 24px;
+        height: 100%;
+        box-shadow: 0 5px 16px rgba(0,0,0,0.08);
+        transition: 0.25s ease;
+        border: 1px solid #e9ecef;
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+
+    .report-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 26px rgba(0,0,0,0.14);
+        color: inherit;
+        border-color: #0d6efd;
+    }
+
+    .report-icon {
+        width: 58px;
+        height: 58px;
+        border-radius: 18px;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.7rem;
+        margin-bottom: 16px;
+    }
+
+    .bg-primary-soft { background: linear-gradient(135deg, #0d6efd, #0b5ed7); }
+    .bg-info-soft { background: linear-gradient(135deg, #0dcaf0, #0aa2c0); }
+    .bg-success-soft { background: linear-gradient(135deg, #198754, #20c997); }
+    .bg-warning-soft { background: linear-gradient(135deg, #ffc107, #fd7e14); }
+    .bg-secondary-soft { background: linear-gradient(135deg, #6c757d, #495057); }
+    .bg-danger-soft { background: linear-gradient(135deg, #dc3545, #b02a37); }
+
+    .content-panel {
+        background: white;
+        border-radius: 18px;
+        box-shadow: 0 5px 16px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+        overflow: hidden;
+    }
+
+    .content-panel-header {
+        background: #f8f9fa;
+        padding: 18px 22px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .content-panel-header h5 {
+        margin: 0;
+        font-weight: 900;
+    }
+
+    .content-panel-body {
+        padding: 22px;
+    }
+
+    .dashboard-table thead th {
+        background: linear-gradient(135deg, #243b55, #141e30);
+        color: white;
+        border: none;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    .dashboard-table td {
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .student-name-cell {
+        text-align: right !important;
+    }
+
+    .mini-progress {
+        height: 9px;
+        border-radius: 30px;
+        background: #e9ecef;
+        overflow: hidden;
+    }
+
+    .mini-progress-fill {
+        height: 100%;
+        border-radius: 30px;
+        background: linear-gradient(135deg, #198754, #20c997);
+    }
+
+    @media print {
+        .page-actions,
+        .breadcrumb,
+        .breadcrumb-nav,
+        .reports-hero,
+        .btn {
+            display: none !important;
+        }
+
+        .main-stat-card,
+        .report-card,
+        .content-panel {
+            box-shadow: none !important;
+            border: 1px solid #ddd !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="reports-hero">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h2>
+                <i class="fas fa-chart-line me-2"></i>
+                مركز تقارير مدير المدرسة
+            </h2>
+            <p class="mb-0">
+                شاشة موحدة لمتابعة أهم مؤشرات الطلاب والمدفوعات والتقارير من مختلف التطبيقات.
+            </p>
+        </div>
+
+        <div class="text-lg-end">
+            <div><strong>تاريخ اليوم:</strong> {{ today|date:"Y/m/d" }}</div>
+            <div><strong>بداية الشهر:</strong> {{ month_start|date:"Y/m/d" }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- الإحصائيات الرئيسية -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-lg-6 mb-3">
+        <div class="main-stat-card">
+            <div class="main-stat-value text-primary">{{ total_students }}</div>
+            <div class="main-stat-label">إجمالي الطلاب النشطين</div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 mb-3">
+        <div class="main-stat-card success">
+            <div class="main-stat-value text-success">{{ payments_stats.total_paid|floatformat:2 }}</div>
+            <div class="main-stat-label">إجمالي المدفوعات</div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 mb-3">
+        <div class="main-stat-card danger">
+            <div class="main-stat-value text-danger">{{ payments_stats.total_remaining|floatformat:2 }}</div>
+            <div class="main-stat-label">إجمالي المتبقي</div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 mb-3">
+        <div class="main-stat-card warning">
+            <div class="main-stat-value text-warning">{{ payments_stats.overdue_amount|floatformat:2 }}</div>
+            <div class="main-stat-label">إجمالي المتأخرات</div>
+        </div>
+    </div>
+</div>
+
+<!-- مؤشرات اليوم والشهر -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="main-stat-card info">
+            <div class="main-stat-value text-info">{{ payments_stats.today_paid|floatformat:2 }}</div>
+            <div class="main-stat-label">تحصيل اليوم</div>
+            <small class="text-muted">{{ payments_stats.today_payments_count }} عملية</small>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="main-stat-card success">
+            <div class="main-stat-value text-success">{{ payments_stats.month_paid|floatformat:2 }}</div>
+            <div class="main-stat-label">تحصيل الشهر</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="main-stat-card dark">
+            <div class="main-stat-value text-dark">{{ archived_students_count }}</div>
+            <div class="main-stat-label">طلاب مؤرشفون</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="main-stat-card danger">
+            <div class="main-stat-value text-danger">{{ payments_stats.overdue_count }}</div>
+            <div class="main-stat-label">أقساط متأخرة</div>
+        </div>
+    </div>
+</div>
+
+<!-- روابط التقارير -->
+<div class="content-panel">
+    <div class="content-panel-header">
+        <h5>
+            <i class="fas fa-file-alt me-2 text-primary"></i>
+            التقارير المتاحة
+        </h5>
+    </div>
+
+    <div class="content-panel-body">
+        <div class="row">
+            {% for card in report_cards %}
+            <div class="col-xl-4 col-lg-6 mb-3">
+                <a href="{% url card.url_name %}" class="report-card">
+                    <div class="report-icon bg-{{ card.color }}-soft">
+                        <i class="{{ card.icon }}"></i>
+                    </div>
+
+                    <h5 class="fw-bold">{{ card.title }}</h5>
+                    <p class="text-muted mb-0">{{ card.description }}</p>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- توزيع المراحل -->
+    <div class="col-lg-6">
+        <div class="content-panel">
+            <div class="content-panel-header">
+                <h5>
+                    <i class="fas fa-layer-group me-2 text-info"></i>
+                    توزيع الطلاب حسب المراحل
+                </h5>
+            </div>
+
+            <div class="content-panel-body p-0">
+                <div class="table-responsive">
+                    <table class="table dashboard-table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>المرحلة</th>
+                                <th>عدد الطلاب</th>
+                                <th>النسبة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for level in education_levels_stats %}
+                            <tr>
+                                <td><strong>{{ level.name }}</strong></td>
+                                <td>{{ level.student_count }}</td>
+                                <td>
+                                    {% if total_students > 0 %}
+                                        {% widthratio level.student_count total_students 100 %}%
+                                    {% else %}
+                                        0%
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-muted py-4">لا توجد بيانات مراحل</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- توزيع الصفوف -->
+    <div class="col-lg-6">
+        <div class="content-panel">
+            <div class="content-panel-header">
+                <h5>
+                    <i class="fas fa-school me-2 text-success"></i>
+                    توزيع الطلاب حسب الصفوف
+                </h5>
+            </div>
+
+            <div class="content-panel-body p-0">
+                <div class="table-responsive">
+                    <table class="table dashboard-table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>المرحلة</th>
+                                <th>الصف</th>
+                                <th>طلاب</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for grade in grade_levels_stats %}
+                            <tr>
+                                <td>
+                                    {% if grade.education_level %}
+                                        {{ grade.education_level.name }}
+                                    {% else %}
+                                        غير محدد
+                                    {% endif %}
+                                </td>
+                                <td><strong>{{ grade.name }}</strong></td>
+                                <td>{{ grade.student_count }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-muted py-4">لا توجد بيانات صفوف</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- آخر المدفوعات -->
+<div class="content-panel">
+    <div class="content-panel-header">
+        <h5>
+            <i class="fas fa-clock me-2 text-success"></i>
+            آخر المدفوعات
+        </h5>
+    </div>
+
+    <div class="content-panel-body p-0">
+        <div class="table-responsive">
+            <table class="table dashboard-table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>الطالب</th>
+                        <th>الصف</th>
+                        <th>نوع المصروف</th>
+                        <th>المبلغ</th>
+                        <th>التاريخ</th>
+                        <th>المحاسب</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for payment in recent_payments %}
+                    <tr>
+                        <td class="student-name-cell">
+                            <strong>{{ payment.student.name }}</strong>
+                            <br>
+                            <small class="text-muted">{{ payment.student.national_number|default:"-" }}</small>
+                        </td>
+
+                        <td>
+                            {% if payment.student.grade_level %}
+                                {{ payment.student.grade_level.name }}
+                            {% else %}
+                                غير محدد
+                            {% endif %}
+                        </td>
+
+                        <td>{{ payment.get_fee_type_display }}</td>
+
+                        <td class="text-success fw-bold">{{ payment.amount_paid|floatformat:2 }}</td>
+
+                        <td>
+                            {{ payment.payment_date|date:"Y/m/d" }}
+                            <br>
+                            <small>{{ payment.payment_date|date:"H:i" }}</small>
+                        </td>
+
+                        <td>{{ payment.payment_user|default:"-" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-muted py-4">لا توجد مدفوعات حديثة</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- الخزنة لو موجودة -->
+{% if treasury_stats.available %}
+<div class="content-panel">
+    <div class="content-panel-header">
+        <h5>
+            <i class="fas fa-vault me-2 text-warning"></i>
+            ملخص الخزنة
+        </h5>
+    </div>
+
+    <div class="content-panel-body">
+        <div class="row">
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="main-stat-card success">
+                    <div class="main-stat-value text-success">{{ treasury_stats.today_income|floatformat:2 }}</div>
+                    <div class="main-stat-label">دخل اليوم</div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="main-stat-card danger">
+                    <div class="main-stat-value text-danger">{{ treasury_stats.today_expense|floatformat:2 }}</div>
+                    <div class="main-stat-label">مصروف اليوم</div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="main-stat-card success">
+                    <div class="main-stat-value text-success">{{ treasury_stats.month_income|floatformat:2 }}</div>
+                    <div class="main-stat-label">دخل الشهر</div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="main-stat-card info">
+                    <div class="main-stat-value text-info">{{ treasury_stats.balance|floatformat:2 }}</div>
+                    <div class="main-stat-label">صافي الشهر</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

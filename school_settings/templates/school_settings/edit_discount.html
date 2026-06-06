@@ -505,6 +505,31 @@
                             <textarea class="form-control form-control-custom" name="description" id="discountDescription"
                                       rows="3">{{ discount.description }}</textarea>
                         </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-bullseye me-2"></i>
+                                نطاق تطبيق الخصم <span class="required-asterisk">*</span>
+                            </label>
+
+                            <select class="form-select form-select-custom"
+                                    name="application_scope"
+                                    id="applicationScope"
+                                    required>
+                                {% for value, label in discount_scopes %}
+                                <option value="{{ value }}" {% if discount.application_scope == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+
+                            <div class="help-text">
+                                <i class="fas fa-info-circle help-icon"></i>
+                                <small>
+                                    يحدد هل الخصم يطبق على إجمالي المصروفات، أو على كل قسط، أو على إجمالي نوع مصروف معين.
+                                </small>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -538,7 +563,7 @@
                             </label>
                             <div class="input-group">
                                 <input type="number" class="form-control form-control-custom" name="percentage_value" 
-                                       id="percentageValue" value="{{ discount.percentage_value }}" 
+                                       id="percentageValue" value="{% if discount.percentage_value %}{{ discount.percentage_value }}{% endif %}" 
                                        min="0" max="100" step="0.01">
                                 <span class="input-group-text">%</span>
                             </div>
@@ -550,7 +575,7 @@
                             </label>
                             <div class="input-group">
                                 <input type="number" class="form-control form-control-custom" name="fixed_amount" 
-                                       id="fixedAmount" value="{{ discount.fixed_amount }}" 
+                                       id="fixedAmount" value="{% if discount.fixed_amount %}{{ discount.fixed_amount }}{% endif %}" 
                                        min="0" step="0.01">
                                 <span class="input-group-text">ج.م</span>
                             </div>
@@ -562,13 +587,29 @@
                             </label>
                             <div class="input-group">
                                 <input type="number" class="form-control form-control-custom" name="max_discount_amount" 
-                                       id="maxDiscount" value="{{ discount.max_discount_amount }}" 
+                                       id="maxDiscount" value="{% if discount.max_discount_amount %}{{ discount.max_discount_amount }}{% endif %}" 
                                        min="0" step="0.01">
                                 <span class="input-group-text">ج.م</span>
                             </div>
                             <div class="help-text">
                                 <i class="fas fa-info-circle help-icon"></i>
                                 <small>اختياري - لتحديد سقف أقصى للخصم</small>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-coins me-2"></i>الحد الأدنى للمبلغ
+                            </label>
+                            <div class="input-group">
+                                <input type="number" class="form-control form-control-custom" name="min_payment_amount"
+                                       id="minPaymentAmount" value="{% if discount.min_payment_amount %}{{ discount.min_payment_amount }}{% endif %}"
+                                       min="0" step="0.01">
+                                <span class="input-group-text">ج.م</span>
+                            </div>
+                            <div class="help-text">
+                                <i class="fas fa-info-circle help-icon"></i>
+                                <small>لا يطبق الخصم إذا كان المبلغ أقل من هذه القيمة. اتركه فارغاً إذا لا يوجد حد أدنى.</small>
                             </div>
                         </div>
                     </div>
@@ -690,6 +731,13 @@
             <div class="preview-section">
                 <h6>إعدادات الخصم</h6>
                 <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>نطاق التطبيق:</span>
+                    <span class="badge-custom badge-active" id="previewScope">
+                        {{ discount.get_application_scope_display }}
+                    </span>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-2">
                     <span>يتطلب موافقة:</span>
                     <span class="badge-custom {% if discount.requires_approval %}badge-pending{% else %}badge-inactive{% endif %}" id="previewApproval">
                         {% if discount.requires_approval %}نعم{% else %}لا{% endif %}
@@ -705,6 +753,12 @@
                     <span>الحد الأقصى:</span>
                     <span id="previewMaxDiscount">
                         {% if discount.max_discount_amount %}{{ discount.max_discount_amount }} ج.م{% else %}غير محدد{% endif %}
+                    </span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                    <span>الحد الأدنى:</span>
+                    <span id="previewMinPaymentAmount">
+                        {% if discount.min_payment_amount %}{{ discount.min_payment_amount }} ج.م{% else %}غير محدد{% endif %}
                     </span>
                 </div>
             </div>
@@ -850,6 +904,14 @@ function updatePreview() {
     const categorySelect = document.getElementById('discountCategory');
     const categoryText = categorySelect.options[categorySelect.selectedIndex]?.text || '{{ discount.get_category_display }}';
     document.getElementById('previewCategory').textContent = categoryText;
+
+    // تحديث نطاق تطبيق الخصم
+    const scopeSelect = document.getElementById('applicationScope');
+    const scopeBadge = document.getElementById('previewScope');
+    if (scopeSelect && scopeBadge) {
+        const scopeText = scopeSelect.options[scopeSelect.selectedIndex]?.text || '{{ discount.get_application_scope_display }}';
+        scopeBadge.textContent = scopeText;
+    }
     
     // تحديث الأفاتار والقيمة
     const discountType = document.getElementById('discountType').value;
@@ -868,6 +930,7 @@ function updatePreview() {
     const requiresApproval = document.getElementById('requiresApproval').checked;
     const isActive = document.getElementById('isActive').checked;
     const maxDiscount = document.getElementById('maxDiscount').value;
+    const minPaymentAmount = document.getElementById('minPaymentAmount') ? document.getElementById('minPaymentAmount').value : '';
     
     const approvalBadge = document.getElementById('previewApproval');
     const statusBadge = document.getElementById('previewStatus');
@@ -889,6 +952,10 @@ function updatePreview() {
     }
     
     document.getElementById('previewMaxDiscount').textContent = maxDiscount ? maxDiscount + ' ج.م' : 'غير محدد';
+    const minPreview = document.getElementById('previewMinPaymentAmount');
+    if (minPreview) {
+        minPreview.textContent = minPaymentAmount ? minPaymentAmount + ' ج.م' : 'غير محدد';
+    }
     
     // تحديث التواريخ
     const validFrom = document.getElementById('validFrom').value;
@@ -905,7 +972,7 @@ function formatDate(dateString) {
 
 function setupFormPreview() {
     // ربط أحداث التحديث
-    ['discountName', 'discountCategory', 'percentageValue', 'fixedAmount', 'maxDiscount', 'validFrom', 'validTo', 'requiresApproval', 'isActive'].forEach(id => {
+    ['discountName', 'discountCategory', 'applicationScope', 'percentageValue', 'fixedAmount', 'maxDiscount', 'minPaymentAmount', 'validFrom', 'validTo', 'requiresApproval', 'isActive'].forEach(id => {
         const element = document.getElementById(id);
         if (element) {
             if (element.type === 'checkbox') {
@@ -924,6 +991,7 @@ function setupFormEvents() {
         // التحقق من البيانات
         const name = document.getElementById('discountName').value.trim();
         const discountType = document.getElementById('discountType').value;
+        const applicationScope = document.getElementById('applicationScope').value;
         const validFrom = document.getElementById('validFrom').value;
         const validTo = document.getElementById('validTo').value;
         
@@ -934,6 +1002,12 @@ function setupFormEvents() {
             return false;
         }
         
+        if (!applicationScope) {
+            e.preventDefault();
+            showMessage('error', 'نطاق تطبيق الخصم مطلوب');
+            return false;
+        }
+
         // التحقق من قيمة الخصم حسب النوع
         if (discountType === 'PERCENTAGE') {
             const percentage = document.getElementById('percentageValue').value;

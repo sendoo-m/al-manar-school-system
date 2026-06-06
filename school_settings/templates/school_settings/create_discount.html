@@ -466,6 +466,29 @@
                             <textarea class="form-control form-control-custom" name="description" id="discountDescription"
                                       rows="3" placeholder="وصف مختصر للخصم وشروط تطبيقه..."></textarea>
                         </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-bullseye me-2"></i>نطاق تطبيق الخصم <span class="required-asterisk">*</span>
+                            </label>
+                            <select class="form-select form-select-custom"
+                                    name="application_scope"
+                                    id="applicationScope"
+                                    required
+                                    onchange="updatePreview()">
+                                {% for value, label in discount_scopes %}
+                                <option value="{{ value }}" {% if value == 'PER_INSTALLMENT' %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="help-text">
+                                <i class="fas fa-info-circle help-icon"></i>
+                                <small>
+                                    اختر هل الخصم يطبق على كل قسط، أم على إجمالي مصروفات الطالب، أم على إجمالي نوع مصروف معين.
+                                </small>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -480,12 +503,12 @@
                     
                     <!-- تبويبات نوع الخصم -->
                     <div class="discount-type-tabs">
-                        <div class="discount-tab" onclick="selectDiscountType('PERCENTAGE')">
+                        <div class="discount-tab" onclick="selectDiscountType('PERCENTAGE', this)">
                             <i class="fas fa-percentage me-2"></i>
                             <strong>نسبة مئوية</strong>
                             <div class="small text-muted">خصم بنسبة من المبلغ</div>
                         </div>
-                        <div class="discount-tab" onclick="selectDiscountType('FIXED_AMOUNT')">
+                        <div class="discount-tab" onclick="selectDiscountType('FIXED_AMOUNT', this)">
                             <i class="fas fa-money-bill me-2"></i>
                             <strong>مبلغ ثابت</strong>
                             <div class="small text-muted">خصم بمبلغ محدد</div>
@@ -523,6 +546,19 @@
                             <div class="help-text">
                                 <i class="fas fa-info-circle help-icon"></i>
                                 <small>اتركه فارغاً لعدم التحديد</small>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">الحد الأدنى للمبلغ لتطبيق الخصم</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control form-control-custom" name="min_payment_amount"
+                                       id="minPaymentAmount" min="0" step="0.01" onchange="updatePreview()">
+                                <span class="input-group-text">ج.م</span>
+                            </div>
+                            <div class="help-text">
+                                <i class="fas fa-info-circle help-icon"></i>
+                                <small>اتركه فارغاً لو الخصم يطبق على أي مبلغ</small>
                             </div>
                         </div>
                     </div>
@@ -646,6 +682,10 @@
             <div class="preview-section">
                 <h6>إعدادات الخصم</h6>
                 <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>نطاق التطبيق:</span>
+                    <span class="badge-custom badge-active" id="previewScope">على كل قسط</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
                     <span>يتطلب موافقة:</span>
                     <span class="badge-custom badge-inactive" id="previewApproval">لا</span>
                 </div>
@@ -714,17 +754,23 @@ document.addEventListener('DOMContentLoaded', function() {
     setupFormPreview();
     setupFormEvents();
     setDefaultDates();
+    selectDiscountType('PERCENTAGE');
     updatePreview();
 });
 
-function selectDiscountType(type) {
+function selectDiscountType(type, clickedTab = null) {
     // إزالة active من جميع التبويبات
     document.querySelectorAll('.discount-tab').forEach(tab => {
         tab.classList.remove('active');
     });
     
     // إضافة active للتبويب المحدد
-    event.target.closest('.discount-tab').classList.add('active');
+    if (clickedTab) {
+        clickedTab.classList.add('active');
+    } else {
+        const targetTab = document.querySelector(`.discount-tab[onclick*="${type}"]`);
+        if (targetTab) targetTab.classList.add('active');
+    }
     
     // تحديث نوع الخصم
     document.getElementById('discountType').value = type;
@@ -760,6 +806,14 @@ function updatePreview() {
     const categorySelect = document.getElementById('discountCategory');
     const categoryText = categorySelect.options[categorySelect.selectedIndex]?.text || 'فئة الخصم';
     document.getElementById('previewCategory').textContent = categoryText;
+    
+    // تحديث نطاق تطبيق الخصم
+    const scopeSelect = document.getElementById('applicationScope');
+    const scopeBadge = document.getElementById('previewScope');
+    if (scopeSelect && scopeBadge) {
+        const scopeText = scopeSelect.options[scopeSelect.selectedIndex]?.text || 'على كل قسط';
+        scopeBadge.textContent = scopeText;
+    }
     
     // تحديث الأفاتار والقيمة
     const discountType = document.getElementById('discountType').value;
@@ -822,10 +876,17 @@ function calculateDiscount() {
     const percentageValue = parseFloat(document.getElementById('percentageValue').value) || 0;
     const fixedAmount = parseFloat(document.getElementById('fixedAmount').value) || 0;
     const maxDiscount = parseFloat(document.getElementById('maxDiscount').value) || 0;
+    const minPaymentAmountElement = document.getElementById('minPaymentAmount');
+    const minPaymentAmount = minPaymentAmountElement ? (parseFloat(minPaymentAmountElement.value) || 0) : 0;
     
     let calculatedDiscount = 0;
     
     if (testAmount > 0) {
+        if (minPaymentAmount > 0 && testAmount < minPaymentAmount) {
+            document.getElementById('calculatedDiscount').textContent = '0.00 ج.م';
+            return;
+        }
+
         if (discountType === 'PERCENTAGE') {
             calculatedDiscount = testAmount * (percentageValue / 100);
         } else if (discountType === 'FIXED_AMOUNT') {
@@ -862,6 +923,7 @@ function setupFormEvents() {
         const name = document.getElementById('discountName').value.trim();
         const category = document.getElementById('discountCategory').value;
         const discountType = document.getElementById('discountType').value;
+        const applicationScope = document.getElementById('applicationScope').value;
         const validFrom = document.getElementById('validFrom').value;
         const validTo = document.getElementById('validTo').value;
         
@@ -881,6 +943,12 @@ function setupFormEvents() {
         if (!discountType) {
             e.preventDefault();
             showMessage('error', 'نوع الخصم مطلوب');
+            return false;
+        }
+        
+        if (!applicationScope) {
+            e.preventDefault();
+            showMessage('error', 'نطاق تطبيق الخصم مطلوب');
             return false;
         }
         
@@ -947,7 +1015,7 @@ function setupFormEvents() {
 
 function setupFormPreview() {
     // ربط أحداث التحديث
-    ['discountName', 'discountCategory', 'percentageValue', 'fixedAmount', 'maxDiscount', 'validFrom', 'validTo', 'requiresApproval', 'isActive'].forEach(id => {
+    ['discountName', 'discountCategory', 'applicationScope', 'percentageValue', 'fixedAmount', 'maxDiscount', 'minPaymentAmount', 'validFrom', 'validTo', 'requiresApproval', 'isActive'].forEach(id => {
         const element = document.getElementById(id);
         if (element) {
             if (element.type === 'checkbox') {

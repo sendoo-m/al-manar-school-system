@@ -14,6 +14,17 @@
     <a href="{% url 'school_settings:create_discount' %}" class="btn btn-primary-custom btn-custom">
         <i class="fas fa-plus me-2"></i>إضافة خصم جديد
     </a>
+
+    <a href="{% url 'school_settings:apply_discount_to_student' %}" class="btn btn-success btn-custom">
+        <i class="fas fa-user-tag me-2"></i>
+        تطبيق خصم على طالب
+    </a>
+
+<a href="{% url 'school_settings:discount_requests_list' %}" class="btn btn-warning btn-custom">
+    <i class="fas fa-clipboard-check me-2"></i>
+    طلبات الخصومات
+</a>
+
     <div class="btn-group ms-2">
         <button class="view-toggle-btn active" onclick="switchView('cards')" id="cardsViewBtn">
             <i class="fas fa-th-large me-1"></i>البطاقات
@@ -849,7 +860,7 @@
     
     <form method="GET">
         <div class="row g-3">
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-2 col-md-6">
                 <label class="form-label fw-bold">فئة الخصم</label>
                 <select class="form-select filter-input" name="category">
                     <option value="">جميع الفئات</option>
@@ -860,8 +871,8 @@
                     {% endfor %}
                 </select>
             </div>
-            
-            <div class="col-lg-3 col-md-6">
+
+            <div class="col-lg-2 col-md-6">
                 <label class="form-label fw-bold">نوع الخصم</label>
                 <select class="form-select filter-input" name="discount_type">
                     <option value="">جميع الأنواع</option>
@@ -872,8 +883,20 @@
                     {% endfor %}
                 </select>
             </div>
-            
+
             <div class="col-lg-3 col-md-6">
+                <label class="form-label fw-bold">نطاق التطبيق</label>
+                <select class="form-select filter-input" name="application_scope">
+                    <option value="">جميع النطاقات</option>
+                    {% for value, display in discount_scope_choices %}
+                    <option value="{{ value }}" {% if value == scope_filter %}selected{% endif %}>
+                        {{ display }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-lg-2 col-md-6">
                 <label class="form-label fw-bold">حالة الخصم</label>
                 <select class="form-select filter-input" name="is_active">
                     <option value="">جميع الحالات</option>
@@ -881,13 +904,14 @@
                     <option value="false" {% if is_active_filter == 'false' %}selected{% endif %}>غير نشط</option>
                 </select>
             </div>
-            
-            <div class="col-lg-3 col-md-6">
+
+            <div class="col-lg-3 col-md-12">
                 <label class="form-label fw-bold">إجراءات البحث</label>
                 <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary-custom btn-custom flex-fill btn-sm"> <!-- تقليل حجم الزر -->
+                    <button type="submit" class="btn btn-primary-custom btn-custom flex-fill btn-sm">
                         <i class="fas fa-search me-2"></i>بحث
                     </button>
+
                     <a href="{% url 'school_settings:discounts_list' %}" class="btn btn-outline-secondary btn-custom btn-sm">
                         <i class="fas fa-times"></i>
                     </a>
@@ -939,6 +963,10 @@
                         <i class="fas fa-pause-circle me-1"></i>غير نشط
                     </span>
                     {% endif %}
+                    <span class="discount-badge inactive" style="border-color: #0d6efd; color: #0d6efd;">
+                        <i class="fas fa-bullseye me-1"></i>
+                        نطاق
+                    </span>
                 </div>
             </div>
             
@@ -957,6 +985,13 @@
                     خصم مبلغ ثابت
                     {% endif %}
                 </div>
+
+                <div class="value-limits" style="background: rgba(13, 110, 253, 0.08); color: #0d6efd;">
+                    <i class="fas fa-bullseye me-1"></i>
+                    {{ discount.scope_display|default:discount.get_application_scope_display }}
+                </div>
+
+
                 {% if discount.max_discount_amount %}
                 <div class="value-limits">
                     <i class="fas fa-info-circle me-1"></i>الحد الأقصى: {{ discount.max_discount_amount|floatformat:0 }} ج.م
@@ -1029,6 +1064,8 @@
             <i class="fas fa-plus me-2"></i>إضافة أول خصم
         </a>
         
+
+
         <!-- أمثلة أنواع الخصومات -->
         <div class="row justify-content-center">
             <div class="col-md-3 mb-2"> <!-- تقليل margin -->
@@ -1098,14 +1135,15 @@
             <table class="table modern-table">
                 <thead>
                     <tr>
-                        <th style="width: 20%">اسم الخصم</th>
-                        <th style="width: 12%">الفئة</th>
+                        <th style="width: 18%">اسم الخصم</th>
+                        <th style="width: 11%">الفئة</th>
                         <th style="width: 10%">النوع</th>
-                        <th style="width: 12%">القيمة</th>
-                        <th style="width: 13%">صالح حتى</th>
-                        <th style="width: 10%">المطبق</th>
-                        <th style="width: 8%">الحالة</th>
-                        <th style="width: 15%" class="text-center">الإجراءات</th>
+                        <th style="width: 12%">نطاق التطبيق</th>
+                        <th style="width: 11%">القيمة</th>
+                        <th style="width: 12%">صالح حتى</th>
+                        <th style="width: 9%">المطبق</th>
+                        <th style="width: 7%">الحالة</th>
+                        <th style="width: 10%" class="text-center">الإجراءات</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1147,6 +1185,11 @@
                             {% else %}
                             <span class="badge bg-primary px-2 py-1">مبلغ ثابت</span>
                             {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary px-2 py-1">
+                                {{ discount.scope_display|default:discount.get_application_scope_display }}
+                            </span>
                         </td>
                         <td>
                             <strong class="fs-6" style="color: #fd7e14;"> <!-- تقليل الخط -->

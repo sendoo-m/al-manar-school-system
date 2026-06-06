@@ -86,4 +86,6 @@ urlpatterns = [
     path('export/pdf/', views.export_payments_pdf, name='export_payments_pdf'),
     path('export/csv/', views.export_payments, name='export_payments_csv'),
     path('print-report/', views.print_payments_report, name='print_payments_report'),
+    path('student/<int:student_id>/request-discount/', views.request_student_discount, name='request_student_discount'),
+    
 ]

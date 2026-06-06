@@ -180,9 +180,8 @@ def admin_dashboard(request):
 @login_required
 @school_manager_required
 def manager_dashboard(request):
-    """لوحة تحكم مدير المدرسة"""
-    context = get_common_context(request)
-    return render(request, 'home/manager_dashboard.html', context)
+    """لوحة تحكم مدير المدرسة - تحويل إلى مركز التقارير"""
+    return redirect('report:reports_home')
 
 @never_cache
 @login_required
@@ -1013,11 +1012,13 @@ def get_suggested_actions(role):
     actions = {
         'SYSTEM_ADMIN': [
             {'name': 'لوحة التحكم الإدارية', 'url': '/admin/', 'icon': 'fas fa-cogs'},
-            {'name': 'إدارة المستخدمين', 'url': '#', 'icon': 'fas fa-users'},
+            {'name': 'إدارة المستخدمين', 'url': '/home/users/', 'icon': 'fas fa-users'},
+            {'name': 'مركز التقارير', 'url': '/report/', 'icon': 'fas fa-chart-line'},
         ],
         'SCHOOL_MANAGER': [
-            {'name': 'التقارير الإدارية', 'url': '#', 'icon': 'fas fa-chart-bar'},
-            {'name': 'إعدادات المدرسة', 'url': '#', 'icon': 'fas fa-school'},
+            {'name': 'مركز التقارير', 'url': '/report/', 'icon': 'fas fa-chart-bar'},
+            {'name': 'التقرير المالي', 'url': '/report/financial/', 'icon': 'fas fa-money-bill-wave'},
+            {'name': 'قائمة الطلاب', 'url': '/report/student-list/', 'icon': 'fas fa-users'},
         ],
         'ACCOUNTANT': [
             {'name': 'نظام المدفوعات', 'url': '/payments/', 'icon': 'fas fa-money-bill'},
@@ -1276,7 +1277,7 @@ from .decorators import get_user_role
 def get_dashboard_url_for_role(role):
     role_urls = {
         'SYSTEM_ADMIN': reverse_lazy('home:admin_dashboard'),
-        'SCHOOL_MANAGER': reverse_lazy('home:manager_dashboard'),
+        'SCHOOL_MANAGER': reverse_lazy('report:reports_home'),
         'ACCOUNTANT': reverse_lazy('home:accountant_dashboard'),
         'STUDENT_AFFAIRS': reverse_lazy('home:student_affairs_dashboard'),
         'BOOKS_INVENTORY': reverse_lazy('home:books_inventory_dashboard'),
@@ -1291,13 +1292,3 @@ def get_dashboard_url_for_role(role):
         'TREASURY_VIEWER': reverse_lazy('home:accountant_dashboard'),
     }
     return role_urls.get(role, reverse_lazy('home:default_dashboard'))
-
-
-# داخل CustomLoginView:
-# def get_success_url(self):
-#     if self.request.user.is_superuser:
-#         return reverse_lazy('home:admin_dashboard')
-#     return get_dashboard_url_for_role(get_user_role(self.request.user))
-
-
-

@@ -44,6 +44,11 @@ urlpatterns = [
     path('delete-discount/<int:pk>/', views.delete_discount, name='delete_discount'),
     path('apply-discount/<int:student_id>/<int:discount_id>/', views.apply_discount_to_student, name='apply_discount_to_student'),
     path('calculate-discount/<int:student_id>/<int:discount_id>/', views.calculate_student_discount, name='calculate_student_discount'),
+    path('discounts/apply-to-student/', views.apply_discount_to_student, name='apply_discount_to_student'),  
+    path('discounts/ajax-student-search/', views.ajax_student_search_for_discount, name='ajax_student_search_for_discount'),
+    path('discounts/requests/', views.discount_requests_list, name='discount_requests_list'),
+    path('discounts/requests/<int:discount_id>/approve/', views.approve_student_discount, name='approve_student_discount'),
+    path('discounts/requests/<int:discount_id>/reject/', views.reject_student_discount, name='reject_student_discount'),
 
     # الإعدادات العامة للنظام
     path('system/', views.system_settings, name='system_settings'),
@@ -76,4 +81,6 @@ urlpatterns = [
     # APIs للأعوام الدراسية
     path('api/academic-year-details/<int:year_id>/', views.academic_year_details_api, name='academic_year_details_api'),
     path('api/set-current-year/<int:year_id>/', views.set_current_year_api, name='set_current_year_api'),
+
+
 ]

@@ -1,14 +1,14 @@
 {% extends 'report/base.html' %}
 {% load humanize %}
 
-{% block title %}التقرير اليومي الموحد{% endblock %}
-{% block page_title %}التقرير اليومي الموحد{% endblock %}
-{% block page_subtitle %}ملخص يومي شامل للطلاب والمدفوعات والخزنة{% endblock %}
-{% block page_icon %}<i class="fas fa-calendar-day me-3"></i>{% endblock %}
+{% block title %}التقرير الشهري الموحد{% endblock %}
+{% block page_title %}التقرير الشهري الموحد{% endblock %}
+{% block page_subtitle %}ملخص شهري شامل للطلاب والمدفوعات والخزنة{% endblock %}
+{% block page_icon %}<i class="fas fa-calendar-alt me-3"></i>{% endblock %}
 
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'report:reports_home' %}">مركز التقارير</a></li>
-<li class="breadcrumb-item active">التقرير اليومي</li>
+<li class="breadcrumb-item active">التقرير الشهري</li>
 {% endblock %}
 
 {% block page_actions %}
@@ -17,8 +17,8 @@
         <i class="fas fa-arrow-right me-1"></i>مركز التقارير
     </a>
 
-    <a href="{% url 'payments:daily_report' %}?date={{ target_date|date:'Y-m-d' }}" class="btn btn-outline-success btn-custom">
-        <i class="fas fa-money-bill-wave me-1"></i>يومي المدفوعات
+    <a href="{% url 'payments:monthly_report' %}?month={{ month }}&year={{ year }}" class="btn btn-outline-success btn-custom">
+        <i class="fas fa-money-bill-wave me-1"></i>شهري المدفوعات
     </a>
 
     <button type="button" onclick="window.print()" class="btn btn-outline-secondary btn-custom">
@@ -29,16 +29,16 @@
 
 {% block extra_css %}
 <style>
-    .daily-hero {
-        background: linear-gradient(135deg, #0d6efd, #0dcaf0);
+    .monthly-hero {
+        background: linear-gradient(135deg, #6f42c1, #0d6efd);
         color: white;
         border-radius: 24px;
         padding: 32px;
         margin-bottom: 26px;
-        box-shadow: 0 10px 28px rgba(13, 110, 253, 0.25);
+        box-shadow: 0 10px 28px rgba(111, 66, 193, 0.25);
     }
 
-    .daily-hero h2 {
+    .monthly-hero h2 {
         font-weight: 900;
         margin-bottom: 8px;
     }
@@ -57,7 +57,7 @@
         padding: 22px;
         height: 100%;
         box-shadow: 0 5px 16px rgba(0,0,0,0.08);
-        border-top: 5px solid #0d6efd;
+        border-top: 5px solid #6f42c1;
         text-align: center;
         transition: 0.25s ease;
     }
@@ -110,7 +110,7 @@
     }
 
     .report-table thead th {
-        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+        background: linear-gradient(135deg, #6f42c1, #0d6efd);
         color: white;
         border: none;
         text-align: center;
@@ -128,19 +128,20 @@
     }
 
     .method-box,
-    .collector-box {
+    .collector-box,
+    .day-box {
         background: #f8f9fa;
         border-radius: 14px;
         padding: 14px;
         margin-bottom: 10px;
-        border-right: 5px solid #0d6efd;
+        border-right: 5px solid #6f42c1;
     }
 
     @media print {
         .page-actions,
         .breadcrumb,
         .breadcrumb-nav,
-        .daily-hero,
+        .monthly-hero,
         .filter-card,
         .btn {
             display: none !important;
@@ -157,44 +158,58 @@
 
 {% block content %}
 
-<div class="daily-hero">
+<div class="monthly-hero">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
         <div>
             <h2>
-                <i class="fas fa-calendar-day me-2"></i>
-                التقرير اليومي الموحد
+                <i class="fas fa-calendar-alt me-2"></i>
+                التقرير الشهري الموحد
             </h2>
             <p class="mb-0">
-                متابعة نشاط اليوم من الطلاب والمدفوعات والخزنة.
+                ملخص شهر {{ month_name }} {{ year }} للطلاب والمدفوعات والخزنة.
             </p>
         </div>
 
         <div class="text-lg-end">
-            <div><strong>تاريخ التقرير:</strong> {{ target_date|date:"Y/m/d" }}</div>
-            <div><strong>تاريخ اليوم:</strong> {{ today|date:"Y/m/d" }}</div>
+            <div><strong>من:</strong> {{ month_start|date:"Y/m/d" }}</div>
+            <div><strong>إلى:</strong> {{ month_end|date:"Y/m/d" }}</div>
         </div>
     </div>
 </div>
 
-<!-- فلتر التاريخ -->
+<!-- فلتر الشهر -->
 <div class="filter-card">
     <form method="get" class="row g-3 align-items-end">
-        <div class="col-lg-4 col-md-6">
-            <label class="form-label fw-bold">تاريخ التقرير</label>
-            <input type="date"
-                   name="date"
-                   class="form-control"
-                   value="{{ target_date|date:'Y-m-d' }}">
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label fw-bold">الشهر</label>
+            <select name="month" class="form-control">
+                {% for num, name in months %}
+                <option value="{{ num }}" {% if month == num %}selected{% endif %}>
+                    {{ name }}
+                </option>
+                {% endfor %}
+            </select>
         </div>
 
-        <div class="col-lg-4 col-md-6">
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label fw-bold">السنة</label>
+            <select name="year" class="form-control">
+                {% for item_year in years %}
+                <option value="{{ item_year }}" {% if year == item_year %}selected{% endif %}>
+                    {{ item_year }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-lg-4 col-md-12">
             <button type="submit" class="btn btn-primary">
                 <i class="fas fa-search me-1"></i>
                 عرض التقرير
             </button>
 
-            <a href="{% url 'report:daily_report' %}" class="btn btn-outline-secondary">
-                اليوم
+            <a href="{% url 'report:monthly_report' %}" class="btn btn-outline-secondary">
+                الشهر الحالي
             </a>
         </div>
     </form>
@@ -212,23 +227,23 @@
     <div class="col-xl-3 col-lg-6 mb-3">
         <div class="stat-card info">
             <div class="stat-value text-info">{{ new_students_count }}</div>
-            <div class="stat-label">طلاب مضافون في هذا اليوم</div>
+            <div class="stat-label">طلاب مضافون خلال الشهر</div>
         </div>
     </div>
 
     <div class="col-xl-3 col-lg-6 mb-3">
         <div class="stat-card success">
-            <div class="stat-value text-success">{{ payments_stats.today_amount|floatformat:2 }}</div>
-            <div class="stat-label">تحصيل اليوم</div>
-            <small class="text-muted">{{ payments_stats.today_count }} عملية</small>
+            <div class="stat-value text-success">{{ payments_stats.month_amount|floatformat:2 }}</div>
+            <div class="stat-label">تحصيل الشهر</div>
+            <small class="text-muted">{{ payments_stats.month_count }} عملية</small>
         </div>
     </div>
 
     <div class="col-xl-3 col-lg-6 mb-3">
         <div class="stat-card danger">
-            <div class="stat-value text-danger">{{ payments_stats.overdue_today_amount|floatformat:2 }}</div>
-            <div class="stat-label">متأخرات حتى هذا اليوم</div>
-            <small class="text-muted">{{ payments_stats.overdue_today_count }} قسط</small>
+            <div class="stat-value text-danger">{{ payments_stats.overdue_amount|floatformat:2 }}</div>
+            <div class="stat-label">متأخرات حتى نهاية الشهر</div>
+            <small class="text-muted">{{ payments_stats.overdue_count }} قسط</small>
         </div>
     </div>
 </div>
@@ -252,14 +267,14 @@
     <div class="col-lg-3 col-md-6 mb-3">
         <div class="stat-card info">
             <div class="stat-value text-info">{{ payments_stats.avg_payment|floatformat:2 }}</div>
-            <div class="stat-label">متوسط دفعة اليوم</div>
+            <div class="stat-label">متوسط دفعة الشهر</div>
         </div>
     </div>
 
     <div class="col-lg-3 col-md-6 mb-3">
         <div class="stat-card success">
             <div class="stat-value text-success">{{ payments_stats.max_payment|floatformat:2 }}</div>
-            <div class="stat-label">أكبر دفعة اليوم</div>
+            <div class="stat-label">أكبر دفعة الشهر</div>
         </div>
     </div>
 </div>
@@ -271,7 +286,7 @@
             <div class="content-panel-header">
                 <h5>
                     <i class="fas fa-credit-card me-2 text-success"></i>
-                    طرق الدفع اليوم
+                    طرق الدفع خلال الشهر
                 </h5>
             </div>
 
@@ -294,7 +309,7 @@
                     </div>
                 </div>
                 {% empty %}
-                <div class="text-center text-muted py-4">لا توجد مدفوعات في هذا اليوم</div>
+                <div class="text-center text-muted py-4">لا توجد مدفوعات في هذا الشهر</div>
                 {% endfor %}
             </div>
         </div>
@@ -306,7 +321,7 @@
             <div class="content-panel-header">
                 <h5>
                     <i class="fas fa-user-tie me-2 text-primary"></i>
-                    أداء المحاسبين اليوم
+                    أداء المحاسبين خلال الشهر
                 </h5>
             </div>
 
@@ -323,19 +338,50 @@
                     </div>
                 </div>
                 {% empty %}
-                <div class="text-center text-muted py-4">لا توجد بيانات محاسبين في هذا اليوم</div>
+                <div class="text-center text-muted py-4">لا توجد بيانات محاسبين في هذا الشهر</div>
                 {% endfor %}
             </div>
         </div>
     </div>
 </div>
 
-<!-- مدفوعات اليوم -->
+<!-- ملخص الأيام -->
+<div class="content-panel">
+    <div class="content-panel-header">
+        <h5>
+            <i class="fas fa-chart-bar me-2 text-info"></i>
+            ملخص التحصيل حسب الأيام
+        </h5>
+    </div>
+
+    <div class="content-panel-body">
+        <div class="row">
+            {% for day in daily_payment_summary %}
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="day-box">
+                    <strong>{{ day.date|date:"Y/m/d" }}</strong>
+                    <br>
+                    <small class="text-muted">{{ day.count }} عملية</small>
+                    <div class="text-success fw-bold mt-2">
+                        {{ day.amount|floatformat:2 }} ج.م
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center text-muted py-4">
+                لا توجد مدفوعات موزعة على أيام في هذا الشهر
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- مدفوعات الشهر -->
 <div class="content-panel">
     <div class="content-panel-header">
         <h5>
             <i class="fas fa-money-bill-wave me-2 text-success"></i>
-            مدفوعات اليوم
+            آخر مدفوعات الشهر
         </h5>
     </div>
 
@@ -350,13 +396,13 @@
                         <th>القسط</th>
                         <th>المبلغ</th>
                         <th>طريقة الدفع</th>
-                        <th>الوقت</th>
+                        <th>التاريخ</th>
                         <th>المحاسب</th>
                     </tr>
                 </thead>
 
                 <tbody>
-                    {% for payment in today_payments %}
+                    {% for payment in month_payments %}
                     <tr>
                         <td class="student-cell">
                             <strong>{{ payment.student.name }}</strong>
@@ -376,12 +422,16 @@
                         <td>#{{ payment.installment_number }}</td>
                         <td class="text-success fw-bold">{{ payment.amount_paid|floatformat:2 }}</td>
                         <td>{{ payment.get_payment_method_display }}</td>
-                        <td>{{ payment.payment_date|date:"H:i" }}</td>
+                        <td>
+                            {{ payment.payment_date|date:"Y/m/d" }}
+                            <br>
+                            <small>{{ payment.payment_date|date:"H:i" }}</small>
+                        </td>
                         <td>{{ payment.payment_user|default:"-" }}</td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="text-muted py-4">لا توجد مدفوعات في هذا اليوم</td>
+                        <td colspan="8" class="text-muted py-4">لا توجد مدفوعات في هذا الشهر</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -390,12 +440,12 @@
     </div>
 </div>
 
-<!-- الطلاب المضافون اليوم -->
+<!-- الطلاب المضافون خلال الشهر -->
 <div class="content-panel">
     <div class="content-panel-header">
         <h5>
             <i class="fas fa-user-plus me-2 text-info"></i>
-            الطلاب المضافون في هذا اليوم
+            الطلاب المضافون خلال الشهر
         </h5>
     </div>
 
@@ -413,7 +463,7 @@
                 </thead>
 
                 <tbody>
-                    {% for student in new_students_today %}
+                    {% for student in new_students_month %}
                     <tr>
                         <td class="student-cell">
                             <strong>{{ student.name }}</strong>
@@ -449,11 +499,88 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="text-muted py-4">لا توجد إضافات طلاب في هذا اليوم</td>
+                        <td colspan="5" class="text-muted py-4">لا توجد إضافات طلاب في هذا الشهر</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+    </div>
+</div>
+
+<!-- توزيع الطلاب حسب المراحل -->
+<div class="row">
+    <div class="col-lg-6">
+        <div class="content-panel">
+            <div class="content-panel-header">
+                <h5>
+                    <i class="fas fa-layer-group me-2 text-primary"></i>
+                    توزيع الطلاب حسب المراحل
+                </h5>
+            </div>
+
+            <div class="content-panel-body p-0">
+                <table class="table report-table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>المرحلة</th>
+                            <th>عدد الطلاب</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for level in education_levels_stats %}
+                        <tr>
+                            <td><strong>{{ level.name }}</strong></td>
+                            <td>{{ level.student_count }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="2" class="text-muted py-4">لا توجد بيانات</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="content-panel">
+            <div class="content-panel-header">
+                <h5>
+                    <i class="fas fa-school me-2 text-success"></i>
+                    توزيع الطلاب حسب الصفوف
+                </h5>
+            </div>
+
+            <div class="content-panel-body p-0">
+                <table class="table report-table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>الصف</th>
+                            <th>عدد الطلاب</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for grade in grade_levels_stats %}
+                        <tr>
+                            <td>
+                                {% if grade.education_level %}
+                                    <small>{{ grade.education_level.name }}</small>
+                                    <br>
+                                {% endif %}
+                                <strong>{{ grade.name }}</strong>
+                            </td>
+                            <td>{{ grade.student_count }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="2" class="text-muted py-4">لا توجد بيانات</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -464,7 +591,7 @@
     <div class="content-panel-header">
         <h5>
             <i class="fas fa-vault me-2 text-warning"></i>
-            ملخص الخزنة في هذا اليوم
+            ملخص الخزنة خلال الشهر
         </h5>
     </div>
 
@@ -473,21 +600,21 @@
             <div class="col-lg-3 col-md-6 mb-3">
                 <div class="stat-card success">
                     <div class="stat-value text-success">{{ treasury_stats.income|floatformat:2 }}</div>
-                    <div class="stat-label">دخل اليوم</div>
+                    <div class="stat-label">دخل الشهر</div>
                 </div>
             </div>
 
             <div class="col-lg-3 col-md-6 mb-3">
                 <div class="stat-card danger">
                     <div class="stat-value text-danger">{{ treasury_stats.expense|floatformat:2 }}</div>
-                    <div class="stat-label">مصروف اليوم</div>
+                    <div class="stat-label">مصروف الشهر</div>
                 </div>
             </div>
 
             <div class="col-lg-3 col-md-6 mb-3">
                 <div class="stat-card info">
                     <div class="stat-value text-info">{{ treasury_stats.net|floatformat:2 }}</div>
-                    <div class="stat-label">صافي اليوم</div>
+                    <div class="stat-label">صافي الشهر</div>
                 </div>
             </div>
 

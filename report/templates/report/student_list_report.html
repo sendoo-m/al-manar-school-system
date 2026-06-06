@@ -1,0 +1,483 @@
+{% extends 'report/base.html' %}
+{% load humanize %}
+
+{% block title %}تقرير قائمة الطلاب{% endblock %}
+{% block page_title %}تقرير قائمة الطلاب{% endblock %}
+{% block page_subtitle %}قائمة تفصيلية للطلاب مع فلاتر متقدمة وطباعة وتصدير{% endblock %}
+{% block page_icon %}<i class="fas fa-users me-3"></i>{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'report:reports_home' %}">مركز التقارير</a></li>
+<li class="breadcrumb-item active">قائمة الطلاب</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'report:reports_home' %}" class="btn btn-outline-primary btn-custom">
+        <i class="fas fa-arrow-right me-1"></i>مركز التقارير
+    </a>
+
+    <a href="?{{ request.GET.urlencode }}{% if request.GET.urlencode %}&{% endif %}export=csv" class="btn btn-outline-success btn-custom">
+        <i class="fas fa-file-csv me-1"></i>تصدير CSV
+    </a>
+
+    <button type="button" onclick="window.print()" class="btn btn-outline-secondary btn-custom">
+        <i class="fas fa-print me-1"></i>طباعة
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .students-hero {
+        background: linear-gradient(135deg, #fd7e14, #ffc107);
+        color: white;
+        border-radius: 24px;
+        padding: 32px;
+        margin-bottom: 26px;
+        box-shadow: 0 10px 28px rgba(253, 126, 20, 0.25);
+    }
+
+    .students-hero h2 {
+        font-weight: 900;
+        margin-bottom: 8px;
+    }
+
+    .filter-card {
+        background: white;
+        border-radius: 18px;
+        padding: 22px;
+        box-shadow: 0 5px 16px rgba(0,0,0,0.08);
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 18px;
+        padding: 20px;
+        height: 100%;
+        box-shadow: 0 5px 16px rgba(0,0,0,0.08);
+        border-top: 5px solid #fd7e14;
+        text-align: center;
+        transition: 0.25s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+    }
+
+    .stat-card.primary { border-top-color: #0d6efd; }
+    .stat-card.success { border-top-color: #198754; }
+    .stat-card.warning { border-top-color: #ffc107; }
+    .stat-card.danger { border-top-color: #dc3545; }
+    .stat-card.info { border-top-color: #0dcaf0; }
+    .stat-card.dark { border-top-color: #212529; }
+
+    .stat-value {
+        font-size: 1.75rem;
+        font-weight: 900;
+        margin-bottom: 5px;
+    }
+
+    .stat-label {
+        color: #64748b;
+        font-weight: 800;
+        font-size: 0.9rem;
+    }
+
+    .content-panel {
+        background: white;
+        border-radius: 18px;
+        box-shadow: 0 5px 16px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+        overflow: hidden;
+    }
+
+    .content-panel-header {
+        background: #f8f9fa;
+        padding: 18px 22px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .content-panel-header h5 {
+        margin: 0;
+        font-weight: 900;
+    }
+
+    .report-table thead th {
+        background: linear-gradient(135deg, #fd7e14, #ffc107);
+        color: white;
+        border: none;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    .report-table td {
+        text-align: center;
+        vertical-align: middle;
+        font-size: 0.9rem;
+    }
+
+    .student-cell {
+        text-align: right !important;
+    }
+
+    .badge-financial {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 12px;
+        font-weight: 900;
+        font-size: 0.78rem;
+    }
+
+    @media print {
+        .page-actions,
+        .breadcrumb,
+        .breadcrumb-nav,
+        .students-hero,
+        .filter-card,
+        .btn {
+            display: none !important;
+        }
+
+        .stat-card,
+        .content-panel {
+            box-shadow: none !important;
+            border: 1px solid #ddd !important;
+        }
+
+        .report-table td,
+        .report-table th {
+            font-size: 8px !important;
+            padding: 4px !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="students-hero">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h2>
+                <i class="fas fa-users me-2"></i>
+                تقرير قائمة الطلاب
+            </h2>
+            <p class="mb-0">
+                تقرير تفصيلي قابل للفلترة والتصدير لجميع الطلاب النشطين.
+            </p>
+        </div>
+
+        <div class="text-lg-end">
+            <div><strong>تاريخ التقرير:</strong> {{ today|date:"Y/m/d" }}</div>
+            <div><strong>عدد النتائج:</strong> {{ summary.total_count }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- الفلاتر -->
+<div class="filter-card">
+    <form method="get" class="row g-3">
+        <div class="col-lg-4 col-md-6">
+            <label class="form-label fw-bold">البحث</label>
+            <input type="text"
+                   name="search"
+                   class="form-control"
+                   value="{{ search_query }}"
+                   placeholder="اسم الطالب، الرقم القومي، الهاتف، ولي الأمر">
+        </div>
+
+        <div class="col-lg-2 col-md-6">
+            <label class="form-label fw-bold">النوع</label>
+            <select name="gender" class="form-control">
+                <option value="">الكل</option>
+                <option value="M" {% if selected_gender == 'M' %}selected{% endif %}>ذكر</option>
+                <option value="F" {% if selected_gender == 'F' %}selected{% endif %}>أنثى</option>
+            </select>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label fw-bold">المرحلة</label>
+            <select name="education_level" class="form-control" id="educationLevelSelect">
+                <option value="">كل المراحل</option>
+                {% for level in education_levels %}
+                <option value="{{ level.id }}" {% if selected_education_level == level.id|stringformat:"s" %}selected{% endif %}>
+                    {{ level.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label fw-bold">الصف</label>
+            <select name="grade_level" class="form-control" id="gradeLevelSelect">
+                <option value="">كل الصفوف</option>
+                {% for grade in grade_levels %}
+                <option value="{{ grade.id }}"
+                        data-level="{{ grade.education_level.id }}"
+                        {% if selected_grade_level == grade.id|stringformat:"s" %}selected{% endif %}>
+                    {% if grade.education_level %}{{ grade.education_level.name }} - {% endif %}{{ grade.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label fw-bold">العام الدراسي</label>
+            <select name="academic_year" class="form-control">
+                <option value="">كل الأعوام</option>
+                {% for year in academic_years %}
+                <option value="{{ year.id }}" {% if selected_academic_year == year.id|stringformat:"s" %}selected{% endif %}>
+                    {{ year.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label fw-bold">الحالة المالية</label>
+            <select name="financial_status" class="form-control">
+                <option value="">كل الحالات</option>
+                <option value="paid" {% if selected_financial_status == 'paid' %}selected{% endif %}>مسدد</option>
+                <option value="owing" {% if selected_financial_status == 'owing' %}selected{% endif %}>عليه مستحقات</option>
+                <option value="no_fees" {% if selected_financial_status == 'no_fees' %}selected{% endif %}>لا توجد رسوم</option>
+            </select>
+        </div>
+
+        <div class="col-lg-2 col-md-6">
+            <label class="form-label fw-bold">العمر من</label>
+            <input type="number"
+                   name="age_min"
+                   class="form-control"
+                   value="{{ age_min }}"
+                   min="0">
+        </div>
+
+        <div class="col-lg-2 col-md-6">
+            <label class="form-label fw-bold">العمر إلى</label>
+            <input type="number"
+                   name="age_max"
+                   class="form-control"
+                   value="{{ age_max }}"
+                   min="0">
+        </div>
+
+        <div class="col-lg-2 col-md-12 d-flex align-items-end">
+            <button type="submit" class="btn btn-warning w-100">
+                <i class="fas fa-search me-1"></i>
+                تطبيق
+            </button>
+        </div>
+
+        <div class="col-12 text-center">
+            <a href="{% url 'report:student_list_report' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-eraser me-1"></i>
+                مسح الفلاتر
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- الملخص -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-lg-6 mb-3">
+        <div class="stat-card primary">
+            <div class="stat-value text-primary">{{ summary.total_count }}</div>
+            <div class="stat-label">عدد الطلاب</div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 mb-3">
+        <div class="stat-card info">
+            <div class="stat-value text-info">{{ summary.male_count }}</div>
+            <div class="stat-label">ذكور</div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 mb-3">
+        <div class="stat-card warning">
+            <div class="stat-value text-warning">{{ summary.female_count }}</div>
+            <div class="stat-label">إناث</div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 mb-3">
+        <div class="stat-card danger">
+            <div class="stat-value text-danger">{{ summary.owing_count }}</div>
+            <div class="stat-label">عليهم مستحقات</div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="stat-card primary">
+            <div class="stat-value text-primary">{{ summary.total_fees|floatformat:2 }}</div>
+            <div class="stat-label">إجمالي المطلوب</div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="stat-card success">
+            <div class="stat-value text-success">{{ summary.total_payments|floatformat:2 }}</div>
+            <div class="stat-label">إجمالي المدفوع</div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="stat-card danger">
+            <div class="stat-value text-danger">{{ summary.total_owed|floatformat:2 }}</div>
+            <div class="stat-label">إجمالي المتبقي</div>
+        </div>
+    </div>
+</div>
+
+<!-- الجدول -->
+<div class="content-panel">
+    <div class="content-panel-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h5>
+            <i class="fas fa-list me-2 text-warning"></i>
+            نتائج تقرير الطلاب
+        </h5>
+
+        <span class="badge bg-warning text-dark">{{ summary.total_count }} طالب</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table report-table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>الطالب</th>
+                    <th>الرقم القومي</th>
+                    <th>النوع</th>
+                    <th>العمر</th>
+                    <th>المرحلة</th>
+                    <th>الصف</th>
+                    <th>ولي الأمر</th>
+                    <th>الهاتف</th>
+                    <th>المطلوب</th>
+                    <th>المدفوع</th>
+                    <th>المتبقي</th>
+                    <th>الحالة</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for student in students %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+
+                    <td class="student-cell">
+                        <strong>{{ student.name }}</strong>
+                        {% if student.academic_year %}
+                        <br>
+                        <small class="text-muted">{{ student.academic_year.name }}</small>
+                        {% endif %}
+                    </td>
+
+                    <td>{{ student.national_number|default:"-" }}</td>
+
+                    <td>
+                        {% if student.gender == 'M' %}
+                            ذكر
+                        {% elif student.gender == 'F' %}
+                            أنثى
+                        {% else %}
+                            غير محدد
+                        {% endif %}
+                    </td>
+
+                    <td>{{ student.age|default:"-" }}</td>
+
+                    <td>
+                        {% if student.grade_level and student.grade_level.education_level %}
+                            {{ student.grade_level.education_level.name }}
+                        {% else %}
+                            غير محدد
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if student.grade_level %}
+                            {{ student.grade_level.name }}
+                        {% else %}
+                            غير محدد
+                        {% endif %}
+                    </td>
+
+                    <td>{{ student.parent_name|default:"-" }}</td>
+
+                    <td>
+                        <span dir="ltr">{{ student.phone_number|default:student.parent_phone|default:"-" }}</span>
+                    </td>
+
+                    <td>{{ student.total_fees|default:0|floatformat:2 }}</td>
+
+                    <td class="text-success fw-bold">{{ student.total_payments|default:0|floatformat:2 }}</td>
+
+                    <td class="text-danger fw-bold">{{ student.total_owed|default:0|floatformat:2 }}</td>
+
+                    <td>
+                        {% if student.total_owed > 0 %}
+                            <span class="badge-financial bg-danger text-white">عليه مستحقات</span>
+                        {% elif student.total_fees > 0 %}
+                            <span class="badge-financial bg-success text-white">مسدد</span>
+                        {% else %}
+                            <span class="badge-financial bg-secondary text-white">لا توجد رسوم</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="13" class="text-center text-muted py-5">
+                        <i class="fas fa-search fa-3x mb-3"></i>
+                        <h5>لا توجد نتائج</h5>
+                        <p>لا يوجد طلاب مطابقون للفلاتر الحالية.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const educationSelect = document.getElementById('educationLevelSelect');
+    const gradeSelect = document.getElementById('gradeLevelSelect');
+
+    if (educationSelect && gradeSelect) {
+        educationSelect.addEventListener('change', function() {
+            const selectedLevel = this.value;
+            const options = gradeSelect.querySelectorAll('option');
+
+            options.forEach(function(option) {
+                if (!option.value) {
+                    option.style.display = '';
+                    return;
+                }
+
+                const levelId = option.getAttribute('data-level');
+
+                if (!selectedLevel || levelId === selectedLevel) {
+                    option.style.display = '';
+                } else {
+                    option.style.display = 'none';
+                }
+            });
+
+            gradeSelect.value = '';
+        });
+
+        educationSelect.dispatchEvent(new Event('change'));
+    }
+});
+</script>
+{% endblock %}

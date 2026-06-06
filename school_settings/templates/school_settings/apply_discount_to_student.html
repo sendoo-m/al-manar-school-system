@@ -1,0 +1,745 @@
+{% extends 'school_settings/base.html' %}
+{% load humanize %}
+
+{% block title %}تطبيق خصم على طالب - {{ system_settings.school_name }}{% endblock %}
+{% block header_title %}تطبيق خصم على طالب{% endblock %}
+{% block header_icon %}<i class="fas fa-user-tag"></i>{% endblock %}
+{% block page_description %}اختيار طالب وتطبيق خصم عليه حسب إعدادات الخصومات{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item">
+    <a href="{% url 'school_settings:discounts_list' %}">الخصومات</a>
+</li>
+<li class="breadcrumb-item active">تطبيق خصم على طالب</li>
+{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'school_settings:discounts_list' %}" class="btn btn-outline-secondary btn-custom">
+    <i class="fas fa-arrow-right me-2"></i>العودة للخصومات
+</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .apply-header {
+        background: linear-gradient(135deg, #198754, #20c997);
+        color: white;
+        border-radius: 20px;
+        padding: 30px 22px;
+        margin-bottom: 25px;
+        box-shadow: 0 10px 25px rgba(25, 135, 84, 0.25);
+        text-align: center;
+    }
+
+    .apply-icon {
+        width: 76px;
+        height: 76px;
+        border-radius: 22px;
+        background: rgba(255,255,255,0.18);
+        border: 1px solid rgba(255,255,255,0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px;
+        font-size: 2rem;
+    }
+
+    .form-card,
+    .preview-card {
+        background: white;
+        border-radius: 20px;
+        padding: 26px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+    }
+
+    .section-title {
+        font-weight: 900;
+        color: #198754;
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 12px;
+        margin-bottom: 18px;
+    }
+
+    .form-control,
+    .form-select {
+        border-radius: 12px;
+        padding: 11px 14px;
+        border: 2px solid #e9ecef;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #198754;
+        box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.15);
+    }
+
+    .required-asterisk {
+        color: #dc3545;
+    }
+
+    .preview-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 10px 0;
+        border-bottom: 1px dashed #e5e7eb;
+        font-weight: 800;
+    }
+
+    .preview-row:last-child {
+        border-bottom: none;
+    }
+
+    .preview-total {
+        background: linear-gradient(135deg, rgba(25,135,84,0.10), rgba(32,201,151,0.08));
+        border: 1px solid rgba(25,135,84,0.20);
+        border-radius: 16px;
+        padding: 16px;
+        margin-top: 15px;
+    }
+
+    .help-box {
+        background: #f8fafc;
+        border-right: 4px solid #198754;
+        border-radius: 14px;
+        padding: 14px;
+        color: #64748b;
+        font-weight: 700;
+        font-size: 0.9rem;
+    }
+
+    .btn-save {
+        background: linear-gradient(135deg, #198754, #20c997);
+        color: white;
+        border: none;
+        border-radius: 14px;
+        padding: 12px 22px;
+        font-weight: 900;
+    }
+
+    .btn-save:hover {
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(25, 135, 84, 0.25);
+    }
+    .student-search-wrapper {
+        position: relative;
+    }
+
+    .student-search-results {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        left: 0;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.14);
+        margin-top: 6px;
+        max-height: 320px;
+        overflow-y: auto;
+        z-index: 1050;
+    }
+
+    .student-search-item {
+        padding: 12px 14px;
+        cursor: pointer;
+        border-bottom: 1px solid #f1f5f9;
+        transition: 0.2s ease;
+    }
+
+    .student-search-item:last-child {
+        border-bottom: none;
+    }
+
+    .student-search-item:hover {
+        background: rgba(25, 135, 84, 0.08);
+    }
+
+    .student-search-name {
+        font-weight: 900;
+        color: #111827;
+    }
+
+    .student-search-meta {
+        color: #64748b;
+        font-size: 0.82rem;
+        margin-top: 3px;
+    }
+
+    .selected-student-box {
+        background: rgba(25, 135, 84, 0.08);
+        border: 1px solid rgba(25, 135, 84, 0.20);
+        border-radius: 14px;
+        padding: 12px 14px;
+        margin-top: 10px;
+    }
+
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="apply-header">
+    <div class="apply-icon">
+        <i class="fas fa-user-tag"></i>
+    </div>
+    <h4 class="mb-2">تطبيق خصم على طالب</h4>
+    <p class="mb-0 opacity-75">
+        اختر الطالب والخصم والعام الدراسي، وسيتم حساب قيمة الخصم تلقائيًا.
+    </p>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="form-card">
+            <form method="post" id="applyDiscountForm">
+                {% csrf_token %}
+
+                <div class="section-title">
+                    <i class="fas fa-info-circle me-2"></i>
+                    بيانات تطبيق الخصم
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold">
+                            الطالب <span class="required-asterisk">*</span>
+                        </label>
+
+                        <input type="hidden" name="student" id="studentIdInput" required>
+
+                        <div class="student-search-wrapper">
+                            <div class="input-group">
+                                <input type="text"
+                                       id="studentSearchInput"
+                                       class="form-control"
+                                       autocomplete="off"
+                                       placeholder="اكتب اسم الطالب أو الرقم القومي أو هاتف ولي الأمر..."
+                                       required>
+                                <button type="button"
+                                        class="btn btn-outline-secondary"
+                                        id="clearStudentButton"
+                                        title="مسح الطالب المختار">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+
+                            <div id="studentSearchResults" class="student-search-results d-none"></div>
+
+                            <div id="selectedStudentBox" class="selected-student-box d-none">
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                    <div>
+                                        <strong id="selectedStudentName">-</strong>
+                                        <div class="small text-muted" id="selectedStudentDetails">-</div>
+                                    </div>
+                                    <span class="badge bg-success">تم الاختيار</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <small class="text-muted">
+                            اكتب حرفين على الأقل للبحث السريع بدل تحميل قائمة كل الطلاب.
+                        </small>
+                    </div>
+
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold">
+                            الخصم <span class="required-asterisk">*</span>
+                        </label>
+
+                        <select name="discount_setting" id="discountSelect" class="form-select" required>
+                            <option value="">اختر الخصم</option>
+                            {% for discount in discounts %}
+                            <option value="{{ discount.id }}"
+                                    data-type="{{ discount.discount_type }}"
+                                    data-type-display="{{ discount.get_discount_type_display }}"
+                                    data-scope="{{ discount.application_scope }}"
+                                    data-scope-display="{{ discount.get_application_scope_display }}"
+                                    data-percentage="{{ discount.percentage_value|default:0 }}"
+                                    data-fixed="{{ discount.fixed_amount|default:0 }}"
+                                    data-max="{{ discount.max_discount_amount|default:0 }}"
+                                    data-min="{{ discount.min_payment_amount|default:0 }}"
+                                    data-requires-approval="{% if discount.requires_approval %}yes{% else %}no{% endif %}">
+                                {{ discount.name }} - {{ discount.get_category_display }} - {{ discount.get_application_scope_display }}
+                            </option>
+                            {% endfor %}
+                        </select>
+
+                        <small class="text-muted">
+                            يظهر هنا الخصومات النشطة فقط.
+                        </small>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">
+                            العام الدراسي <span class="required-asterisk">*</span>
+                        </label>
+
+                        <select name="academic_year" id="academicYearSelect" class="form-select" required>
+                            <option value="">اختر العام الدراسي</option>
+                            {% for year in academic_years %}
+                            <option value="{{ year.id }}" {% if year.is_current %}selected{% endif %}>
+                                {{ year.name }}
+                                {% if year.is_current %} - الحالي{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">
+                            المبلغ الأصلي <span class="required-asterisk">*</span>
+                        </label>
+
+                        <div class="input-group">
+                            <input type="number"
+                                   name="original_amount"
+                                   id="originalAmountInput"
+                                   class="form-control"
+                                   step="0.01"
+                                   min="0.01"
+                                   placeholder="0.00"
+                                   required>
+                            <span class="input-group-text">ج.م</span>
+                        </div>
+
+                        <small class="text-muted">
+                            اكتب المبلغ الذي سيتم حساب الخصم عليه.
+                        </small>
+                    </div>
+
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold">
+                            سبب تطبيق الخصم
+                        </label>
+
+                        <textarea name="application_reason"
+                                  class="form-control"
+                                  rows="3"
+                                  placeholder="مثال: خصم أشقاء / حالة اجتماعية / اعتماد من الإدارة">تطبيق خصم من الإدارة</textarea>
+                    </div>
+
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold">
+                            ملاحظات الإدارة
+                        </label>
+
+                        <textarea name="admin_notes"
+                                  class="form-control"
+                                  rows="3"
+                                  placeholder="ملاحظات اختيارية"></textarea>
+                    </div>
+                </div>
+
+                <div class="help-box mt-4">
+                    <i class="fas fa-lightbulb me-1"></i>
+                    لو الخصم لا يحتاج موافقة سيتم اعتماده مباشرة، أما لو يحتاج موافقة سيتم حفظه بحالة انتظار.
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <a href="{% url 'school_settings:discounts_list' %}" class="btn btn-outline-secondary btn-lg">
+                        إلغاء
+                    </a>
+
+                    <button type="submit" class="btn btn-save btn-lg">
+                        <i class="fas fa-save me-2"></i>
+                        تطبيق الخصم
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="preview-card">
+            <h5 class="fw-bold text-success mb-3">
+                <i class="fas fa-eye me-2"></i>
+                معاينة الخصم
+            </h5>
+
+            <div class="preview-row">
+                <span>نوع الخصم:</span>
+                <strong id="previewType">-</strong>
+            </div>
+
+            <div class="preview-row">
+                <span>نطاق التطبيق:</span>
+                <strong id="previewScope">-</strong>
+            </div>
+
+            <div class="preview-row">
+                <span>قيمة الخصم:</span>
+                <strong id="previewValue">-</strong>
+            </div>
+
+            <div class="preview-row">
+                <span>يتطلب موافقة:</span>
+                <strong id="previewApproval">-</strong>
+            </div>
+
+            <div class="preview-row">
+                <span>الحد الأدنى:</span>
+                <strong id="previewMin">-</strong>
+            </div>
+
+            <div class="preview-row">
+                <span>الحد الأقصى:</span>
+                <strong id="previewMax">-</strong>
+            </div>
+
+            <div class="preview-total">
+                <div class="preview-row">
+                    <span>المبلغ الأصلي:</span>
+                    <strong><span id="previewOriginal">0.00</span> ج.م</strong>
+                </div>
+
+                <div class="preview-row">
+                    <span>قيمة الخصم المتوقعة:</span>
+                    <strong class="text-danger"><span id="previewDiscount">0.00</span> ج.م</strong>
+                </div>
+
+                <div class="preview-row">
+                    <span>المبلغ بعد الخصم:</span>
+                    <strong class="text-success"><span id="previewFinal">0.00</span> ج.م</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let studentSearchTimer = null;
+let selectedStudentId = '';
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('applyDiscountForm');
+    const discountSelect = document.getElementById('discountSelect');
+    const originalInput = document.getElementById('originalAmountInput');
+    const studentSearchInput = document.getElementById('studentSearchInput');
+    const clearStudentButton = document.getElementById('clearStudentButton');
+
+    if (discountSelect) {
+        discountSelect.addEventListener('change', updateDiscountPreview);
+    }
+
+    if (originalInput) {
+        originalInput.addEventListener('input', updateDiscountPreview);
+    }
+
+    if (studentSearchInput) {
+        studentSearchInput.addEventListener('input', function() {
+            clearSelectedStudent(false);
+            const query = this.value.trim();
+
+            clearTimeout(studentSearchTimer);
+
+            if (query.length < 2) {
+                hideStudentResults();
+                return;
+            }
+
+            studentSearchTimer = setTimeout(function() {
+                searchStudents(query);
+            }, 300);
+        });
+
+        studentSearchInput.addEventListener('focus', function() {
+            const query = this.value.trim();
+            if (query.length >= 2 && !selectedStudentId) {
+                searchStudents(query);
+            }
+        });
+    }
+
+    if (clearStudentButton) {
+        clearStudentButton.addEventListener('click', function() {
+            clearSelectedStudent(true);
+        });
+    }
+
+    document.addEventListener('click', function(event) {
+        const wrapper = document.querySelector('.student-search-wrapper');
+        if (wrapper && !wrapper.contains(event.target)) {
+            hideStudentResults();
+        }
+    });
+
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const student = document.getElementById('studentIdInput').value;
+            const discount = document.getElementById('discountSelect').value;
+            const academicYear = document.getElementById('academicYearSelect').value;
+            const original = parseFloat(originalInput.value || 0);
+
+            if (!student) {
+                e.preventDefault();
+                alert('يرجى البحث عن الطالب واختياره من نتائج البحث');
+                return;
+            }
+
+            if (!discount) {
+                e.preventDefault();
+                alert('يرجى اختيار الخصم');
+                return;
+            }
+
+            if (!academicYear) {
+                e.preventDefault();
+                alert('يرجى اختيار العام الدراسي');
+                return;
+            }
+
+            if (original <= 0) {
+                e.preventDefault();
+                alert('يرجى إدخال مبلغ أصلي أكبر من صفر');
+                return;
+            }
+        });
+    }
+
+    updateDiscountPreview();
+});
+
+function searchStudents(query) {
+    const resultsBox = document.getElementById('studentSearchResults');
+
+    if (!resultsBox) return;
+
+    resultsBox.classList.remove('d-none');
+    resultsBox.innerHTML = `
+        <div class="student-search-item text-center text-muted">
+            <i class="fas fa-spinner fa-spin me-1"></i>
+            جاري البحث...
+        </div>
+    `;
+
+    const url = "{% url 'school_settings:ajax_student_search_for_discount' %}?q=" + encodeURIComponent(query);
+
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            resultsBox.innerHTML = `
+                <div class="student-search-item text-danger">
+                    ${data.error || 'حدث خطأ أثناء البحث'}
+                </div>
+            `;
+            return;
+        }
+
+        renderStudentResults(data.students || []);
+    })
+    .catch(() => {
+        resultsBox.innerHTML = `
+            <div class="student-search-item text-danger">
+                تعذر الاتصال بخدمة البحث
+            </div>
+        `;
+    });
+}
+
+function renderStudentResults(students) {
+    const resultsBox = document.getElementById('studentSearchResults');
+
+    if (!resultsBox) return;
+
+    if (!students.length) {
+        resultsBox.innerHTML = `
+            <div class="student-search-item text-center text-muted">
+                لا توجد نتائج مطابقة
+            </div>
+        `;
+        return;
+    }
+
+    resultsBox.innerHTML = students.map(student => {
+        const safeName = escapeHtml(student.name || '');
+        const safeNational = escapeHtml(student.national_number || '-');
+        const safeGrade = escapeHtml(student.grade_name || 'غير محدد');
+        const safePhone = escapeHtml(student.phone_number || student.parent_phone || '-');
+        const safeParent = escapeHtml(student.parent_name || '-');
+
+        return `
+            <div class="student-search-item"
+                 onclick="selectStudent('${student.id}', '${escapeJs(student.name || '')}', '${escapeJs(safeGrade)}', '${escapeJs(safeNational)}', '${escapeJs(safePhone)}', '${escapeJs(safeParent)}')">
+                <div class="student-search-name">
+                    <i class="fas fa-user-graduate text-success me-1"></i>
+                    ${safeName}
+                </div>
+                <div class="student-search-meta">
+                    الرقم القومي: <span dir="ltr">${safeNational}</span>
+                    |
+                    الصف: ${safeGrade}
+                </div>
+                <div class="student-search-meta">
+                    ولي الأمر: ${safeParent}
+                    |
+                    الهاتف: <span dir="ltr">${safePhone}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function selectStudent(id, name, grade, nationalNumber, phone, parentName) {
+    selectedStudentId = id;
+
+    const hiddenInput = document.getElementById('studentIdInput');
+    const searchInput = document.getElementById('studentSearchInput');
+    const selectedBox = document.getElementById('selectedStudentBox');
+    const selectedName = document.getElementById('selectedStudentName');
+    const selectedDetails = document.getElementById('selectedStudentDetails');
+
+    if (hiddenInput) hiddenInput.value = id;
+    if (searchInput) searchInput.value = name;
+
+    if (selectedName) selectedName.textContent = name;
+
+    if (selectedDetails) {
+        selectedDetails.innerHTML = `
+            الصف: ${grade || 'غير محدد'}
+            |
+            الرقم القومي: <span dir="ltr">${nationalNumber || '-'}</span>
+            |
+            ولي الأمر: ${parentName || '-'}
+            |
+            الهاتف: <span dir="ltr">${phone || '-'}</span>
+        `;
+    }
+
+    if (selectedBox) selectedBox.classList.remove('d-none');
+
+    hideStudentResults();
+}
+
+function clearSelectedStudent(clearInput) {
+    selectedStudentId = '';
+
+    const hiddenInput = document.getElementById('studentIdInput');
+    const searchInput = document.getElementById('studentSearchInput');
+    const selectedBox = document.getElementById('selectedStudentBox');
+
+    if (hiddenInput) hiddenInput.value = '';
+
+    if (clearInput && searchInput) {
+        searchInput.value = '';
+        searchInput.focus();
+    }
+
+    if (selectedBox) {
+        selectedBox.classList.add('d-none');
+    }
+}
+
+function hideStudentResults() {
+    const resultsBox = document.getElementById('studentSearchResults');
+
+    if (resultsBox) {
+        resultsBox.classList.add('d-none');
+        resultsBox.innerHTML = '';
+    }
+}
+
+function updateDiscountPreview() {
+    const discountSelect = document.getElementById('discountSelect');
+    const originalInput = document.getElementById('originalAmountInput');
+
+    const selected = discountSelect && discountSelect.selectedOptions.length
+        ? discountSelect.selectedOptions[0]
+        : null;
+
+    const original = parseFloat(originalInput ? originalInput.value || 0 : 0);
+
+    let typeDisplay = '-';
+    let scopeDisplay = '-';
+    let valueDisplay = '-';
+    let approvalDisplay = '-';
+    let minDisplay = '-';
+    let maxDisplay = '-';
+    let discountAmount = 0;
+
+    if (selected && selected.value) {
+        const type = selected.getAttribute('data-type') || '';
+        typeDisplay = selected.getAttribute('data-type-display') || '-';
+        scopeDisplay = selected.getAttribute('data-scope-display') || '-';
+
+        const percentage = parseFloat(selected.getAttribute('data-percentage') || 0);
+        const fixed = parseFloat(selected.getAttribute('data-fixed') || 0);
+        const maxAmount = parseFloat(selected.getAttribute('data-max') || 0);
+        const minAmount = parseFloat(selected.getAttribute('data-min') || 0);
+        const requiresApproval = selected.getAttribute('data-requires-approval') === 'yes';
+
+        approvalDisplay = requiresApproval ? 'نعم' : 'لا';
+        minDisplay = minAmount > 0 ? minAmount.toFixed(2) + ' ج.م' : 'غير محدد';
+        maxDisplay = maxAmount > 0 ? maxAmount.toFixed(2) + ' ج.م' : 'غير محدد';
+
+        if (type === 'PERCENTAGE') {
+            valueDisplay = percentage.toFixed(2) + '%';
+            discountAmount = original * percentage / 100;
+        } else if (type === 'FIXED_AMOUNT') {
+            valueDisplay = fixed.toFixed(2) + ' ج.م';
+            discountAmount = fixed;
+        }
+
+        if (minAmount > 0 && original < minAmount) {
+            discountAmount = 0;
+        }
+
+        if (maxAmount > 0 && discountAmount > maxAmount) {
+            discountAmount = maxAmount;
+        }
+
+        if (discountAmount > original) {
+            discountAmount = original;
+        }
+    }
+
+    const finalAmount = Math.max(0, original - discountAmount);
+
+    setText('previewType', typeDisplay);
+    setText('previewScope', scopeDisplay);
+    setText('previewValue', valueDisplay);
+    setText('previewApproval', approvalDisplay);
+    setText('previewMin', minDisplay);
+    setText('previewMax', maxDisplay);
+    setText('previewOriginal', original.toFixed(2));
+    setText('previewDiscount', discountAmount.toFixed(2));
+    setText('previewFinal', finalAmount.toFixed(2));
+}
+
+function setText(id, value) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.textContent = value;
+    }
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+}
+
+function escapeJs(value) {
+    return String(value)
+        .replaceAll('\\', '\\\\')
+        .replaceAll("'", "\\'")
+        .replaceAll('"', '\\"')
+        .replaceAll('\n', ' ')
+        .replaceAll('\r', ' ');
+}
+</script>
+{% endblock %}

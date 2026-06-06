@@ -1,0 +1,295 @@
+{% extends 'school_settings/base.html' %}
+{% load humanize %}
+
+{% block title %}طلبات الخصومات - {{ system_settings.school_name }}{% endblock %}
+{% block header_title %}طلبات الخصومات{% endblock %}
+{% block header_icon %}<i class="fas fa-clipboard-check"></i>{% endblock %}
+{% block page_description %}مراجعة طلبات الخصومات المنتظرة والموافقة أو الرفض{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item">
+    <a href="{% url 'school_settings:discounts_list' %}">الخصومات</a>
+</li>
+<li class="breadcrumb-item active">طلبات الخصومات</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'school_settings:discounts_list' %}" class="btn btn-outline-secondary btn-custom">
+        <i class="fas fa-arrow-right me-2"></i>
+        العودة للخصومات
+    </a>
+
+    <a href="{% url 'school_settings:apply_discount_to_student' %}" class="btn btn-success btn-custom">
+        <i class="fas fa-user-tag me-2"></i>
+        تطبيق خصم مباشر
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .requests-hero {
+        background: linear-gradient(135deg, #ffc107, #fd7e14);
+        color: white;
+        border-radius: 22px;
+        padding: 30px;
+        margin-bottom: 25px;
+        box-shadow: 0 10px 28px rgba(253, 126, 20, 0.25);
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 18px;
+        padding: 22px;
+        height: 100%;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+        border-top: 5px solid #ffc107;
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 1.8rem;
+        font-weight: 900;
+        margin-bottom: 5px;
+    }
+
+    .stat-label {
+        color: #64748b;
+        font-weight: 800;
+    }
+
+    .content-panel {
+        background: white;
+        border-radius: 18px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+        overflow: hidden;
+    }
+
+    .content-panel-header {
+        background: #f8f9fa;
+        padding: 18px 22px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .content-panel-header h5 {
+        margin: 0;
+        font-weight: 900;
+    }
+
+    .requests-table thead th {
+        background: linear-gradient(135deg, #ffc107, #fd7e14);
+        color: white;
+        border: none;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    .requests-table td {
+        text-align: center;
+        vertical-align: middle;
+        font-size: 0.9rem;
+    }
+
+    .student-cell {
+        text-align: right !important;
+    }
+
+    .request-card {
+        background: #f8fafc;
+        border-radius: 16px;
+        padding: 16px;
+        border-right: 5px solid #ffc107;
+        margin-bottom: 12px;
+    }
+
+    .amount-big {
+        font-size: 1.1rem;
+        font-weight: 900;
+    }
+
+    .note-textarea {
+        border-radius: 12px;
+        min-height: 70px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 55px 20px;
+        color: #64748b;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="requests-hero">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h3 class="mb-2">
+                <i class="fas fa-clipboard-check me-2"></i>
+                طلبات الخصومات المنتظرة
+            </h3>
+            <p class="mb-0 opacity-75">
+                راجع طلبات الخصومات المقدمة من المحاسبين أو الموظفين، ثم وافق أو ارفض.
+            </p>
+        </div>
+
+        <div class="text-lg-end">
+            <div><strong>طلبات في الانتظار:</strong> {{ total_pending }}</div>
+            <div><strong>إجمالي الخصومات المطلوبة:</strong> {{ total_requested_amount|floatformat:2 }} ج.م</div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6 mb-3">
+        <div class="stat-card">
+            <div class="stat-value text-warning">{{ total_pending }}</div>
+            <div class="stat-label">طلبات منتظرة</div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-3">
+        <div class="stat-card">
+            <div class="stat-value text-danger">{{ total_requested_amount|floatformat:2 }}</div>
+            <div class="stat-label">إجمالي قيمة الخصومات المطلوبة</div>
+        </div>
+    </div>
+</div>
+
+<div class="content-panel">
+    <div class="content-panel-header">
+        <h5>
+            <i class="fas fa-list me-2 text-warning"></i>
+            قائمة الطلبات
+        </h5>
+    </div>
+
+    {% if discount_requests %}
+    <div class="table-responsive">
+        <table class="table requests-table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>الطالب</th>
+                    <th>الخصم</th>
+                    <th>النطاق</th>
+                    <th>المبلغ الأصلي</th>
+                    <th>قيمة الخصم</th>
+                    <th>بعد الخصم</th>
+                    <th>السبب</th>
+                    <th>مقدم الطلب</th>
+                    <th>تاريخ الطلب</th>
+                    <th>قرار الإدارة</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for item in discount_requests %}
+                <tr>
+                    <td class="student-cell">
+                        <strong>{{ item.student.name }}</strong>
+                        <br>
+                        <small class="text-muted">{{ item.student.national_number|default:"-" }}</small>
+                        <br>
+                        <small>
+                            {% if item.student.grade_level %}
+                                {{ item.student.grade_level.name }}
+                            {% else %}
+                                غير محدد
+                            {% endif %}
+                        </small>
+                    </td>
+
+                    <td>
+                        <strong>{{ item.discount_setting.name }}</strong>
+                        <br>
+                        <small class="text-muted">{{ item.discount_setting.get_category_display }}</small>
+                    </td>
+
+                    <td>
+                        <span class="badge bg-info">
+                            {{ item.get_application_scope_display }}
+                        </span>
+                    </td>
+
+                    <td>{{ item.original_amount|floatformat:2 }}</td>
+
+                    <td class="amount-big text-danger">
+                        {{ item.applied_amount|floatformat:2 }}
+                    </td>
+
+                    <td class="amount-big text-success">
+                        {{ item.final_amount|floatformat:2 }}
+                    </td>
+
+                    <td>
+                        <small>{{ item.application_reason|default:"-"|truncatechars:80 }}</small>
+                    </td>
+
+                    <td>
+                        {% if item.created_by %}
+                            {{ item.created_by.get_full_name|default:item.created_by.username }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {{ item.created_date|date:"Y/m/d" }}
+                        <br>
+                        <small>{{ item.created_date|date:"H:i" }}</small>
+                    </td>
+
+                    <td style="min-width: 260px;">
+                        <form method="post"
+                              action="{% url 'school_settings:approve_student_discount' item.id %}"
+                              class="mb-2">
+                            {% csrf_token %}
+
+                            <textarea name="admin_notes"
+                                      class="form-control note-textarea mb-2"
+                                      placeholder="ملاحظات الموافقة اختيارية"></textarea>
+
+                            <button type="submit"
+                                    class="btn btn-success btn-sm w-100"
+                                    onclick="return confirm('هل تريد الموافقة على هذا الخصم؟');">
+                                <i class="fas fa-check me-1"></i>
+                                موافقة
+                            </button>
+                        </form>
+
+                        <form method="post"
+                              action="{% url 'school_settings:reject_student_discount' item.id %}">
+                            {% csrf_token %}
+
+                            <textarea name="admin_notes"
+                                      class="form-control note-textarea mb-2"
+                                      placeholder="سبب الرفض مطلوب"></textarea>
+
+                            <button type="submit"
+                                    class="btn btn-danger btn-sm w-100"
+                                    onclick="return confirm('هل تريد رفض هذا الخصم؟');">
+                                <i class="fas fa-times me-1"></i>
+                                رفض
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
+        <h5>لا توجد طلبات خصومات منتظرة</h5>
+        <p>كل طلبات الخصومات تمت مراجعتها.</p>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

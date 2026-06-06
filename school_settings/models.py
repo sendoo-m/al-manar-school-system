@@ -8,6 +8,7 @@ import datetime
 import json
 import logging
 
+
 # Ensure a module-level logger is available for safe logging calls
 try:
     logger = logging.getLogger(__name__)
@@ -434,13 +435,18 @@ class SchoolFeesSettings(models.Model):
         super().save(*args, **kwargs)
 
 
+# ============================================================================
 # نموذج إعدادات الخصومات
+# ============================================================================
+
 class DiscountSettings(models.Model):
+    """إعدادات الخصومات العامة"""
+
     DISCOUNT_TYPE_CHOICES = (
         ('PERCENTAGE', 'نسبة مئوية'),
         ('FIXED_AMOUNT', 'مبلغ ثابت'),
     )
-    
+
     DISCOUNT_CATEGORY_CHOICES = (
         ('SIBLING', 'خصم الأشقاء'),
         ('FINANCIAL_HARDSHIP', 'خصم الحالة المالية'),
@@ -450,113 +456,389 @@ class DiscountSettings(models.Model):
         ('LOYALTY', 'خصم الولاء'),
         ('OTHER', 'خصومات أخرى'),
     )
-    
-    name = models.CharField(max_length=100, verbose_name="اسم الخصم")
-    category = models.CharField(max_length=20, choices=DISCOUNT_CATEGORY_CHOICES, verbose_name="فئة الخصم")
-    discount_type = models.CharField(max_length=15, choices=DISCOUNT_TYPE_CHOICES, verbose_name="نوع الخصم")
-    
+
+    DISCOUNT_SCOPE_CHOICES = (
+        ('TOTAL_FEES', 'على إجمالي مصروفات الطالب'),
+        ('PER_INSTALLMENT', 'على كل قسط'),
+        ('FEE_TYPE_TOTAL', 'على إجمالي نوع مصروف معين'),
+    )
+
+    # البيانات الأساسية
+    name = models.CharField(
+        max_length=100,
+        verbose_name="اسم الخصم"
+    )
+
+    category = models.CharField(
+        max_length=30,
+        choices=DISCOUNT_CATEGORY_CHOICES,
+        verbose_name="فئة الخصم"
+    )
+
+    discount_type = models.CharField(
+        max_length=20,
+        choices=DISCOUNT_TYPE_CHOICES,
+        verbose_name="نوع الخصم"
+    )
+
+    application_scope = models.CharField(
+        max_length=20,
+        choices=DISCOUNT_SCOPE_CHOICES,
+        default='PER_INSTALLMENT',
+        verbose_name="نطاق تطبيق الخصم",
+        help_text="حدد هل الخصم يطبق على إجمالي المصروفات أم على كل قسط أم على نوع مصروف معين"
+    )
+
     # قيمة الخصم
-    percentage_value = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True,
-                                         validators=[MinValueValidator(0), MaxValueValidator(100)],
-                                         verbose_name="النسبة المئوية")
-    fixed_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True,
-                                     validators=[MinValueValidator(0)],
-                                     verbose_name="المبلغ الثابت")
-    
+    percentage_value = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        verbose_name="النسبة المئوية"
+    )
+
+    fixed_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0)],
+        verbose_name="المبلغ الثابت"
+    )
+
     # شروط التطبيق
-    applicable_to_grades = models.ManyToManyField(GradeLevel, blank=True, verbose_name="الصفوف المطبق عليها")
-    applicable_to_fee_types = models.CharField(max_length=200, blank=True, 
-                                             verbose_name="أنواع المصروفات المطبق عليها",
-                                             help_text="فاصل بينها بفواصل")
-    
+    applicable_to_grades = models.ManyToManyField(
+        GradeLevel,
+        blank=True,
+        verbose_name="الصفوف المطبق عليها"
+    )
+
+    applicable_to_fee_types = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name="أنواع المصروفات المطبق عليها",
+        help_text="اكتب أنواع المصروفات مفصولة بفواصل مثل: TUITION,BOOKS,TRANSPORT"
+    )
+
     # حدود التطبيق
-    max_discount_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True,
-                                            verbose_name="الحد الأقصى لمبلغ الخصم")
-    min_payment_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True,
-                                           verbose_name="الحد الأدنى للمبلغ لتطبيق الخصم")
-    
+    max_discount_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0)],
+        verbose_name="الحد الأقصى لمبلغ الخصم"
+    )
+
+    min_payment_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0)],
+        verbose_name="الحد الأدنى للمبلغ لتطبيق الخصم"
+    )
+
     # تواريخ الصلاحية
-    valid_from_date = models.DateField(verbose_name="صالح من تاريخ")
-    valid_to_date = models.DateField(verbose_name="صالح حتى تاريخ")
-    
+    valid_from_date = models.DateField(
+        verbose_name="صالح من تاريخ"
+    )
+
+    valid_to_date = models.DateField(
+        verbose_name="صالح حتى تاريخ"
+    )
+
     # إعدادات إضافية
-    is_active = models.BooleanField(default=True, verbose_name="نشط")
-    requires_approval = models.BooleanField(default=False, verbose_name="يتطلب موافقة")
-    description = models.TextField(blank=True, verbose_name="وصف الخصم")
-    
-    created_date = models.DateTimeField(auto_now_add=True)
-    updated_date = models.DateTimeField(auto_now=True)
-    
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="نشط"
+    )
+
+    requires_approval = models.BooleanField(
+        default=False,
+        verbose_name="يتطلب موافقة"
+    )
+
+    description = models.TextField(
+        blank=True,
+        verbose_name="وصف الخصم"
+    )
+
+    created_date = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="تاريخ الإنشاء"
+    )
+
+    updated_date = models.DateTimeField(
+        auto_now=True,
+        verbose_name="تاريخ التحديث"
+    )
+
     class Meta:
         verbose_name = "إعدادات الخصم"
         verbose_name_plural = "إعدادات الخصومات"
         ordering = ['category', 'name']
-    
+
     def __str__(self):
         return f"{self.name} - {self.get_category_display()}"
-    
+
+    @property
+    def is_valid_now(self):
+        """هل الخصم صالح حالياً؟"""
+        today = timezone.now().date()
+
+        return (
+            self.is_active and
+            self.valid_from_date <= today <= self.valid_to_date
+        )
+
+    def get_scope_display_text(self):
+        """عرض نطاق الخصم كنص"""
+        return dict(self.DISCOUNT_SCOPE_CHOICES).get(
+            self.application_scope,
+            self.application_scope
+        )
+
     def calculate_discount(self, amount):
-        """حساب قيمة الخصم بناء على المبلغ"""
+        """حساب قيمة الخصم بناءً على المبلغ المرسل"""
+        from decimal import Decimal
+
+        amount = Decimal(str(amount or 0))
+
+        if amount <= 0:
+            return Decimal('0.00')
+
         if not self.is_active:
-            return 0
-            
+            return Decimal('0.00')
+
+        today = timezone.now().date()
+
+        if self.valid_from_date and today < self.valid_from_date:
+            return Decimal('0.00')
+
+        if self.valid_to_date and today > self.valid_to_date:
+            return Decimal('0.00')
+
         if self.min_payment_amount and amount < self.min_payment_amount:
-            return 0
-        
+            return Decimal('0.00')
+
         if self.discount_type == 'PERCENTAGE':
-            discount = amount * (self.percentage_value / 100)
+            percentage = Decimal(str(self.percentage_value or 0))
+            discount = amount * percentage / Decimal('100')
         else:
-            discount = self.fixed_amount or 0
-        
-        # تطبيق الحد الأقصى
+            discount = Decimal(str(self.fixed_amount or 0))
+
         if self.max_discount_amount:
-            discount = min(discount, self.max_discount_amount)
-        
-        return discount
+            max_discount = Decimal(str(self.max_discount_amount))
+            discount = min(discount, max_discount)
+
+        if discount > amount:
+            discount = amount
+
+        return discount.quantize(Decimal('0.01'))
 
 
+# ============================================================================
 # نموذج تطبيق الخصومات على الطلاب
+# ============================================================================
+
 class StudentDiscount(models.Model):
+    """تطبيق خصم معين على طالب معين"""
+
     STATUS_CHOICES = (
         ('PENDING', 'في الانتظار'),
         ('APPROVED', 'موافق عليه'),
         ('REJECTED', 'مرفوض'),
         ('EXPIRED', 'منتهي الصلاحية'),
     )
-    
-    student = models.ForeignKey('students.Student', on_delete=models.CASCADE, verbose_name="الطالب")
-    discount_setting = models.ForeignKey(DiscountSettings, on_delete=models.CASCADE, verbose_name="إعدادات الخصم")
-    academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE, verbose_name="العام الدراسي")
-    
-    # تفاصيل التطبيق
-    applied_amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="مبلغ الخصم المطبق")
-    original_amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="المبلغ الأصلي")
-    final_amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="المبلغ النهائي")
-    
+
+    student = models.ForeignKey(
+        'students.Student',
+        on_delete=models.CASCADE,
+        verbose_name="الطالب"
+    )
+
+    discount_setting = models.ForeignKey(
+        DiscountSettings,
+        on_delete=models.CASCADE,
+        verbose_name="إعدادات الخصم"
+    )
+
+    academic_year = models.ForeignKey(
+        AcademicYear,
+        on_delete=models.CASCADE,
+        verbose_name="العام الدراسي"
+    )
+
+    # تفاصيل التطبيق المالي
+    original_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="المبلغ الأصلي"
+    )
+
+    applied_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="مبلغ الخصم المطبق"
+    )
+
+    final_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="المبلغ النهائي"
+    )
+
+    # نطاق التطبيق وقت الخصم
+    application_scope = models.CharField(
+        max_length=20,
+        choices=DiscountSettings.DISCOUNT_SCOPE_CHOICES,
+        default='PER_INSTALLMENT',
+        verbose_name="نطاق التطبيق وقت الخصم"
+    )
+
+    fee_type = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name="نوع المصروف المطبق عليه"
+    )
+
+    tuition = models.ForeignKey(
+        'payments.Tuition',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='student_discounts',
+        verbose_name="القسط المرتبط"
+    )
+
     # حالة الموافقة
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING', verbose_name="الحالة")
-    approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
-                                   related_name='approved_discounts', verbose_name="موافق عليه بواسطة")
-    approval_date = models.DateTimeField(null=True, blank=True, verbose_name="تاريخ الموافقة")
-    
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default='PENDING',
+        verbose_name="الحالة"
+    )
+
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='approved_discounts',
+        verbose_name="موافق عليه بواسطة"
+    )
+
+    approval_date = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="تاريخ الموافقة"
+    )
+
     # ملاحظات
-    application_reason = models.TextField(verbose_name="سبب التقدم للخصم")
-    admin_notes = models.TextField(blank=True, verbose_name="ملاحظات الإدارة")
-    
-    created_date = models.DateTimeField(auto_now_add=True)
-    updated_date = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, 
-                                 related_name='created_discounts', verbose_name="منشأ بواسطة")
-    
+    application_reason = models.TextField(
+        verbose_name="سبب التقدم للخصم"
+    )
+
+    admin_notes = models.TextField(
+        blank=True,
+        verbose_name="ملاحظات الإدارة"
+    )
+
+    created_date = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="تاريخ الإنشاء"
+    )
+
+    updated_date = models.DateTimeField(
+        auto_now=True,
+        verbose_name="تاريخ التحديث"
+    )
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='created_discounts',
+        verbose_name="منشأ بواسطة"
+    )
+
     class Meta:
         verbose_name = "خصم الطالب"
         verbose_name_plural = "خصومات الطلاب"
         unique_together = ['student', 'discount_setting', 'academic_year']
-    
+        ordering = ['-created_date']
+
     def __str__(self):
         return f"{self.student.name} - {self.discount_setting.name}"
 
+    @property
+    def is_approved(self):
+        return self.status == 'APPROVED'
 
+    @property
+    def is_pending(self):
+        return self.status == 'PENDING'
+
+    @property
+    def is_rejected(self):
+        return self.status == 'REJECTED'
+
+    def approve(self, user=None, notes=''):
+        """اعتماد الخصم"""
+        self.status = 'APPROVED'
+        self.approved_by = user
+        self.approval_date = timezone.now()
+
+        if notes:
+            self.admin_notes = notes
+
+        self.save(update_fields=[
+            'status',
+            'approved_by',
+            'approval_date',
+            'admin_notes',
+            'updated_date',
+        ])
+
+    def reject(self, user=None, notes=''):
+        """رفض الخصم"""
+        self.status = 'REJECTED'
+        self.approved_by = user
+        self.approval_date = timezone.now()
+
+        if notes:
+            self.admin_notes = notes
+
+        self.save(update_fields=[
+            'status',
+            'approved_by',
+            'approval_date',
+            'admin_notes',
+            'updated_date',
+        ])
+
+    def save(self, *args, **kwargs):
+        """حفظ آمن وحساب المبلغ النهائي"""
+        from decimal import Decimal
+
+        original = Decimal(str(self.original_amount or 0))
+        discount = Decimal(str(self.applied_amount or 0))
+
+        if discount > original:
+            discount = original
+            self.applied_amount = discount
+
+        self.final_amount = max(Decimal('0.00'), original - discount)
+
+        # حفظ نطاق التطبيق من إعداد الخصم وقت الإنشاء لو لم يتم تحديده
+        if not self.application_scope and self.discount_setting:
+            self.application_scope = self.discount_setting.application_scope
+
+        super().save(*args, **kwargs)
+
+        
 # نموذج أدوار النظام
 # في school_settings/models.py - تحديث SystemRole
 class SystemRole(models.Model):

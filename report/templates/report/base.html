@@ -1,0 +1,598 @@
+<!-- templates/report/base.html -->
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}مركز التقارير{% endblock %}</title>
+
+    <!-- Bootstrap RTL -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Cairo Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --report-primary: #243b55;
+            --report-secondary: #141e30;
+            --report-accent: #0d6efd;
+            --report-success: #198754;
+            --report-info: #0dcaf0;
+            --report-warning: #ffc107;
+            --report-danger: #dc3545;
+            --report-light: #f8fafc;
+            --report-dark: #111827;
+            --report-muted: #64748b;
+            --report-border: #e5e7eb;
+            --report-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        * {
+            font-family: 'Cairo', Tahoma, Arial, sans-serif;
+        }
+
+        body {
+            background: #eef2f7;
+            color: var(--report-dark);
+            min-height: 100vh;
+        }
+
+        a {
+            text-decoration: none;
+        }
+
+        .report-wrapper {
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* Sidebar */
+        .report-sidebar {
+            width: 280px;
+            min-width: 280px;
+            background: linear-gradient(180deg, var(--report-primary), var(--report-secondary));
+            color: white;
+            min-height: 100vh;
+            position: sticky;
+            top: 0;
+            box-shadow: 0 0 25px rgba(0,0,0,0.18);
+            z-index: 1000;
+        }
+
+        .report-sidebar-header {
+            padding: 24px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+            text-align: center;
+        }
+
+        .report-logo {
+            width: 66px;
+            height: 66px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+            font-size: 2rem;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .report-sidebar-header h4 {
+            margin: 0;
+            font-weight: 900;
+            font-size: 1.15rem;
+        }
+
+        .report-sidebar-header p {
+            margin: 5px 0 0;
+            color: rgba(255,255,255,0.7);
+            font-size: 0.82rem;
+        }
+
+        .report-menu {
+            padding: 18px 12px;
+        }
+
+        .report-menu-title {
+            color: rgba(255,255,255,0.55);
+            font-size: 0.78rem;
+            font-weight: 800;
+            padding: 10px 14px 6px;
+            text-transform: uppercase;
+        }
+
+        .report-menu-link {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 12px 14px;
+            margin-bottom: 6px;
+            color: rgba(255,255,255,0.82);
+            border-radius: 14px;
+            transition: 0.2s ease;
+            font-weight: 700;
+        }
+
+        .report-menu-link:hover,
+        .report-menu-link.active {
+            background: rgba(255,255,255,0.14);
+            color: white;
+            transform: translateX(-3px);
+        }
+
+        .report-menu-link i {
+            width: 22px;
+            text-align: center;
+            font-size: 1.05rem;
+        }
+
+        .report-sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid rgba(255,255,255,0.12);
+            margin-top: auto;
+        }
+
+        /* Main */
+        .report-main {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .report-topbar {
+            background: white;
+            padding: 14px 24px;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+
+        .topbar-title {
+            font-weight: 900;
+            margin: 0;
+            color: var(--report-primary);
+            font-size: 1.1rem;
+        }
+
+        .topbar-subtitle {
+            color: var(--report-muted);
+            font-size: 0.84rem;
+            margin: 2px 0 0;
+            font-weight: 600;
+        }
+
+        .report-content {
+            padding: 26px;
+        }
+
+        .page-header {
+            background: white;
+            border-radius: 22px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: var(--report-shadow);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+        }
+
+        .page-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .page-icon {
+            width: 58px;
+            height: 58px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, var(--report-primary), var(--report-accent));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.55rem;
+        }
+
+        .page-title {
+            margin: 0;
+            font-weight: 900;
+            color: var(--report-primary);
+        }
+
+        .page-subtitle {
+            margin: 5px 0 0;
+            color: var(--report-muted);
+            font-weight: 600;
+        }
+
+        .breadcrumb-box {
+            background: white;
+            border-radius: 16px;
+            padding: 12px 18px;
+            margin-bottom: 18px;
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+        }
+
+        .breadcrumb {
+            margin: 0;
+        }
+
+        .breadcrumb-item a {
+            color: var(--report-accent);
+            font-weight: 700;
+        }
+
+        .breadcrumb-item.active {
+            color: var(--report-muted);
+            font-weight: 700;
+        }
+
+        .btn-custom {
+            border-radius: 14px;
+            font-weight: 800;
+            padding: 9px 15px;
+        }
+
+        .messages-container {
+            margin-bottom: 18px;
+        }
+
+        .alert {
+            border-radius: 14px;
+            font-weight: 700;
+        }
+
+        /* Shared Cards */
+        .content-panel {
+            background: white;
+            border-radius: 18px;
+            box-shadow: var(--report-shadow);
+            margin-bottom: 25px;
+            overflow: hidden;
+            border: 1px solid rgba(226, 232, 240, 0.9);
+        }
+
+        .content-panel-header {
+            background: #f8fafc;
+            padding: 18px 22px;
+            border-bottom: 1px solid var(--report-border);
+        }
+
+        .content-panel-header h5 {
+            margin: 0;
+            font-weight: 900;
+        }
+
+        .content-panel-body {
+            padding: 22px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 18px;
+            padding: 22px;
+            height: 100%;
+            box-shadow: var(--report-shadow);
+            border-top: 5px solid var(--report-accent);
+            text-align: center;
+            transition: 0.25s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 26px rgba(15, 23, 42, 0.12);
+        }
+
+        .stat-card.primary { border-top-color: #0d6efd; }
+        .stat-card.success { border-top-color: #198754; }
+        .stat-card.warning { border-top-color: #ffc107; }
+        .stat-card.danger { border-top-color: #dc3545; }
+        .stat-card.info { border-top-color: #0dcaf0; }
+        .stat-card.dark { border-top-color: #212529; }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 900;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: var(--report-muted);
+            font-weight: 800;
+            font-size: 0.9rem;
+        }
+
+        .report-table thead th,
+        .dashboard-table thead th,
+        .statistics-table thead th,
+        .archive-table thead th,
+        .financial-table thead th {
+            background: linear-gradient(135deg, var(--report-primary), var(--report-secondary));
+            color: white;
+            border: none;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+
+        .report-table td,
+        .dashboard-table td,
+        .statistics-table td,
+        .archive-table td,
+        .financial-table td {
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .student-cell,
+        .student-name-cell {
+            text-align: right !important;
+        }
+
+        .mobile-menu-btn {
+            display: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            .report-sidebar {
+                position: fixed;
+                right: -290px;
+                transition: right 0.25s ease;
+            }
+
+            .report-sidebar.show {
+                right: 0;
+            }
+
+            .report-main {
+                width: 100%;
+            }
+
+            .mobile-menu-btn {
+                display: inline-flex;
+            }
+
+            .report-content {
+                padding: 18px;
+            }
+
+            .page-header {
+                padding: 18px;
+            }
+
+            .page-title-wrap {
+                align-items: flex-start;
+            }
+
+            .page-icon {
+                width: 48px;
+                height: 48px;
+                min-width: 48px;
+                font-size: 1.25rem;
+            }
+        }
+
+        @media print {
+            body {
+                background: white !important;
+            }
+
+            .report-sidebar,
+            .report-topbar,
+            .breadcrumb-box,
+            .page-actions,
+            .btn,
+            .mobile-menu-btn,
+            .no-print {
+                display: none !important;
+            }
+
+            .report-wrapper {
+                display: block;
+            }
+
+            .report-content {
+                padding: 0 !important;
+            }
+
+            .page-header,
+            .content-panel,
+            .stat-card {
+                box-shadow: none !important;
+                border: 1px solid #ddd !important;
+            }
+
+            .page-header {
+                margin-bottom: 12px !important;
+            }
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+
+<div class="report-wrapper">
+
+    <!-- Sidebar -->
+    <aside class="report-sidebar" id="reportSidebar">
+        <div class="report-sidebar-header">
+            <div class="report-logo">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <h4>مركز التقارير</h4>
+            <p>لوحة مدير المدرسة</p>
+        </div>
+
+        <nav class="report-menu">
+            <div class="report-menu-title">التقارير الرئيسية</div>
+
+            <a href="{% url 'report:reports_home' %}" class="report-menu-link">
+                <i class="fas fa-home"></i>
+                <span>الرئيسية</span>
+            </a>
+
+            <a href="{% url 'report:daily_report' %}" class="report-menu-link">
+                <i class="fas fa-calendar-day"></i>
+                <span>التقرير اليومي</span>
+            </a>
+
+            <a href="{% url 'report:monthly_report' %}" class="report-menu-link">
+                <i class="fas fa-calendar-alt"></i>
+                <span>التقرير الشهري</span>
+            </a>
+
+            <a href="{% url 'report:financial_report' %}" class="report-menu-link">
+                <i class="fas fa-chart-line"></i>
+                <span>التقرير المالي</span>
+            </a>
+
+            <div class="report-menu-title">تقارير الطلاب</div>
+
+            <a href="{% url 'report:student_list_report' %}" class="report-menu-link">
+                <i class="fas fa-users"></i>
+                <span>قائمة الطلاب</span>
+            </a>
+
+            <a href="{% url 'report:statistics_report' %}" class="report-menu-link">
+                <i class="fas fa-chart-pie"></i>
+                <span>الإحصائيات</span>
+            </a>
+
+            <a href="{% url 'report:archived_students_report' %}" class="report-menu-link">
+                <i class="fas fa-archive"></i>
+                <span>الطلاب المؤرشفون</span>
+            </a>
+
+            <div class="report-menu-title">روابط سريعة</div>
+
+            <a href="{% url 'students:home' %}" class="report-menu-link">
+                <i class="fas fa-user-graduate"></i>
+                <span>شؤون الطلاب</span>
+            </a>
+
+            <a href="{% url 'payments:payments_home' %}" class="report-menu-link">
+                <i class="fas fa-money-bill-wave"></i>
+                <span>المدفوعات</span>
+            </a>
+        </nav>
+
+        <div class="report-sidebar-footer">
+            <a href="{% url 'students:home' %}" class="btn btn-light w-100 btn-custom">
+                <i class="fas fa-arrow-right me-1"></i>
+                رجوع للنظام
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="report-main">
+        <div class="report-topbar">
+            <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-outline-primary mobile-menu-btn" onclick="toggleReportSidebar()">
+                        <i class="fas fa-bars"></i>
+                    </button>
+
+                    <div>
+                        <h5 class="topbar-title">{% block topbar_title %}مركز التقارير{% endblock %}</h5>
+                        <p class="topbar-subtitle">
+                            مرحباً {{ request.user.get_full_name|default:request.user.username }}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="text-muted fw-bold">
+                    <i class="fas fa-calendar me-1"></i>
+                    {% now "Y/m/d" %}
+                </div>
+            </div>
+        </div>
+
+        <div class="report-content">
+
+            <div class="breadcrumb-box">
+                <ol class="breadcrumb">
+                    {% block breadcrumb %}
+                    <li class="breadcrumb-item active">مركز التقارير</li>
+                    {% endblock %}
+                </ol>
+            </div>
+
+            {% if messages %}
+            <div class="messages-container">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="page-header">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div class="page-title-wrap">
+                        <div class="page-icon">
+                            {% block page_icon %}
+                            <i class="fas fa-chart-line"></i>
+                            {% endblock %}
+                        </div>
+
+                        <div>
+                            <h2 class="page-title">{% block page_title %}مركز التقارير{% endblock %}</h2>
+                            <p class="page-subtitle">{% block page_subtitle %}تقارير وإحصائيات النظام{% endblock %}</p>
+                        </div>
+                    </div>
+
+                    <div class="page-actions">
+                        {% block page_actions %}{% endblock %}
+                    </div>
+                </div>
+            </div>
+
+            {% block content %}{% endblock %}
+
+        </div>
+    </main>
+</div>
+
+<!-- Bootstrap -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+function toggleReportSidebar() {
+    const sidebar = document.getElementById('reportSidebar');
+
+    if (sidebar) {
+        sidebar.classList.toggle('show');
+    }
+}
+
+document.addEventListener('click', function(event) {
+    const sidebar = document.getElementById('reportSidebar');
+    const button = document.querySelector('.mobile-menu-btn');
+
+    if (!sidebar || !button) return;
+
+    if (window.innerWidth <= 992) {
+        const clickedInsideSidebar = sidebar.contains(event.target);
+        const clickedButton = button.contains(event.target);
+
+        if (!clickedInsideSidebar && !clickedButton) {
+            sidebar.classList.remove('show');
+        }
+    }
+});
+</script>
+
+{% block extra_js %}{% endblock %}
+
+</body>
+</html>

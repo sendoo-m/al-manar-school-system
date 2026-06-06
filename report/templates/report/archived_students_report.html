@@ -1,0 +1,366 @@
+{% extends 'report/base.html' %}
+{% load humanize %}
+
+{% block title %}تقرير الطلاب المؤرشفين{% endblock %}
+{% block page_title %}تقرير الطلاب المؤرشفين{% endblock %}
+{% block page_subtitle %}متابعة الطلاب المؤرشفين مع فلاتر تاريخ وبحث وتصدير{% endblock %}
+{% block page_icon %}<i class="fas fa-archive me-3"></i>{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'report:reports_home' %}">مركز التقارير</a></li>
+<li class="breadcrumb-item active">الطلاب المؤرشفون</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'report:reports_home' %}" class="btn btn-outline-primary btn-custom">
+        <i class="fas fa-arrow-right me-1"></i>مركز التقارير
+    </a>
+
+    <a href="?{{ request.GET.urlencode }}{% if request.GET.urlencode %}&{% endif %}export=csv" class="btn btn-outline-success btn-custom">
+        <i class="fas fa-file-csv me-1"></i>تصدير CSV
+    </a>
+
+    <button type="button" onclick="window.print()" class="btn btn-outline-secondary btn-custom">
+        <i class="fas fa-print me-1"></i>طباعة
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .archive-hero {
+        background: linear-gradient(135deg, #6c757d, #343a40);
+        color: white;
+        border-radius: 24px;
+        padding: 32px;
+        margin-bottom: 26px;
+        box-shadow: 0 10px 28px rgba(52, 58, 64, 0.25);
+    }
+
+    .archive-hero h2 {
+        font-weight: 900;
+        margin-bottom: 8px;
+    }
+
+    .filter-card {
+        background: white;
+        border-radius: 18px;
+        padding: 22px;
+        box-shadow: 0 5px 16px rgba(0,0,0,0.08);
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 18px;
+        padding: 20px;
+        height: 100%;
+        box-shadow: 0 5px 16px rgba(0,0,0,0.08);
+        border-top: 5px solid #6c757d;
+        text-align: center;
+        transition: 0.25s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+    }
+
+    .stat-card.primary { border-top-color: #0d6efd; }
+    .stat-card.success { border-top-color: #198754; }
+    .stat-card.warning { border-top-color: #ffc107; }
+    .stat-card.danger { border-top-color: #dc3545; }
+    .stat-card.info { border-top-color: #0dcaf0; }
+    .stat-card.dark { border-top-color: #212529; }
+
+    .stat-value {
+        font-size: 1.75rem;
+        font-weight: 900;
+        margin-bottom: 5px;
+    }
+
+    .stat-label {
+        color: #64748b;
+        font-weight: 800;
+        font-size: 0.9rem;
+    }
+
+    .content-panel {
+        background: white;
+        border-radius: 18px;
+        box-shadow: 0 5px 16px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+        overflow: hidden;
+    }
+
+    .content-panel-header {
+        background: #f8f9fa;
+        padding: 18px 22px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .content-panel-header h5 {
+        margin: 0;
+        font-weight: 900;
+    }
+
+    .archive-table thead th {
+        background: linear-gradient(135deg, #6c757d, #343a40);
+        color: white;
+        border: none;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    .archive-table td {
+        text-align: center;
+        vertical-align: middle;
+        font-size: 0.9rem;
+    }
+
+    .student-cell {
+        text-align: right !important;
+    }
+
+    @media print {
+        .page-actions,
+        .breadcrumb,
+        .breadcrumb-nav,
+        .archive-hero,
+        .filter-card,
+        .btn {
+            display: none !important;
+        }
+
+        .stat-card,
+        .content-panel {
+            box-shadow: none !important;
+            border: 1px solid #ddd !important;
+        }
+
+        .archive-table td,
+        .archive-table th {
+            font-size: 8px !important;
+            padding: 4px !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="archive-hero">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h2>
+                <i class="fas fa-archive me-2"></i>
+                تقرير الطلاب المؤرشفين
+            </h2>
+            <p class="mb-0">
+                تقرير تفصيلي للطلاب المؤرشفين مع المبالغ والبيانات وقت الأرشفة.
+            </p>
+        </div>
+
+        <div class="text-lg-end">
+            <div><strong>تاريخ التقرير:</strong> {{ today|date:"Y/m/d" }}</div>
+            <div><strong>عدد النتائج:</strong> {{ summary.total_count }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- الفلاتر -->
+<div class="filter-card">
+    <form method="get" class="row g-3">
+        <div class="col-lg-4 col-md-6">
+            <label class="form-label fw-bold">بحث</label>
+            <input type="text"
+                   name="search"
+                   class="form-control"
+                   value="{{ search_query }}"
+                   placeholder="اسم الطالب، الرقم القومي، سبب الأرشفة">
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label fw-bold">من تاريخ</label>
+            <input type="date"
+                   name="start_date"
+                   class="form-control"
+                   value="{{ start_date }}">
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label fw-bold">إلى تاريخ</label>
+            <input type="date"
+                   name="end_date"
+                   class="form-control"
+                   value="{{ end_date }}">
+        </div>
+
+        <div class="col-lg-2 col-md-6 d-flex align-items-end">
+            <button type="submit" class="btn btn-dark w-100">
+                <i class="fas fa-search me-1"></i>
+                تطبيق
+            </button>
+        </div>
+
+        <div class="col-12 text-center">
+            <a href="{% url 'report:archived_students_report' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-eraser me-1"></i>
+                مسح الفلاتر
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- الملخص -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stat-card dark">
+            <div class="stat-value text-dark">{{ summary.total_count }}</div>
+            <div class="stat-label">طلاب مؤرشفون</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stat-card info">
+            <div class="stat-value text-info">{{ summary.male_count }}</div>
+            <div class="stat-label">ذكور</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stat-card warning">
+            <div class="stat-value text-warning">{{ summary.female_count }}</div>
+            <div class="stat-label">إناث</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stat-card danger">
+            <div class="stat-value text-danger">{{ summary.total_owed|floatformat:2 }}</div>
+            <div class="stat-label">مستحقات وقت الأرشفة</div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="stat-card primary">
+            <div class="stat-value text-primary">{{ summary.total_fees|floatformat:2 }}</div>
+            <div class="stat-label">إجمالي المطلوب</div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="stat-card success">
+            <div class="stat-value text-success">{{ summary.total_payments|floatformat:2 }}</div>
+            <div class="stat-label">إجمالي المدفوع</div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="stat-card danger">
+            <div class="stat-value text-danger">{{ summary.total_owed|floatformat:2 }}</div>
+            <div class="stat-label">إجمالي المتبقي</div>
+        </div>
+    </div>
+</div>
+
+<!-- الجدول -->
+<div class="content-panel">
+    <div class="content-panel-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h5>
+            <i class="fas fa-list me-2 text-dark"></i>
+            نتائج الطلاب المؤرشفين
+        </h5>
+
+        <span class="badge bg-dark">{{ summary.total_count }} طالب</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table archive-table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>الطالب</th>
+                    <th>الرقم القومي</th>
+                    <th>العمر</th>
+                    <th>النوع</th>
+                    <th>المرحلة</th>
+                    <th>الصف</th>
+                    <th>المطلوب</th>
+                    <th>المدفوع</th>
+                    <th>المتبقي</th>
+                    <th>تاريخ الأرشفة</th>
+                    <th>سبب الأرشفة</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for student in archived_students %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+
+                    <td class="student-cell">
+                        <strong>{{ student.archive_name }}</strong>
+                    </td>
+
+                    <td>{{ student.archive_national_number|default:"-" }}</td>
+
+                    <td>{{ student.archive_age|default:"-" }}</td>
+
+                    <td>
+                        {% if student.archive_gender == 'M' %}
+                            ذكر
+                        {% elif student.archive_gender == 'F' %}
+                            أنثى
+                        {% else %}
+                            غير محدد
+                        {% endif %}
+                    </td>
+
+                    <td>{{ student.archive_education_level|default:"غير محدد" }}</td>
+
+                    <td>{{ student.archive_grade_level|default:"غير محدد" }}</td>
+
+                    <td>{{ student.archive_total_fees|default:0|floatformat:2 }}</td>
+
+                    <td class="text-success fw-bold">
+                        {{ student.archive_total_payments|default:0|floatformat:2 }}
+                    </td>
+
+                    <td class="text-danger fw-bold">
+                        {{ student.archive_total_owed|default:0|floatformat:2 }}
+                    </td>
+
+                    <td>
+                        {% if student.archived_date %}
+                            {{ student.archived_date|date:"Y/m/d" }}
+                            <br>
+                            <small>{{ student.archived_date|date:"H:i" }}</small>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        <small>{{ student.archived_reason|default:"-"|truncatechars:70 }}</small>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="12" class="text-center text-muted py-5">
+                        <i class="fas fa-archive fa-3x mb-3"></i>
+                        <h5>لا توجد نتائج</h5>
+                        <p>لا يوجد طلاب مؤرشفون مطابقون للفلاتر الحالية.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

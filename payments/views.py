@@ -1482,6 +1482,130 @@ def calculate_discount_for_installment(original_amount, discount_amount=None, di
     }
 
 
+def get_student_fee_type_total(student, fee_type, academic_year=None):
+    """حساب إجمالي نوع مصروف معين للطالب"""
+    qs = Tuition.objects.filter(
+        student=student,
+        fee_type=fee_type
+    ).exclude(
+        payment_status='CANCELLED'
+    )
+
+    if academic_year:
+        qs = qs.filter(academic_year=academic_year)
+
+    return qs.aggregate(
+        total=Sum('amount_tuition')
+    )['total'] or Decimal('0.00')
+
+
+def get_student_total_fees_for_discount(student, academic_year=None):
+    """حساب إجمالي مصروفات الطالب لغرض الخصم"""
+    qs = Tuition.objects.filter(
+        student=student
+    ).exclude(
+        payment_status='CANCELLED'
+    )
+
+    if academic_year:
+        qs = qs.filter(academic_year=academic_year)
+
+    return qs.aggregate(
+        total=Sum('amount_tuition')
+    )['total'] or Decimal('0.00')
+
+
+def calculate_discount_by_scope(discount_setting, student, installment_amount, fee_type=None, academic_year=None):
+    """
+    حساب الخصم حسب نطاق التطبيق:
+    - PER_INSTALLMENT: على القسط الحالي
+    - TOTAL_FEES: على إجمالي مصروفات الطالب
+    - FEE_TYPE_TOTAL: على إجمالي نوع المصروف
+    """
+    if not discount_setting:
+        return Decimal('0.00'), Decimal(str(installment_amount or 0)), 'لا يوجد خصم'
+
+    installment_amount = Decimal(str(installment_amount or 0))
+
+    if installment_amount <= 0:
+        return Decimal('0.00'), installment_amount, 'مبلغ القسط غير صالح'
+
+    scope = getattr(discount_setting, 'application_scope', 'PER_INSTALLMENT') or 'PER_INSTALLMENT'
+
+    # الخصم على القسط الحالي
+    if scope == 'PER_INSTALLMENT':
+        base_amount = installment_amount
+        discount_amount = discount_setting.calculate_discount(base_amount)
+
+        if discount_amount > installment_amount:
+            discount_amount = installment_amount
+
+        final_amount = max(Decimal('0.00'), installment_amount - discount_amount)
+        return discount_amount, final_amount, 'تم حساب الخصم على القسط الحالي'
+
+    # الخصم على إجمالي مصروفات الطالب
+    if scope == 'TOTAL_FEES':
+        total_fees = get_student_total_fees_for_discount(
+            student=student,
+            academic_year=academic_year
+        )
+
+        if total_fees <= 0:
+            total_fees = installment_amount
+
+        total_discount = discount_setting.calculate_discount(total_fees)
+
+        # هنا نطبق نصيب القسط الحالي من الخصم كنسبة من إجمالي المصروفات
+        if total_fees > 0:
+            installment_share = installment_amount / total_fees
+            discount_amount = total_discount * installment_share
+        else:
+            discount_amount = Decimal('0.00')
+
+        discount_amount = discount_amount.quantize(Decimal('0.01'))
+
+        if discount_amount > installment_amount:
+            discount_amount = installment_amount
+
+        final_amount = max(Decimal('0.00'), installment_amount - discount_amount)
+        return discount_amount, final_amount, 'تم توزيع خصم إجمالي المصروفات على القسط الحالي'
+
+    # الخصم على إجمالي نوع مصروف معين
+    if scope == 'FEE_TYPE_TOTAL':
+        fee_type_total = get_student_fee_type_total(
+            student=student,
+            fee_type=fee_type,
+            academic_year=academic_year
+        )
+
+        if fee_type_total <= 0:
+            fee_type_total = installment_amount
+
+        total_discount = discount_setting.calculate_discount(fee_type_total)
+
+        if fee_type_total > 0:
+            installment_share = installment_amount / fee_type_total
+            discount_amount = total_discount * installment_share
+        else:
+            discount_amount = Decimal('0.00')
+
+        discount_amount = discount_amount.quantize(Decimal('0.01'))
+
+        if discount_amount > installment_amount:
+            discount_amount = installment_amount
+
+        final_amount = max(Decimal('0.00'), installment_amount - discount_amount)
+        return discount_amount, final_amount, 'تم توزيع خصم نوع المصروف على القسط الحالي'
+
+    # fallback
+    discount_amount = discount_setting.calculate_discount(installment_amount)
+
+    if discount_amount > installment_amount:
+        discount_amount = installment_amount
+
+    final_amount = max(Decimal('0.00'), installment_amount - discount_amount)
+    return discount_amount, final_amount, 'تم حساب الخصم بالطريقة الافتراضية'
+
 @never_cache
 @payments_full_access
 def pay_installment(request, pk):
@@ -1507,10 +1631,29 @@ def pay_installment(request, pk):
             current_year = None
 
     payment_user = request.user.get_full_name() or request.user.username
+
     try:
         payment_settings = PaymentSettings.get_settings()
     except Exception:
         payment_settings = None
+
+    # ============================================================
+    # الخصومات المعتمدة المتاحة للطالب
+    # ============================================================
+    try:
+        student_discounts = StudentDiscount.objects.filter(
+            student=student,
+            status='APPROVED'
+        ).select_related(
+            'discount_setting',
+            'academic_year'
+        ).order_by(
+            '-created_date'
+        )
+    except Exception as e:
+        print(f"تعذر تحميل خصومات الطالب: {e}")
+        student_discounts = []
+
     # ============================================================
     # إنشاء قسط جديد
     # ============================================================
@@ -1525,6 +1668,13 @@ def pay_installment(request, pk):
             try:
                 tuition = form.save(commit=False)
 
+                tuition.student = student
+                tuition.academic_year = current_year
+                tuition.payment_user = payment_user
+
+                # ------------------------------------------------------------
+                # المبلغ الأصلي قبل الخصم
+                # ------------------------------------------------------------
                 original_amount = (
                     request.POST.get('original_amount')
                     or request.POST.get('amount_tuition')
@@ -1532,26 +1682,110 @@ def pay_installment(request, pk):
                     or '0'
                 )
 
-                discount_amount = request.POST.get('discount_amount', '0')
-                discount_percentage = request.POST.get('discount_percentage', '0')
+                original_amount = Decimal(str(original_amount or '0'))
 
-                discount_result = calculate_discount_for_installment(
-                    original_amount=original_amount,
-                    discount_amount=discount_amount,
-                    discount_percentage=discount_percentage,
+                if original_amount <= 0:
+                    messages.error(request, 'مبلغ القسط يجب أن يكون أكبر من صفر')
+                    return redirect('payments:pay_installment', pk=student.pk)
+
+                # ------------------------------------------------------------
+                # نوع المصروف والقيم الأساسية
+                # ------------------------------------------------------------
+                fee_type = (
+                    request.POST.get('fee_type')
+                    or getattr(tuition, 'fee_type', None)
+                    or 'TUITION'
                 )
 
-                tuition.student = student
-                tuition.academic_year = current_year
+                tuition.fee_type = fee_type
 
-                # المبلغ المطلوب النهائي بعد الخصم
-                tuition.amount_tuition = discount_result['final_amount']
+                applied_discount = None
+                discount_amount = Decimal('0.00')
+                final_amount = original_amount
+                discount_message = ''
 
-                # إجمالي الخصم
-                tuition.discount_amount = discount_result['discount_amount']
+                # ------------------------------------------------------------
+                # خصم معتمد من StudentDiscount حسب application_scope
+                # ------------------------------------------------------------
+                applied_discount_id = (
+                    request.POST.get('applied_discount')
+                    or request.POST.get('student_discount')
+                    or ''
+                )
 
-                tuition.payment_user = payment_user
+                if applied_discount_id:
+                    try:
+                        applied_discount = StudentDiscount.objects.select_related(
+                            'discount_setting'
+                        ).get(
+                            id=applied_discount_id,
+                            student=student,
+                            status='APPROVED'
+                        )
 
+                        discount_amount, final_amount, discount_message = calculate_discount_by_scope(
+                            discount_setting=applied_discount.discount_setting,
+                            student=student,
+                            installment_amount=original_amount,
+                            fee_type=fee_type,
+                            academic_year=current_year
+                        )
+
+                        tuition.applied_discount = applied_discount
+
+                    except StudentDiscount.DoesNotExist:
+                        applied_discount = None
+                        tuition.applied_discount = None
+                        discount_amount = Decimal('0.00')
+                        final_amount = original_amount
+                        messages.warning(request, 'الخصم المحدد غير متاح أو غير معتمد لهذا الطالب')
+
+                    except Exception as discount_error:
+                        applied_discount = None
+                        tuition.applied_discount = None
+                        discount_amount = Decimal('0.00')
+                        final_amount = original_amount
+                        messages.warning(request, f'تعذر تطبيق الخصم المحدد: {str(discount_error)}')
+
+                # ------------------------------------------------------------
+                # في حالة عدم اختيار خصم معتمد، استخدم الخصم اليدوي القديم
+                # ------------------------------------------------------------
+                if not applied_discount:
+                    manual_discount_amount = request.POST.get('discount_amount', '0')
+                    manual_discount_percentage = request.POST.get('discount_percentage', '0')
+
+                    try:
+                        discount_result = calculate_discount_for_installment(
+                            original_amount=original_amount,
+                            discount_amount=manual_discount_amount,
+                            discount_percentage=manual_discount_percentage,
+                        )
+
+                        discount_amount = Decimal(str(discount_result.get('discount_amount', '0') or '0'))
+                        final_amount = Decimal(str(discount_result.get('final_amount', original_amount) or original_amount))
+
+                    except Exception as manual_discount_error:
+                        print(f"خطأ في حساب الخصم اليدوي: {manual_discount_error}")
+                        discount_amount = Decimal('0.00')
+                        final_amount = original_amount
+
+                # ------------------------------------------------------------
+                # تأمين القيم النهائية
+                # ------------------------------------------------------------
+                if discount_amount < 0:
+                    discount_amount = Decimal('0.00')
+
+                if discount_amount > original_amount:
+                    discount_amount = original_amount
+
+                final_amount = max(Decimal('0.00'), original_amount - discount_amount)
+
+                tuition.amount_tuition = final_amount.quantize(Decimal('0.01'))
+                tuition.discount_amount = discount_amount.quantize(Decimal('0.01'))
+
+                # ------------------------------------------------------------
+                # طريقة الدفع
+                # ------------------------------------------------------------
                 if not tuition.payment_method:
                     if payment_settings:
                         tuition.payment_method = request.POST.get(
@@ -1561,8 +1795,13 @@ def pay_installment(request, pk):
                     else:
                         tuition.payment_method = request.POST.get('payment_method', 'cash')
 
+                # ------------------------------------------------------------
+                # المبلغ المدفوع
+                # ------------------------------------------------------------
                 if tuition.amount_paid is None:
                     tuition.amount_paid = Decimal('0.00')
+                else:
+                    tuition.amount_paid = Decimal(str(tuition.amount_paid or '0'))
 
                 if tuition.amount_paid < 0:
                     messages.error(request, 'المبلغ المدفوع لا يمكن أن يكون أقل من صفر')
@@ -1582,6 +1821,9 @@ def pay_installment(request, pk):
 
                 tuition.save()
 
+                # ------------------------------------------------------------
+                # إنشاء سجل دفع لو فيه مبلغ مدفوع وقت إنشاء القسط
+                # ------------------------------------------------------------
                 if tuition.amount_paid > 0:
                     PaymentRecord.objects.create(
                         tuition=tuition,
@@ -1591,10 +1833,28 @@ def pay_installment(request, pk):
                         notes=tuition.notes or ''
                     )
 
-                messages.success(request, 'تم إنشاء القسط بنجاح')
+                # ------------------------------------------------------------
+                # تحديث إجماليات الطالب إن كانت الدالة موجودة
+                # ------------------------------------------------------------
+                try:
+                    update_student_financial_totals(student)
+                except Exception:
+                    pass
+
+                if applied_discount and discount_message:
+                    messages.success(
+                        request,
+                        f'تم إنشاء القسط بنجاح وتطبيق الخصم. {discount_message}'
+                    )
+                else:
+                    messages.success(request, 'تم إنشاء القسط بنجاح')
+
                 return redirect('payments:pay_installment', pk=student.pk)
 
             except Exception as e:
+                print(f"خطأ أثناء إنشاء القسط: {e}")
+                import traceback
+                traceback.print_exc()
                 messages.error(request, f'حدث خطأ أثناء إنشاء القسط: {str(e)}')
 
         else:
@@ -1623,6 +1883,7 @@ def pay_installment(request, pk):
                 record = form.save(commit=False)
                 record.tuition = tuition
                 record.payment_user = payment_user
+
                 if not (payment_settings and payment_settings.allow_overpayment):
                     if record.amount_paid > tuition.remaining_amount:
                         messages.error(
@@ -1630,6 +1891,7 @@ def pay_installment(request, pk):
                             f'المبلغ المدفوع لا يمكن أن يتجاوز المتبقي: {tuition.remaining_amount} ج.م'
                         )
                         return redirect('payments:pay_installment', pk=student.pk)
+
                 record.save()
 
                 tuition.amount_paid = (tuition.amount_paid or Decimal('0.00')) + record.amount_paid
@@ -1645,10 +1907,18 @@ def pay_installment(request, pk):
 
                 tuition.save()
 
+                try:
+                    update_student_financial_totals(student)
+                except Exception:
+                    pass
+
                 messages.success(request, 'تم تسجيل الدفعة بنجاح')
                 return redirect('payments:pay_installment', pk=student.pk)
 
             except Exception as e:
+                print(f"خطأ أثناء تسجيل الدفعة: {e}")
+                import traceback
+                traceback.print_exc()
                 messages.error(request, f'حدث خطأ أثناء تسجيل الدفعة: {str(e)}')
 
         else:
@@ -1667,7 +1937,8 @@ def pay_installment(request, pk):
         student=student
     ).select_related(
         'academic_year',
-        'applied_discount'
+        'applied_discount',
+        'applied_discount__discount_setting'
     ).order_by(
         'academic_year__id',
         'fee_type',
@@ -1728,6 +1999,8 @@ def pay_installment(request, pk):
         'payment_form': PaymentRecordForm(),
         'current_year': current_year,
 
+        'student_discounts': student_discounts,
+
         'fee_type_choices': Tuition.FEE_TYPE_CHOICES,
         'payment_method_choices': Tuition.PAYMENT_METHOD_CHOICES,
         'payment_settings': payment_settings,
@@ -1738,7 +2011,6 @@ def pay_installment(request, pk):
     }
 
     return render(request, 'payments/pay_installment.html', context)
-
 
 @never_cache
 @payments_manager_access
@@ -4870,3 +5142,133 @@ def technical_support(request):
         'permissions': get_payment_permissions(request.user),
     }
     return render(request, 'payments/technical_support.html', context)
+
+
+@never_cache
+@payments_full_access
+@require_http_methods(["GET", "POST"])
+@csrf_protect
+def request_student_discount(request, student_id):
+    """طلب خصم للطالب بواسطة المحاسب أو موظف المدفوعات"""
+    student = get_object_or_404(
+        Student.objects.select_related(
+            'grade_level',
+            'grade_level__education_level',
+            'academic_year'
+        ),
+        pk=student_id,
+        is_active=True
+    )
+
+    current_year = getattr(student, 'academic_year', None)
+
+    if not current_year:
+        try:
+            from school_settings.models import AcademicYear
+            current_year = AcademicYear.objects.filter(is_active=True).order_by('-id').first()
+        except Exception:
+            current_year = None
+
+    try:
+        from school_settings.models import DiscountSettings, StudentDiscount
+    except Exception:
+        messages.error(request, 'تعذر تحميل إعدادات الخصومات')
+        return redirect('payments:pay_installment', pk=student.pk)
+
+    discounts = DiscountSettings.objects.filter(
+        is_active=True
+    ).order_by(
+        'category',
+        'name'
+    )
+
+    if request.method == 'POST':
+        discount_id = request.POST.get('discount_setting')
+        original_amount_str = request.POST.get('original_amount', '').strip()
+        application_reason = request.POST.get('application_reason', '').strip()
+        admin_notes = request.POST.get('admin_notes', '').strip()
+
+        if not discount_id:
+            messages.error(request, 'يرجى اختيار الخصم')
+            return redirect('payments:request_student_discount', student_id=student.pk)
+
+        if not current_year:
+            messages.error(request, 'لا يوجد عام دراسي مرتبط بالطالب')
+            return redirect('payments:request_student_discount', student_id=student.pk)
+
+        if not original_amount_str:
+            messages.error(request, 'يرجى إدخال المبلغ الأصلي')
+            return redirect('payments:request_student_discount', student_id=student.pk)
+
+        try:
+            original_amount = Decimal(str(original_amount_str))
+
+            if original_amount <= 0:
+                messages.error(request, 'المبلغ الأصلي يجب أن يكون أكبر من صفر')
+                return redirect('payments:request_student_discount', student_id=student.pk)
+
+        except Exception:
+            messages.error(request, 'تنسيق المبلغ الأصلي غير صحيح')
+            return redirect('payments:request_student_discount', student_id=student.pk)
+
+        discount_setting = get_object_or_404(
+            DiscountSettings,
+            pk=discount_id,
+            is_active=True
+        )
+
+        if not discount_setting.is_valid_now:
+            messages.error(request, 'هذا الخصم غير صالح حاليًا أو خارج فترة الصلاحية')
+            return redirect('payments:request_student_discount', student_id=student.pk)
+
+        existing = StudentDiscount.objects.filter(
+            student=student,
+            discount_setting=discount_setting,
+            academic_year=current_year
+        ).exclude(
+            status='REJECTED'
+        ).first()
+
+        if existing:
+            messages.warning(
+                request,
+                'يوجد بالفعل طلب أو خصم معتمد من نفس النوع لهذا الطالب في نفس العام الدراسي'
+            )
+            return redirect('payments:pay_installment', pk=student.pk)
+
+        applied_amount = discount_setting.calculate_discount(original_amount)
+        final_amount = max(Decimal('0.00'), original_amount - applied_amount)
+
+        StudentDiscount.objects.create(
+            student=student,
+            discount_setting=discount_setting,
+            academic_year=current_year,
+
+            original_amount=original_amount,
+            applied_amount=applied_amount,
+            final_amount=final_amount,
+
+            application_scope=discount_setting.application_scope,
+
+            status='PENDING',
+
+            application_reason=application_reason or 'طلب خصم من المحاسب',
+            admin_notes=admin_notes,
+
+            created_by=request.user,
+        )
+
+        messages.success(
+            request,
+            f'تم إرسال طلب الخصم للطالب {student.name} وفي انتظار موافقة الإدارة'
+        )
+        return redirect('payments:pay_installment', pk=student.pk)
+
+    context = {
+        'student': student,
+        'current_year': current_year,
+        'discounts': discounts,
+        'title': f'طلب خصم للطالب - {student.name}',
+    }
+
+    return render(request, 'payments/request_student_discount.html', context)
