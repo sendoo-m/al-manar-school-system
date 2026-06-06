@@ -8,6 +8,57 @@ import datetime
 import json
 import logging
 
+# Ensure a module-level logger is available for safe logging calls
+try:
+    logger = logging.getLogger(__name__)
+except Exception:
+    # Fallback to a simple logger-like object to avoid NameError in extreme cases
+    class _FallbackLogger:
+        def error(self, *args, **kwargs):
+            try:
+                print("ERROR:", *args)
+            except Exception:
+                pass
+        def warning(self, *args, **kwargs):
+            try:
+                print("WARN:", *args)
+            except Exception:
+                pass
+        def info(self, *args, **kwargs):
+            try:
+                print("INFO:", *args)
+            except Exception:
+                pass
+
+    logger = _FallbackLogger()
+
+# Robust helper to extract client IP from request. If a different get_client_ip
+# function already exists elsewhere, this definition is intentionally non-destructive
+# (it will override only if one is not present in the module namespace). It safely
+# handles X-Forwarded-For and falls back to REMOTE_ADDR. It accepts None and
+# non-request inputs and returns None when IP cannot be determined.
+def get_client_ip(request):
+    try:
+        if not request:
+            return None
+
+        # Prefer X-Forwarded-For if present (may contain multiple IPs)
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('X-Forwarded-For')
+        if x_forwarded_for:
+            # X-Forwarded-For may be a comma-separated list of IPs; first is client
+            ip = x_forwarded_for.split(',')[0].strip()
+            return ip[:45]  # guard max length
+
+        # Fallback to REMOTE_ADDR
+        remote_addr = request.META.get('REMOTE_ADDR')
+        if remote_addr:
+            return remote_addr[:45]
+
+        return None
+    except Exception:
+        # Never raise from this helper
+        return None
+
 # نموذج إعدادات النظام العامة - مُصحح
 class SystemSettings(models.Model):
     # معلومات المدرسة الأساسية
@@ -507,19 +558,31 @@ class StudentDiscount(models.Model):
 
 
 # نموذج أدوار النظام
+# في school_settings/models.py - تحديث SystemRole
 class SystemRole(models.Model):
     ROLE_CHOICES = (
+        # الأدوار الأساسية
         ('SYSTEM_ADMIN', 'مدير النظام'),
         ('SCHOOL_MANAGER', 'مدير المدرسة'),
         ('ACCOUNTANT', 'موظف الحسابات'),
         ('STUDENT_AFFAIRS', 'موظف شؤون الطلاب'),
+
+        
+        # ✅ إضافة أدوار الخزينة
+        ('TREASURY_ADMIN', 'مدير الخزينة العام'),
+        ('TREASURY_MANAGER', 'مدير الخزينة'),
+        ('TREASURY_ACCOUNTANT', 'محاسب الخزينة'),
+        ('TREASURY_CASHIER', 'أمين الخزينة'),
+        ('TREASURY_VIEWER', 'مراجع الخزينة'),
+        
+        # ✅ إضافة أدوار المخازن
         ('BOOKS_INVENTORY', 'موظف مخزن الكتب'),
         ('UNIFORMS_INVENTORY', 'موظف مخزن الملابس'),
-        ('TEACHER', 'مدرس'),
+        ('INVENTORY_MANAGER', 'مدير المخازن'),
     )
     
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='system_role')
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+    role = models.CharField(max_length=25, choices=ROLE_CHOICES)  # زيادة طول الحقل
     is_active = models.BooleanField(default=True)
     permissions = models.TextField(blank=True, verbose_name="صلاحيات إضافية", 
                                  help_text="JSON format للصلاحيات الخاصة")
@@ -531,6 +594,49 @@ class SystemRole(models.Model):
     
     def __str__(self):
         return f"{self.user.username} - {self.get_role_display()}"
+    
+    def save(self, *args, **kwargs):
+        """تطبيق المجموعات التلقائية حسب الدور"""
+        super().save(*args, **kwargs)
+        
+        # تطبيق المجموعات حسب الدور
+        self.apply_role_groups()
+    
+    def apply_role_groups(self):
+        """تطبيق المجموعات المناسبة حسب الدور"""
+        from django.contrib.auth.models import Group
+        
+        # إزالة جميع المجموعات السابقة (عدا مدير النظام)
+        if not self.user.is_superuser:
+            self.user.groups.clear()
+        
+        # تطبيق المجموعات حسب الدور
+        role_groups_mapping = {
+            # أدوار الخزينة
+            'TREASURY_ADMIN': ['treasury_admin'],
+            'TREASURY_MANAGER': ['treasury_manager'],
+            'TREASURY_ACCOUNTANT': ['treasury_accountant'],
+            'TREASURY_CASHIER': ['treasury_cashier'],
+            'TREASURY_VIEWER': ['treasury_viewer'],
+            
+            # أدوار المخازن
+            'BOOKS_INVENTORY': ['books_inventory_staff'],
+            'UNIFORMS_INVENTORY': ['uniforms_inventory_staff'],
+            'INVENTORY_MANAGER': ['books_inventory_staff', 'uniforms_inventory_staff', 'treasury_manager'],
+            
+            # الأدوار الأخرى يمكن إضافة مجموعات لها لاحقاً
+            'ACCOUNTANT': ['treasury_accountant'],  # ربط محاسب عام بالخزينة
+        }
+        
+        groups_for_role = role_groups_mapping.get(self.role, [])
+        
+        for group_name in groups_for_role:
+            try:
+                group, created = Group.objects.get_or_create(name=group_name)
+                self.user.groups.add(group)
+            except Exception as e:
+                print(f"خطأ في إضافة المجموعة {group_name}: {e}")
+
 
 
 # نموذج إعدادات التنبيهات والإشعارات
@@ -647,33 +753,8 @@ class SecuritySettings(models.Model):
         return settings_obj
 
 
-# نموذج سجل التغييرات في الإعدادات
-class SettingsLog(models.Model):
-    ACTION_CHOICES = (
-        ('CREATE', 'إنشاء'),
-        ('UPDATE', 'تحديث'),
-        ('DELETE', 'حذف'),
-    )
-    
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="المستخدم")
-    action = models.CharField(max_length=10, choices=ACTION_CHOICES, verbose_name="نوع العملية")
-    setting_type = models.CharField(max_length=100, verbose_name="نوع الإعداد")
-    old_value = models.TextField(blank=True, verbose_name="القيمة السابقة")
-    new_value = models.TextField(blank=True, verbose_name="القيمة الجديدة")
-    timestamp = models.DateTimeField(auto_now_add=True, verbose_name="وقت التغيير")
-    ip_address = models.GenericIPAddressField(null=True, blank=True, verbose_name="عنوان IP")
-    
-    class Meta:
-        verbose_name = "سجل تغييرات الإعدادات"
-        verbose_name_plural = "سجل تغييرات الإعدادات"
-        ordering = ['-timestamp']
-    
-    def __str__(self):
-        return f"{self.user.username} - {self.action} - {self.setting_type} - {self.timestamp}"
 
-
-# في school_settings/models.py - إضافة في النهاية
-# تحديث نموذج SettingsLog ليكون آمن أكثر
+# نموذج سجل التغييرات في الإعدادات - نسخة محسنة وآمنة
 class SettingsLog(models.Model):
     """سجل تغييرات الإعدادات - نسخة محسنة وآمنة"""
     

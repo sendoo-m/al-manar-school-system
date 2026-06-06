@@ -52,5 +52,6 @@ urlpatterns = [
     path('import-advanced/', views.import_students_advanced, name='import_students_advanced'),
     path('upgrade-wizard/', views.upgrade_students_wizard, name='upgrade_students_wizard'),
     path('user-guide/', views.user_guide, name='user_guide'),
-
+    path('import-template/', views.download_import_template, name='download_import_template'),
+    path('sync-financial-data/', views.sync_students_financial_data, name='sync_students_financial_data'),
 ]

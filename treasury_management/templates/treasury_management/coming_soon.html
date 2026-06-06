@@ -1,0 +1,222 @@
+<!-- treasury_management/templates/treasury_management/coming_soon.html -->
+{% extends 'treasury_management/base.html' %}
+{% load static %}
+
+{% block title %}{{ title|default:"قيد التطوير" }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">{{ feature_name|default:"ميزة جديدة" }}</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .soon-page {
+        min-height: calc(100vh - 220px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 30px 15px;
+    }
+
+    .soon-card {
+        max-width: 760px;
+        width: 100%;
+        background: white;
+        border-radius: 26px;
+        box-shadow: 0 18px 45px rgba(0,0,0,.12);
+        overflow: hidden;
+        text-align: center;
+        border: 1px solid rgba(255,255,255,.8);
+    }
+
+    .soon-header {
+        background: linear-gradient(135deg, #1565c0, #6f42c1);
+        color: white;
+        padding: 42px 30px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .soon-header::before {
+        content: '';
+        position: absolute;
+        inset: -60%;
+        background: radial-gradient(circle, rgba(255,255,255,.13) 1px, transparent 1px);
+        background-size: 25px 25px;
+        animation: drift 28s linear infinite;
+    }
+
+    .soon-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .soon-icon {
+        width: 90px;
+        height: 90px;
+        border-radius: 26px;
+        background: rgba(255,255,255,.18);
+        border: 2px solid rgba(255,255,255,.28);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 18px;
+        font-size: 2.7rem;
+        backdrop-filter: blur(10px);
+    }
+
+    .soon-header h2 {
+        color: white;
+        font-weight: 900;
+        margin-bottom: 10px;
+    }
+
+    .soon-header p {
+        color: rgba(255,255,255,.88);
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .soon-body {
+        padding: 32px;
+    }
+
+    .soon-body h5 {
+        font-weight: 900;
+        color: #2c3e50;
+        margin-bottom: 12px;
+    }
+
+    .soon-body p {
+        color: #6c757d;
+        font-weight: 700;
+        line-height: 1.9;
+    }
+
+    .soon-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 24px;
+    }
+
+    .soon-btn {
+        border: none;
+        border-radius: 13px;
+        padding: 11px 20px;
+        font-weight: 900;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        transition: all .3s ease;
+    }
+
+    .soon-btn:hover {
+        transform: translateY(-2px);
+        text-decoration: none;
+    }
+
+    .soon-btn.primary {
+        background: linear-gradient(135deg, #1565c0, #0d47a1);
+        color: white;
+    }
+
+    .soon-btn.secondary {
+        background: linear-gradient(135deg, #6c757d, #5a6268);
+        color: white;
+    }
+
+    .soon-steps {
+        margin-top: 26px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 14px;
+    }
+
+    .soon-step {
+        background: #f8f9fa;
+        border-radius: 16px;
+        padding: 16px;
+        border: 1px solid #eef1f4;
+    }
+
+    .soon-step i {
+        color: #1565c0;
+        font-size: 1.4rem;
+        margin-bottom: 8px;
+    }
+
+    .soon-step div {
+        font-weight: 900;
+        color: #2c3e50;
+    }
+
+    .soon-step small {
+        color: #6c757d;
+        font-weight: 700;
+    }
+
+    @keyframes drift {
+        0% { transform: rotate(0deg) translateX(0); }
+        100% { transform: rotate(360deg) translateX(20px); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="soon-page">
+    <div class="soon-card">
+        <div class="soon-header">
+            <div class="soon-content">
+                <div class="soon-icon">
+                    <i class="fas fa-tools"></i>
+                </div>
+
+                <h2>{{ feature_name|default:"ميزة جديدة" }}</h2>
+                <p>هذه الميزة قيد التطوير وسيتم إضافتها قريبًا</p>
+            </div>
+        </div>
+
+        <div class="soon-body">
+            <h5>نعمل على تجهيز هذه الصفحة</h5>
+            <p>
+                الصفحة المطلوبة موجودة ضمن خطة تطوير نظام الخزينة، وسيتم ربطها بالبيانات والعمليات المناسبة عند اكتمالها.
+            </p>
+
+            <div class="soon-steps">
+                <div class="soon-step">
+                    <i class="fas fa-pencil-ruler"></i>
+                    <div>تصميم الواجهة</div>
+                    <small>جاهز للتنفيذ</small>
+                </div>
+
+                <div class="soon-step">
+                    <i class="fas fa-database"></i>
+                    <div>ربط البيانات</div>
+                    <small>قيد التجهيز</small>
+                </div>
+
+                <div class="soon-step">
+                    <i class="fas fa-check-circle"></i>
+                    <div>الاختبار</div>
+                    <small>قبل التشغيل النهائي</small>
+                </div>
+            </div>
+
+            <div class="soon-actions">
+                <a href="{% url 'treasury_management:dashboard' %}" class="soon-btn primary">
+                    <i class="fas fa-home"></i>
+                    لوحة التحكم
+                </a>
+
+                <a href="javascript:history.back()" class="soon-btn secondary">
+                    <i class="fas fa-arrow-right"></i>
+                    رجوع
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

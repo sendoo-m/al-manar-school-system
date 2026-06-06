@@ -1,4 +1,660 @@
-<!-- templates/payments/manage_discounts.html -->
+{% extends 'payments/base.html' %}
+{% load humanize %}
+
+{% block title %}إدارة الخصومات - مدرسة المنار{% endblock %}
+{% block page_title %}إدارة الخصومات{% endblock %}
+{% block page_subtitle %}إضافة ومتابعة خصومات الطلاب حسب العام الدراسي{% endblock %}
+{% block page_icon %}<i class="fas fa-percent me-3"></i>{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'payments:payments_home' %}">لوحة المدفوعات</a></li>
+<li class="breadcrumb-item"><a href="{% url 'payments:financial_reports' %}">التقارير المالية</a></li>
+<li class="breadcrumb-item active">إدارة الخصومات</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'payments:financial_reports' %}" class="btn btn-outline-primary btn-custom">
+        <i class="fas fa-chart-line me-1"></i>التقارير المالية
+    </a>
+
+    <a href="{% url 'payments:student_search' %}" class="btn btn-outline-info btn-custom">
+        <i class="fas fa-search me-1"></i>بحث طالب
+    </a>
+
+    <button type="button" class="btn btn-success btn-custom" data-bs-toggle="modal" data-bs-target="#addDiscountModal">
+        <i class="fas fa-plus me-1"></i>إضافة خصم
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .discount-hero {
+        background: linear-gradient(135deg, #20c997, #198754);
+        color: white;
+        border-radius: 22px;
+        padding: 28px;
+        margin-bottom: 25px;
+        box-shadow: 0 8px 24px rgba(25, 135, 84, 0.25);
+    }
+
+    .summary-card {
+        background: white;
+        border-radius: 18px;
+        padding: 22px;
+        height: 100%;
+        box-shadow: 0 5px 16px rgba(0,0,0,0.08);
+        border-top: 5px solid #20c997;
+        text-align: center;
+    }
+
+    .summary-card.success { border-top-color: #198754; }
+    .summary-card.warning { border-top-color: #ffc107; }
+    .summary-card.danger { border-top-color: #dc3545; }
+
+    .summary-value {
+        font-size: 1.8rem;
+        font-weight: 900;
+        margin-bottom: 5px;
+    }
+
+    .summary-label {
+        color: #64748b;
+        font-weight: 800;
+    }
+
+    .content-panel {
+        background: white;
+        border-radius: 18px;
+        box-shadow: 0 5px 16px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+        overflow: hidden;
+    }
+
+    .content-panel-header {
+        background: #f8f9fa;
+        padding: 18px 22px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .content-panel-header h5 {
+        margin: 0;
+        font-weight: 900;
+    }
+
+    .content-panel-body {
+        padding: 22px;
+    }
+
+    .filter-box {
+        background: #f8f9fa;
+        border-radius: 16px;
+        padding: 20px;
+        border: 1px solid #e9ecef;
+        margin-bottom: 24px;
+    }
+
+    .discount-table thead th {
+        background: linear-gradient(135deg, #20c997, #198754);
+        color: white;
+        border: none;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    .discount-table td {
+        vertical-align: middle;
+        text-align: center;
+    }
+
+    .student-cell {
+        text-align: right !important;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 12px;
+        font-weight: 900;
+        font-size: 0.78rem;
+    }
+
+    .student-search-results {
+        max-height: 260px;
+        overflow-y: auto;
+        display: none;
+    }
+
+    .selected-student-box {
+        display: none;
+    }
+
+    @media print {
+        .page-actions,
+        .breadcrumb,
+        .breadcrumb-nav,
+        .filter-box,
+        .btn,
+        .discount-hero,
+        .modal {
+            display: none !important;
+        }
+
+        .content-panel,
+        .summary-card {
+            box-shadow: none !important;
+            border: 1px solid #ddd !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="discount-hero">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h2 class="mb-2">
+                <i class="fas fa-percent me-2"></i>
+                إدارة الخصومات
+            </h2>
+            <p class="mb-0">
+                إضافة ومراجعة خصومات الطلاب وتأثيرها على الحسابات والمدفوعات.
+            </p>
+        </div>
+
+        <div class="text-lg-end">
+            <div><strong>إجمالي الخصومات:</strong> {{ total_amount|floatformat:2 }} ج.م</div>
+            <div><strong>عدد الخصومات:</strong> {{ total_count }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- الملخص -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="summary-card success">
+            <div class="summary-value text-success">{{ total_amount|floatformat:2 }}</div>
+            <div class="summary-label">إجمالي قيمة الخصومات</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="summary-card">
+            <div class="summary-value text-info">{{ total_count }}</div>
+            <div class="summary-label">إجمالي الخصومات</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="summary-card warning">
+            <div class="summary-value text-warning">{{ active_count }}</div>
+            <div class="summary-label">خصومات نشطة</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="summary-card danger">
+            <div class="summary-value text-danger">{{ inactive_count }}</div>
+            <div class="summary-label">خصومات غير نشطة</div>
+        </div>
+    </div>
+</div>
+
+<!-- الفلاتر -->
+<div class="filter-box">
+    <form method="get" class="row g-3">
+        <div class="col-lg-4 col-md-6">
+            <label class="form-label fw-bold">البحث</label>
+            <input type="text"
+                   name="search"
+                   class="form-control"
+                   value="{{ search_query }}"
+                   placeholder="اسم الطالب، الرقم القومي، الهاتف، سبب الخصم">
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label fw-bold">العام الدراسي</label>
+            <select name="academic_year" class="form-control">
+                <option value="">كل الأعوام</option>
+                {% for year in academic_years %}
+                <option value="{{ year.id }}" {% if selected_year == year.id|stringformat:"s" %}selected{% endif %}>
+                    {{ year.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label fw-bold">الحالة</label>
+            <select name="status" class="form-control">
+                <option value="">كل الحالات</option>
+                <option value="active" {% if selected_status == 'active' %}selected{% endif %}>نشط</option>
+                <option value="inactive" {% if selected_status == 'inactive' %}selected{% endif %}>غير نشط</option>
+            </select>
+        </div>
+
+        <div class="col-lg-2 col-md-6 d-flex align-items-end">
+            <div class="d-grid w-100">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-search me-1"></i>بحث
+                </button>
+            </div>
+        </div>
+
+        <div class="col-12 text-center">
+            <a href="{% url 'payments:manage_discounts' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-eraser me-1"></i>مسح الفلاتر
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- جدول الخصومات -->
+<div class="content-panel">
+    <div class="content-panel-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h5>
+            <i class="fas fa-list me-2 text-success"></i>
+            قائمة الخصومات
+        </h5>
+
+        <span class="badge bg-success">{{ discounts.paginator.count }} خصم</span>
+    </div>
+
+    <div class="content-panel-body p-0">
+        <div class="table-responsive">
+            <table class="table discount-table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>الطالب</th>
+                        <th>الصف</th>
+                        <th>مبلغ الخصم</th>
+                        <th>نسبة الخصم</th>
+                        <th>العام الدراسي</th>
+                        <th>السبب</th>
+                        <th>الحالة</th>
+                        <th>تاريخ الإنشاء</th>
+                        <th>إجراء</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for discount in discounts %}
+                    <tr>
+                        <td class="student-cell">
+                            {% if discount.student %}
+                                <strong>{{ discount.student.name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ discount.student.national_number|default:"-" }}</small>
+                            {% else %}
+                                <span class="text-muted">غير محدد</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if discount.student and discount.student.grade_level %}
+                                {% if discount.student.grade_level.education_level %}
+                                    <small>{{ discount.student.grade_level.education_level.name }}</small>
+                                    <br>
+                                {% endif %}
+                                <strong>{{ discount.student.grade_level.name }}</strong>
+                            {% else %}
+                                غير محدد
+                            {% endif %}
+                        </td>
+
+                        <td class="text-success fw-bold">
+                            {{ discount.discount_amount|floatformat:2 }} ج.م
+                        </td>
+
+                        <td>
+                            {{ discount.discount_percentage|default:0|floatformat:2 }}%
+                        </td>
+
+                        <td>
+                            {% if discount.academic_year %}
+                                {{ discount.academic_year.name }}
+                            {% else %}
+                                غير محدد
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <small>{{ discount.reason|default:"-"|truncatechars:50 }}</small>
+                        </td>
+
+                        <td>
+                            {% if discount.is_active %}
+                                <span class="status-badge bg-success text-white">نشط</span>
+                            {% else %}
+                                <span class="status-badge bg-secondary text-white">غير نشط</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {{ discount.created_date|date:"Y/m/d" }}
+                            <br>
+                            <small>{{ discount.created_date|date:"H:i" }}</small>
+                        </td>
+
+                        <td>
+                            {% if discount.student %}
+                            <a href="{% url 'payments:pay_installment' discount.student.pk %}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center text-muted py-5">
+                            <i class="fas fa-percent fa-3x mb-3"></i>
+                            <h5>لا توجد خصومات</h5>
+                            <p>لم يتم تسجيل أي خصومات مطابقة للفلاتر الحالية.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if discounts.has_other_pages %}
+        <div class="p-3 border-top">
+            <nav>
+                <ul class="pagination justify-content-center mb-0">
+                    {% if discounts.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ discounts.previous_page_number }}">السابق</a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in discounts.paginator.page_range %}
+                        {% if num == discounts.number %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > discounts.number|add:'-3' and num < discounts.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if discounts.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ discounts.next_page_number }}">التالي</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal إضافة خصم -->
+<div class="modal fade" id="addDiscountModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post" id="discountForm">
+                {% csrf_token %}
+
+                <input type="hidden" name="student_id" id="studentIdInput">
+
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-plus me-2"></i>
+                        إضافة خصم جديد
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">البحث عن الطالب</label>
+                        <input type="text"
+                               class="form-control"
+                               id="studentSearchInput"
+                               placeholder="اكتب اسم الطالب أو الرقم القومي أو الهاتف..."
+                               autocomplete="off">
+
+                        <div id="studentSearchResults" class="list-group mt-2 student-search-results"></div>
+
+                        <div id="selectedStudentBox" class="alert alert-success mt-2 selected-student-box">
+                            <i class="fas fa-check-circle me-1"></i>
+                            تم اختيار الطالب:
+                            <strong id="selectedStudentName"></strong>
+                            <button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="clearSelectedStudent()">
+                                تغيير
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">مبلغ الخصم</label>
+                            <div class="input-group">
+                                <input type="number"
+                                       name="discount_amount"
+                                       class="form-control"
+                                       step="0.01"
+                                       min="0"
+                                       value="0">
+                                <span class="input-group-text">ج.م</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">نسبة الخصم</label>
+                            <div class="input-group">
+                                <input type="number"
+                                       name="discount_percentage"
+                                       class="form-control"
+                                       step="0.01"
+                                       min="0"
+                                       max="100"
+                                       value="0">
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">العام الدراسي</label>
+                            <select name="academic_year" class="form-control">
+                                <option value="">العام الحالي / غير محدد</option>
+                                {% for year in academic_years %}
+                                <option value="{{ year.id }}" {% if current_year and current_year.id == year.id %}selected{% endif %}>
+                                    {{ year.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3 d-flex align-items-end">
+                            <div class="form-check">
+                                <input type="checkbox" name="is_active" id="isActive" class="form-check-input" checked>
+                                <label for="isActive" class="form-check-label fw-bold">الخصم نشط</label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label fw-bold">سبب الخصم</label>
+                            <textarea name="reason"
+                                      class="form-control"
+                                      rows="3"
+                                      placeholder="مثال: خصم أخوة، خصم اجتماعي، خصم تفوق..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-1"></i>
+                        هذه الصفحة تسجل الخصم في سجل الخصومات. تطبيق الخصم على قسط معين يمكن ربطه لاحقًا من صفحة تعديل المدفوع أو إنشاء القسط.
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        إغلاق
+                    </button>
+
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save me-1"></i>
+                        حفظ الخصم
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const studentSearchInput = document.getElementById('studentSearchInput');
+
+    if (studentSearchInput) {
+        let searchTimer;
+
+        studentSearchInput.addEventListener('input', function() {
+            clearTimeout(searchTimer);
+
+            const query = this.value.trim();
+
+            if (query.length < 2) {
+                hideStudentResults();
+                return;
+            }
+
+            searchTimer = setTimeout(function() {
+                searchStudents(query);
+            }, 350);
+        });
+    }
+
+    const form = document.getElementById('discountForm');
+
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const studentId = document.getElementById('studentIdInput').value;
+            const amount = parseFloat(form.querySelector('input[name="discount_amount"]').value || 0);
+            const percentage = parseFloat(form.querySelector('input[name="discount_percentage"]').value || 0);
+
+            if (!studentId) {
+                e.preventDefault();
+                alert('يرجى اختيار الطالب من نتائج البحث');
+                return;
+            }
+
+            if (amount <= 0 && percentage <= 0) {
+                e.preventDefault();
+                alert('يرجى إدخال مبلغ خصم أو نسبة خصم');
+                return;
+            }
+
+            if (percentage > 100) {
+                e.preventDefault();
+                alert('نسبة الخصم لا يمكن أن تتجاوز 100%');
+            }
+        });
+    }
+});
+
+function searchStudents(query) {
+    fetch(`/payments/api/student-search/?q=${encodeURIComponent(query)}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const resultsBox = document.getElementById('studentSearchResults');
+        resultsBox.innerHTML = '';
+
+        const students = data.students || data.results || [];
+
+        if (!students.length) {
+            resultsBox.style.display = 'block';
+            resultsBox.innerHTML = '<div class="list-group-item text-muted">لا توجد نتائج مطابقة</div>';
+            return;
+        }
+
+        students.forEach(student => {
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'list-group-item list-group-item-action';
+
+            const grade = student.grade_level || student.grade_name || student.grade || 'غير محدد';
+            const national = student.national_number || '';
+
+            item.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${escapeHtml(student.name || '')}</strong>
+                        <br>
+                        <small class="text-muted">${escapeHtml(national)} - ${escapeHtml(grade)}</small>
+                    </div>
+                    <span class="badge bg-success">اختيار</span>
+                </div>
+            `;
+
+            item.onclick = function() {
+                selectStudent(student.id, student.name);
+            };
+
+            resultsBox.appendChild(item);
+        });
+
+        resultsBox.style.display = 'block';
+    })
+    .catch(error => {
+        console.error(error);
+        hideStudentResults();
+    });
+}
+
+function selectStudent(studentId, studentName) {
+    document.getElementById('studentIdInput').value = studentId;
+    document.getElementById('selectedStudentName').textContent = studentName;
+    document.getElementById('selectedStudentBox').style.display = 'block';
+    document.getElementById('studentSearchInput').value = studentName;
+
+    hideStudentResults();
+}
+
+function clearSelectedStudent() {
+    document.getElementById('studentIdInput').value = '';
+    document.getElementById('selectedStudentName').textContent = '';
+    document.getElementById('selectedStudentBox').style.display = 'none';
+    document.getElementById('studentSearchInput').value = '';
+    document.getElementById('studentSearchInput').focus();
+}
+
+function hideStudentResults() {
+    const resultsBox = document.getElementById('studentSearchResults');
+
+    if (resultsBox) {
+        resultsBox.style.display = 'none';
+        resultsBox.innerHTML = '';
+    }
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+</script>
+{% endblock %}
+
+{% comment %} <!-- templates/payments/manage_discounts.html -->
 {% extends 'payments/base.html' %}
 {% load humanize %}
 
@@ -1380,4 +2036,4 @@ function showPaymentMessage(type, message) {
     }, 5000);
 }
 </script>
-{% endblock %}
+{% endblock %} {% endcomment %}

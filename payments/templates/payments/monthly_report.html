@@ -150,6 +150,21 @@
         </div>
     </div>
 
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stats-card">
+            <div class="stats-icon bg-success">
+                <i class="fas fa-bullseye"></i>
+            </div>
+            <div class="stats-info">
+                <h4>{{ monthly_target|floatformat:2 }}</h4>
+                <p>هدف الشهر</p>
+                <small>{{ monthly_target_percentage|floatformat:1 }}% محقق</small>
+            </div>
+        </div>
+    </div>
+
+
     <!-- أيام العمل -->
     <div class="col-xl-3 col-lg-6 mb-4">
         <div class="payment-stats-card primary">
@@ -194,7 +209,11 @@
                         <div class="legend-color" style="background-color: #007bff;"></div>
                         <div class="legend-text">
                             <strong>أعلى يوم:</strong>
-                            <br>{{ daily_data.highest_day.date }} - {{ daily_data.highest_day.amount }} ج.م
+                            <br>{% if daily_data.highest_day %}
+    {{ daily_data.highest_day.date|date:"d/m/Y" }} - {{ daily_data.highest_day.amount|floatformat:2 }} ج.م
+{% else %}
+    لا توجد بيانات
+{% endif %}
                         </div>
                     </div>
                     <div class="legend-item mt-3">
@@ -524,20 +543,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // دالة الطباعة
 function printReport() {
-    window.print();
+    const month = document.getElementById('month').value;
+    const year = document.getElementById('year').value;
+
+    window.open(`/payments/print-monthly-report/?month=${month}&year=${year}`, '_blank');
 }
 
-// دالة التصدير
 function exportReport() {
     const month = document.getElementById('month').value;
     const year = document.getElementById('year').value;
-    
-    showPaymentMessage('info', 'جاري تحضير ملف التصدير...');
-    
-    // يمكن إضافة رابط تصدير حقيقي هنا
-    setTimeout(() => {
-        showPaymentMessage('warning', 'ميزة التصدير قيد التطوير');
-    }, 2000);
+
+    window.open(`/payments/export/monthly-pdf/?month=${month}&year=${year}`, '_blank');
 }
 
 // دالة عرض الرسائل

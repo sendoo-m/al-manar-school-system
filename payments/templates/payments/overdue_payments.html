@@ -1,1360 +1,446 @@
-<!-- templates/payments/overdue_payments.html -->
 {% extends 'payments/base.html' %}
 {% load humanize %}
 
-{% block title %}المدفوعات المتأخرة - مدرسة المنار{% endblock %}
-{% block page_title %}المدفوعات المتأخرة والمستحقة{% endblock %}
-{% block page_subtitle %}متابعة وإدارة المدفوعات المتأخرة عن موعد الاستحقاق{% endblock %}
+{% block title %}الأقساط المتأخرة - مدرسة المنار{% endblock %}
+{% block page_title %}الأقساط المتأخرة{% endblock %}
+{% block page_subtitle %}متابعة الطلاب الذين لديهم أقساط مستحقة أو غير مكتملة السداد{% endblock %}
 {% block page_icon %}<i class="fas fa-exclamation-triangle me-3"></i>{% endblock %}
 
 {% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'payments:payments_home' %}">لوحة التحكم</a></li>
-<li class="breadcrumb-item"><a href="{% url 'payments:all_payments' %}">جميع المدفوعات</a></li>
-<li class="breadcrumb-item active">المدفوعات المتأخرة</li>
+<li class="breadcrumb-item"><a href="{% url 'payments:payments_home' %}">لوحة المدفوعات</a></li>
+<li class="breadcrumb-item"><a href="{% url 'payments:financial_reports' %}">التقارير المالية</a></li>
+<li class="breadcrumb-item active">الأقساط المتأخرة</li>
 {% endblock %}
 
 {% block page_actions %}
-<div class="btn-group me-3">
-    <button class="btn btn-warning btn-custom" onclick="sendReminders()">
-        <i class="fas fa-bell me-1"></i>إرسال تذكيرات
-    </button>
-    <button class="btn btn-outline-info btn-custom" onclick="generateOverdueReport()">
-        <i class="fas fa-file-alt me-1"></i>تقرير مفصل
-    </button>
-</div>
 <div class="btn-group">
-    <button class="btn btn-outline-primary btn-custom" onclick="exportOverdue()">
-        <i class="fas fa-file-export me-1"></i>تصدير
-    </button>
-    <button class="btn btn-outline-secondary btn-custom" onclick="printOverdue()">
+    <a href="{% url 'payments:financial_reports' %}" class="btn btn-outline-primary btn-custom">
+        <i class="fas fa-chart-line me-1"></i>التقارير المالية
+    </a>
+
+    <a href="{% url 'payments:all_payments' %}?payment_status=OVERDUE" class="btn btn-outline-danger btn-custom">
+        <i class="fas fa-list me-1"></i>عرض في كل المدفوعات
+    </a>
+
+    <button type="button" class="btn btn-success btn-custom" onclick="window.print()">
         <i class="fas fa-print me-1"></i>طباعة
     </button>
 </div>
 {% endblock %}
 
+{% block extra_css %}
+<style>
+    .overdue-hero {
+        background: linear-gradient(135deg, #dc3545, #b02a37);
+        color: white;
+        border-radius: 22px;
+        padding: 28px;
+        margin-bottom: 25px;
+        box-shadow: 0 8px 24px rgba(220, 53, 69, 0.25);
+    }
+
+    .summary-card {
+        background: white;
+        border-radius: 18px;
+        padding: 22px;
+        height: 100%;
+        box-shadow: 0 5px 16px rgba(0,0,0,0.08);
+        border-top: 5px solid #dc3545;
+        text-align: center;
+    }
+
+    .summary-card.success { border-top-color: #198754; }
+    .summary-card.warning { border-top-color: #ffc107; }
+    .summary-card.info { border-top-color: #0dcaf0; }
+
+    .summary-value {
+        font-size: 1.8rem;
+        font-weight: 900;
+        margin-bottom: 5px;
+    }
+
+    .summary-label {
+        color: #64748b;
+        font-weight: 800;
+    }
+
+    .content-panel {
+        background: white;
+        border-radius: 18px;
+        box-shadow: 0 5px 16px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+        overflow: hidden;
+    }
+
+    .content-panel-header {
+        background: #f8f9fa;
+        padding: 18px 22px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .content-panel-header h5 {
+        margin: 0;
+        font-weight: 900;
+    }
+
+    .content-panel-body {
+        padding: 22px;
+    }
+
+    .filter-box {
+        background: #f8f9fa;
+        border-radius: 16px;
+        padding: 20px;
+        border: 1px solid #e9ecef;
+        margin-bottom: 24px;
+    }
+
+    .overdue-table thead th {
+        background: linear-gradient(135deg, #dc3545, #b02a37);
+        color: white;
+        border: none;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    .overdue-table td {
+        vertical-align: middle;
+        text-align: center;
+    }
+
+    .student-cell {
+        text-align: right !important;
+    }
+
+    .delay-badge {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 12px;
+        font-weight: 900;
+        font-size: 0.78rem;
+        background: #f8d7da;
+        color: #842029;
+    }
+
+    .grade-card {
+        background: #f8f9fa;
+        border-radius: 14px;
+        padding: 15px;
+        border-right: 5px solid #dc3545;
+        height: 100%;
+    }
+
+    @media print {
+        .page-actions,
+        .breadcrumb,
+        .breadcrumb-nav,
+        .filter-box,
+        .btn,
+        .overdue-hero {
+            display: none !important;
+        }
+
+        .content-panel,
+        .summary-card {
+            box-shadow: none !important;
+            border: 1px solid #ddd !important;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<!-- إحصائيات المدفوعات المتأخرة -->
-<div class="row mb-4">
-    <!-- إجمالي المتأخر -->
-    <div class="col-xl-3 col-lg-6 mb-4">
-        <div class="overdue-stats-card critical">
-            <div class="d-flex justify-content-between align-items-start">
-                <div class="flex-grow-1">
-                    <div class="overdue-amount">
-                        {{ overdue_stats.total_overdue_amount|floatformat:2|default:"0.00" }}
-                        <span class="currency-symbol">ج.م</span>
-                    </div>
-                    <div class="overdue-label">إجمالي المتأخر</div>
-                    <div class="overdue-change">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <span>{{ overdue_stats.total_overdue_count|default:0 }} مدفوع</span>
-                    </div>
-                </div>
-                <div class="text-danger opacity-75">
-                    <i class="fas fa-clock fa-3x"></i>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- أكثر من 30 يوم -->
-    <div class="col-xl-3 col-lg-6 mb-4">
-        <div class="overdue-stats-card severe">
-            <div class="d-flex justify-content-between align-items-start">
-                <div class="flex-grow-1">
-                    <div class="overdue-amount text-danger">
-                        {{ overdue_stats.severe_overdue_count|default:0 }}
-                    </div>
-                    <div class="overdue-label">متأخر +30 يوم</div>
-                    <div class="overdue-change">
-                        <i class="fas fa-exclamation-circle"></i>
-                        <span>حرج جداً</span>
-                    </div>
-                </div>
-                <div class="text-danger opacity-75">
-                    <i class="fas fa-exclamation-circle fa-3x"></i>
-                </div>
-            </div>
+<div class="overdue-hero">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h2 class="mb-2">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                الأقساط المتأخرة
+            </h2>
+            <p class="mb-0">
+                متابعة الأقساط التي تجاوزت تاريخ الاستحقاق ولم يتم سدادها بالكامل حتى {{ today|date:"Y/m/d" }}
+            </p>
         </div>
-    </div>
 
-    <!-- 7-30 يوم -->
-    <div class="col-xl-3 col-lg-6 mb-4">
-        <div class="overdue-stats-card moderate">
-            <div class="d-flex justify-content-between align-items-start">
-                <div class="flex-grow-1">
-                    <div class="overdue-amount text-warning">
-                        {{ overdue_stats.moderate_overdue_count|default:0 }}
-                    </div>
-                    <div class="overdue-label">متأخر 7-30 يوم</div>
-                    <div class="overdue-change">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <span>يحتاج متابعة</span>
-                    </div>
-                </div>
-                <div class="text-warning opacity-75">
-                    <i class="fas fa-exclamation-triangle fa-3x"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- الطلاب المتأخرين -->
-    <div class="col-xl-3 col-lg-6 mb-4">
-        <div class="overdue-stats-card students">
-            <div class="d-flex justify-content-between align-items-start">
-                <div class="flex-grow-1">
-                    <div class="overdue-amount text-info">
-                        {{ overdue_stats.overdue_students_count|default:0 }}
-                    </div>
-                    <div class="overdue-label">طلاب متأخرين</div>
-                    <div class="overdue-change">
-                        <i class="fas fa-user-clock"></i>
-                        <span>طالب فريد</span>
-                    </div>
-                </div>
-                <div class="text-info opacity-75">
-                    <i class="fas fa-users fa-3x"></i>
-                </div>
-            </div>
+        <div class="text-lg-end">
+            <div><strong>عدد الأقساط:</strong> {{ total_count }}</div>
+            <div><strong>إجمالي المتأخر:</strong> {{ total_remaining|floatformat:2 }} ج.م</div>
         </div>
     </div>
 </div>
 
-<!-- فلاتر البحث -->
-<div class="content-card mb-4">
-    <div class="content-card-header">
+<!-- الملخص -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="summary-card info">
+            <div class="summary-value text-info">{{ total_count }}</div>
+            <div class="summary-label">عدد الأقساط المتأخرة</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="summary-card warning">
+            <div class="summary-value text-warning">{{ total_required|floatformat:2 }}</div>
+            <div class="summary-label">إجمالي المطلوب</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="summary-card success">
+            <div class="summary-value text-success">{{ total_paid|floatformat:2 }}</div>
+            <div class="summary-label">إجمالي المدفوع</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="summary-card">
+            <div class="summary-value text-danger">{{ total_remaining|floatformat:2 }}</div>
+            <div class="summary-label">إجمالي المتأخر</div>
+        </div>
+    </div>
+</div>
+
+<!-- الفلاتر -->
+<div class="filter-box">
+    <form method="get" class="row g-3">
+        <div class="col-lg-4 col-md-6">
+            <label class="form-label fw-bold">البحث</label>
+            <input type="text"
+                   name="search"
+                   class="form-control"
+                   value="{{ search_query }}"
+                   placeholder="اسم الطالب، الرقم القومي، الهاتف، ولي الأمر">
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label fw-bold">الصف</label>
+            <select name="grade_level" class="form-control">
+                <option value="">كل الصفوف</option>
+                {% for grade in grade_levels %}
+                <option value="{{ grade.id }}" {% if selected_grade == grade.id|stringformat:"s" %}selected{% endif %}>
+                    {% if grade.education_level %}{{ grade.education_level.name }} - {% endif %}{{ grade.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-lg-2 col-md-6">
+            <label class="form-label fw-bold">الحالة</label>
+            <select name="status" class="form-control">
+                <option value="">كل الحالات</option>
+                <option value="PENDING" {% if selected_status == 'PENDING' %}selected{% endif %}>معلق</option>
+                <option value="PARTIALLY_PAID" {% if selected_status == 'PARTIALLY_PAID' %}selected{% endif %}>جزئي</option>
+                <option value="OVERDUE" {% if selected_status == 'OVERDUE' %}selected{% endif %}>متأخر</option>
+            </select>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label fw-bold">الترتيب</label>
+            <select name="sort" class="form-control">
+                <option value="due_date" {% if selected_sort == 'due_date' %}selected{% endif %}>الأقرب للاستحقاق</option>
+                <option value="oldest" {% if selected_sort == 'oldest' %}selected{% endif %}>الأقدم</option>
+                <option value="amount_desc" {% if selected_sort == 'amount_desc' %}selected{% endif %}>الأكبر مبلغًا</option>
+                <option value="student" {% if selected_sort == 'student' %}selected{% endif %}>اسم الطالب</option>
+            </select>
+        </div>
+
+        <div class="col-12 d-flex justify-content-center gap-2 flex-wrap">
+            <button type="submit" class="btn btn-danger">
+                <i class="fas fa-search me-1"></i>تطبيق الفلاتر
+            </button>
+
+            <a href="{% url 'payments:overdue_payments' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-eraser me-1"></i>مسح الفلاتر
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- ملخص الصفوف -->
+{% if grade_summary %}
+<div class="content-panel">
+    <div class="content-panel-header">
         <h5>
-            <i class="fas fa-filter me-2 text-primary"></i>
-            فلترة المدفوعات المتأخرة
+            <i class="fas fa-school me-2 text-danger"></i>
+            توزيع المتأخرات حسب الصف
         </h5>
     </div>
-    <div class="content-card-body">
-        <form method="GET" class="row g-3">
-            <div class="col-md-3">
-                <label for="search" class="form-label fw-bold">البحث</label>
-                <input type="text" class="form-control" id="search" name="search" 
-                       value="{{ search_query }}" 
-                       placeholder="اسم الطالب أو الرقم القومي...">
-            </div>
-            
-            <div class="col-md-2">
-                <label for="overdue_period" class="form-label fw-bold">فترة التأخير</label>
-                <select name="overdue_period" id="overdue_period" class="form-select">
-                    <option value="">جميع الفترات</option>
-                    <option value="1-7" {% if overdue_period == '1-7' %}selected{% endif %}>1-7 أيام</option>
-                    <option value="7-30" {% if overdue_period == '7-30' %}selected{% endif %}>7-30 يوم</option>
-                    <option value="30+" {% if overdue_period == '30+' %}selected{% endif %}>أكثر من 30 يوم</option>
-                </select>
-            </div>
-            
-            <div class="col-md-2">
-                <label for="sort_by" class="form-label fw-bold">ترتيب حسب</label>
-                <select name="sort_by" id="sort_by" class="form-select">
-                    <option value="overdue_days" {% if sort_by == 'overdue_days' %}selected{% endif %}>أيام التأخير</option>
-                    <option value="amount" {% if sort_by == 'amount' %}selected{% endif %}>المبلغ</option>
-                    <option value="student_name" {% if sort_by == 'student_name' %}selected{% endif %}>اسم الطالب</option>
-                    <option value="due_date" {% if sort_by == 'due_date' %}selected{% endif %}>تاريخ الاستحقاق</option>
-                </select>
-            </div>
-            
-            <div class="col-md-2">
-                <label for="grade_filter" class="form-label fw-bold">الصف الدراسي</label>
-                <select name="grade_filter" id="grade_filter" class="form-select">
-                    <option value="">جميع الصفوف</option>
-                    {% for grade in available_grades %}
-                    <option value="{{ grade.id }}" {% if grade_filter == grade.id|stringformat:"s" %}selected{% endif %}>
-                        {{ grade.education_level.name }} - {{ grade.name }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <div class="col-md-2">
-                <label for="min_amount" class="form-label fw-bold">الحد الأدنى للمبلغ</label>
-                <input type="number" class="form-control" id="min_amount" name="min_amount" 
-                       value="{{ min_amount }}" step="0.01" min="0" placeholder="0.00">
-            </div>
-            
-            <div class="col-md-1">
-                <label class="form-label">&nbsp;</label>
-                <div class="d-flex gap-1">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-search"></i>
-                    </button>
-                    <a href="{% url 'payments:overdue_payments' %}" class="btn btn-outline-secondary">
-                        <i class="fas fa-times"></i>
-                    </a>
+
+    <div class="content-panel-body">
+        <div class="row">
+            {% for grade in grade_summary %}
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="grade-card">
+                    <strong>{{ grade.grade_name }}</strong>
+                    <br>
+                    <small class="text-muted">{{ grade.count }} قسط</small>
+                    <div class="text-danger fw-bold mt-2">
+                        {{ grade.amount|floatformat:2 }} ج.م
+                    </div>
                 </div>
             </div>
-        </form>
+            {% endfor %}
+        </div>
     </div>
 </div>
+{% endif %}
 
-<!-- جدول المدفوعات المتأخرة -->
-{% if overdue_payments %}
-<div class="content-card mb-4">
-    <div class="content-card-header">
+<!-- الجدول -->
+<div class="content-panel">
+    <div class="content-panel-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <h5>
             <i class="fas fa-list me-2 text-danger"></i>
-            المدفوعات المتأخرة ({{ overdue_payments.paginator.count }})
+            قائمة الأقساط المتأخرة
         </h5>
-        <div class="ms-auto">
-            <small class="text-muted">
-                {% if search_query %}البحث: "{{ search_query }}" | {% endif %}
-                {% if overdue_period %}الفترة: {{ overdue_period }} | {% endif %}
-                مرتب حسب: {{ sort_by }}
-            </small>
-            <div class="btn-group btn-group-sm ms-2">
-                <button class="btn btn-outline-warning" onclick="selectCritical()">
-                    <i class="fas fa-exclamation-triangle me-1"></i>الحرجة
-                </button>
-                <button class="btn btn-outline-info" onclick="selectAll()">
-                    <i class="fas fa-check-square me-1"></i>الكل
-                </button>
-            </div>
-        </div>
+
+        <span class="badge bg-danger">{{ total_count }} قسط</span>
     </div>
-    <div class="content-card-body p-0">
+
+    <div class="content-panel-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="bg-light">
+            <table class="table overdue-table table-hover mb-0">
+                <thead>
                     <tr>
-                        <th>
-                            <input type="checkbox" id="selectAllCheckbox" onchange="toggleAllOverdue()">
-                        </th>
                         <th>الطالب</th>
-                        <th>رقم القسط</th>
-                        <th>المبلغ المستحق</th>
-                        <th>تاريخ الاستحقاق</th>
-                        <th>أيام التأخير</th>
-                        <th>حالة التأخير</th>
-                        <th>آخر تذكير</th>
-                        <th>الإجراءات</th>
+                        <th>الصف</th>
+                        <th>نوع المصروف</th>
+                        <th>القسط</th>
+                        <th>الاستحقاق</th>
+                        <th>التأخير</th>
+                        <th>المطلوب</th>
+                        <th>المدفوع</th>
+                        <th>المتبقي</th>
+                        <th>الحالة</th>
+                        <th>إجراء</th>
                     </tr>
                 </thead>
+
                 <tbody>
-                    {% for payment in overdue_payments %}
-                    <tr data-payment-id="{{ payment.id }}" class="{% if payment.overdue_days > 30 %}table-danger{% elif payment.overdue_days > 7 %}table-warning{% endif %}">
-                        <td>
-                            <input type="checkbox" class="overdue-checkbox" value="{{ payment.id }}">
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="user-avatar me-3" style="width: 35px; height: 35px; font-size: 0.8rem;">
-                                    {{ payment.student.name.0|upper }}
-                                </div>
-                                <div>
-                                    <strong class="d-block">{{ payment.student.name }}</strong>
-                                    <small class="text-muted">{{ payment.student.national_number }}</small>
-                                    <br><small class="text-info">{{ payment.student.grade_level.name|default:"غير محدد" }}</small>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <div>
-                                <span class="badge bg-primary">قسط #{{ payment.installment_number }}</span>
-                                <br><small class="text-muted">{{ payment.fee_name }}</small>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="overdue-amount-cell">
-                                {{ payment.remaining_amount|floatformat:2 }}
-                                <span class="currency-symbol">ج.م</span>
-                            </div>
-                            <small class="text-muted d-block">من {{ payment.amount_tuition|floatformat:2 }} ج.م</small>
-                        </td>
-                        <td>
-                            <div>
-                                <strong class="text-danger">{{ payment.due_date|date:"d M Y" }}</strong>
-                                <br><small class="text-muted">{{ payment.due_date|timesince }} مضت</small>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="text-center">
-                                <span class="badge badge-overdue-days" data-days="{{ payment.overdue_days }}">
-                                    {{ payment.overdue_days }} يوم
-                                </span>
-                            </div>
-                        </td>
-                        <td>
-                            {% if payment.overdue_days <= 7 %}
-                            <span class="badge bg-warning">
-                                <i class="fas fa-clock me-1"></i>متأخر قليل
-                            </span>
-                            {% elif payment.overdue_days <= 30 %}
-                            <span class="badge bg-danger">
-                                <i class="fas fa-exclamation-triangle me-1"></i>متأخر
-                            </span>
-                            {% else %}
-                            <span class="badge bg-dark">
-                                <i class="fas fa-exclamation-circle me-1"></i>حرج جداً
-                            </span>
+                    {% for row in overdue_items %}
+                    {% with tuition=row.tuition student=row.student %}
+                    <tr>
+                        <td class="student-cell">
+                            <strong>{{ student.name }}</strong>
+                            <br>
+                            <small class="text-muted">{{ student.national_number|default:"-" }}</small>
+                            {% if student.parent_phone %}
+                            <br>
+                            <small class="text-muted">ولي الأمر: {{ student.parent_phone }}</small>
                             {% endif %}
                         </td>
+
                         <td>
-                            {% if payment.last_reminder_date %}
-                            <small class="text-muted">{{ payment.last_reminder_date|date:"d M" }}</small>
+                            {% if student.grade_level %}
+                                {% if student.grade_level.education_level %}
+                                    <small>{{ student.grade_level.education_level.name }}</small>
+                                    <br>
+                                {% endif %}
+                                <strong>{{ student.grade_level.name }}</strong>
                             {% else %}
-                            <small class="text-muted">لم يرسل</small>
+                                غير محدد
                             {% endif %}
                         </td>
+
+                        <td>{{ tuition.get_fee_type_display }}</td>
+
+                        <td>
+                            <span class="badge bg-primary">#{{ tuition.installment_number }}</span>
+                        </td>
+
+                        <td>
+                            {% if tuition.due_date %}
+                                {{ tuition.due_date|date:"Y/m/d" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <span class="delay-badge">{{ row.delay_days }} يوم</span>
+                        </td>
+
+                        <td>{{ tuition.amount_tuition|floatformat:2 }}</td>
+
+                        <td class="text-success fw-bold">{{ tuition.amount_paid|floatformat:2 }}</td>
+
+                        <td class="text-danger fw-bold">{{ row.remaining|floatformat:2 }}</td>
+
+                        <td>
+                            {% if tuition.payment_status == 'PARTIALLY_PAID' %}
+                                <span class="badge bg-warning text-dark">جزئي</span>
+                            {% elif tuition.payment_status == 'OVERDUE' %}
+                                <span class="badge bg-danger">متأخر</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ tuition.get_payment_status_display }}</span>
+                            {% endif %}
+                        </td>
+
                         <td>
                             <div class="btn-group btn-group-sm">
-                                <button class="btn btn-outline-success" 
-                                        onclick="payInstallment('{{ payment.student.id }}', '{{ payment.fee_setting.id }}', {{ payment.installment_number }})" 
-                                        title="دفع الآن">
-                                    <i class="fas fa-credit-card"></i>
-                                </button>
-                                
-                                <button class="btn btn-outline-warning" 
-                                        onclick="sendReminder('{{ payment.id }}')" 
-                                        title="إرسال تذكير">
-                                    <i class="fas fa-bell"></i>
-                                </button>
-                                
-                                <button class="btn btn-outline-info" 
-                                        onclick="contactStudent({{ payment.student.id }})" 
-                                        title="اتصال">
-                                    <i class="fas fa-phone"></i>
-                                </button>
-                                
-                                <button class="btn btn-outline-secondary" 
-                                        onclick="viewPaymentHistory({{ payment.student.id }})" 
-                                        title="تاريخ المدفوعات">
-                                    <i class="fas fa-history"></i>
-                                </button>
+                                <a href="{% url 'payments:pay_installment' student.pk %}" class="btn btn-outline-success" title="تسجيل دفعة">
+                                    <i class="fas fa-hand-holding-usd"></i>
+                                </a>
+
+                                <a href="{% url 'students:student_detail' student.pk %}" class="btn btn-outline-info" title="ملف الطالب">
+                                    <i class="fas fa-user"></i>
+                                </a>
+
+                                {% if permissions.can_edit %}
+                                <a href="{% url 'payments:edit_payment' tuition.id %}" class="btn btn-outline-warning" title="تعديل">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% endif %}
                             </div>
+                        </td>
+                    </tr>
+                    {% endwith %}
+                    {% empty %}
+                    <tr>
+                        <td colspan="11" class="text-center text-muted py-5">
+                            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                            <h5>لا توجد أقساط متأخرة</h5>
+                            <p>كل الأقساط المستحقة مسددة أو لا توجد بيانات مطابقة للفلاتر.</p>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-    </div>
-    
-    <!-- شريط الإجراءات السفلي -->
-    <div class="content-card-footer bg-light">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <small class="text-muted">تم تحديد <span id="selectedCount">0</span> مدفوع</small>
-            </div>
-            <div class="btn-group btn-group-sm">
-                <button class="btn btn-warning" onclick="bulkSendReminders()" disabled id="bulkReminderBtn">
-                    <i class="fas fa-bell me-1"></i>تذكير جماعي
-                </button>
-                <button class="btn btn-info" onclick="bulkGenerateReport()" disabled id="bulkReportBtn">
-                    <i class="fas fa-file-alt me-1"></i>تقرير مختارة
-                </button>
-                <button class="btn btn-success" onclick="bulkPayment()" disabled id="bulkPaymentBtn">
-                    <i class="fas fa-credit-card me-1"></i>دفع جماعي
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Pagination -->
-{% if overdue_payments.has_other_pages %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div class="text-muted">
-        صفحة {{ overdue_payments.number }} من {{ overdue_payments.paginator.num_pages }}
-        ({{ overdue_payments.paginator.count }} إجمالي)
-    </div>
-    <nav aria-label="تصفح المدفوعات المتأخرة">
-        <ul class="pagination mb-0">
-            {% if overdue_payments.has_previous %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ overdue_payments.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">السابق</a>
-            </li>
-            {% endif %}
-            
-            <li class="page-item active">
-                <span class="page-link">{{ overdue_payments.number }}</span>
-            </li>
-            
-            {% if overdue_payments.has_next %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ overdue_payments.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">التالي</a>
-            </li>
-            {% endif %}
-        </ul>
-    </nav>
-</div>
-{% endif %}
+        {% if overdue_items.has_other_pages %}
+        <div class="p-3 border-top">
+            <nav>
+                <ul class="pagination justify-content-center mb-0">
+                    {% if overdue_items.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ overdue_items.previous_page_number }}">السابق</a>
+                    </li>
+                    {% endif %}
 
-{% else %}
-<!-- حالة عدم وجود مدفوعات متأخرة -->
-<div class="content-card">
-    <div class="content-card-body text-center py-5">
-        {% if search_query or overdue_period or min_amount or grade_filter %}
-        <i class="fas fa-search fa-4x text-muted mb-3"></i>
-        <h5>لا توجد نتائج للبحث</h5>
-        <p class="text-muted mb-4">
-            لم يتم العثور على مدفوعات متأخرة تطابق المعايير المحددة
-            {% if search_query %}<br><strong>البحث:</strong> "{{ search_query }}"{% endif %}
-            {% if overdue_period %}<br><strong>فترة التأخير:</strong> {{ overdue_period }}{% endif %}
-            {% if grade_filter %}<br><strong>الصف:</strong> {{ grade_filter }}{% endif %}
-            {% if min_amount %}<br><strong>الحد الأدنى:</strong> {{ min_amount }} ج.م{% endif %}
-        </p>
-        <div class="d-flex gap-3 justify-content-center">
-            <a href="{% url 'payments:overdue_payments' %}" class="btn btn-primary">
-                <i class="fas fa-refresh me-2"></i>إزالة الفلاتر
-            </a>
-            <a href="{% url 'payments:all_payments' %}" class="btn btn-outline-info">
-                <i class="fas fa-list me-2"></i>جميع المدفوعات
-            </a>
-        </div>
-        {% else %}
-        <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
-        <h5 class="text-success">ممتاز! لا توجد مدفوعات متأخرة</h5>
-        <p class="text-muted mb-4">جميع المدفوعات المستحقة تم سدادها في الوقت المحدد</p>
-        <div class="d-flex gap-3 justify-content-center">
-            <a href="{% url 'payments:all_payments' %}" class="btn btn-primary">
-                <i class="fas fa-list me-2"></i>عرض جميع المدفوعات
-            </a>
-            <a href="{% url 'payments:monthly_report' %}" class="btn btn-outline-info">
-                <i class="fas fa-chart-bar me-2"></i>التقارير الشهرية
-            </a>
+                    {% for num in overdue_items.paginator.page_range %}
+                        {% if num == overdue_items.number %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > overdue_items.number|add:'-3' and num < overdue_items.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if overdue_items.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ overdue_items.next_page_number }}">التالي</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
         </div>
         {% endif %}
     </div>
 </div>
-{% endif %}
 
-<!-- Modal تفاصيل الطالب -->
-<div class="modal fade" id="studentContactModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-info text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-user me-2"></i>بيانات الاتصال
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="studentContactContent">
-                <!-- سيتم ملؤها ديناميكياً -->
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal تاريخ المدفوعات -->
-<div class="modal fade" id="paymentHistoryModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-secondary text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-history me-2"></i>تاريخ المدفوعات
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="paymentHistoryContent">
-                <!-- سيتم ملؤها ديناميكياً -->
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal الدفع السريع -->
-<div class="modal fade" id="quickPaymentModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-credit-card me-2"></i>دفع سريع
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="quickPaymentContent">
-                <!-- سيتم ملؤها ديناميكياً -->
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
-
-{% block extra_css %}
-<style>
-.overdue-stats-card {
-    background: white;
-    border-radius: 15px;
-    padding: 25px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-    border-left: 5px solid #dc3545;
-    transition: all 0.3s ease;
-}
-
-.overdue-stats-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
-}
-
-.overdue-stats-card.critical { border-left-color: #dc3545; }
-.overdue-stats-card.severe { border-left-color: #6f42c1; }
-.overdue-stats-card.moderate { border-left-color: #fd7e14; }
-.overdue-stats-card.students { border-left-color: #17a2b8; }
-
-.overdue-amount {
-    font-size: 2rem;
-    font-weight: 700;
-    color: #dc3545;
-}
-
-.overdue-label {
-    font-size: 0.9rem;
-    color: #6c757d;
-    margin-bottom: 8px;
-}
-
-.overdue-change {
-    font-size: 0.8rem;
-    color: #6c757d;
-}
-
-.overdue-amount-cell {
-    font-weight: 600;
-    color: #dc3545;
-    font-size: 1.1rem;
-}
-
-.currency-symbol {
-    font-size: 0.9em;
-    color: #6c757d;
-}
-
-.badge-overdue-days {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.85rem;
-    font-weight: 600;
-}
-
-.badge-overdue-days[data-days*="1"], 
-.badge-overdue-days[data-days*="2"], 
-.badge-overdue-days[data-days*="3"],
-.badge-overdue-days[data-days*="4"],
-.badge-overdue-days[data-days*="5"],
-.badge-overdue-days[data-days*="6"],
-.badge-overdue-days[data-days*="7"] {
-    background-color: #ffc107;
-    color: #000;
-}
-
-.badge-overdue-days[data-days*="8"],
-.badge-overdue-days[data-days*="9"],
-.badge-overdue-days[data-days="10"],
-.badge-overdue-days[data-days="11"],
-.badge-overdue-days[data-days="12"],
-.badge-overdue-days[data-days="13"],
-.badge-overdue-days[data-days="14"],
-.badge-overdue-days[data-days="15"],
-.badge-overdue-days[data-days="16"],
-.badge-overdue-days[data-days="17"],
-.badge-overdue-days[data-days="18"],
-.badge-overdue-days[data-days="19"],
-.badge-overdue-days[data-days="20"],
-.badge-overdue-days[data-days="21"],
-.badge-overdue-days[data-days="22"],
-.badge-overdue-days[data-days="23"],
-.badge-overdue-days[data-days="24"],
-.badge-overdue-days[data-days="25"],
-.badge-overdue-days[data-days="26"],
-.badge-overdue-days[data-days="27"],
-.badge-overdue-days[data-days="28"],
-.badge-overdue-days[data-days="29"],
-.badge-overdue-days[data-days="30"] {
-    background-color: #dc3545;
-    color: white;
-}
-
-.badge-overdue-days[data-days*="31"],
-.badge-overdue-days[data-days*="32"],
-.badge-overdue-days[data-days*="33"],
-.badge-overdue-days[data-days*="34"],
-.badge-overdue-days[data-days*="35"],
-.badge-overdue-days[data-days*="36"],
-.badge-overdue-days[data-days*="37"],
-.badge-overdue-days[data-days*="38"],
-.badge-overdue-days[data-days*="39"],
-.badge-overdue-days[data-days*="40"],
-.badge-overdue-days[data-days*="50"],
-.badge-overdue-days[data-days*="60"],
-.badge-overdue-days[data-days*="70"],
-.badge-overdue-days[data-days*="80"],
-.badge-overdue-days[data-days*="90"] {
-    background-color: #6f42c1;
-    color: white;
-}
-
-.table-danger {
-    background-color: rgba(220, 53, 69, 0.05);
-}
-
-.table-warning {
-    background-color: rgba(255, 193, 7, 0.05);
-}
-
-.user-avatar {
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
-    background: linear-gradient(45deg, #dc3545, #c82333);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.8rem;
-    font-weight: bold;
-}
-
-.btn-group-sm .btn {
-    padding: 0.25rem 0.5rem;
-}
-
-.content-card-footer {
-    padding: 1rem 1.5rem;
-    border-top: 1px solid #dee2e6;
-}
-
-.table th {
-    font-weight: 600;
-    color: #495057;
-    border-top: none;
-}
-
-.badge {
-    font-size: 0.8rem;
-}
-
-@media (max-width: 768px) {
-    .overdue-stats-card {
-        margin-bottom: 20px;
-    }
-    
-    .table-responsive {
-        font-size: 0.9rem;
-    }
-    
-    .btn-group-sm .btn {
-        padding: 0.2rem 0.4rem;
-    }
-    
-    .overdue-amount {
-        font-size: 1.5rem;
-    }
-    
-    .d-flex.gap-3 {
-        flex-direction: column;
-        gap: 0.5rem !important;
-    }
-}
-</style>
-{% endblock %}
-<!-- في templates/payments/overdue_payments.html - تحديث JavaScript -->
-
-{% block extra_js %}
-<script>
-// متغيرات عامة
-let selectedOverduePayments = [];
-
-// تحديث عداد العناصر المحددة
-function updateSelectedCount() {
-    const checkboxes = document.querySelectorAll('.overdue-checkbox:checked');
-    const count = checkboxes.length;
-    
-    document.getElementById('selectedCount').textContent = count;
-    
-    // تفعيل/إلغاء تفعيل أزرار الإجراءات الجماعية
-    const bulkButtons = ['bulkReminderBtn', 'bulkReportBtn', 'bulkPaymentBtn'];
-    bulkButtons.forEach(btnId => {
-        const btn = document.getElementById(btnId);
-        if (btn) {
-            btn.disabled = count === 0;
-        }
-    });
-    
-    selectedOverduePayments = Array.from(checkboxes).map(cb => cb.value);
-}
-
-// تبديل تحديد الكل
-function toggleAllOverdue() {
-    const masterCheckbox = document.getElementById('selectAllCheckbox');
-    const checkboxes = document.querySelectorAll('.overdue-checkbox');
-    
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = masterCheckbox.checked;
-    });
-    
-    updateSelectedCount();
-}
-
-// تحديد العناصر الحرجة فقط
-function selectCritical() {
-    const checkboxes = document.querySelectorAll('.overdue-checkbox');
-    
-    checkboxes.forEach(checkbox => {
-        const row = checkbox.closest('tr');
-        const daysBadge = row.querySelector('.badge-overdue-days');
-        const days = parseInt(daysBadge.dataset.days);
-        
-        checkbox.checked = days > 30;
-    });
-    
-    updateSelectedCount();
-    showPaymentMessage('info', 'تم تحديد المدفوعات الحرجة (+30 يوم)');
-}
-
-// تحديد الكل
-function selectAll() {
-    const checkboxes = document.querySelectorAll('.overdue-checkbox');
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = true;
-    });
-    
-    const masterCheckbox = document.getElementById('selectAllCheckbox');
-    if (masterCheckbox) {
-        masterCheckbox.checked = true;
-    }
-    
-    updateSelectedCount();
-    showPaymentMessage('info', 'تم تحديد جميع المدفوعات');
-}
-
-// دفع قسط محدد - محدث بالبيانات الحقيقية
-function payInstallment(studentId, feeSettingId, installmentNumber) {
-    // جلب بيانات الطالب الحقيقية
-    fetch(`/payments/api/student-details/${studentId}/`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const student = data.student;
-                showQuickPaymentModal(student, feeSettingId, installmentNumber);
-            } else {
-                showPaymentMessage('error', 'فشل في جلب بيانات الطالب');
-            }
-        })
-        .catch(error => {
-            console.error('خطأ:', error);
-            showPaymentMessage('error', 'خطأ في الاتصال');
-        });
-}
-
-// عرض modal الدفع السريع مع البيانات الحقيقية
-function showQuickPaymentModal(student, feeSettingId, installmentNumber) {
-    const modal = new bootstrap.Modal(document.getElementById('quickPaymentModal'));
-    const content = document.getElementById('quickPaymentContent');
-    
-    content.innerHTML = `
-        <div class="student-info mb-3 p-3 bg-light rounded">
-            <div class="d-flex align-items-center">
-                <div class="user-avatar me-3" style="width: 50px; height: 50px; font-size: 1.2rem;">
-                    ${student.name.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                    <h6 class="mb-1">${student.name}</h6>
-                    <small class="text-muted">
-                        <i class="fas fa-id-card me-1"></i>${student.national_number}
-                    </small><br>
-                    <small class="text-info">
-                        <i class="fas fa-graduation-cap me-1"></i>${student.grade_name}
-                    </small>
-                </div>
-            </div>
-        </div>
-        
-        <form id="quickPayForm">
-            <div class="mb-3">
-                <label for="paymentAmount" class="form-label">مبلغ الدفع</label>
-                <div class="input-group">
-                    <input type="number" class="form-control" id="paymentAmount" step="0.01" min="0.01" required>
-                    <span class="input-group-text">ج.م</span>
-                </div>
-                <small class="text-muted">القسط رقم ${installmentNumber}</small>
-            </div>
-            
-            <div class="mb-3">
-                <label for="paymentMethod" class="form-label">طريقة الدفع</label>
-                <select class="form-select" id="paymentMethod" required>
-                    <option value="">اختر طريقة الدفع</option>
-                    <option value="CASH">نقداً</option>
-                    <option value="BANK_TRANSFER">تحويل بنكي</option>
-                    <option value="CHEQUE">شيك</option>
-                    <option value="CARD">بطاقة ائتمان</option>
-                </select>
-            </div>
-            
-            <div class="mb-3">
-                <label for="paymentNotes" class="form-label">ملاحظات (اختياري)</label>
-                <textarea class="form-control" id="paymentNotes" rows="2" placeholder="أي ملاحظات إضافية..."></textarea>
-            </div>
-            
-            <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-success flex-fill">
-                    <i class="fas fa-credit-card me-1"></i>تسجيل الدفع
-                </button>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-            </div>
-        </form>
-    `;
-    
-    modal.show();
-    
-    // معالج الإرسال
-    document.getElementById('quickPayForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const amount = document.getElementById('paymentAmount').value;
-        const method = document.getElementById('paymentMethod').value;
-        const notes = document.getElementById('paymentNotes').value;
-        
-        if (!amount || !method) {
-            showPaymentMessage('error', 'يرجى إدخال جميع البيانات المطلوبة');
-            return;
-        }
-        
-        // إرسال بيانات الدفع
-        const paymentData = {
-            student_id: student.id,
-            fee_setting_id: feeSettingId,
-            installment_number: installmentNumber,
-            amount: amount,
-            payment_method: method,
-            notes: notes
-        };
-        
-        submitPayment(paymentData);
-        modal.hide();
-    });
-}
-
-// إرسال بيانات الدفع
-function submitPayment(paymentData) {
-    showPaymentMessage('info', 'جاري تسجيل الدفع...');
-    
-    fetch('/payments/api/record-payment/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCookie('csrftoken')
-        },
-        body: JSON.stringify(paymentData)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showPaymentMessage('success', `تم تسجيل دفع ${paymentData.amount} ج.م بنجاح`);
-            setTimeout(() => window.location.reload(), 1000);
-        } else {
-            showPaymentMessage('error', data.message || 'فشل في تسجيل الدفع');
-        }
-    })
-    .catch(error => {
-        console.error('خطأ:', error);
-        showPaymentMessage('error', 'خطأ في الاتصال');
-    });
-}
-
-// في templates/payments/overdue_payments.html - تحديث JavaScript
-
-// عرض بيانات الاتصال الحقيقية
-function contactStudent(studentId) {
-    const modal = new bootstrap.Modal(document.getElementById('studentContactModal'));
-    const content = document.getElementById('studentContactContent');
-    
-    content.innerHTML = '<div class="text-center py-3"><div class="spinner-border"></div><p class="mt-2">جاري تحميل بيانات الاتصال...</p></div>';
-    modal.show();
-    
-    // ✅ استخدام المسار الصحيح - payments بدلاً من students
-    fetch(`/payments/api/student-contact-details/${studentId}/`)
-        .then(response => {
-            console.log('Response status:', response.status); // للتشخيص
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log('Response data:', data); // للتشخيص
-            if (data.success) {
-                const student = data.student;
-                content.innerHTML = `
-                    <div class="student-contact-info">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h6><i class="fas fa-user me-2 text-primary"></i>معلومات الطالب</h6>
-                                <div class="border-start border-primary border-3 ps-3 mb-3">
-                                    <p class="mb-1"><strong>الاسم:</strong> ${student.name}</p>
-                                    <p class="mb-1"><strong>الصف:</strong> ${student.grade_name}</p>
-                                    <p class="mb-1"><strong>الرقم القومي:</strong> ${student.national_number}</p>
-                                    <p class="mb-0"><strong>العمر:</strong> ${student.age_display}</p>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <h6><i class="fas fa-phone me-2 text-success"></i>بيانات الاتصال</h6>
-                                <div class="border-start border-success border-3 ps-3 mb-3">
-                                    ${student.phone_number ? 
-                                        `<p class="mb-1"><strong>هاتف الطالب:</strong> <a href="tel:${student.phone_number}" class="text-decoration-none">${student.phone_number}</a></p>` : 
-                                        '<p class="mb-1 text-muted">هاتف الطالب: غير متوفر</p>'
-                                    }
-                                    ${student.parent_phone ? 
-                                        `<p class="mb-1"><strong>هاتف ولي الأمر:</strong> <a href="tel:${student.parent_phone}" class="text-decoration-none">${student.parent_phone}</a></p>` : 
-                                        '<p class="mb-1 text-muted">هاتف ولي الأمر: غير متوفر</p>'
-                                    }
-                                    ${student.parent_email ? 
-                                        `<p class="mb-1"><strong>بريد ولي الأمر:</strong> <a href="mailto:${student.parent_email}" class="text-decoration-none">${student.parent_email}</a></p>` : 
-                                        '<p class="mb-1 text-muted">بريد ولي الأمر: غير متوفر</p>'
-                                    }
-                                    ${student.parent_name ? 
-                                        `<p class="mb-0"><strong>اسم ولي الأمر:</strong> ${student.parent_name}</p>` : 
-                                        '<p class="mb-0 text-muted">اسم ولي الأمر: غير متوفر</p>'
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                        <div class="d-flex gap-2 justify-content-center flex-wrap">
-                            ${student.phone_number ? 
-                                `<a href="tel:${student.phone_number}" class="btn btn-success btn-sm">
-                                    <i class="fas fa-phone me-1"></i>اتصال طالب
-                                </a>` : 
-                                ''
-                            }
-                            ${student.parent_phone ? 
-                                `<a href="tel:${student.parent_phone}" class="btn btn-primary btn-sm">
-                                    <i class="fas fa-phone me-1"></i>اتصال ولي أمر
-                                </a>` : 
-                                ''
-                            }
-                            ${student.phone_number ? 
-                                `<a href="sms:${student.phone_number}" class="btn btn-info btn-sm">
-                                    <i class="fas fa-sms me-1"></i>رسالة نصية
-                                </a>` : 
-                                ''
-                            }
-                            ${student.parent_email ? 
-                                `<a href="mailto:${student.parent_email}" class="btn btn-outline-primary btn-sm">
-                                    <i class="fas fa-envelope me-1"></i>بريد إلكتروني
-                                </a>` : 
-                                ''
-                            }
-                        </div>
-                        ${student.address ? 
-                            `<div class="mt-3">
-                                <h6><i class="fas fa-map-marker-alt me-2 text-info"></i>العنوان</h6>
-                                <p class="text-muted">${student.address}</p>
-                            </div>` : 
-                            ''
-                        }
-                    </div>
-                `;
-            } else {
-                content.innerHTML = `
-                    <div class="text-center text-danger py-4">
-                        <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
-                        <h5>فشل في تحميل البيانات</h5>
-                        <p>${data.message || 'حدث خطأ في جلب بيانات الطالب'}</p>
-                    </div>
-                `;
-            }
-        })
-        .catch(error => {
-            console.error('خطأ:', error); // للتشخيص
-            content.innerHTML = `
-                <div class="text-center text-danger py-4">
-                    <i class="fas fa-wifi fa-3x mb-3"></i>
-                    <h5>خطأ في الاتصال</h5>
-                    <p>تحقق من اتصال الإنترنت وحاول مرة أخرى</p>
-                    <small class="text-muted">خطأ: ${error.message}</small>
-                </div>
-            `;
-        });
-}
-
-// عرض تاريخ المدفوعات الحقيقي
-function viewPaymentHistory(studentId) {
-    const modal = new bootstrap.Modal(document.getElementById('paymentHistoryModal'));
-    const content = document.getElementById('paymentHistoryContent');
-    
-    content.innerHTML = '<div class="text-center py-3"><div class="spinner-border"></div><p class="mt-2">جاري تحميل تاريخ المدفوعات...</p></div>';
-    modal.show();
-    
-    // جلب تاريخ المدفوعات الحقيقي
-    fetch(`/payments/api/student-payment-history/${studentId}/`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const history = data.history;
-                const summary = data.summary;
-                
-                content.innerHTML = `
-                    <div class="payment-history">
-                        <div class="row mb-3">
-                            <div class="col-md-4">
-                                <div class="text-center p-3 bg-success text-white rounded">
-                                    <h5 class="mb-1">${summary.total_paid.toFixed(2)} ج.م</h5>
-                                    <small>مدفوع</small>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="text-center p-3 bg-danger text-white rounded">
-                                    <h5 class="mb-1">${summary.total_overdue.toFixed(2)} ج.م</h5>
-                                    <small>متأخر</small>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="text-center p-3 bg-secondary text-white rounded">
-                                    <h5 class="mb-1">${summary.total_upcoming.toFixed(2)} ج.م</h5>
-                                    <small>لم يستحق</small>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="table-responsive">
-                            <table class="table table-striped table-sm">
-                                <thead class="table-dark">
-                                    <tr>
-                                        <th>القسط</th>
-                                        <th>نوع المصروفات</th>
-                                        <th>المبلغ</th>
-                                        <th>تاريخ الاستحقاق</th>
-                                        <th>تاريخ الدفع</th>
-                                        <th>الحالة</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                `;
-                
-                history.forEach(payment => {
-                    let statusBadge = '';
-                    let rowClass = '';
-                    
-                    if (payment.status === 'PAID') {
-                        statusBadge = '<span class="badge bg-success">مدفوع</span>';
-                    } else if (payment.status === 'OVERDUE') {
-                        statusBadge = `<span class="badge bg-danger">متأخر ${payment.overdue_days} يوم</span>`;
-                        rowClass = 'table-danger';
-                    } else if (payment.status === 'PENDING') {
-                        statusBadge = '<span class="badge bg-warning">في الانتظار</span>';
-                        rowClass = 'table-warning';
-                    } else {
-                        statusBadge = '<span class="badge bg-secondary">لم يستحق</span>';
-                    }
-                    
-                    content.innerHTML += `
-                        <tr class="${rowClass}">
-                            <td><span class="badge bg-primary">قسط #${payment.installment_number}</span></td>
-                            <td>${payment.fee_name}</td>
-                            <td>${payment.amount.toFixed(2)} ج.م</td>
-                            <td>${payment.due_date}</td>
-                            <td>${payment.payment_date || '-'}</td>
-                            <td>${statusBadge}</td>
-                        </tr>
-                    `;
-                });
-                
-                content.innerHTML += `
-                                </tbody>
-                            </table>
-                        </div>
-                        
-                        <div class="mt-3">
-                            <h6><i class="fas fa-chart-line me-2"></i>ملخص الحساب</h6>
-                            <div class="row text-center">
-                                <div class="col-3">
-                                    <div class="border rounded p-2">
-                                        <strong class="text-primary">${summary.total_installments}</strong><br>
-                                        <small class="text-muted">إجمالي أقساط</small>
-                                    </div>
-                                </div>
-                                <div class="col-3">
-                                    <div class="border rounded p-2">
-                                        <strong class="text-success">${summary.paid_installments}</strong><br>
-                                        <small class="text-muted">مدفوع</small>
-                                    </div>
-                                </div>
-                                <div class="col-3">
-                                    <div class="border rounded p-2">
-                                        <strong class="text-danger">${summary.overdue_installments}</strong><br>
-                                        <small class="text-muted">متأخر</small>
-                                    </div>
-                                </div>
-                                <div class="col-3">
-                                    <div class="border rounded p-2">
-                                        <strong class="text-secondary">${summary.upcoming_installments}</strong><br>
-                                        <small class="text-muted">لم يستحق</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            } else {
-                content.innerHTML = `
-                    <div class="text-center text-danger py-4">
-                        <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
-                        <h5>فشل في تحميل التاريخ</h5>
-                        <p>${data.message || 'حدث خطأ في جلب تاريخ المدفوعات'}</p>
-                    </div>
-                `;
-            }
-        })
-        .catch(error => {
-            console.error('خطأ:', error);
-            content.innerHTML = `
-                <div class="text-center text-danger py-4">
-                    <i class="fas fa-wifi fa-3x mb-3"></i>
-                    <h5>خطأ في الاتصال</h5>
-                    <p>تحقق من اتصال الإنترنت وحاول مرة أخرى</p>
-                </div>
-            `;
-        });
-}
-
-// إرسال تذكير واحد
-function sendReminder(paymentId) {
-    if (confirm('هل تريد إرسال تذكير لهذا المدفوع؟')) {
-        showPaymentMessage('info', 'جاري إرسال التذكير...');
-        
-        fetch('/payments/api/send-reminder/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
-            },
-            body: JSON.stringify({ payment_id: paymentId })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showPaymentMessage('success', 'تم إرسال التذكير بنجاح');
-                
-                // تحديث تاريخ آخر تذكير في الجدول
-                const row = document.querySelector(`tr[data-payment-id="${paymentId}"]`);
-                if (row) {
-                    const reminderCell = row.cells[7];
-                    reminderCell.innerHTML = '<small class="text-muted">اليوم</small>';
-                }
-            } else {
-                showPaymentMessage('error', data.message || 'فشل في إرسال التذكير');
-            }
-        })
-        .catch(error => {
-            console.error('خطأ:', error);
-            showPaymentMessage('error', 'خطأ في الاتصال');
-        });
-    }
-}
-
-// الإجراءات الجماعية
-function bulkSendReminders() {
-    if (selectedOverduePayments.length === 0) {
-        showPaymentMessage('warning', 'يرجى تحديد مدفوعات أولاً');
-        return;
-    }
-    
-    if (confirm(`هل تريد إرسال تذكيرات لـ ${selectedOverduePayments.length} مدفوع؟`)) {
-        showPaymentMessage('info', 'جاري إرسال التذكيرات...');
-        
-        fetch('/payments/api/bulk-send-reminders/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
-            },
-            body: JSON.stringify({ payment_ids: selectedOverduePayments })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showPaymentMessage('success', `تم إرسال ${data.sent_count} تذكير بنجاح`);
-                setTimeout(() => window.location.reload(), 1500);
-            } else {
-                showPaymentMessage('error', data.message || 'فشل في إرسال التذكيرات');
-            }
-        })
-        .catch(error => {
-            console.error('خطأ:', error);
-            showPaymentMessage('error', 'خطأ في الاتصال');
-        });
-    }
-}
-
-function bulkGenerateReport() {
-    if (selectedOverduePayments.length === 0) {
-        showPaymentMessage('warning', 'يرجى تحديد مدفوعات أولاً');
-        return;
-    }
-    
-    showPaymentMessage('info', `جاري إنشاء تقرير لـ ${selectedOverduePayments.length} مدفوع...`);
-    
-    // فتح تقرير في تبويب جديد
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '/payments/reports/overdue-selected/';
-    form.target = '_blank';
-    
-    const csrfInput = document.createElement('input');
-    csrfInput.type = 'hidden';
-    csrfInput.name = 'csrfmiddlewaretoken';
-    csrfInput.value = getCookie('csrftoken');
-    form.appendChild(csrfInput);
-    
-    const idsInput = document.createElement('input');
-    idsInput.type = 'hidden';
-    idsInput.name = 'payment_ids';
-    idsInput.value = JSON.stringify(selectedOverduePayments);
-    form.appendChild(idsInput);
-    
-    document.body.appendChild(form);
-    form.submit();
-    document.body.removeChild(form);
-    
-    setTimeout(() => {
-        showPaymentMessage('success', 'تم إنشاء التقرير بنجاح');
-    }, 1500);
-}
-
-function bulkPayment() {
-    if (selectedOverduePayments.length === 0) {
-        showPaymentMessage('warning', 'يرجى تحديد مدفوعات أولاً');
-        return;
-    }
-    
-    showPaymentMessage('info', 'ميزة الدفع الجماعي قيد التطوير...');
-}
-
-// دوال الإجراءات العامة
-function sendReminders() {
-    showPaymentMessage('info', 'جاري إرسال تذكيرات لجميع المدفوعات المتأخرة...');
-    
-    fetch('/payments/api/send-all-overdue-reminders/', {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken')
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showPaymentMessage('success', `تم إرسال ${data.sent_count} تذكير بنجاح`);
-        } else {
-            showPaymentMessage('error', data.message || 'فشل في إرسال التذكيرات');
-        }
-    })
-    .catch(error => {
-        console.error('خطأ:', error);
-        showPaymentMessage('error', 'خطأ في الاتصال');
-    });
-}
-
-function generateOverdueReport() {
-    showPaymentMessage('info', 'جاري إنشاء التقرير المفصل...');
-    window.open('/payments/reports/overdue-detailed/', '_blank');
-    
-    setTimeout(() => {
-        showPaymentMessage('success', 'تم إنشاء التقرير بنجاح');
-    }, 1500);
-}
-
-function exportOverdue() {
-    showPaymentMessage('info', 'جاري تصدير المدفوعات المتأخرة...');
-    
-    // إنشاء رابط تصدير مع الفلاتر الحالية
-    const params = new URLSearchParams(window.location.search);
-    params.set('export', 'excel');
-    
-    window.location.href = `${window.location.pathname}?${params.toString()}`;
-    
-    setTimeout(() => {
-        showPaymentMessage('success', 'تم التصدير بنجاح');
-    }, 1500);
-}
-
-function printOverdue() {
-    window.print();
-}
-
-// دالة الحصول على CSRF token
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
-// إضافة مستمعي الأحداث
-document.addEventListener('DOMContentLoaded', function() {
-    // مستمع لتحديث العداد عند تغيير التحديد
-    document.querySelectorAll('.overdue-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', updateSelectedCount);
-    });
-    
-    updateSelectedCount();
-});
-
-// دالة عرض الرسائل - محسنة
-function showPaymentMessage(type, message) {
-    // إزالة الرسائل السابقة
-    const existingAlerts = document.querySelectorAll('.alert.fixed-alert');
-    existingAlerts.forEach(alert => alert.remove());
-    
-    const icons = {
-        success: 'fas fa-check-circle',
-        error: 'fas fa-exclamation-circle',
-        warning: 'fas fa-exclamation-triangle',
-        info: 'fas fa-info-circle'
-    };
-    
-    const colors = {
-        success: 'success',
-        error: 'danger',
-        warning: 'warning',
-        info: 'info'
-    };
-    
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${colors[type] || 'info'} alert-dismissible fade show fixed-alert`;
-    alertDiv.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 9999;
-        min-width: 350px;
-        max-width: 500px;
-        box-shadow: 0 6px 30px rgba(0,0,0,0.15);
-        border-radius: 10px;
-        font-weight: 500;
-        border: none;
-    `;
-    
-    alertDiv.innerHTML = `
-        <div class="d-flex align-items-center">
-            <i class="${icons[type] || icons.info} me-3" style="font-size: 1.3rem;"></i>
-            <div class="flex-grow-1">${message}</div>
-            <button type="button" class="btn-close ms-2" onclick="this.parentElement.parentElement.remove()"></button>
-        </div>
-    `;
-    
-    document.body.appendChild(alertDiv);
-    
-    // إزالة تلقائية بعد 5 ثوانٍ
-    setTimeout(() => {
-        if (alertDiv.parentNode) {
-            alertDiv.classList.remove('show');
-            setTimeout(() => {
-                if (alertDiv.parentNode) {
-                    alertDiv.remove();
-                }
-            }, 300);
-        }
-    }, 5000);
-}
-</script>
 {% endblock %}

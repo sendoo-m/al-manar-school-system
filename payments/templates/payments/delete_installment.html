@@ -1,60 +1,309 @@
-<!-- templates/payments/delete_installment.html -->
 {% extends 'payments/base.html' %}
+{% load humanize %}
 
-{% block title %}حذف مدفوع - مدرسة المنار{% endblock %}
-{% block page_title %}حذف مدفوع للطالب {{ student.name }}{% endblock %}
-{% block page_subtitle %}حذف القسط رقم {{ tuition.installment_number }} - {{ warning_message }}{% endblock %}
-{% block page_icon %}<i class="fas fa-trash me-3 text-danger"></i>{% endblock %}
+{% block title %}إلغاء قسط - {{ student.name }}{% endblock %}
+{% block page_title %}إلغاء قسط / مدفوع{% endblock %}
+{% block page_subtitle %}إلغاء القسط بشكل آمن مع حفظ أثر العملية في النظام{% endblock %}
+{% block page_icon %}<i class="fas fa-ban me-3"></i>{% endblock %}
 
 {% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'payments:payments_home' %}">لوحة التحكم</a></li>
+<li class="breadcrumb-item"><a href="{% url 'payments:payments_home' %}">لوحة المدفوعات</a></li>
 <li class="breadcrumb-item"><a href="{% url 'payments:all_payments' %}">جميع المدفوعات</a></li>
-<li class="breadcrumb-item active">حذف مدفوع</li>
+<li class="breadcrumb-item"><a href="{% url 'payments:pay_installment' student.pk %}">مدفوعات الطالب</a></li>
+<li class="breadcrumb-item active">إلغاء قسط</li>
 {% endblock %}
 
 {% block page_actions %}
 <div class="btn-group">
-    <a href="{% url 'payments:all_payments' %}" class="btn btn-outline-secondary btn-custom">
-        <i class="fas fa-arrow-right me-1"></i>العودة للقائمة
+    <a href="{% url 'payments:pay_installment' student.pk %}" class="btn btn-outline-primary btn-custom">
+        <i class="fas fa-arrow-right me-1"></i>رجوع لمدفوعات الطالب
     </a>
-    <a href="{% url 'payments:receipt' tuition.pk %}" class="btn btn-outline-info btn-custom">
-        <i class="fas fa-eye me-1"></i>عرض الإيصال
+
+    <a href="{% url 'payments:all_payments' %}" class="btn btn-outline-secondary btn-custom">
+        <i class="fas fa-list me-1"></i>جميع المدفوعات
     </a>
 </div>
 {% endblock %}
 
+{% block extra_css %}
+<style>
+    .danger-hero {
+        background: linear-gradient(135deg, #dc3545, #b02a37);
+        color: white;
+        border-radius: 22px;
+        padding: 30px;
+        margin-bottom: 25px;
+        box-shadow: 0 8px 24px rgba(220, 53, 69, 0.25);
+    }
+
+    .confirm-card {
+        background: white;
+        border-radius: 18px;
+        box-shadow: 0 5px 18px rgba(0,0,0,0.08);
+        overflow: hidden;
+        margin-bottom: 24px;
+    }
+
+    .confirm-card-header {
+        background: #fff5f5;
+        padding: 20px 24px;
+        border-bottom: 1px solid #f5c2c7;
+    }
+
+    .confirm-card-header h5 {
+        margin: 0;
+        color: #842029;
+        font-weight: 900;
+    }
+
+    .confirm-card-body {
+        padding: 24px;
+    }
+
+    .info-box {
+        background: #f8f9fa;
+        border-radius: 14px;
+        padding: 16px;
+        margin-bottom: 14px;
+        border-right: 4px solid #0d6efd;
+    }
+
+    .info-label {
+        color: #6c757d;
+        font-weight: 800;
+        font-size: 0.85rem;
+    }
+
+    .info-value {
+        font-weight: 900;
+        color: #212529;
+        font-size: 1rem;
+    }
+
+    .amount-box {
+        text-align: center;
+        background: #f8f9fa;
+        border-radius: 14px;
+        padding: 16px;
+        border-top: 4px solid #dc3545;
+    }
+
+    .amount-value {
+        font-size: 1.6rem;
+        font-weight: 900;
+        color: #dc3545;
+    }
+
+    .warning-panel {
+        background: #fff3cd;
+        border: 1px solid #ffecb5;
+        color: #664d03;
+        border-radius: 14px;
+        padding: 16px;
+        font-weight: 700;
+    }
+
+    .records-table thead th {
+        background: linear-gradient(135deg, #dc3545, #b02a37);
+        color: white;
+        text-align: center;
+        border: none;
+    }
+
+    .records-table td {
+        text-align: center;
+        vertical-align: middle;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="content-card">
-    <div class="content-card-body">
-        <div class="alert alert-danger">
-            <h5 class="alert-heading">
-                <i class="fas fa-exclamation-triangle me-2"></i>تحذير!
-            </h5>
-            <p class="mb-3">{{ warning_message }}</p>
-            <hr>
-            <div class="mb-0">
-                <strong>تفاصيل المدفوع المراد حذفه:</strong>
-                <ul class="mt-2 mb-0">
-                    <li><strong>الطالب:</strong> {{ tuition.student.name }}</li>
-                    <li><strong>رقم القسط:</strong> #{{ tuition.installment_number }}</li>
-                    <li><strong>المبلغ المدفوع:</strong> {{ tuition.amount_paid }} ج.م</li>
-                    <li><strong>تاريخ الدفع:</strong> {{ tuition.payment_date|date:"d M Y H:i" }}</li>
-                    <li><strong>طريقة الدفع:</strong> {{ tuition.get_payment_method_display }}</li>
-                </ul>
+
+<div class="danger-hero">
+    <h2 class="mb-2">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        تأكيد إلغاء القسط
+    </h2>
+    <p class="mb-0">
+        هذه العملية ستلغي القسط وتجعله غير محسوب ضمن إجماليات الطالب، مع حفظ سبب الإلغاء داخل الملاحظات.
+    </p>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="confirm-card">
+            <div class="confirm-card-header">
+                <h5>
+                    <i class="fas fa-ban me-2"></i>
+                    بيانات القسط المطلوب إلغاؤه
+                </h5>
+            </div>
+
+            <div class="confirm-card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="info-box">
+                            <div class="info-label">الطالب</div>
+                            <div class="info-value">{{ student.name }}</div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="info-box">
+                            <div class="info-label">الرقم القومي</div>
+                            <div class="info-value" dir="ltr">{{ student.national_number|default:"-" }}</div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="info-box">
+                            <div class="info-label">نوع المصروف</div>
+                            <div class="info-value">{{ tuition.get_fee_type_display }}</div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="info-box">
+                            <div class="info-label">رقم القسط</div>
+                            <div class="info-value">#{{ tuition.installment_number }}</div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="amount-box">
+                            <div class="info-label">المطلوب</div>
+                            <div class="amount-value">{{ tuition.amount_tuition|floatformat:2 }}</div>
+                            <small>ج.م</small>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="amount-box" style="border-top-color:#28a745;">
+                            <div class="info-label">المدفوع</div>
+                            <div class="amount-value text-success">{{ tuition.amount_paid|floatformat:2 }}</div>
+                            <small>ج.م</small>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="amount-box" style="border-top-color:#ffc107;">
+                            <div class="info-label">المتبقي</div>
+                            <div class="amount-value text-warning">{{ tuition.remaining_amount|floatformat:2 }}</div>
+                            <small>ج.م</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="warning-panel mt-4">
+                    <i class="fas fa-info-circle me-1"></i>
+                    لن يتم حذف القسط من قاعدة البيانات، بل سيتم تغيير حالته إلى "ملغي" وتصفير المدفوع حتى لا يؤثر على إجماليات الطالب.
+                </div>
+
+                <form method="post" class="mt-4" id="cancelForm">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">سبب الإلغاء <span class="text-danger">*</span></label>
+                        <textarea name="reason"
+                                  class="form-control"
+                                  rows="4"
+                                  placeholder="اكتب سبب إلغاء القسط أو المدفوع..."
+                                  required></textarea>
+                    </div>
+
+                    {% if payment_records %}
+                    <div class="form-check mb-3">
+                        <input type="checkbox" name="delete_records" id="deleteRecords" class="form-check-input">
+                        <label for="deleteRecords" class="form-check-label">
+                            حذف سجلات الدفع المرتبطة بهذا القسط أيضًا
+                        </label>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                        <button type="submit" class="btn btn-danger btn-lg btn-custom">
+                            <i class="fas fa-ban me-2"></i>
+                            تأكيد إلغاء القسط
+                        </button>
+
+                        <a href="{% url 'payments:pay_installment' student.pk %}" class="btn btn-outline-secondary btn-lg btn-custom">
+                            <i class="fas fa-times me-2"></i>
+                            رجوع بدون إلغاء
+                        </a>
+                    </div>
+                </form>
             </div>
         </div>
+    </div>
 
-        <form method="POST">
-            {% csrf_token %}
-            <div class="d-flex gap-3 justify-content-center">
-                <button type="submit" class="btn btn-danger btn-lg">
-                    <i class="fas fa-trash me-2"></i>تأكيد الحذف
-                </button>
-                <a href="{% url 'payments:all_payments' %}" class="btn btn-outline-secondary btn-lg">
-                    <i class="fas fa-times me-2"></i>إلغاء
-                </a>
+    <div class="col-lg-4">
+        <div class="confirm-card">
+            <div class="confirm-card-header">
+                <h5>
+                    <i class="fas fa-history me-2"></i>
+                    سجلات الدفع
+                </h5>
             </div>
-        </form>
+
+            <div class="confirm-card-body p-0">
+                {% if payment_records %}
+                <div class="table-responsive">
+                    <table class="table records-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>المبلغ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in payment_records %}
+                            <tr>
+                                <td>
+                                    {{ record.payment_date|date:"Y/m/d" }}
+                                    <br>
+                                    <small>{{ record.payment_date|date:"H:i" }}</small>
+                                </td>
+                                <td>{{ record.amount_paid|floatformat:2 }} ج.م</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="p-4 text-center text-muted">
+                    <i class="fas fa-receipt fa-2x mb-2"></i>
+                    <p class="mb-0">لا توجد سجلات دفع</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('cancelForm');
+
+    if (!form) {
+        return;
+    }
+
+    form.addEventListener('submit', function(e) {
+        const reason = form.querySelector('textarea[name="reason"]').value.trim();
+
+        if (!reason) {
+            e.preventDefault();
+            alert('يجب كتابة سبب الإلغاء');
+            return;
+        }
+
+        if (!confirm('هل أنت متأكد من إلغاء هذا القسط؟')) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
 {% endblock %}

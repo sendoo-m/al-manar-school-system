@@ -5,7 +5,6 @@
 
 {% block content %}
 <style>
-    /* الخلفية المتدرجة للصفحة */
     .settings-container {
         background: linear-gradient(135deg, rgba(23, 162, 184, 0.05), rgba(40, 167, 69, 0.05));
         border-radius: 20px;
@@ -14,7 +13,6 @@
         min-height: calc(100vh - 140px);
     }
 
-    /* بطاقات الإعدادات */
     .settings-card {
         background: rgba(255, 255, 255, 0.95);
         backdrop-filter: blur(15px);
@@ -31,24 +29,12 @@
         box-shadow: 0 15px 40px rgba(0,0,0,0.15);
     }
 
-    /* رأس البطاقة */
     .settings-header {
         background: linear-gradient(135deg, #17a2b8, #20c997);
         color: white;
         padding: 25px 30px;
         position: relative;
         overflow: hidden;
-    }
-
-    .settings-header::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -50%;
-        width: 200%;
-        height: 200%;
-        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
-        animation: float 15s linear infinite;
     }
 
     .settings-header-content {
@@ -72,7 +58,6 @@
         font-size: 1.4rem;
     }
 
-    /* أقسام الإعدادات */
     .settings-section {
         padding: 30px;
     }
@@ -102,7 +87,6 @@
         box-shadow: 0 4px 15px rgba(23, 162, 184, 0.3);
     }
 
-    /* تحسين النماذج */
     .form-group {
         margin-bottom: 25px;
     }
@@ -129,10 +113,8 @@
         border-color: #17a2b8;
         box-shadow: 0 0 0 0.2rem rgba(23, 162, 184, 0.15);
         background: white;
-        transform: translateY(-2px);
     }
 
-    /* أزرار التحكم */
     .action-buttons {
         background: linear-gradient(135deg, #f8f9fa, #e9ecef);
         padding: 25px 30px;
@@ -142,7 +124,8 @@
         align-items: center;
     }
 
-    .btn-custom {
+    .btn-primary-custom,
+    .btn-secondary-custom {
         font-weight: 600;
         padding: 12px 25px;
         border-radius: 12px;
@@ -150,11 +133,7 @@
         font-size: 1rem;
         transition: all 0.3s ease;
         box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-
-    .btn-custom:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        color: #fff;
     }
 
     .btn-primary-custom {
@@ -165,7 +144,6 @@
         background: linear-gradient(135deg, #6c757d, #5a6268);
     }
 
-    /* بطاقات الإحصائيات */
     .stats-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -179,13 +157,7 @@
         padding: 25px;
         text-align: center;
         box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-        transition: all 0.3s ease;
         border-left: 4px solid var(--stat-color);
-    }
-
-    .stat-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.12);
     }
 
     .stat-card.treasury { --stat-color: #17a2b8; }
@@ -204,7 +176,6 @@
         margin: 0 auto 15px;
         background: linear-gradient(135deg, var(--stat-color), var(--stat-color));
         color: white;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
 
     .stat-number {
@@ -219,338 +190,215 @@
         font-weight: 500;
     }
 
-    /* تحسين الاستجابة */
+    .settings-note {
+        background: linear-gradient(135deg, rgba(23, 162, 184, 0.1), rgba(32, 201, 151, 0.08));
+        border: 1px solid rgba(23, 162, 184, 0.25);
+        border-radius: 15px;
+        padding: 18px 20px;
+        margin-bottom: 25px;
+        color: #0c5460;
+    }
+
     @media (max-width: 768px) {
         .settings-container {
             padding: 20px;
             margin: -5px;
         }
-        
+
         .settings-section {
             padding: 20px;
         }
-        
+
         .settings-header {
             padding: 20px 25px;
         }
-        
+
         .settings-header h4 {
             font-size: 1.5rem;
         }
-        
+
         .action-buttons {
             flex-direction: column;
             gap: 15px;
         }
-        
-        .btn-custom {
+
+        .btn-primary-custom,
+        .btn-secondary-custom {
             width: 100%;
-        }
-    }
-
-    /* تأثيرات الحركة */
-    @keyframes float {
-        0%, 100% { transform: translateX(0) translateY(0); }
-        25% { transform: translateX(5px) translateY(-5px); }
-        50% { transform: translateX(-2px) translateY(2px); }
-        75% { transform: translateX(-5px) translateY(-2px); }
-    }
-
-    .fade-in {
-        animation: fadeInUp 0.8s ease-out;
-    }
-
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(30px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
         }
     }
 </style>
 
-<!-- محتوى الصفحة -->
 <div class="settings-container">
-   <!-- إحصائيات سريعة محسنة -->
-<div class="stats-grid fade-in">
-    <div class="stat-card treasury">
-        <div class="stat-icon">
-            <i class="fas fa-coins"></i>
+
+    <div class="stats-grid">
+        <div class="stat-card treasury">
+            <div class="stat-icon"><i class="fas fa-coins"></i></div>
+            <div class="stat-number">{{ total_treasury|default:0|floatformat:0 }}</div>
+            <div class="stat-label">إجمالي المحصل (ج.م)</div>
+            <small class="text-muted">من أصل {{ total_fees_due|default:0|floatformat:0 }} ج.م</small>
         </div>
-        <div class="stat-number">{{ total_treasury|floatformat:0 }}</div>
-        <div class="stat-label">إجمالي المحصل (ج.م)</div>
-        <div class="stat-detail">
-            <small class="text-muted">من أصل {{ total_fees_due|floatformat:0 }} ج.م</small>
+
+        <div class="stat-card students">
+            <div class="stat-icon"><i class="fas fa-users"></i></div>
+            <div class="stat-number">{{ total_students|default:0 }}</div>
+            <div class="stat-label">إجمالي الطلاب</div>
+            <small class="text-success">{{ students_paid_full|default:0 }} مسدد كامل</small> |
+            <small class="text-warning">{{ students_with_dues|default:0 }} عليه مستحقات</small>
         </div>
-    </div>
-    
-    <div class="stat-card students">
-        <div class="stat-icon">
-            <i class="fas fa-users"></i>
+
+        <div class="stat-card payments">
+            <div class="stat-icon"><i class="fas fa-money-bill-wave"></i></div>
+            <div class="stat-number">{{ monthly_payments|default:0 }}</div>
+            <div class="stat-label">معاملات الشهر</div>
+            <small class="text-info">{{ monthly_registrations|default:0 }} تسجيل جديد</small>
         </div>
-        <div class="stat-number">{{ total_students }}</div>
-        <div class="stat-label">إجمالي الطلاب</div>
-        <div class="stat-detail">
-            <small class="text-success">{{ students_paid_full }} مسدد كامل</small> |
-            <small class="text-warning">{{ students_with_dues }} عليه مستحقات</small>
-        </div>
-    </div>
-    
-    <div class="stat-card payments">
-        <div class="stat-icon">
-            <i class="fas fa-money-bill-wave"></i>
-        </div>
-        <div class="stat-number">{{ monthly_payments }}</div>
-        <div class="stat-label">معاملات الشهر</div>
-        <div class="stat-detail">
-            <small class="text-info">{{ monthly_registrations }} تسجيل جديد</small>
-        </div>
-    </div>
-    
-    <div class="stat-card reports">
-        <div class="stat-icon">
-            <i class="fas fa-percentage"></i>
-        </div>
-        <div class="stat-number">{{ payment_percentage }}%</div>
-        <div class="stat-label">نسبة التحصيل</div>
-        <div class="stat-detail">
+
+        <div class="stat-card reports">
+            <div class="stat-icon"><i class="fas fa-percentage"></i></div>
+            <div class="stat-number">{{ payment_percentage|default:0 }}%</div>
+            <div class="stat-label">نسبة التحصيل</div>
             <small class="text-muted">من إجمالي المصروفات</small>
         </div>
     </div>
-</div>
 
-<!-- إحصائيات تفصيلية إضافية -->
-<div class="row mb-4 fade-in" style="animation-delay: 0.1s;">
-    <div class="col-12">
-        <div class="alert alert-info" style="border-radius: 15px; border: none; background: linear-gradient(135deg, rgba(23, 162, 184, 0.1), rgba(23, 162, 184, 0.05));">
-            <div class="row text-center">
-                <div class="col-md-3">
-                    <div class="fw-bold text-primary">{{ total_outstanding|floatformat:0 }} ج.م</div>
-                    <small class="text-muted">إجمالي المستحقات</small>
-                </div>
-                <div class="col-md-3">
-                    <div class="fw-bold text-success">{{ payment_percentage }}%</div>
-                    <small class="text-muted">نسبة السداد</small>
-                </div>
-                <div class="col-md-3">
-                    <div class="fw-bold text-warning">{{ monthly_registrations }}</div>
-                    <small class="text-muted">تسجيلات الشهر</small>
-                </div>
-                <div class="col-md-3">
-                    <div class="fw-bold text-info">{{ last_updated|date:"H:i" }}</div>
-                    <small class="text-muted">آخر تحديث</small>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-    <!-- البطاقة الرئيسية -->
-    <div class="settings-card fade-in" style="animation-delay: 0.2s;">
-        <!-- رأس البطاقة -->
+    <div class="settings-card">
         <div class="settings-header">
             <div class="settings-header-content">
                 <h4>
                     <i class="fas fa-cogs"></i>
                     إعدادات نظام الخزينة
                 </h4>
-                <p class="mb-0 mt-2 opacity-90">إدارة الإعدادات العامة لنظام الخزينة والمدفوعات</p>
+                <p class="mb-0 mt-2 opacity-90">إدارة الإعدادات المطابقة للموجودة في لوحة الإدارة</p>
             </div>
         </div>
 
-        <!-- نموذج الإعدادات -->
-        <form method="POST">
+        <form method="POST" action="{% url 'treasury_management:system_settings' %}" id="treasurySettingsForm">
             {% csrf_token %}
-            
+
             <div class="settings-section">
-                <!-- إعدادات عامة -->
-                <h5 class="section-title">
-                    <div class="section-icon">
-                        <i class="fas fa-sliders-h"></i>
-                    </div>
-                    الإعدادات العامة
-                </h5>
-                
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label">اسم المدرسة</label>
-                            <input type="text" class="form-control" name="school_name" 
-                                   value="{{ settings.school_name|default:'مدرسة المنار للغات' }}"
-                                   placeholder="أدخل اسم المدرسة">
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label class="form-label">العنوان</label>
-                            <input type="text" class="form-control" name="school_address" 
-                                   value="{{ settings.school_address|default:'' }}"
-                                   placeholder="أدخل عنوان المدرسة">
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label class="form-label">رقم الهاتف</label>
-                            <input type="text" class="form-control" name="school_phone" 
-                                   value="{{ settings.school_phone|default:'' }}"
-                                   placeholder="رقم هاتف المدرسة">
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label class="form-label">البريد الإلكتروني</label>
-                            <input type="email" class="form-control" name="school_email" 
-                                   value="{{ settings.school_email|default:'' }}"
-                                   placeholder="البريد الإلكتروني للمدرسة">
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label class="form-label">العام الدراسي الحالي</label>
-                            <input type="text" class="form-control" name="academic_year" 
-                                   value="{{ settings.academic_year|default:'2025/2026' }}"
-                                   placeholder="مثال: 2025/2026">
-                        </div>
-                    </div>
+
+                <div class="settings-note">
+                    <i class="fas fa-info-circle me-2"></i>
+                    هذه الصفحة تقرأ وتكتب نفس سجل إعدادات الخزينة الموجود في لوحة الإدارة.
                 </div>
 
-                <!-- إعدادات الخزينة -->
-                <h5 class="section-title mt-4">
-                    <div class="section-icon">
-                        <i class="fas fa-money-check-alt"></i>
-                    </div>
+                <h5 class="section-title">
+                    <div class="section-icon"><i class="fas fa-money-check-alt"></i></div>
                     إعدادات الخزينة
                 </h5>
-                
+
                 <div class="row">
                     <div class="col-md-4">
                         <div class="form-group">
                             <label class="form-label">عملة النظام</label>
                             <select class="form-select" name="currency">
-                                <option value="EGP" {% if settings.currency == 'EGP' %}selected{% endif %}>جنيه مصري (EGP)</option>
-                                <option value="USD" {% if settings.currency == 'USD' %}selected{% endif %}>دولار أمريكي (USD)</option>
-                                <option value="SAR" {% if settings.currency == 'SAR' %}selected{% endif %}>ريال سعودي (SAR)</option>
+                                <option value="EGP" {% if treasury_settings.currency == 'EGP' %}selected{% endif %}>جنيه مصري (EGP)</option>
+                                <option value="USD" {% if treasury_settings.currency == 'USD' %}selected{% endif %}>دولار أمريكي (USD)</option>
+                                <option value="SAR" {% if treasury_settings.currency == 'SAR' %}selected{% endif %}>ريال سعودي (SAR)</option>
                             </select>
+                            <small class="text-muted">القيمة الحالية: {{ treasury_settings.currency }}</small>
                         </div>
                     </div>
-                    
+
                     <div class="col-md-4">
                         <div class="form-group">
                             <label class="form-label">الحد الأدنى للدفع</label>
-                            <input type="number" class="form-control" name="min_payment" 
-                                   value="{{ settings.min_payment|default:50 }}"
+                            <input type="number" class="form-control" name="min_payment"
+                                   value="{{ treasury_settings.min_payment|default:50 }}"
                                    min="0" step="0.01" placeholder="50.00">
                         </div>
                     </div>
-                    
+
                     <div class="col-md-4">
                         <div class="form-group">
                             <label class="form-label">الحد الأقصى للدفع</label>
-                            <input type="number" class="form-control" name="max_payment" 
-                                   value="{{ settings.max_payment|default:5000 }}"
+                            <input type="number" class="form-control" name="max_payment"
+                                   value="{{ treasury_settings.max_payment|default:5000 }}"
                                    min="0" step="0.01" placeholder="5000.00">
                         </div>
                     </div>
                 </div>
 
-                <!-- إعدادات التقارير -->
                 <h5 class="section-title mt-4">
-                    <div class="section-icon">
-                        <i class="fas fa-file-alt"></i>
-                    </div>
+                    <div class="section-icon"><i class="fas fa-file-alt"></i></div>
                     إعدادات التقارير
                 </h5>
-                
+
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
                             <label class="form-label">تنسيق التاريخ</label>
                             <select class="form-select" name="date_format">
-                                <option value="d/m/Y" {% if settings.date_format == 'd/m/Y' %}selected{% endif %}>يوم/شهر/سنة</option>
-                                <option value="Y-m-d" {% if settings.date_format == 'Y-m-d' %}selected{% endif %}>سنة-شهر-يوم</option>
-                                <option value="d-m-Y" {% if settings.date_format == 'd-m-Y' %}selected{% endif %}>يوم-شهر-سنة</option>
+                                <option value="d/m/Y" {% if treasury_settings.date_format == 'd/m/Y' %}selected{% endif %}>يوم/شهر/سنة</option>
+                                <option value="Y-m-d" {% if treasury_settings.date_format == 'Y-m-d' %}selected{% endif %}>سنة-شهر-يوم</option>
+                                <option value="d-m-Y" {% if treasury_settings.date_format == 'd-m-Y' %}selected{% endif %}>يوم-شهر-سنة</option>
                             </select>
+                            <small class="text-muted">القيمة الحالية: {{ treasury_settings.date_format }}</small>
                         </div>
                     </div>
-                    
+
                     <div class="col-md-6">
                         <div class="form-group">
                             <label class="form-label">لغة التقارير</label>
                             <select class="form-select" name="report_language">
-                                <option value="ar" {% if settings.report_language == 'ar' %}selected{% endif %}>العربية</option>
-                                <option value="en" {% if settings.report_language == 'en' %}selected{% endif %}>الإنجليزية</option>
+                                <option value="ar" {% if treasury_settings.report_language == 'ar' %}selected{% endif %}>العربية</option>
+                                <option value="en" {% if treasury_settings.report_language == 'en' %}selected{% endif %}>الإنجليزية</option>
                             </select>
+                            <small class="text-muted">القيمة الحالية: {{ treasury_settings.report_language }}</small>
                         </div>
                     </div>
                 </div>
 
-                <!-- إعدادات الأمان -->
                 <h5 class="section-title mt-4">
-                    <div class="section-icon">
-                        <i class="fas fa-shield-alt"></i>
-                    </div>
-                    إعدادات الأمان
+                    <div class="section-icon"><i class="fas fa-shield-alt"></i></div>
+                    إعدادات الأمان والتنبيهات
                 </h5>
-                
+
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
                             <div class="form-check" style="background: rgba(40, 167, 69, 0.1); border: 1px solid rgba(40, 167, 69, 0.2); border-radius: 10px; padding: 15px;">
-                                <input class="form-check-input" type="checkbox" name="require_approval" 
-                                       {% if settings.require_approval %}checked{% endif %}
-                                       style="background-color: #28a745; border-color: #28a745;">
+                                <input class="form-check-input" type="checkbox" name="require_approval"
+                                       {% if treasury_settings.require_approval %}checked{% endif %}>
                                 <label class="form-check-label" style="color: #155724; font-weight: 600;">
                                     تتطلب المدفوعات موافقة المدير
                                 </label>
-                                <div style="color: #6c757d; font-size: 0.9rem; margin-top: 5px;">
-                                    عند التفعيل، ستحتاج جميع المدفوعات لموافقة المدير
-                                </div>
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-md-6">
                         <div class="form-group">
                             <div class="form-check" style="background: rgba(23, 162, 184, 0.1); border: 1px solid rgba(23, 162, 184, 0.2); border-radius: 10px; padding: 15px;">
-                                <input class="form-check-input" type="checkbox" name="enable_notifications" 
-                                       {% if settings.enable_notifications %}checked{% endif %}
-                                       style="background-color: #17a2b8; border-color: #17a2b8;">
+                                <input class="form-check-input" type="checkbox" name="enable_notifications"
+                                       {% if treasury_settings.enable_notifications %}checked{% endif %}>
                                 <label class="form-check-label" style="color: #0c5460; font-weight: 600;">
                                     تفعيل إشعارات النظام
                                 </label>
-                                <div style="color: #6c757d; font-size: 0.9rem; margin-top: 5px;">
-                                    إرسال إشعارات عند المدفوعات والعمليات المهمة
-                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                
             </div>
-            
-            <!-- أزرار التحكم -->
+
             <div class="action-buttons">
                 <div>
                     <small class="text-muted">
                         <i class="fas fa-info-circle me-1"></i>
-                        آخر تحديث: {{ settings.updated_at|date:"d/m/Y H:i"|default:"لم يتم التحديث بعد" }}
+                        آخر تحديث:
+                        {{ treasury_settings.updated_at|date:"d/m/Y H:i"|default:"لم يتم التحديث بعد" }}
+                        {% if treasury_settings.updated_by %}
+                            بواسطة {{ treasury_settings.updated_by.get_full_name|default:treasury_settings.updated_by.username }}
+                        {% endif %}
                     </small>
                 </div>
-                
+
                 <div>
                     <button type="button" class="btn btn-secondary-custom me-2" onclick="resetForm()">
                         <i class="fas fa-undo me-2"></i>إعادة تعيين
                     </button>
-                    <button type="submit" class="btn btn-primary-custom">
+                    <button type="submit" class="btn btn-primary-custom" id="saveBtn">
                         <i class="fas fa-save me-2"></i>حفظ الإعدادات
                     </button>
                 </div>
@@ -559,84 +407,31 @@
     </div>
 </div>
 
-<!-- JavaScript للتفاعل -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // تحسين تفاعل الحقول
-    const formControls = document.querySelectorAll('.form-control, .form-select');
-    
-    formControls.forEach(control => {
-        control.addEventListener('focus', function() {
-            this.closest('.form-group').style.transform = 'translateY(-2px)';
-            this.closest('.form-group').style.transition = 'all 0.3s ease';
-        });
-        
-        control.addEventListener('blur', function() {
-            this.closest('.form-group').style.transform = 'translateY(0)';
-        });
-    });
+    const form = document.getElementById('treasurySettingsForm');
+    const saveBtn = document.getElementById('saveBtn');
 
-    // تحسين تفاعل الـ Checkboxes
-    const checkboxes = document.querySelectorAll('.form-check-input');
-    checkboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            const parent = this.closest('.form-check');
-            if (this.checked) {
-                parent.style.transform = 'scale(1.02)';
-                parent.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-            } else {
-                parent.style.transform = 'scale(1)';
-                parent.style.boxShadow = 'none';
-            }
-        });
-    });
+    form.addEventListener('submit', function(e) {
+        const minPayment = parseFloat(form.querySelector('[name="min_payment"]').value || 0);
+        const maxPayment = parseFloat(form.querySelector('[name="max_payment"]').value || 0);
 
-    console.log('✅ إعدادات الخزينة جاهزة');
+        if (maxPayment > 0 && minPayment > maxPayment) {
+            e.preventDefault();
+            alert('الحد الأدنى للدفع لا يمكن أن يكون أكبر من الحد الأقصى');
+            return false;
+        }
+
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>جاري الحفظ...';
+    });
 });
 
-// إعادة تعيين النموذج
 function resetForm() {
-    if (confirm('هل أنت متأكد من إعادة تعيين جميع الإعدادات؟')) {
-        document.querySelector('form').reset();
-        
-        // إظهار رسالة تأكيد
-        const alertDiv = document.createElement('div');
-        alertDiv.className = 'alert alert-info alert-dismissible fade show mt-3';
-        alertDiv.innerHTML = `
-            <i class="fas fa-info-circle"></i>
-            <strong>تم إعادة التعيين!</strong> يمكنك الآن إدخال القيم الجديدة.
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        
-        document.querySelector('.settings-section').insertBefore(alertDiv, document.querySelector('.settings-section').firstChild);
-        
-        // إزالة التنبيه تلقائياً
-        setTimeout(() => {
-            if (alertDiv.parentNode) {
-                alertDiv.remove();
-            }
-        }, 3000);
+    if (confirm('هل أنت متأكد من إعادة تعيين النموذج إلى آخر القيم المحفوظة؟')) {
+        document.getElementById('treasurySettingsForm').reset();
     }
 }
-
-// تحقق من صحة النموذج قبل الإرسال
-document.querySelector('form').addEventListener('submit', function(e) {
-    const requiredFields = this.querySelectorAll('[required]');
-    let isValid = true;
-    
-    requiredFields.forEach(field => {
-        if (!field.value.trim()) {
-            isValid = false;
-            field.style.borderColor = '#dc3545';
-            field.style.boxShadow = '0 0 0 0.2rem rgba(220, 53, 69, 0.15)';
-        }
-    });
-    
-    if (!isValid) {
-        e.preventDefault();
-        alert('يرجى ملء جميع الحقول المطلوبة');
-    }
-});
 </script>
 
 {% endblock %}

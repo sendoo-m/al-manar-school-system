@@ -38,14 +38,18 @@ urlpatterns = [
     path('reports/daily/', views.daily_report, name='daily_report'),
     path('reports/monthly/', views.monthly_report, name='monthly_report'),
     path('reports/advanced/', views.advanced_statistics, name='advanced_statistics'),
-
+    path('export/daily-pdf/', views.export_daily_report_pdf, name='export_daily_report_pdf'),
+    path('print-daily-report/', views.print_daily_report, name='print_daily_report'),
+    path('export/monthly-pdf/', views.export_monthly_report_pdf, name='export_monthly_report_pdf'),
+    path('print-monthly-report/', views.print_monthly_report, name='print_monthly_report'),
+    
     # ===================================
     # 🎯 الإدارة المتقدمة
     # ===================================
     path('discounts/', views.manage_discounts, name='manage_discounts'),
     path('overdue/', views.overdue_payments, name='overdue_payments'),
     path('settings/', views.payment_settings, name='payment_settings'),
-
+    
     # ===================================
     # 🔧 المساعدة والأدوات
     # ===================================
@@ -74,7 +78,7 @@ urlpatterns = [
     # APIs للطلاب - كلها في payments
         
     path('api/student-contact-details/<int:student_id>/', views.student_contact_details_api, name='student_contact_details_api'),
-
+    path('api/student-search/', views.student_search_ajax, name='student_search_ajax'),
 
     # ===================================
     # 📤 التصدير

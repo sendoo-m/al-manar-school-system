@@ -35,8 +35,8 @@
                         <h1>{% block page_title %}لوحة التحكم{% endblock %}</h1>
                         <div>
                             <span class="me-3">مرحباً، {{ user.username }}</span>
-                            <a href="{% url 'account:logout' %}" class="btn btn-outline-danger btn-sm">
-                                <i class="fas fa-sign-out-alt"></i> خروج
+                            <a href="{% url 'home:logout' %}" class="nav-link">
+                            <i class="fas fa-sign-out-alt me-2"></i>تسجيل الخروج
                             </a>
                         </div>
                     </div>

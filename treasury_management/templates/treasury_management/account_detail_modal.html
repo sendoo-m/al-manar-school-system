@@ -1,6 +1,311 @@
 <!-- treasury_management/templates/treasury_management/account_detail_modal.html -->
 <div class="row">
     <div class="col-md-6">
+        <div class="card border-primary h-100">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    معلومات الحساب
+                </h6>
+            </div>
+
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr>
+                        <td><strong>كود الحساب:</strong></td>
+                        <td><span class="account-code">{{ account.code }}</span></td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>اسم الحساب:</strong></td>
+                        <td>{{ account.name }}</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>نوع الحساب:</strong></td>
+                        <td>
+                            {% if account.category.category_type == 'ASSET' %}
+                                <span class="badge bg-info">أصل / خزنة</span>
+                            {% elif account.category.category_type == 'REVENUE' %}
+                                <span class="badge bg-success">إيراد</span>
+                            {% elif account.category.category_type == 'EXPENSE' %}
+                                <span class="badge bg-danger">مصروف</span>
+                            {% elif account.category.category_type == 'LIABILITY' %}
+                                <span class="badge bg-warning text-dark">خصم</span>
+                            {% else %}
+                                <span class="badge bg-secondary">حقوق ملكية</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>التصنيف:</strong></td>
+                        <td>
+                            {{ account.category.name }}
+                            <br>
+                            <small class="text-muted">{{ account.category.code }}</small>
+                        </td>
+                    </tr>
+
+                    {% if linked_treasury %}
+                    <tr>
+                        <td><strong>الخزنة المرتبطة:</strong></td>
+                        <td>
+                            <strong>{{ linked_treasury.name }}</strong>
+                            <br>
+                            <small class="text-muted">{{ linked_treasury.code }}</small>
+                        </td>
+                    </tr>
+                    {% endif %}
+
+                    <tr>
+                        <td><strong>الوصف:</strong></td>
+                        <td>{{ account.description|default:"غير محدد" }}</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>الحالة:</strong></td>
+                        <td>
+                            {% if account.is_active %}
+                                <span class="badge bg-success">نشط</span>
+                            {% else %}
+                                <span class="badge bg-secondary">غير نشط</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card border-success h-100">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-chart-line me-2"></i>
+                    الأرصدة والإحصائيات الصحيحة
+                </h6>
+            </div>
+
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="h5 text-info">{{ account.opening_balance|default:0|floatformat:2 }}</div>
+                        <small class="text-muted">الرصيد الافتتاحي للحساب</small>
+                    </div>
+
+                    <div class="col-6">
+                        {% if linked_treasury %}
+                            <div class="h5
+                                {% if linked_treasury.current_balance > 0 %}text-success
+                                {% elif linked_treasury.current_balance < 0 %}text-danger
+                                {% else %}text-secondary{% endif %}">
+                                {{ linked_treasury.current_balance|default:0|floatformat:2 }}
+                            </div>
+                            <small class="text-muted">الرصيد الحالي داخل الخزنة</small>
+                        {% else %}
+                            <div class="h5
+                                {% if account.current_balance > 0 %}text-success
+                                {% elif account.current_balance < 0 %}text-danger
+                                {% else %}text-secondary{% endif %}">
+                                {{ account.current_balance|default:0|floatformat:2 }}
+                            </div>
+                            <small class="text-muted">
+                                {% if account.category.category_type == 'REVENUE' %}
+                                    رصيد حساب الإيراد
+                                {% elif account.category.category_type == 'EXPENSE' %}
+                                    رصيد حساب المصروف
+                                {% else %}
+                                    الرصيد الحالي للحساب
+                                {% endif %}
+                            </small>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if linked_treasury and account.current_balance != linked_treasury.current_balance %}
+                <div class="alert alert-warning mt-3 mb-0">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    يوجد فرق بين رصيد الحساب المخزن
+                    <strong>{{ account.current_balance|default:0|floatformat:2 }}</strong>
+                    ورصيد الخزنة المعروض
+                    <strong>{{ linked_treasury.current_balance|default:0|floatformat:2 }}</strong>.
+                </div>
+                {% endif %}
+
+                <hr>
+
+                {% if linked_treasury %}
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-university me-1"></i>
+                        هذا الحساب مرتبط بخزنة، لذلك الرقم الأساسي المعروض هنا هو نفس رصيد الخزنة.
+                    </div>
+
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="h6 text-success">{{ treasury_income|default:0|floatformat:2 }}</div>
+                            <small class="text-muted">دخول للخزنة</small>
+                        </div>
+
+                        <div class="col-4">
+                            <div class="h6 text-danger">{{ treasury_outgoing|default:0|floatformat:2 }}</div>
+                            <small class="text-muted">خروج من الخزنة</small>
+                        </div>
+
+                        <div class="col-4">
+                            <div class="h6 text-primary">{{ treasury_net|default:0|floatformat:2 }}</div>
+                            <small class="text-muted">صافي الحركة</small>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="h6 text-success">{{ total_income|default:0|floatformat:2 }}</div>
+                            <small class="text-muted">إيرادات معتمدة</small>
+                        </div>
+
+                        <div class="col-4">
+                            <div class="h6 text-danger">{{ total_expenses|default:0|floatformat:2 }}</div>
+                            <small class="text-muted">مصروفات معتمدة</small>
+                        </div>
+
+                        <div class="col-4">
+                            <div class="h6 text-primary">{{ net_movement|default:0|floatformat:2 }}</div>
+                            <small class="text-muted">صافي الحركة</small>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <hr>
+
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="h6 text-dark">{{ transactions_count|default:0 }}</div>
+                        <small class="text-muted">عمليات معتمدة</small>
+                    </div>
+
+                    <div class="col-4">
+                        <div class="h6 text-warning">{{ pending_count|default:0 }}</div>
+                        <small class="text-muted">عمليات معلقة</small>
+                    </div>
+
+                    <div class="col-4">
+                        <div class="h6 text-secondary">{{ cancelled_count|default:0 }}</div>
+                        <small class="text-muted">عمليات ملغية</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if recent_transactions %}
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-history me-2"></i>
+                    آخر العمليات المرتبطة
+                </h6>
+            </div>
+
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>رقم العملية</th>
+                                <th>النوع</th>
+                                <th>الخزنة</th>
+                                <th>الحساب</th>
+                                <th>المبلغ</th>
+                                <th>الحالة</th>
+                                <th>الوصف</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for transaction in recent_transactions %}
+                            <tr>
+                                <td>
+                                    {{ transaction.transaction_date|date:"Y-m-d" }}
+                                    <br>
+                                    <small class="text-muted">{{ transaction.transaction_date|time:"H:i" }}</small>
+                                </td>
+
+                                <td>
+                                    <a href="{% url 'treasury_management:transaction_detail' transaction.id %}">
+                                        {{ transaction.transaction_number }}
+                                    </a>
+                                </td>
+
+                                <td>
+                                    {% if transaction.transaction_type == 'INCOME' %}
+                                        <span class="badge bg-success">إيراد</span>
+                                    {% elif transaction.transaction_type == 'EXPENSE' %}
+                                        <span class="badge bg-danger">مصروف</span>
+                                    {% else %}
+                                        <span class="badge bg-info">تحويل</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {{ transaction.treasury.name }}
+                                    {% if transaction.to_treasury %}
+                                        <br>
+                                        <small class="text-muted">إلى: {{ transaction.to_treasury.name }}</small>
+                                    {% endif %}
+                                </td>
+
+                                <td>{{ transaction.account.name }}</td>
+
+                                <td class="
+                                    {% if transaction.transaction_type == 'INCOME' %}text-success
+                                    {% elif transaction.transaction_type == 'EXPENSE' %}text-danger
+                                    {% else %}text-info{% endif %}">
+                                    {% if transaction.transaction_type == 'INCOME' %}+{% elif transaction.transaction_type == 'EXPENSE' %}-{% else %}↔{% endif %}
+                                    {{ transaction.amount|default:0|floatformat:2 }}
+                                </td>
+
+                                <td>
+                                    {% if transaction.is_cancelled %}
+                                        <span class="badge bg-danger">ملغية</span>
+                                    {% elif transaction.is_approved %}
+                                        <span class="badge bg-success">معتمدة</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">معلقة</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>{{ transaction.description|truncatechars:50 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-3 text-end">
+                    <a href="{% url 'treasury_management:account_statement' account.id %}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-file-invoice me-1"></i>
+                        فتح كشف الحساب
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-light border mt-3 mb-0">
+    <i class="fas fa-info-circle me-1"></i>
+    لا توجد عمليات مرتبطة بهذا الحساب حتى الآن.
+</div>
+{% endif %}
+
+{% comment %} <!-- treasury_management/templates/treasury_management/account_detail_modal.html -->
+<div class="row">
+    <div class="col-md-6">
         <div class="card border-primary">
             <div class="card-header bg-primary text-white">
                 <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>معلومات الحساب</h6>
@@ -119,4 +424,4 @@
         </div>
     </div>
 </div>
-{% endif %}
+{% endif %} {% endcomment %}

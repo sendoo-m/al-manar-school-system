@@ -1,34 +1,50 @@
 # students/views.py - منظم مع الصلاحيات
-import decimal
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
+
+import csv
+import io
+import json
+from datetime import date, datetime, timedelta
+from decimal import Decimal
+
+import openpyxl
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.views.decorators.cache import never_cache
 from django.db.models import Q, Sum, Count, Avg, Max, Min
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
+from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.utils import timezone
-from datetime import date, timedelta
-from decimal import Decimal
-from school_settings.models import (
-    SchoolFeesSettings,
-    StudentDiscount,
-    DiscountSettings,
+from django.views.decorators.cache import never_cache
+from openpyxl.styles import Font, PatternFill, Alignment
+
+from .decorators import (
+    students_basic_access,
+    students_add_only,
+    students_full_access,
+    students_reports_access,
+    students_sensitive_operation,
 )
 
-try:
-    from .utils.export_utils import StudentExporter
-    EXPORT_AVAILABLE = True
-except ImportError:
-    EXPORT_AVAILABLE = False
-    StudentExporter = None
+from .forms import StudentForm, Student_edit_Form
 
-try:
-    from .utils.import_utils import StudentImporter
-    IMPORT_AVAILABLE = True
-except ImportError:
-    IMPORT_AVAILABLE = False
-    StudentImporter = None
+from .models import (
+    Student,
+    ArchiveStudent,
+    UserProfile,
+)
+
+from .services.export_service import StudentExportService
+from .services.financial_service import StudentFinancialService
+from .services.import_preview_service import StudentImportPreviewService
+
+from school_settings.models import (
+    AcademicYear as SettingsAcademicYear,
+    EducationLevel,
+    GradeLevel,
+    SchoolFeesSettings,
+    SystemSettings,
+)
+
 
 try:
     from .utils.upgrade_utils import StudentUpgradeManager
@@ -36,32 +52,6 @@ try:
 except ImportError:
     UPGRADE_AVAILABLE = False
     StudentUpgradeManager = None
-
-# ===================================
-# 📦 الاستيراد
-# ===================================
-
-# النماذج المحلية
-from .models import Student, ArchiveStudent, UserProfile
-
-# نماذج الإعدادات
-from school_settings.models import (
-    AcademicYear as SettingsAcademicYear, 
-    EducationLevel, 
-    GradeLevel,
-    SystemSettings
-)
-
-# الصلاحيات المخصصة
-from .decorators import (
-    students_basic_access,
-    students_add_only, 
-    students_full_access,
-    students_reports_access,
-    students_admin_access,
-    students_sensitive_operation,
-    students_advanced_reports
-)
 
 # ===================================
 # 🔧 الدوال المساعدة
@@ -92,6 +82,81 @@ def get_education_data():
     education_levels = EducationLevel.objects.filter(is_active=True).order_by('order')
     return education_levels
 
+def get_grade_financial_summary(grade, current_year):
+    """
+    حساب ملخص مالي لصف معين باستخدام StudentFinancialService
+    """
+    students_qs = Student.objects.filter(
+        grade_level=grade,
+        is_active=True
+    ).select_related(
+        'grade_level',
+        'academic_year'
+    )
+
+    students_count = students_qs.count()
+
+    total_fees = Decimal('0.00')
+    total_payments = Decimal('0.00')
+    total_owed = Decimal('0.00')
+    fee_per_student = Decimal('0.00')
+
+    for student in students_qs:
+        summary = StudentFinancialService.get_student_balance(
+            student,
+            current_year
+        )
+
+        total_fees += summary['required_fees']
+        total_payments += summary['paid_amount']
+        total_owed += summary['owed_amount']
+
+        if fee_per_student == 0 and summary['required_fees'] > 0:
+            fee_per_student = summary['required_fees']
+
+    return {
+        'students_count': students_count,
+        'fee_per_student': fee_per_student,
+        'total_fees': total_fees,
+        'total_payments': total_payments,
+        'total_owed': total_owed,
+    }
+
+
+def get_level_financial_summary(level, current_year):
+    """
+    حساب ملخص مالي لمرحلة تعليمية كاملة باستخدام StudentFinancialService
+    """
+    students_qs = Student.objects.filter(
+        grade_level__education_level=level,
+        is_active=True
+    ).select_related(
+        'grade_level__education_level',
+        'academic_year'
+    )
+
+    total_students = students_qs.count()
+
+    total_fees = Decimal('0.00')
+    total_payments = Decimal('0.00')
+    total_owed = Decimal('0.00')
+
+    for student in students_qs:
+        summary = StudentFinancialService.get_student_balance(
+            student,
+            current_year
+        )
+
+        total_fees += summary['required_fees']
+        total_payments += summary['paid_amount']
+        total_owed += summary['owed_amount']
+
+    return {
+        'total_students': total_students,
+        'total_fees': total_fees,
+        'total_payments': total_payments,
+        'total_owed': total_owed,
+    }
 # ===================================
 # 🏠 الصفحات الرئيسية
 # ===================================
@@ -102,65 +167,131 @@ def home(request):
     """الصفحة الرئيسية - تحويل للوحة التحكم"""
     return redirect('students:student_affairs_home')
 
+
 @never_cache
 @students_basic_access
 def student_affairs_home(request):
     """لوحة تحكم شؤون الطلاب مع الإحصائيات"""
     user_role = get_user_role(request.user)
     system_settings, current_year = get_system_data()
-    
+
+    students_qs = Student.objects.filter(
+        is_active=True
+    ).select_related(
+        'grade_level__education_level',
+        'academic_year'
+    )
+
     # إحصائيات عامة
-    total_students = Student.objects.filter(is_active=True).count()
-    male_students = Student.objects.filter(gender='M', is_active=True).count()
-    female_students = Student.objects.filter(gender='F', is_active=True).count()
-    
-    # إحصائيات مالية
-    students_paid = Student.objects.filter(total_owed__lte=0, is_active=True).count()
-    students_owing = Student.objects.filter(total_owed__gt=0, is_active=True).count()
-    total_outstanding = Student.objects.filter(is_active=True).aggregate(
-        total=Sum('total_owed')
-    )['total'] or Decimal('0')
-    
+    total_students = students_qs.count()
+    male_students = students_qs.filter(gender='M').count()
+    female_students = students_qs.filter(gender='F').count()
+    students_without_grade = students_qs.filter(grade_level__isnull=True).count()
+
+    # إحصائيات مالية موحدة
+    students_paid = 0
+    students_owing = 0
+    total_outstanding = Decimal('0.00')
+    total_required = Decimal('0.00')
+    total_paid = Decimal('0.00')
+    collection_percentage = 0
+
+    if current_year:
+        for student in students_qs:
+            balance = StudentFinancialService.get_student_balance(
+                student,
+                current_year
+            )
+
+            total_required += balance['required_fees']
+            total_paid += balance['paid_amount']
+            total_outstanding += balance['owed_amount']
+
+            if balance['is_paid']:
+                students_paid += 1
+            else:
+                students_owing += 1
+
+        collection_percentage = (
+            total_paid / total_required * 100
+        ) if total_required > 0 else 0
+
     # الطلاب المضافون مؤخراً
-    recent_students = Student.objects.filter(is_active=True).order_by('-created_at')[:10]
-    
+    recent_students = students_qs.order_by('-created_at')[:10]
+
     # توزيع الطلاب حسب المراحل التعليمية
-    education_levels_stats = EducationLevel.objects.filter(is_active=True).annotate(
-        student_count=Count('gradelevel__student', filter=Q(gradelevel__student__is_active=True))
-    ).order_by('order')
-    
+    education_levels_stats = []
+
+    for level in EducationLevel.objects.filter(is_active=True).order_by('order', 'name'):
+        count = students_qs.filter(
+            grade_level__education_level=level
+        ).count()
+
+        if count > 0:
+            education_levels_stats.append({
+                'level': level,
+                'student_count': count,
+                'percentage': round((count * 100 / total_students) if total_students > 0 else 0, 1),
+            })
+
     # توزيع الطلاب حسب الصفوف
-    grade_levels_stats = GradeLevel.objects.filter(is_active=True).annotate(
-        student_count=Count('student', filter=Q(student__is_active=True))
-    ).select_related('education_level').order_by('education_level__order', 'order')
-    
+    grade_levels_stats = []
+
+    for grade in GradeLevel.objects.filter(
+        is_active=True
+    ).select_related(
+        'education_level'
+    ).order_by(
+        'education_level__order',
+        'order',
+        'name'
+    ):
+        count = students_qs.filter(grade_level=grade).count()
+
+        if count > 0:
+            grade_levels_stats.append({
+                'grade': grade,
+                'student_count': count,
+                'percentage': round((count * 100 / total_students) if total_students > 0 else 0, 1),
+            })
+
     # صلاحيات المستخدم للقالب
     permissions = {
         'can_add': user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER', 'STUDENT_AFFAIRS'],
-        'can_edit': user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER'],
-        'can_delete': user_role in ['SYSTEM_ADMIN'],
-        'can_reports': user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER'],
-        'can_export': user_role in ['SYSTEM_ADMIN'],
+        'can_edit': user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER', 'ADMIN'],
+        'can_delete': user_role == 'SYSTEM_ADMIN',
+        'can_reports': user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER', 'ADMIN'],
+        'can_export': user_role == 'SYSTEM_ADMIN',
+        'can_import': user_role == 'SYSTEM_ADMIN',
         'is_student_affairs_only': user_role == 'STUDENT_AFFAIRS',
     }
-    
+
     context = {
         'system_settings': system_settings,
         'current_year': current_year,
+
         'total_students': total_students,
         'male_students': male_students,
         'female_students': female_students,
+        'students_without_grade': students_without_grade,
+
         'students_paid': students_paid,
         'students_owing': students_owing,
         'total_outstanding': total_outstanding,
+        'total_required': total_required,
+        'total_paid': total_paid,
+        'collection_percentage': collection_percentage,
+
         'recent_students': recent_students,
         'education_levels_stats': education_levels_stats,
         'grade_levels_stats': grade_levels_stats,
+
         'today': timezone.now().date(),
         'permissions': permissions,
         'user_role': user_role,
+        'title': 'لوحة تحكم شؤون الطلاب',
     }
-    
+
     return render(request, 'students/student_affairs_home.html', context)
 
 # ===================================
@@ -172,71 +303,88 @@ def student_affairs_home(request):
 def student_list(request):
     """قائمة الطلاب مع البحث والفلاتر"""
     user_role = get_user_role(request.user)
-    
-    # إزالة prefetch_related اللي بيسبب مشكلة
-    students = Student.objects.filter(is_active=True).select_related(
-        'grade_level__education_level'
+    system_settings, current_academic_year = get_system_data()
+
+    students = Student.objects.filter(
+        is_active=True
+    ).select_related(
+        'grade_level__education_level',
+        'academic_year'
     )
-    # لا تضع prefetch_related حتى نعرف أسماء العلاقات الصحيحة
-    
-    # البحث
+
     search_query = request.GET.get('search_query', '').strip()
+    education_level_id = request.GET.get('education_level', '').strip()
+    grade_level_id = request.GET.get('grade_level', '').strip()
+    gender = request.GET.get('gender', '').strip()
+    has_balance = request.GET.get('has_balance', '').strip()
+
     if search_query:
         students = students.filter(
-            Q(name__icontains=search_query) | 
+            Q(name__icontains=search_query) |
             Q(national_number__icontains=search_query) |
-            Q(phone_number__icontains=search_query)
+            Q(phone_number__icontains=search_query) |
+            Q(parent_name__icontains=search_query) |
+            Q(parent_phone__icontains=search_query)
         )
-    
-    # فلتر الجنس
-    gender = request.GET.get('gender', '')
+
+    if education_level_id:
+        students = students.filter(
+            grade_level__education_level_id=education_level_id
+        )
+
+    if grade_level_id:
+        students = students.filter(
+            grade_level_id=grade_level_id
+        )
+
     if gender:
         students = students.filter(gender=gender)
-    
-    # فلتر المرحلة التعليمية
-    education_level = request.GET.get('education_level', '')
-    if education_level:
-        students = students.filter(grade_level__education_level_id=education_level)
-    
-    # فلتر الصف الدراسي
-    grade_level = request.GET.get('grade_level', '')
-    if grade_level:
-        students = students.filter(grade_level_id=grade_level)
-    
-    # الإحصائيات
-    total_male_students = students.filter(gender='M').count()
-    total_female_students = students.filter(gender='F').count()
-    
-    # الترقيم
-    students = students.order_by('name')
-    paginator = Paginator(students, 15)
+
+    if has_balance == 'paid':
+        students = students.filter(total_owed__lte=0)
+    elif has_balance == 'owing':
+        students = students.filter(total_owed__gt=0)
+
+    students = students.order_by(
+        'grade_level__education_level__order',
+        'grade_level__order',
+        'name'
+    )
+
+    paginator = Paginator(students, 25)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    
-    # للفلاتر
-    education_levels = EducationLevel.objects.filter(is_active=True).order_by('order')
-    
-    # صلاحيات للقالب
-    permissions = {
-        'can_view_details': user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER', 'STUDENT_AFFAIRS'],
-        'can_edit': user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER'],
-        'can_delete': user_role in ['SYSTEM_ADMIN'],
-        'can_add': user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER', 'STUDENT_AFFAIRS'],
-        'can_export': user_role in ['SYSTEM_ADMIN'],
-    }
-    
+
+    education_levels = EducationLevel.objects.filter(
+        is_active=True
+    ).order_by('order', 'name')
+
+    grade_levels = GradeLevel.objects.filter(
+        is_active=True
+    ).select_related(
+        'education_level'
+    ).order_by(
+        'education_level__order',
+        'order',
+        'name'
+    )
+
     context = {
+        'students': page_obj,
         'page_obj': page_obj,
-        'total_male_students': total_male_students,
-        'total_female_students': total_female_students,
+        'total_students': students.count(),
         'education_levels': education_levels,
+        'grade_levels': grade_levels,
         'search_query': search_query,
+        'selected_education_level': education_level_id,
+        'selected_grade_level': grade_level_id,
         'selected_gender': gender,
-        'selected_education_level': education_level,
-        'selected_grade_level': grade_level,
-        'permissions': permissions,
+        'selected_has_balance': has_balance,
         'user_role': user_role,
+        'current_academic_year': current_academic_year,
+        'title': 'قائمة الطلاب',
     }
+
     return render(request, 'students/student_list.html', context)
 
 @never_cache
@@ -246,94 +394,120 @@ def add_student(request):
     user_role = get_user_role(request.user)
     system_settings, current_academic_year = get_system_data()
     education_levels = get_education_data()
-    
+
     if request.method == 'POST':
-        try:
-            # البيانات الأساسية
-            name = request.POST.get('name', '').strip()
-            national_number = request.POST.get('national_number', '').strip()
-            phone_number = request.POST.get('phone_number', '').strip()
-            address = request.POST.get('address', '').strip()
-            
-            # بيانات ولي الأمر
-            parent_name = request.POST.get('parent_name', '').strip()
-            parent_phone = request.POST.get('parent_phone', '').strip()
-            parent_email = request.POST.get('parent_email', '').strip()
-            
-            # التحقق من البيانات المطلوبة
-            if not name or not national_number:
-                messages.error(request, 'الاسم والرقم القومي مطلوبان')
-                return redirect('students:add_student')
-            
-            # التحقق من عدم تكرار الرقم القومي
-            if Student.objects.filter(national_number=national_number).exists():
-                messages.error(request, 'يوجد طالب آخر بنفس الرقم القومي')
-                return redirect('students:add_student')
-            
-            # إنشاء الطالب
-            student = Student.objects.create(
-                name=name,
-                national_number=national_number,
-                phone_number=phone_number,
-                address=address,
-                parent_name=parent_name,
-                parent_phone=parent_phone,
-                parent_email=parent_email,
-                academic_year=current_academic_year,
-            )
-            
-            # ربط الصف الدراسي
-            grade_level_id = request.POST.get('grade_level')
-            if grade_level_id:
-                try:
-                    grade_level = GradeLevel.objects.get(id=grade_level_id, is_active=True)
-                    student.grade_level = grade_level
-                    student.save()
-                except GradeLevel.DoesNotExist:
-                    messages.warning(request, 'الصف الدراسي المختار غير صحيح')
-            
-            messages.success(request, f'تم إضافة الطالب {student.name} بنجاح!')
-            
-            # توجيه حسب الدور
-            if user_role == 'STUDENT_AFFAIRS':
-                return redirect('students:student_affairs_home')
-            else:
+        form = StudentForm(request.POST)
+
+        if form.is_valid():
+            try:
+                student = form.save(commit=False)
+
+                if current_academic_year and not student.academic_year:
+                    student.academic_year = current_academic_year
+
+                student.save()
+
+                messages.success(request, f'تم إضافة الطالب {student.name} بنجاح!')
+
+                if user_role == 'STUDENT_AFFAIRS':
+                    return redirect('students:student_affairs_home')
+
                 return redirect('students:student_detail', pk=student.pk)
-            
-        except Exception as e:
-            messages.error(request, f'حدث خطأ أثناء إضافة الطالب: {str(e)}')
-            return redirect('students:add_student')
-    
+
+            except Exception as e:
+                messages.error(request, f'حدث خطأ أثناء إضافة الطالب: {str(e)}')
+        else:
+            messages.error(request, 'يرجى مراجعة البيانات المدخلة وتصحيح الأخطاء')
+    else:
+        form = StudentForm()
+
     context = {
+        'form': form,
         'current_academic_year': current_academic_year,
         'education_levels': education_levels,
         'title': 'إضافة طالب جديد',
         'user_role': user_role,
     }
+
     return render(request, 'students/add_student.html', context)
 
 @never_cache
-@students_basic_access  
+@students_basic_access
 def student_detail(request, pk):
-    """تفاصيل الطالب - عرض للجميع، تحرير حسب الصلاحية"""
-    student = get_object_or_404(Student, pk=pk)
+    """تفاصيل الطالب"""
+    student = get_object_or_404(
+        Student.objects.select_related(
+            'grade_level__education_level',
+            'academic_year'
+        ),
+        pk=pk
+    )
+
     user_role = get_user_role(request.user)
-    
-    # صلاحيات التفاصيل
-    permissions = {
-        'can_edit': user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER'],
-        'can_delete': user_role in ['SYSTEM_ADMIN'],
-        'can_view_financial': user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER'],
-        'can_view_sensitive_data': user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER'],
-    }
-    
+    system_settings, current_academic_year = get_system_data()
+
+    financial_summary = StudentFinancialService.get_student_balance(
+        student,
+        current_academic_year
+    )
+
     context = {
         'student': student,
-        'permissions': permissions,
         'user_role': user_role,
+        'system_settings': system_settings,
+        'current_academic_year': current_academic_year,
+        'financial_summary': financial_summary,
         'title': f'تفاصيل الطالب - {student.name}',
     }
+
     return render(request, 'students/student_detail.html', context)
+
+@never_cache
+@students_sensitive_operation
+def sync_students_financial_data(request):
+    """مزامنة الحقول المالية للطلاب حسب إعدادات المصروفات الحالية"""
+    if request.method != 'POST':
+        messages.warning(request, 'طريقة الطلب غير صحيحة')
+        return redirect('students:student_list')
+
+    system_settings, current_academic_year = get_system_data()
+
+    if not current_academic_year:
+        messages.error(request, 'لا يوجد عام دراسي حالي محدد')
+        return redirect('students:student_list')
+
+    students = Student.objects.filter(
+        is_active=True
+    ).select_related(
+        'grade_level',
+        'academic_year'
+    )
+
+    updated_count = 0
+    skipped_count = 0
+
+    for student in students:
+        if not student.grade_level:
+            skipped_count += 1
+            continue
+
+        try:
+            StudentFinancialService.sync_student_financial_fields(
+                student,
+                academic_year=current_academic_year,
+                save=True
+            )
+            updated_count += 1
+        except Exception:
+            skipped_count += 1
+
+    messages.success(
+        request,
+        f'تمت مزامنة البيانات المالية لعدد {updated_count} طالب. تم تخطي {skipped_count} طالب.'
+    )
+
+    return redirect('students:student_list')
+
 
 @never_cache
 @students_full_access
@@ -343,44 +517,32 @@ def edit_student(request, pk):
     user_role = get_user_role(request.user)
     system_settings, current_academic_year = get_system_data()
     education_levels = get_education_data()
-    
+
     if request.method == 'POST':
-        try:
-            # البيانات الأساسية
-            student.name = request.POST.get('name', student.name)
-            student.national_number = request.POST.get('national_number', student.national_number)
-            student.phone_number = request.POST.get('phone_number', student.phone_number)
-            student.address = request.POST.get('address', student.address)
-            
-            # بيانات ولي الأمر
-            student.parent_name = request.POST.get('parent_name', student.parent_name)
-            student.parent_phone = request.POST.get('parent_phone', student.parent_phone)
-            student.parent_email = request.POST.get('parent_email', student.parent_email)
-            
-            # الصف الدراسي
-            grade_level_id = request.POST.get('grade_level')
-            if grade_level_id:
-                try:
-                    grade_level = GradeLevel.objects.get(id=grade_level_id, is_active=True)
-                    student.grade_level = grade_level
-                except GradeLevel.DoesNotExist:
-                    messages.warning(request, 'الصف الدراسي المختار غير صحيح')
-            
-            student.save()
-            
-            messages.success(request, 'تم تحديث بيانات الطالب بنجاح!')
-            return redirect('students:student_detail', pk=student.pk)
-            
-        except Exception as e:
-            messages.error(request, f'حدث خطأ أثناء تحديث البيانات: {str(e)}')
-    
+        form = Student_edit_Form(request.POST, instance=student)
+
+        if form.is_valid():
+            try:
+                student = form.save()
+                messages.success(request, 'تم تحديث بيانات الطالب بنجاح!')
+                return redirect('students:student_detail', pk=student.pk)
+
+            except Exception as e:
+                messages.error(request, f'حدث خطأ أثناء تحديث البيانات: {str(e)}')
+        else:
+            messages.error(request, 'يرجى مراجعة البيانات المدخلة وتصحيح الأخطاء')
+    else:
+        form = Student_edit_Form(instance=student)
+
     context = {
+        'form': form,
         'student': student,
         'current_academic_year': current_academic_year,
         'education_levels': education_levels,
         'user_role': user_role,
         'title': f'تعديل بيانات الطالب - {student.name}',
     }
+
     return render(request, 'students/edit_student_form.html', context)
 
 @never_cache
@@ -425,78 +587,158 @@ def confirm_delete_student(request, student_id):
 # ===================================
 # 🔍 البحث والتصفح
 # ===================================
-
 @never_cache
 @students_basic_access
 def search_student(request):
     """صفحة البحث المتقدم"""
     user_role = get_user_role(request.user)
-    
+
+    education_levels = EducationLevel.objects.filter(
+        is_active=True
+    ).order_by(
+        'order',
+        'name'
+    )
+
+    grade_levels = GradeLevel.objects.filter(
+        is_active=True
+    ).select_related(
+        'education_level'
+    ).order_by(
+        'education_level__order',
+        'order',
+        'name'
+    )
+
     context = {
         'user_role': user_role,
-        'education_levels': EducationLevel.objects.filter(is_active=True).order_by('order'),
+        'education_levels': education_levels,
+        'grade_levels': grade_levels,
+        'title': 'البحث المتقدم عن الطلاب',
+        'can_add_student': user_role in ['SYSTEM_ADMIN', 'ADMIN', 'STUDENT_AFFAIRS'],
+        'can_edit_student': user_role in ['SYSTEM_ADMIN', 'ADMIN'],
+        'can_delete_student': user_role == 'SYSTEM_ADMIN',
     }
+
     return render(request, 'students/search_student.html', context)
+
 
 @never_cache
 @students_basic_access
 def ajax_student_search(request):
-    """البحث السريع عبر AJAX"""
-    if request.method == 'GET' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        query = request.GET.get('q', '').strip()
-        user_role = get_user_role(request.user)
-        
-        if len(query) < 3:
-            return JsonResponse({'students': []})
-        
-        # البحث في الاسم والرقم القومي
-        students = Student.objects.filter(
-            Q(name__icontains=query) | Q(national_number__icontains=query),
-            is_active=True
-        ).select_related('grade_level__education_level')[:20]
-        
-        # تحويل النتائج لـ JSON
-        results = []
-        for student in students:
-            result_data = {
-                'id': student.id,
-                'name': student.name,
-                'national_number': student.national_number,
-                'age': student.age,
-                'gender': 'ذكر' if student.gender == 'M' else 'أنثى' if student.gender == 'F' else 'غير محدد',
-                'gender_icon': 'male' if student.gender == 'M' else 'female' if student.gender == 'F' else 'question',
-                'grade_name': student.grade_name,
-                'education_level_name': student.education_level_name,
-                'detail_url': f"/students/student_detail/{student.pk}/",
-            }
-            
-            # إضافة روابط حسب الصلاحية
-            if user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER']:
-                result_data['edit_url'] = f"/students/edit_student/{student.pk}/"
-            
-            if user_role in ['SYSTEM_ADMIN']:
-                result_data['delete_url'] = f"/students/students/confirm_delete_student/{student.pk}/"
-            
-            # إضافة البيانات المالية حسب الصلاحية
-            if user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER']:
-                result_data.update({
-                    'financial_status': student.get_financial_status(),
-                    'status_color': student.get_status_color(),
-                    'total_owed': float(student.total_owed or 0),
-                })
-        
-            results.append(result_data)
-        
+    """بحث AJAX عن الطلاب مع دعم الفلاتر"""
+    query = request.GET.get('q', '').strip()
+    education_level = request.GET.get('education_level', '').strip()
+    grade_level = request.GET.get('grade_level', '').strip()
+    gender = request.GET.get('gender', '').strip()
+    age_from = request.GET.get('age_from', '').strip()
+    age_to = request.GET.get('age_to', '').strip()
+
+    if (
+        len(query) < 2
+        and not education_level
+        and not grade_level
+        and not gender
+        and not age_from
+        and not age_to
+    ):
         return JsonResponse({
-            'students': results,
-            'permissions': {
-                'can_edit': user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER'],
-                'can_delete': user_role in ['SYSTEM_ADMIN'],
-                'can_view_financial': user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER'],
-            }
+            'success': True,
+            'students': [],
+            'count': 0,
         })
-    
-    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+    students = Student.objects.filter(
+        is_active=True
+    ).select_related(
+        'grade_level__education_level',
+        'academic_year'
+    )
+
+    if query:
+        students = students.filter(
+            Q(name__icontains=query) |
+            Q(national_number__icontains=query) |
+            Q(phone_number__icontains=query) |
+            Q(parent_name__icontains=query) |
+            Q(parent_phone__icontains=query)
+        )
+
+    if education_level:
+        students = students.filter(
+            grade_level__education_level_id=education_level
+        )
+
+    if grade_level:
+        students = students.filter(
+            grade_level_id=grade_level
+        )
+
+    if gender:
+        students = students.filter(
+            gender=gender
+        )
+
+    if age_from:
+        try:
+            students = students.filter(age__gte=int(age_from))
+        except ValueError:
+            pass
+
+    if age_to:
+        try:
+            students = students.filter(age__lte=int(age_to))
+        except ValueError:
+            pass
+
+    students = students.order_by(
+        'grade_level__education_level__order',
+        'grade_level__order',
+        'name'
+    )[:50]
+
+    students_data = []
+
+    for student in students:
+        grade_name = ''
+        education_level_name = ''
+
+        if student.grade_level:
+            grade_name = student.grade_level.name
+
+            if student.grade_level.education_level:
+                education_level_name = student.grade_level.education_level.name
+
+        students_data.append({
+            'id': student.id,
+            'name': student.name or '',
+            'national_number': student.national_number or '',
+            'phone_number': student.phone_number or '',
+            'parent_name': student.parent_name or '',
+            'parent_phone': student.parent_phone or '',
+            'age': student.age or '',
+            'gender': student.gender or '',
+            'gender_display': 'ذكر' if student.gender == 'M' else 'أنثى' if student.gender == 'F' else 'غير محدد',
+            'gender_icon': 'male' if student.gender == 'M' else 'female' if student.gender == 'F' else 'question',
+            'grade_level': grade_name,
+            'education_level': education_level_name,
+            'academic_year': student.academic_year.name if student.academic_year else '',
+            'total_fees': float(student.total_fees or 0),
+            'total_payments': float(student.total_payments or 0),
+            'total_owed': float(student.total_owed or 0),
+            'financial_status': student.get_financial_status() if hasattr(student, 'get_financial_status') else '',
+            'status_color': 'danger' if (student.total_owed or 0) > 0 else 'success',
+            'detail_url': reverse('students:student_detail', kwargs={'pk': student.pk}),
+            'edit_url': reverse('students:edit_student', kwargs={'pk': student.pk}),
+            'delete_url': reverse('students:confirm_delete_student', kwargs={'student_id': student.pk}),
+        })
+
+    return JsonResponse({
+        'success': True,
+        'students': students_data,
+        'count': len(students_data),
+        'query': query,
+    })
 
 # ===================================
 # 🔌 APIs المساعدة
@@ -541,86 +783,185 @@ def get_grades_by_level(request, level_id):
 @never_cache
 @students_reports_access
 def report(request):
-    """التقرير العام - للمدير والإدارة فقط"""
-    user_role = get_user_role(request.user)
-    
-    # إحصائيات شاملة
-    stats = {
-        'total_students': Student.objects.filter(is_active=True).count(),
-        'male_students': Student.objects.filter(gender='M', is_active=True).count(),
-        'female_students': Student.objects.filter(gender='F', is_active=True).count(),
-        'students_paid': Student.objects.filter(total_owed__lte=0, is_active=True).count(),
-        'students_owing': Student.objects.filter(total_owed__gt=0, is_active=True).count(),
-    }
-    
-    context = {
-        'stats': stats,
-        'user_role': user_role,
-        'title': 'التقرير العام للطلاب',
-    }
-    return render(request, 'students/report.html', context)
-
-# إضافة imports في أول الملف
-from school_settings.models import (
-    SchoolFeesSettings,
-    StudentDiscount,
-    AcademicYear as SettingsAcademicYear,
-    EducationLevel, 
-    GradeLevel,
-    SystemSettings
-)
-
-@never_cache
-@students_advanced_reports
-def all_reports(request):
-    """جميع التقارير المتقدمة - للمدير والإدارة فقط"""
+    """التقرير العام للطلاب"""
     user_role = get_user_role(request.user)
     system_settings, current_year = get_system_data()
-    
-    # الإحصائيات العامة
-    total_students = Student.objects.filter(is_active=True).count()
-    male_students = Student.objects.filter(gender='M', is_active=True).count()
-    female_students = Student.objects.filter(gender='F', is_active=True).count()
-    
-    # الإحصائيات المالية من إعدادات المصروفات
+
+    students_qs = Student.objects.filter(
+        is_active=True
+    ).select_related(
+        'grade_level__education_level',
+        'academic_year'
+    )
+
+    total_students = students_qs.count()
+    male_students = students_qs.filter(gender='M').count()
+    female_students = students_qs.filter(gender='F').count()
+    students_without_grade = students_qs.filter(grade_level__isnull=True).count()
+
+    # =========================
+    # إحصائيات المراحل التعليمية
+    # =========================
+    education_level_stats = []
+
+    for level in EducationLevel.objects.filter(is_active=True).order_by('order', 'name'):
+        count = students_qs.filter(
+            grade_level__education_level=level
+        ).count()
+
+        if count > 0:
+            education_level_stats.append({
+                'level': level,
+                'count': count,
+                'percentage': round((count * 100 / total_students) if total_students > 0 else 0, 1),
+            })
+
+    # =========================
+    # إحصائيات الصفوف الدراسية
+    # =========================
+    grade_level_stats = []
+
+    for grade in GradeLevel.objects.filter(
+        is_active=True
+    ).select_related(
+        'education_level'
+    ).order_by(
+        'education_level__order',
+        'order',
+        'name'
+    ):
+        count = students_qs.filter(
+            grade_level=grade
+        ).count()
+
+        if count > 0:
+            grade_level_stats.append({
+                'grade': grade,
+                'count': count,
+                'percentage': round((count * 100 / total_students) if total_students > 0 else 0, 1),
+            })
+
+    # =========================
+    # إحصائيات مالية
+    # =========================
+    financial_summary = {}
+
+    if user_role == 'SYSTEM_ADMIN' and current_year:
+        total_required = Decimal('0.00')
+        total_paid = Decimal('0.00')
+        total_owed = Decimal('0.00')
+        paid_students = 0
+        owing_students = 0
+
+        for student in students_qs:
+            balance = StudentFinancialService.get_student_balance(
+                student,
+                current_year
+            )
+
+            total_required += balance['required_fees']
+            total_paid += balance['paid_amount']
+            total_owed += balance['owed_amount']
+
+            if balance['is_paid']:
+                paid_students += 1
+            else:
+                owing_students += 1
+
+        financial_summary = {
+            'total_required': total_required,
+            'total_paid': total_paid,
+            'total_owed': total_owed,
+            'paid_students': paid_students,
+            'owing_students': owing_students,
+            'collection_percentage': (
+                total_paid / total_required * 100
+            ) if total_required > 0 else 0,
+        }
+
+    context = {
+        'system_settings': system_settings,
+        'current_year': current_year,
+        'user_role': user_role,
+        'title': 'التقرير العام للطلاب',
+
+        'total_students': total_students,
+        'male_students': male_students,
+        'female_students': female_students,
+        'students_without_grade': students_without_grade,
+
+        'education_level_stats': education_level_stats,
+        'grade_level_stats': grade_level_stats,
+        'financial_summary': financial_summary,
+    }
+
+    return render(request, 'students/report.html', context)
+
+@never_cache
+@students_reports_access
+def all_reports(request):
+    """التقارير الشاملة للطلاب"""
+    user_role = get_user_role(request.user)
+    system_settings, current_year = get_system_data()
+
+    today = timezone.now().date()
+    week_start = today - timedelta(days=7)
+    month_start = today.replace(day=1)
+    year_start = today.replace(month=1, day=1)
+
+    active_students = Student.objects.filter(
+        is_active=True
+    ).select_related(
+        'grade_level__education_level',
+        'academic_year'
+    )
+
+    total_students = active_students.count()
+    male_students = active_students.filter(gender='M').count()
+    female_students = active_students.filter(gender='F').count()
+
+    time_stats = {
+        'today': active_students.filter(created_at__date=today).count(),
+        'this_week': active_students.filter(created_at__date__gte=week_start).count(),
+        'this_month': active_students.filter(created_at__date__gte=month_start).count(),
+        'this_year': active_students.filter(created_at__date__gte=year_start).count(),
+    }
+
+    # =========================
+    # الإحصائيات المالية العامة
+    # =========================
     financial_stats = {}
+
     if user_role == 'SYSTEM_ADMIN' and current_year:
         try:
-            # حساب إجمالي المصروفات من إعدادات المصروفات
+            total_calculated_fees = Decimal('0.00')
+            total_payments = Decimal('0.00')
+            total_owed = Decimal('0.00')
+            paid_students = 0
+            unpaid_students = 0
+
+            for student in active_students:
+                summary = StudentFinancialService.get_student_balance(
+                    student,
+                    current_year
+                )
+
+                total_calculated_fees += summary['required_fees']
+                total_payments += summary['paid_amount']
+                total_owed += summary['owed_amount']
+
+                if summary['is_paid']:
+                    paid_students += 1
+                else:
+                    unpaid_students += 1
+
             total_fees_from_settings = SchoolFeesSettings.objects.filter(
                 academic_year=current_year,
                 is_active=True
             ).aggregate(
                 total_fees=Sum('total_amount')
-            )['total_fees'] or 0
-            
-            # حساب المصروفات لكل طالب بناءً على صفه
-            students_fees_data = []
-            for student in Student.objects.filter(is_active=True).select_related('grade_level'):
-                student_fees = SchoolFeesSettings.objects.filter(
-                    academic_year=current_year,
-                    grade_level=student.grade_level,
-                    is_active=True
-                ).aggregate(
-                    total=Sum('total_amount')
-                )['total'] or 0
-                
-                students_fees_data.append({
-                    'student': student,
-                    'fees': student_fees,
-                    'payments': student.total_payments or 0,
-                    'owed': student_fees - (student.total_payments or 0)
-                })
-            
-            # حساب الإجماليات
-            total_calculated_fees = sum(item['fees'] for item in students_fees_data)
-            total_payments = sum(item['payments'] for item in students_fees_data)
-            total_owed = sum(item['owed'] for item in students_fees_data)
-            
-            # عدد الطلاب المدفوعين والمتأخرين
-            paid_students = sum(1 for item in students_fees_data if item['owed'] <= 0)
-            unpaid_students = sum(1 for item in students_fees_data if item['owed'] > 0)
-            
+            )['total_fees'] or Decimal('0.00')
+
             financial_stats = {
                 'total_fees_from_settings': total_fees_from_settings,
                 'total_calculated_fees': total_calculated_fees,
@@ -628,567 +969,300 @@ def all_reports(request):
                 'total_owed': total_owed,
                 'paid_students': paid_students,
                 'unpaid_students': unpaid_students,
-                'collection_percentage': (total_payments / total_calculated_fees * 100) if total_calculated_fees > 0 else 0,
+                'collection_percentage': (
+                    total_payments / total_calculated_fees * 100
+                ) if total_calculated_fees > 0 else 0,
             }
-            
+
         except Exception as e:
             print(f"خطأ في حساب الإحصائيات المالية: {e}")
             financial_stats = {
-                'total_fees_from_settings': 0,
-                'total_calculated_fees': 0,
-                'total_payments': 0,
-                'total_owed': 0,
+                'total_fees_from_settings': Decimal('0.00'),
+                'total_calculated_fees': Decimal('0.00'),
+                'total_payments': Decimal('0.00'),
+                'total_owed': Decimal('0.00'),
                 'paid_students': 0,
                 'unpaid_students': 0,
                 'collection_percentage': 0,
             }
-    
+
+    # =========================
+    # إحصائيات إعدادات المصروفات
+    # =========================
+    fees_settings_stats = {}
+
+    if user_role == 'SYSTEM_ADMIN' and current_year:
+        fees_qs = SchoolFeesSettings.objects.filter(
+            academic_year=current_year,
+            is_active=True
+        )
+
+        fees_settings_stats = fees_qs.aggregate(
+            total_fee_types=Count('id'),
+            average_fee_per_grade=Avg('total_amount'),
+            max_fee=Max('total_amount'),
+            min_fee=Min('total_amount'),
+        )
+
+        fees_settings_stats['total_fee_types'] = fees_settings_stats['total_fee_types'] or 0
+        fees_settings_stats['average_fee_per_grade'] = fees_settings_stats['average_fee_per_grade'] or Decimal('0.00')
+        fees_settings_stats['max_fee'] = fees_settings_stats['max_fee'] or Decimal('0.00')
+        fees_settings_stats['min_fee'] = fees_settings_stats['min_fee'] or Decimal('0.00')
+        fees_settings_stats['grades_with_fees'] = fees_qs.values('grade_level').distinct().count()
+
+    # =========================
     # إحصائيات المراحل التعليمية
+    # =========================
     education_levels_stats = []
-    for level in EducationLevel.objects.filter(is_active=True).order_by('order'):
-        students_count = Student.objects.filter(
-            grade_level__education_level=level,
-            is_active=True
-        ).count()
-        
-        # إحصائيات الجنس لكل مرحلة
-        level_male = Student.objects.filter(
-            grade_level__education_level=level,
-            gender='M',
-            is_active=True
-        ).count()
-        
-        level_female = Student.objects.filter(
-            grade_level__education_level=level,
-            gender='F',
-            is_active=True
-        ).count()
-        
-        # الإحصائيات المالية للمرحلة (للمدير العام فقط)
+
+    for level in EducationLevel.objects.filter(is_active=True).order_by('order', 'name'):
+        level_students_qs = active_students.filter(
+            grade_level__education_level=level
+        )
+
+        students_count = level_students_qs.count()
+        level_male = level_students_qs.filter(gender='M').count()
+        level_female = level_students_qs.filter(gender='F').count()
+
         level_financial = {}
+
         if user_role == 'SYSTEM_ADMIN' and current_year:
             try:
-                # حساب مصروفات المرحلة
-                level_grades = GradeLevel.objects.filter(
-                    education_level=level,
-                    is_active=True
+                level_financial = get_level_financial_summary(
+                    level,
+                    current_year
                 )
-                
-                level_fees_total = SchoolFeesSettings.objects.filter(
-                    academic_year=current_year,
-                    grade_level__in=level_grades,
-                    is_active=True
-                ).aggregate(
-                    total=Sum('total_amount')
-                )['total'] or 0
-                
-                # حساب مدفوعات طلاب المرحلة
-                level_students = Student.objects.filter(
-                    grade_level__education_level=level,
-                    is_active=True
-                )
-                
-                level_payments = level_students.aggregate(
-                    total=Sum('total_payments')
-                )['total'] or 0
-                
-                level_financial = {
-                    'total_fees': level_fees_total,
-                    'total_payments': level_payments,
-                    'total_owed': level_fees_total - level_payments,
-                }
-                
             except Exception as e:
                 print(f"خطأ في حساب مالية المرحلة {level.name}: {e}")
                 level_financial = {
-                    'total_fees': 0,
-                    'total_payments': 0,
-                    'total_owed': 0,
+                    'total_students': students_count,
+                    'total_fees': Decimal('0.00'),
+                    'total_payments': Decimal('0.00'),
+                    'total_owed': Decimal('0.00'),
                 }
-        
+
         education_levels_stats.append({
             'level': level,
             'total_students': students_count,
             'male_students': level_male,
             'female_students': level_female,
             'percentage': round((students_count * 100 / total_students) if total_students > 0 else 0, 1),
-            'financial': level_financial
+            'financial': level_financial,
         })
-    
+
+    # =========================
     # إحصائيات الصفوف الدراسية
+    # =========================
     grade_levels_stats = []
-    for grade in GradeLevel.objects.filter(is_active=True).select_related('education_level').order_by('education_level__order', 'order'):
-        students_count = Student.objects.filter(grade_level=grade, is_active=True).count()
-        
+
+    for grade in GradeLevel.objects.filter(
+        is_active=True
+    ).select_related(
+        'education_level'
+    ).order_by(
+        'education_level__order',
+        'order',
+        'name'
+    ):
+        grade_students_qs = active_students.filter(
+            grade_level=grade
+        )
+
+        students_count = grade_students_qs.count()
+
+        if students_count == 0:
+            continue
+
         grade_financial = {}
+
         if user_role == 'SYSTEM_ADMIN' and current_year:
             try:
-                # مصروفات الصف
-                grade_fees = SchoolFeesSettings.objects.filter(
-                    academic_year=current_year,
-                    grade_level=grade,
-                    is_active=True
-                ).aggregate(
-                    total=Sum('total_amount')
-                )['total'] or 0
-                
-                # مدفوعات طلاب الصف
-                grade_students = Student.objects.filter(
-                    grade_level=grade,
-                    is_active=True
+                grade_financial = get_grade_financial_summary(
+                    grade,
+                    current_year
                 )
-                
-                grade_payments = grade_students.aggregate(
-                    total=Sum('total_payments')
-                )['total'] or 0
-                
-                grade_financial = {
-                    'total_fees': grade_fees * students_count,  # مضروب في عدد الطلاب
-                    'total_payments': grade_payments,
-                    'total_owed': (grade_fees * students_count) - grade_payments,
-                }
-                
             except Exception as e:
                 print(f"خطأ في حساب مالية الصف {grade.name}: {e}")
                 grade_financial = {
-                    'total_fees': 0,
-                    'total_payments': 0,
-                    'total_owed': 0,
+                    'students_count': students_count,
+                    'fee_per_student': Decimal('0.00'),
+                    'total_fees': Decimal('0.00'),
+                    'total_payments': Decimal('0.00'),
+                    'total_owed': Decimal('0.00'),
                 }
-        
-        if students_count > 0:  # عرض الصفوف التي بها طلاب فقط
-            grade_levels_stats.append({
-                'grade': grade,
-                'total_students': students_count,
-                'education_level': grade.education_level.name,
-                'financial': grade_financial
-            })
-    
-    # إحصائيات زمنية
-    from datetime import timedelta
-    today = timezone.now().date()
-    
-    time_stats = {
-        'today': Student.objects.filter(created_at__date=today, is_active=True).count(),
-        'this_week': Student.objects.filter(
-            created_at__date__gte=today - timedelta(days=7),
-            is_active=True
-        ).count(),
-        'this_month': Student.objects.filter(
-            created_at__date__gte=today.replace(day=1),
-            is_active=True
-        ).count(),
-        'this_year': Student.objects.filter(
-            created_at__year=today.year,
-            is_active=True
-        ).count(),
-    }
-    
-    # إحصائيات إعدادات المصروفات
-    fees_settings_stats = {}
-    if current_year:
-        try:
-            fees_settings_stats = {
-                'total_fee_types': SchoolFeesSettings.objects.filter(
-                    academic_year=current_year,
-                    is_active=True
-                ).count(),
-                'grades_with_fees': SchoolFeesSettings.objects.filter(
-                    academic_year=current_year,
-                    is_active=True
-                ).values('grade_level').distinct().count(),
-                'average_fee_per_grade': SchoolFeesSettings.objects.filter(
-                    academic_year=current_year,
-                    is_active=True
-                ).aggregate(avg=Avg('total_amount'))['avg'] or 0,
-                'max_fee': SchoolFeesSettings.objects.filter(
-                    academic_year=current_year,
-                    is_active=True
-                ).aggregate(max=Max('total_amount'))['max'] or 0,
-                'min_fee': SchoolFeesSettings.objects.filter(
-                    academic_year=current_year,
-                    is_active=True
-                ).aggregate(min=Min('total_amount'))['min'] or 0,
-            }
-        except Exception as e:
-            print(f"خطأ في إحصائيات المصروفات: {e}")
-            fees_settings_stats = {
-                'total_fee_types': 0,
-                'grades_with_fees': 0,
-                'average_fee_per_grade': 0,
-                'max_fee': 0,
-                'min_fee': 0,
-            }
-    
+
+        grade_levels_stats.append({
+            'grade': grade,
+            'total_students': students_count,
+            'education_level': grade.education_level.name if grade.education_level else 'غير محدد',
+            'financial': grade_financial,
+        })
+
     context = {
-        'user_role': user_role,
         'system_settings': system_settings,
         'current_year': current_year,
+        'report_date': today,
+        'user_role': user_role,
+
         'total_students': total_students,
         'male_students': male_students,
         'female_students': female_students,
+
+        'time_stats': time_stats,
         'financial_stats': financial_stats,
+        'fees_settings_stats': fees_settings_stats,
         'education_levels_stats': education_levels_stats,
         'grade_levels_stats': grade_levels_stats,
-        'time_stats': time_stats,
-        'fees_settings_stats': fees_settings_stats,
+
         'title': 'التقارير الشاملة',
-        'report_date': today,
     }
+
     return render(request, 'students/all_reports.html', context)
 
 
 @never_cache
 @students_reports_access
-def report(request):
-    """التقرير العام - للمدير والإدارة فقط"""
-    user_role = get_user_role(request.user)
-    system_settings, current_year = get_system_data()
-    
-    # إحصائيات أساسية
-    total_students = Student.objects.filter(is_active=True).count()
-    male_students = Student.objects.filter(gender='M', is_active=True).count()
-    female_students = Student.objects.filter(gender='F', is_active=True).count()
-    
-    # إحصائيات المراحل التعليمية
-    stage_stats = []
-    for level in EducationLevel.objects.filter(is_active=True).order_by('order'):
-        level_students = Student.objects.filter(
-            grade_level__education_level=level,
-            is_active=True
-        ).count()
-        
-        level_male = Student.objects.filter(
-            grade_level__education_level=level,
-            gender='M',
-            is_active=True
-        ).count()
-        
-        level_female = Student.objects.filter(
-            grade_level__education_level=level,
-            gender='F',
-            is_active=True
-        ).count()
-        
-        # حساب مصروفات المرحلة من إعدادات المصروفات
-        level_expenses = []
-        if current_year:
-            try:
-                level_grades = GradeLevel.objects.filter(
-                    education_level=level,
-                    is_active=True
-                )
-                
-                fees_by_grade = SchoolFeesSettings.objects.filter(
-                    academic_year=current_year,
-                    grade_level__in=level_grades,
-                    is_active=True
-                ).values(
-                    'grade_level__name',
-                    'fee_name',
-                    'total_amount'
-                ).order_by('grade_level__order', 'fee_type')
-                
-                for fee in fees_by_grade:
-                    level_expenses.append({
-                        'grade': fee['grade_level__name'],
-                        'name': fee['fee_name'],
-                        'amount': fee['total_amount']
-                    })
-                    
-            except Exception as e:
-                print(f"خطأ في حساب مصروفات المرحلة {level.name}: {e}")
-        
-        stage_stats.append({
-            'stage': level,
-            'total_stage_students': level_students,
-            'male_students': level_male,
-            'female_students': level_female,
-            'percentage': round((level_students * 100 / total_students) if total_students > 0 else 0, 1),
-            'expenses': level_expenses
-        })
-    
-    # إحصائيات زمنية
-    from datetime import timedelta
-    today = timezone.now().date()
-    
-    stats = {
-        'total_students': total_students,
-        'male_students': male_students,
-        'female_students': female_students,
-        'registered_students': total_students,  # للتوافق مع القالب القديم
-        'total_male_students': male_students,   # للتوافق مع القالب القديم
-        'total_female_students': female_students,  # للتوافق مع القالب القديم
-        'new_today': Student.objects.filter(created_at__date=today, is_active=True).count(),
-        'new_this_week': Student.objects.filter(
-            created_at__date__gte=today - timedelta(days=7),
-            is_active=True
-        ).count(),
-        'new_this_month': Student.objects.filter(
-            created_at__date__gte=today.replace(day=1),
-            is_active=True
-        ).count(),
-    }
-    
-    # الإحصائيات المالية من إعدادات المصروفات
-    if user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER'] and current_year:
-        try:
-            # حساب إجمالي المصروفات المتوقعة
-            total_fees_settings = SchoolFeesSettings.objects.filter(
-                academic_year=current_year,
-                is_active=True
-            ).aggregate(
-                total=Sum('total_amount')
-            )['total'] or 0
-            
-            # حساب المدفوعات الفعلية
-            actual_payments = Student.objects.filter(
-                is_active=True
-            ).aggregate(
-                total=Sum('total_payments')
-            )['total'] or 0
-            
-            # حساب المبالغ المستحقة
-            total_owed = Student.objects.filter(
-                is_active=True
-            ).aggregate(
-                total=Sum('total_owed')
-            )['total'] or 0
-            
-            # عدد الطلاب المدفوعين والمتأخرين
-            paid_students_count = Student.objects.filter(
-                total_owed__lte=0,
-                is_active=True
-            ).count()
-            
-            unpaid_students_count = Student.objects.filter(
-                total_owed__gt=0,
-                is_active=True
-            ).count()
-            
-            stats.update({
-                'students_paid': paid_students_count,
-                'students_owing': unpaid_students_count,
-                'total_paid_installments': actual_payments,
-                'total_unpaid_students': unpaid_students_count,
-                'total_tuitions': total_fees_settings,
-                'expected_total_collection': total_fees_settings * total_students,  # إجمالي متوقع
-                'collection_rate': (actual_payments / (total_fees_settings * total_students) * 100) if (total_fees_settings * total_students) > 0 else 0,
-            })
-            
-        except Exception as e:
-            print(f"خطأ في حساب الإحصائيات المالية: {e}")
-            stats.update({
-                'students_paid': 0,
-                'students_owing': 0,
-                'total_paid_installments': 0,
-                'total_unpaid_students': 0,
-                'total_tuitions': 0,
-                'expected_total_collection': 0,
-                'collection_rate': 0,
-            })
-    
-    context = {
-        'stats': stats,
-        'stage_stats': stage_stats,
-        'user_role': user_role,
-        'system_settings': system_settings,
-        'current_year': current_year,
-        'title': 'التقرير العام للطلاب',
-        'report_date': today,
-    }
-    return render(request, 'students/report.html', context)
-
-
-
-@never_cache
-@students_reports_access
 def daily_report(request):
-    """التقرير اليومي المحسن - للمدير والإدارة فقط"""
-    today = timezone.now().date()
+    """التقرير اليومي للطلاب"""
     user_role = get_user_role(request.user)
     system_settings, current_year = get_system_data()
-    
-    # تاريخ مخصص إذا تم اختياره
-    selected_date = request.GET.get('date')
-    if selected_date:
+
+    selected_date_str = request.GET.get('date', '').strip()
+
+    if selected_date_str:
         try:
-            today = datetime.strptime(selected_date, '%Y-%m-%d').date()
+            selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
         except ValueError:
-            today = timezone.now().date()
-    
-    # إحصائيات اليوم الأساسية
-    today_stats = {
-        'new_students': Student.objects.filter(created_at__date=today, is_active=True).count(),
-        'total_active': Student.objects.filter(is_active=True).count(),
-        'total_male_today': Student.objects.filter(created_at__date=today, gender='M', is_active=True).count(),
-        'total_female_today': Student.objects.filter(created_at__date=today, gender='F', is_active=True).count(),
-    }
-    
-    # الطلاب المضافون اليوم مع التفاصيل
-    new_students_today = Student.objects.filter(
-        created_at__date=today,
+            selected_date = timezone.now().date()
+            messages.warning(request, 'صيغة التاريخ غير صحيحة، تم عرض تقرير اليوم الحالي')
+    else:
+        selected_date = timezone.now().date()
+
+    day_start = selected_date
+    day_end = selected_date
+
+    students_qs = Student.objects.filter(
         is_active=True
     ).select_related(
-        'grade_level__education_level'
-    ).order_by('-created_at')
-    
-    # إحصائيات المدفوعات اليومية (إذا كان هناك نظام مدفوعات)
-    daily_payments_stats = {}
-    if user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER']:
-        try:
-            # يمكن إضافة إحصائيات المدفوعات هنا إذا كان هناك نظام دفع
-            # daily_payments = Payment.objects.filter(receipt_date__date=today)
-            # لكن حالياً سنستخدم البيانات من Student model
-            
-            students_with_payments = Student.objects.filter(
-                total_payments__gt=0,
-                is_active=True
-            )
-            
-            daily_payments_stats = {
-                'total_collected_today': 0,  # يحتاج نظام مدفوعات منفصل
-                'payments_count_today': 0,   # يحتاج نظام مدفوعات منفصل
-                'students_with_payments': students_with_payments.count(),
-                'total_outstanding': Student.objects.filter(
-                    total_owed__gt=0,
-                    is_active=True
-                ).aggregate(total=Sum('total_owed'))['total'] or 0,
-                'total_collected_all': Student.objects.filter(
-                    is_active=True
-                ).aggregate(total=Sum('total_payments'))['total'] or 0,
-            }
-            
-        except Exception as e:
-            print(f"خطأ في حساب إحصائيات المدفوعات: {e}")
-            daily_payments_stats = {
-                'total_collected_today': 0,
-                'payments_count_today': 0,
-                'students_with_payments': 0,
-                'total_outstanding': 0,
-                'total_collected_all': 0,
-            }
-    
-    # إحصائيات الفصول والمراحل لليوم
-    education_levels_today = []
-    for level in EducationLevel.objects.filter(is_active=True).order_by('order'):
-        level_students_today = Student.objects.filter(
-            created_at__date=today,
-            grade_level__education_level=level,
-            is_active=True
+        'grade_level__education_level',
+        'academic_year'
+    )
+
+    new_students_today = students_qs.filter(
+        created_at__date=selected_date
+    ).order_by(
+        '-created_at'
+    )
+
+    updated_students_today = students_qs.filter(
+        updated_at__date=selected_date
+    ).exclude(
+        created_at__date=selected_date
+    ).order_by(
+        '-updated_at'
+    )
+
+    total_students = students_qs.count()
+    total_new_today = new_students_today.count()
+    total_updated_today = updated_students_today.count()
+
+    male_new_today = new_students_today.filter(gender='M').count()
+    female_new_today = new_students_today.filter(gender='F').count()
+
+    # =========================
+    # توزيع الطلاب الجدد حسب المرحلة
+    # =========================
+    education_level_stats = []
+
+    for level in EducationLevel.objects.filter(is_active=True).order_by('order', 'name'):
+        count = new_students_today.filter(
+            grade_level__education_level=level
         ).count()
-        
-        if level_students_today > 0:
-            education_levels_today.append({
+
+        if count > 0:
+            education_level_stats.append({
                 'level': level,
-                'students_count': level_students_today,
-                'percentage': round((level_students_today * 100 / today_stats['new_students']) if today_stats['new_students'] > 0 else 0, 1)
+                'count': count,
+                'percentage': round((count * 100 / total_new_today) if total_new_today > 0 else 0, 1),
             })
-    
 
-    # إحصائيات الأسبوع للمقارنة
-    from datetime import timedelta
-    week_start = today - timedelta(days=6)
-    week_stats = []
+    # =========================
+    # توزيع الطلاب الجدد حسب الصف
+    # =========================
+    grade_level_stats = []
 
-    # حساب أقصى عدد طلاب لضبط الارتفاع
-    max_students_in_week = 0
-    week_data = []
-
-    for i in range(7):
-        day = week_start + timedelta(days=i)
-        day_students = Student.objects.filter(
-            created_at__date=day,
-            is_active=True
+    for grade in GradeLevel.objects.filter(
+        is_active=True
+    ).select_related(
+        'education_level'
+    ).order_by(
+        'education_level__order',
+        'order',
+        'name'
+    ):
+        count = new_students_today.filter(
+            grade_level=grade
         ).count()
-        
-        week_data.append({
-            'date': day,
-            'students_count': day_students,
-            'is_today': day == today,
-            'day_name': day.strftime('%A'),
-            'day_name_ar': get_arabic_day_name(day.strftime('%A'))
-        })
-        
-        if day_students > max_students_in_week:
-            max_students_in_week = day_students
 
-    # حساب الارتفاع النسبي لكل عمود
-    for day_data in week_data:
-        if max_students_in_week > 0:
-            # ارتفاع نسبي من 20px إلى 200px
-            height = 20 + (day_data['students_count'] / max_students_in_week) * 180
-        else:
-            height = 20
-        
-        day_data['bar_height'] = int(height)
-        week_stats.append(day_data)
-    
-    # إحصائيات التسجيل بالساعات (إذا كان هناك تسجيل متكرر)
-    hourly_stats = []
-    if today_stats['new_students'] > 0:
-        for hour in range(0, 24, 2):  # كل ساعتين
-            hour_start = timezone.make_aware(
-                datetime.combine(today, datetime.min.time().replace(hour=hour))
-            )
-            hour_end = hour_start + timedelta(hours=2)
-            
-            hour_count = Student.objects.filter(
-                created_at__gte=hour_start,
-                created_at__lt=hour_end,
-                is_active=True
-            ).count()
-            
-            if hour_count > 0:
-                hourly_stats.append({
-                    'hour_range': f"{hour:02d}:00 - {(hour+2):02d}:00",
-                    'count': hour_count,
-                    'percentage': round((hour_count * 100 / today_stats['new_students']), 1)
-                })
-    
-    # التفاصيل المالية اليومية
+        if count > 0:
+            grade_level_stats.append({
+                'grade': grade,
+                'count': count,
+                'percentage': round((count * 100 / total_new_today) if total_new_today > 0 else 0, 1),
+            })
+
+    # =========================
+    # الملخص المالي لطلاب اليوم
+    # =========================
     financial_summary = {}
+
     if user_role == 'SYSTEM_ADMIN' and current_year:
-        try:
-            # حساب المصروفات المتوقعة للطلاب الجدد اليوم
-            expected_fees_today = 0
-            for student in new_students_today:
-                if student.grade_level:
-                    student_fees = SchoolFeesSettings.objects.filter(
-                        academic_year=current_year,
-                        grade_level=student.grade_level,
-                        is_active=True
-                    ).aggregate(total=Sum('total_amount'))['total'] or 0
-                    expected_fees_today += student_fees
-            
-            financial_summary = {
-                'expected_fees_from_new_students': expected_fees_today,
-                'average_fee_per_new_student': (expected_fees_today / today_stats['new_students']) if today_stats['new_students'] > 0 else 0,
-            }
-            
-        except Exception as e:
-            print(f"خطأ في حساب الملخص المالي: {e}")
-            financial_summary = {
-                'expected_fees_from_new_students': 0,
-                'average_fee_per_new_student': 0,
-            }
-    
+        total_required = Decimal('0.00')
+        total_paid = Decimal('0.00')
+        total_owed = Decimal('0.00')
+
+        for student in new_students_today:
+            balance = StudentFinancialService.get_student_balance(
+                student,
+                current_year
+            )
+
+            total_required += balance['required_fees']
+            total_paid += balance['paid_amount']
+            total_owed += balance['owed_amount']
+
+        financial_summary = {
+            'total_required': total_required,
+            'total_paid': total_paid,
+            'total_owed': total_owed,
+            'collection_percentage': (
+                total_paid / total_required * 100
+            ) if total_required > 0 else 0,
+        }
+
     context = {
-        'report_date': today,
-        'selected_date': today.strftime('%Y-%m-%d'),
-        'today_stats': today_stats,
-        'new_students_today': new_students_today,
-        'daily_payments_stats': daily_payments_stats,
-        'education_levels_today': education_levels_today,
-        'week_stats': week_stats,
-        'hourly_stats': hourly_stats,
-        'financial_summary': financial_summary,
-        'user_role': user_role,
         'system_settings': system_settings,
         'current_year': current_year,
-        'title': f'التقرير اليومي - {today.strftime("%d/%m/%Y")}',
-        'is_today': today == timezone.now().date(),
+        'user_role': user_role,
+        'title': 'التقرير اليومي',
+
+        'selected_date': selected_date,
+        'selected_date_str': selected_date.strftime('%Y-%m-%d'),
+
+        'total_students': total_students,
+        'total_new_today': total_new_today,
+        'total_updated_today': total_updated_today,
+        'male_new_today': male_new_today,
+        'female_new_today': female_new_today,
+
+        'new_students_today': new_students_today,
+        'updated_students_today': updated_students_today,
+
+        'education_level_stats': education_level_stats,
+        'grade_level_stats': grade_level_stats,
+        'financial_summary': financial_summary,
     }
+
     return render(request, 'students/daily_report.html', context)
 
 
@@ -1209,61 +1283,134 @@ def get_arabic_day_name(english_day):
 @never_cache
 @students_reports_access
 def student_dashboard(request):
-    """لوحة إحصائيات الطلاب - للمدير والإدارة"""
+    """لوحة إحصائيات الطلاب"""
     user_role = get_user_role(request.user)
-    
-    # الإحصائيات الأساسية
-    dashboard_stats = {
-        'total': Student.objects.count(),
-        'active': Student.objects.filter(is_active=True).count(),
-        'new_today': Student.objects.filter(
-            created_at__date=timezone.now().date()
-        ).count(),
-        'new_this_week': Student.objects.filter(
-            created_at__date__gte=timezone.now().date() - timedelta(days=7)
-        ).count(),
-    }
-    
-    # إحصائيات الجنس
-    male_students = Student.objects.filter(gender='M', is_active=True).count()
-    female_students = Student.objects.filter(gender='F', is_active=True).count()
-    
-    # حساب النسب للجنس
-    total_active = dashboard_stats['active']
-    male_percentage = (male_students * 100 / total_active) if total_active > 0 else 0
-    female_percentage = (female_students * 100 / total_active) if total_active > 0 else 0
-    
-    # إحصائيات المراحل التعليمية مع النسب
-    education_levels_stats = []
-    try:
-        for level in EducationLevel.objects.filter(is_active=True).order_by('order'):
-            student_count = Student.objects.filter(
-                grade_level__education_level=level,
-                is_active=True
-            ).count()
-            
-            percentage = (student_count * 100 / total_active) if total_active > 0 else 0
-            
-            education_levels_stats.append({
-                'name': level.name,
-                'student_count': student_count,
-                'percentage': round(percentage, 1)
+    system_settings, current_year = get_system_data()
+
+    today = timezone.now().date()
+    month_start = today.replace(day=1)
+    year_start = today.replace(month=1, day=1)
+
+    students_qs = Student.objects.filter(
+        is_active=True
+    ).select_related(
+        'grade_level__education_level',
+        'academic_year'
+    )
+
+    total_students = students_qs.count()
+    male_students = students_qs.filter(gender='M').count()
+    female_students = students_qs.filter(gender='F').count()
+
+    new_this_month = students_qs.filter(
+        created_at__date__gte=month_start
+    ).count()
+
+    new_this_year = students_qs.filter(
+        created_at__date__gte=year_start
+    ).count()
+
+    students_without_grade = students_qs.filter(
+        grade_level__isnull=True
+    ).count()
+
+    # =========================
+    # توزيع الطلاب على المراحل
+    # =========================
+    education_distribution = []
+
+    for level in EducationLevel.objects.filter(is_active=True).order_by('order', 'name'):
+        count = students_qs.filter(
+            grade_level__education_level=level
+        ).count()
+
+        if count > 0:
+            education_distribution.append({
+                'level': level,
+                'count': count,
+                'percentage': round((count * 100 / total_students) if total_students > 0 else 0, 1),
             })
-    except Exception:
-        education_levels_stats = []
-    
+
+    # =========================
+    # توزيع الطلاب على الصفوف
+    # =========================
+    grade_distribution = []
+
+    for grade in GradeLevel.objects.filter(
+        is_active=True
+    ).select_related(
+        'education_level'
+    ).order_by(
+        'education_level__order',
+        'order',
+        'name'
+    ):
+        count = students_qs.filter(grade_level=grade).count()
+
+        if count > 0:
+            grade_distribution.append({
+                'grade': grade,
+                'count': count,
+                'percentage': round((count * 100 / total_students) if total_students > 0 else 0, 1),
+            })
+
+    # =========================
+    # إحصائيات مالية للمدير العام فقط
+    # =========================
+    financial_summary = {}
+
+    if user_role == 'SYSTEM_ADMIN' and current_year:
+        total_required = Decimal('0.00')
+        total_paid = Decimal('0.00')
+        total_owed = Decimal('0.00')
+        paid_students = 0
+        owing_students = 0
+
+        for student in students_qs:
+            balance = StudentFinancialService.get_student_balance(
+                student,
+                current_year
+            )
+
+            total_required += balance['required_fees']
+            total_paid += balance['paid_amount']
+            total_owed += balance['owed_amount']
+
+            if balance['is_paid']:
+                paid_students += 1
+            else:
+                owing_students += 1
+
+        financial_summary = {
+            'total_required': total_required,
+            'total_paid': total_paid,
+            'total_owed': total_owed,
+            'paid_students': paid_students,
+            'owing_students': owing_students,
+            'collection_percentage': (
+                total_paid / total_required * 100
+            ) if total_required > 0 else 0,
+        }
+
     context = {
-        'stats': dashboard_stats,
-        'male_students': male_students,
-        'female_students': female_students,
-        'male_percentage': round(male_percentage, 1),
-        'female_percentage': round(female_percentage, 1),
-        'education_levels_stats': education_levels_stats,
+        'system_settings': system_settings,
+        'current_year': current_year,
         'user_role': user_role,
         'title': 'لوحة إحصائيات الطلاب',
-    }
-    return render(request, 'students/student_dashboard.html', context)
 
+        'total_students': total_students,
+        'male_students': male_students,
+        'female_students': female_students,
+        'new_this_month': new_this_month,
+        'new_this_year': new_this_year,
+        'students_without_grade': students_without_grade,
+
+        'education_distribution': education_distribution,
+        'grade_distribution': grade_distribution,
+        'financial_summary': financial_summary,
+    }
+
+    return render(request, 'students/student_dashboard.html', context)
 
 # ===================================
 # 🔧 الأدوات الإدارية (مدير عام فقط)
@@ -1273,173 +1420,324 @@ def student_dashboard(request):
 @students_sensitive_operation
 def export_students(request):
     """تصدير بيانات الطلاب - للمدير العام فقط"""
-    from django.http import HttpResponse
-    import csv
-    
-    if request.method == 'POST':
+    export_format = (
+        request.POST.get('export_format')
+        or request.POST.get('format')
+        or request.GET.get('export_format')
+        or request.GET.get('format')
+        or 'csv'
+    )
+
+    include_inactive = (
+        request.POST.get('include_inactive') == 'on'
+        or request.GET.get('include_inactive') == '1'
+    )
+
+    selected_grade_levels = request.POST.getlist('grade_levels') or request.GET.getlist('grade_levels')
+
+    queryset = Student.objects.all().select_related(
+        'grade_level__education_level',
+        'academic_year'
+    )
+
+    if not include_inactive:
+        queryset = queryset.filter(is_active=True)
+
+    if selected_grade_levels:
+        queryset = queryset.filter(grade_level_id__in=selected_grade_levels)
+
+    queryset = queryset.order_by(
+        'grade_level__education_level__order',
+        'grade_level__order',
+        'name'
+    )
+
+    if request.method == 'POST' or request.GET.get('download') == '1':
         try:
-            response = HttpResponse(content_type='text/csv')
-            response['Content-Disposition'] = 'attachment; filename="students_export.csv"'
-            response.write('\ufeff'.encode('utf8'))  # BOM للعربية
-            
-            writer = csv.writer(response)
-            writer.writerow([
-                'الرقم الطلابي', 'الاسم', 'الرقم القومي', 'العمر', 'الجنس',
-                'المرحلة التعليمية', 'الصف', 'رقم الهاتف', 'العنوان',
-                'اسم ولي الأمر', 'هاتف ولي الأمر', 'إجمالي المدفوعات',
-                'إجمالي المصروفات', 'المستحقات', 'تاريخ التسجيل'
-            ])
-            
-            students = Student.objects.filter(is_active=True).select_related(
-                'grade_level__education_level', 'academic_year'
-            )
-            
-            for student in students:
-                writer.writerow([
-                    student.id,
-                    student.name,
-                    student.national_number,
-                    student.age or 0,
-                    'ذكر' if student.gender == 'M' else 'أنثى' if student.gender == 'F' else 'غير محدد',
-                    student.education_level_name,
-                    student.grade_name,
-                    student.phone_number or '',
-                    student.address or '',
-                    student.parent_name or '',
-                    student.parent_phone or '',
-                    float(student.total_payments),
-                    float(student.total_fees),
-                    float(student.total_owed),
-                    student.created_at.strftime('%Y-%m-%d') if student.created_at else '',
-                ])
-            
-            messages.success(request, 'تم تصدير بيانات الطلاب بنجاح!')
-            return response
-            
+            return StudentExportService.export(queryset, export_format)
         except Exception as e:
             messages.error(request, f'حدث خطأ في التصدير: {str(e)}')
-    
+
+    grade_levels = GradeLevel.objects.filter(
+        is_active=True
+    ).select_related(
+        'education_level'
+    ).order_by(
+        'education_level__order',
+        'order',
+        'name'
+    )
+
     context = {
         'total_students': Student.objects.filter(is_active=True).count(),
+        'grade_levels': grade_levels,
         'title': 'تصدير بيانات الطلاب',
+        'export_formats': [
+            {'value': 'csv', 'label': 'CSV'},
+            {'value': 'excel', 'label': 'Excel'},
+            {'value': 'json', 'label': 'JSON'},
+        ],
     }
+
     return render(request, 'students/export_students.html', context)
 
 @never_cache
 @students_sensitive_operation
 def upgrade_students(request):
-    """ترقية الطلاب للعام الجديد - للمدير العام فقط"""
-    if request.method == 'POST':
-        try:
-            # منطق الترقية (سيتم تطويره لاحقاً)
-            count = 0  # عدد الطلاب المرقين
-            
-            messages.success(request, f'تم ترقية {count} طالب بنجاح للعام الدراسي الجديد')
-            return redirect('students:student_list')
-            
-        except Exception as e:
-            messages.error(request, f'حدث خطأ في الترقية: {str(e)}')
-    
-    context = {
-        'warning_message': 'عملية الترقية تؤثر على جميع الطلاب المختارين ولا يمكن التراجع عنها',
-        'total_students': Student.objects.filter(is_active=True).count(),
-        'title': 'ترقية الطلاب للعام الجديد',
-    }
-    
-    return render(request, 'students/upgrade_students.html', context)
+    """تحويل المسار القديم إلى معالج الترقية الجديد"""
+    return redirect('students:upgrade_students_wizard')
 
-# في students/views.py - إضافة هذه Views
 
 @never_cache
 @students_sensitive_operation
 def export_students_advanced(request):
-    """تصدير متقدم للطلاب"""
-    if request.method == 'POST':
-        export_format = request.POST.get('export_format', 'csv')
-        include_inactive = request.POST.get('include_inactive', False)
-        grade_levels = request.POST.getlist('grade_levels')
-        
-        # تحديد الطلاب للتصدير
-        queryset = Student.objects.all()
-        
-        if not include_inactive:
-            queryset = queryset.filter(is_active=True)
-        
-        if grade_levels:
-            queryset = queryset.filter(grade_level_id__in=grade_levels)
-        
-        # إنشاء المُصدِّر
-        exporter = StudentExporter(queryset)
-        
-        try:
-            if export_format == 'csv':
-                return exporter.export_csv(request)
-            elif export_format == 'excel':
-                return exporter.export_excel(request)
-            elif export_format == 'json':
-                return exporter.export_json(request)
-            else:
-                messages.error(request, 'صيغة التصدير غير مدعومة')
-        
-        except Exception as e:
-            messages.error(request, f'خطأ في التصدير: {str(e)}')
-    
-    context = {
-        'grade_levels': GradeLevel.objects.filter(is_active=True).select_related('education_level'),
-        'total_students': Student.objects.filter(is_active=True).count(),
-        'title': 'تصدير متقدم للطلاب'
-    }
-    return render(request, 'students/export_advanced.html', context)
+    """
+    تحويل التصدير المتقدم إلى صفحة التصدير الموحدة
+    لتجنب تكرار الكود والشاشات
+    """
+    return redirect('students:export_students')
 
+@never_cache
+@students_sensitive_operation
+def download_import_template(request):
+    """تحميل قالب استيراد الطلاب CSV أو Excel"""
+    template_format = request.GET.get('format', 'excel').lower()
+
+    headers = [
+        'الاسم',
+        'الرقم القومي',
+        'رقم الهاتف',
+        'العنوان',
+        'الصف الدراسي',
+        'العام الدراسي',
+        'اسم ولي الأمر',
+        'هاتف ولي الأمر',
+        'بريد ولي الأمر',
+        'النوع',
+        'تاريخ الميلاد',
+    ]
+
+    sample_rows = [
+        [
+            'أحمد محمد علي',
+            '30001011234567',
+            '01000000000',
+            'القاهرة',
+            'الأول الابتدائي',
+            '',
+            'محمد علي',
+            '01111111111',
+            'parent@example.com',
+            'ذكر',
+            '2000-01-01',
+        ],
+        [
+            'فاطمة أحمد محمد',
+            '30102021234567',
+            '01000000001',
+            'الجيزة',
+            'الثاني الابتدائي',
+            '',
+            'أحمد محمد',
+            '01111111112',
+            'parent2@example.com',
+            'أنثى',
+            '2001-02-02',
+        ],
+    ]
+
+    if template_format == 'csv':
+        response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
+        response['Content-Disposition'] = 'attachment; filename="student_import_template.csv"'
+        response.write('\ufeff')
+
+        writer = csv.writer(response)
+        writer.writerow(headers)
+        writer.writerows(sample_rows)
+
+        return response
+
+    workbook = openpyxl.Workbook()
+    worksheet = workbook.active
+    worksheet.title = 'قالب استيراد الطلاب'
+    worksheet.sheet_view.rightToLeft = True
+
+    header_fill = PatternFill(
+        start_color='4472C4',
+        end_color='4472C4',
+        fill_type='solid'
+    )
+    header_font = Font(
+        bold=True,
+        color='FFFFFF'
+    )
+    center_alignment = Alignment(
+        horizontal='center',
+        vertical='center'
+    )
+
+    for col_num, header in enumerate(headers, 1):
+        cell = worksheet.cell(row=1, column=col_num, value=header)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = center_alignment
+
+    for row_num, row_data in enumerate(sample_rows, 2):
+        for col_num, value in enumerate(row_data, 1):
+            cell = worksheet.cell(row=row_num, column=col_num, value=value)
+            cell.alignment = center_alignment
+
+    instructions = [
+        'تعليمات الاستيراد:',
+        '1. الاسم والرقم القومي حقول مطلوبة.',
+        '2. الرقم القومي يجب أن يكون 14 رقم وغير مكرر.',
+        '3. الصف الدراسي يمكن كتابته بالاسم مثل: الأول الابتدائي.',
+        '4. العام الدراسي يمكن تركه فارغاً وسيتم استخدام العام الحالي إن وجد.',
+        '5. النوع يقبل: ذكر / أنثى / M / F.',
+        '6. تاريخ الميلاد اختياري ويفضل بصيغة YYYY-MM-DD.',
+        '7. لا تغير أسماء الأعمدة في الصف الأول.',
+    ]
+
+    start_row = 5
+    for index, instruction in enumerate(instructions):
+        cell = worksheet.cell(row=start_row + index, column=1, value=instruction)
+
+        if index == 0:
+            cell.font = Font(bold=True, color='D32F2F')
+        else:
+            cell.font = Font(color='666666')
+
+    for column_cells in worksheet.columns:
+        max_length = 0
+        column_letter = column_cells[0].column_letter
+
+        for cell in column_cells:
+            try:
+                cell_length = len(str(cell.value)) if cell.value else 0
+                if cell_length > max_length:
+                    max_length = cell_length
+            except Exception:
+                pass
+
+        worksheet.column_dimensions[column_letter].width = min(max_length + 4, 45)
+
+    output = io.BytesIO()
+    workbook.save(output)
+    output.seek(0)
+
+    response = HttpResponse(
+        output.read(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="student_import_template.xlsx"'
+
+    return response
 
 @never_cache
 @students_sensitive_operation
 def import_students_advanced(request):
-    """استيراد متقدم للطلاب"""
-    if request.method == 'POST':
-        if 'file' not in request.FILES:
-            messages.error(request, 'يرجى اختيار ملف للاستيراد')
-            return redirect('students:import_students_advanced')
-        
-        file_obj = request.FILES['file']
-        file_extension = file_obj.name.split('.')[-1].lower()
-        
-        # إنشاء المُستورِد
-        importer = StudentImporter()
-        
-        try:
-            if file_extension == 'csv':
-                success = importer.process_csv_file(file_obj, request.user)
-            elif file_extension in ['xlsx', 'xls']:
-                success = importer.process_excel_file(file_obj, request.user)
-            else:
-                messages.error(request, 'صيغة الملف غير مدعومة. الصيغ المدعومة: CSV, Excel')
-                return redirect('students:import_students_advanced')
-            
-            # عرض النتائج
-            summary = importer.get_import_summary()
-            
-            if success and summary['success_count'] > 0:
-                messages.success(request, 
-                    f'تم استيراد {summary["success_count"]} طالب من أصل {summary["processed_count"]} بنجاح')
-            
-            if summary['errors']:
-                for error in summary['errors'][:10]:  # عرض أول 10 أخطاء فقط
-                    messages.error(request, error)
-            
-            if summary['warnings']:
-                for warning in summary['warnings'][:5]:  # عرض أول 5 تحذيرات فقط
-                    messages.warning(request, warning)
-        
-        except Exception as e:
-            messages.error(request, f'خطأ في معالجة الملف: {str(e)}')
-    
-    context = {
-        'title': 'استيراد متقدم للطلاب',
-        'grade_levels': GradeLevel.objects.filter(is_active=True).select_related('education_level')
-    }
-    return render(request, 'students/import_advanced.html', context)
+    """استيراد متقدم للطلاب بنظام المعاينة قبل الحفظ"""
 
+    if request.method == 'POST':
+        action = request.POST.get('action', 'preview')
+
+        # =========================
+        # 1) معاينة الملف
+        # =========================
+        if action == 'preview':
+            if 'file' not in request.FILES:
+                messages.error(request, 'يرجى اختيار ملف للاستيراد')
+                return redirect('students:import_students_advanced')
+
+            file_obj = request.FILES['file']
+
+            try:
+                service = StudentImportPreviewService()
+                summary = service.preview_file(file_obj)
+
+                # حفظ الصفوف الصالحة في السيشن لحين تأكيد المستخدم
+                request.session['student_import_valid_rows'] = summary['valid_rows']
+                request.session['student_import_summary'] = {
+                    'processed_count': summary['processed_count'],
+                    'valid_count': summary['valid_count'],
+                    'error_count': summary['error_count'],
+                    'warning_count': summary['warning_count'],
+                    'errors': summary['errors'],
+                    'warnings': summary['warnings'],
+                }
+                request.session.modified = True
+
+                context = {
+                    'title': 'معاينة استيراد الطلاب',
+                    'summary': summary,
+                }
+
+                return render(request, 'students/import_preview.html', context)
+
+            except Exception as e:
+                messages.error(request, f'حدث خطأ أثناء قراءة الملف: {str(e)}')
+                return redirect('students:import_students_advanced')
+
+        # =========================
+        # 2) تأكيد الحفظ
+        # =========================
+        elif action == 'confirm':
+            valid_rows = request.session.get('student_import_valid_rows', [])
+
+            if not valid_rows:
+                messages.error(request, 'لا توجد بيانات صالحة للحفظ. يرجى رفع الملف مرة أخرى.')
+                return redirect('students:import_students_advanced')
+
+            try:
+                service = StudentImportPreviewService()
+                result = service.confirm_import(valid_rows)
+
+                # تنظيف السيشن بعد الحفظ
+                request.session.pop('student_import_valid_rows', None)
+                request.session.pop('student_import_summary', None)
+                request.session.modified = True
+
+                if result['created_count'] > 0:
+                    messages.success(
+                        request,
+                        f'تم استيراد {result["created_count"]} طالب بنجاح'
+                    )
+
+                if result['errors']:
+                    for error in result['errors'][:10]:
+                        messages.error(request, error)
+
+                return redirect('students:student_list')
+
+            except Exception as e:
+                messages.error(request, f'حدث خطأ أثناء حفظ الطلاب: {str(e)}')
+                return redirect('students:import_students_advanced')
+
+        # =========================
+        # 3) إلغاء العملية
+        # =========================
+        elif action == 'cancel':
+            request.session.pop('student_import_valid_rows', None)
+            request.session.pop('student_import_summary', None)
+            request.session.modified = True
+
+            messages.info(request, 'تم إلغاء عملية الاستيراد')
+            return redirect('students:import_students_advanced')
+
+    context = {
+        'title': 'استيراد بيانات الطلاب',
+        'grade_levels': GradeLevel.objects.filter(
+            is_active=True
+        ).select_related(
+            'education_level'
+        ).order_by(
+            'education_level__order',
+            'order',
+            'name'
+        ),
+    }
+
+    return render(request, 'students/import_advanced.html', context)
 
 @never_cache
 @students_sensitive_operation

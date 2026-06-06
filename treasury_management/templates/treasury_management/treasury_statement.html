@@ -1,0 +1,832 @@
+<!-- treasury_management/templates/treasury_management/treasury_statement.html -->
+{% extends 'treasury_management/base.html' %}
+{% load static %}
+
+{% block title %}حركة الخزنة - {{ treasury.name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'treasury_management:treasuries_list' %}">الخزائن</a></li>
+<li class="breadcrumb-item"><a href="{% url 'treasury_management:treasury_detail' treasury.id %}">{{ treasury.name }}</a></li>
+<li class="breadcrumb-item active">حركة الخزنة</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .statement-page {
+        background: linear-gradient(135deg, rgba(13, 71, 161, 0.03), rgba(21, 101, 192, 0.04));
+        border-radius: 20px;
+        padding: 25px;
+        margin: -10px;
+        min-height: calc(100vh - 200px);
+    }
+
+    .hero-card {
+        background: linear-gradient(135deg, #1565c0, #0d47a1);
+        color: white;
+        border-radius: 22px;
+        padding: 30px;
+        margin-bottom: 28px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 12px 35px rgba(13, 71, 161, 0.22);
+    }
+
+    .hero-card::before {
+        content: '';
+        position: absolute;
+        top: -60%;
+        right: -50%;
+        width: 220%;
+        height: 220%;
+        background: radial-gradient(circle, rgba(255,255,255,0.12) 1px, transparent 1px);
+        background-size: 24px 24px;
+        animation: drift 26s linear infinite;
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .hero-title {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 12px;
+    }
+
+    .hero-icon {
+        width: 64px;
+        height: 64px;
+        background: rgba(255,255,255,0.18);
+        border: 2px solid rgba(255,255,255,0.28);
+        border-radius: 17px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.9rem;
+        backdrop-filter: blur(10px);
+    }
+
+    .hero-title h2 {
+        color: white;
+        margin: 0;
+        font-weight: 900;
+        font-size: 2rem;
+    }
+
+    .hero-subtitle {
+        color: rgba(255,255,255,.88);
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .hero-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .hero-btn {
+        border: 1px solid rgba(255,255,255,.35);
+        background: rgba(255,255,255,.14);
+        color: white;
+        border-radius: 13px;
+        padding: 11px 18px;
+        text-decoration: none;
+        font-weight: 800;
+        transition: all .3s ease;
+        backdrop-filter: blur(10px);
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+    .hero-btn:hover {
+        color: white;
+        background: rgba(255,255,255,.25);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(0,0,0,.12);
+    }
+
+    .hero-btn.solid {
+        background: white;
+        color: #0d47a1;
+    }
+
+    .hero-btn.solid:hover {
+        color: #0d47a1;
+        background: rgba(255,255,255,.94);
+    }
+
+    .balance-hero {
+        margin-top: 22px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 14px;
+    }
+
+    .hero-metric {
+        background: rgba(255,255,255,.14);
+        border: 1px solid rgba(255,255,255,.22);
+        border-radius: 16px;
+        padding: 17px;
+        backdrop-filter: blur(10px);
+        text-align: center;
+    }
+
+    .hero-metric-label {
+        color: rgba(255,255,255,.82);
+        font-weight: 800;
+        margin-bottom: 6px;
+        font-size: .88rem;
+    }
+
+    .hero-metric-value {
+        color: white;
+        font-weight: 900;
+        font-size: 1.55rem;
+        font-family: 'Courier New', monospace;
+        line-height: 1.2;
+    }
+
+    .summary-strip {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .summary-box {
+        background: white;
+        border-radius: 18px;
+        padding: 21px;
+        box-shadow: 0 8px 22px rgba(0,0,0,0.08);
+        border-top: 5px solid var(--summary-color);
+        transition: all .3s ease;
+        text-align: center;
+    }
+
+    .summary-box:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 14px 30px rgba(0,0,0,0.12);
+    }
+
+    .summary-box.in { --summary-color: #198754; }
+    .summary-box.out { --summary-color: #dc3545; }
+    .summary-box.net { --summary-color: #0d6efd; }
+    .summary-box.count { --summary-color: #ff9800; }
+
+    .summary-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        background: color-mix(in srgb, var(--summary-color) 14%, white);
+        color: var(--summary-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 10px;
+        font-size: 1.25rem;
+    }
+
+    .summary-label {
+        color: #6c757d;
+        font-weight: 800;
+        font-size: .9rem;
+        margin-bottom: 5px;
+    }
+
+    .summary-value {
+        font-size: 1.45rem;
+        font-weight: 900;
+        color: var(--summary-color);
+    }
+
+    .filter-card,
+    .table-card {
+        background: white;
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        overflow: hidden;
+        margin-bottom: 25px;
+    }
+
+    .filter-card .card-body {
+        padding: 22px;
+    }
+
+    .table-card-header {
+        background: linear-gradient(135deg, #f8f9fa, #eef1f4);
+        padding: 18px 22px;
+        border-bottom: 1px solid #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .table-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 900;
+        color: #2c3e50;
+        margin: 0;
+    }
+
+    .table-title-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #1565c0, #0d47a1);
+        color: white;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table th {
+        background: #f8f9fa;
+        color: #2c3e50;
+        font-weight: 900;
+        border-bottom: 2px solid #e9ecef;
+        padding: 14px 12px;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .table td {
+        padding: 13px 12px;
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f3f5;
+    }
+
+    .table tbody tr:hover {
+        background: rgba(13, 71, 161, .035);
+    }
+
+    .transaction-number {
+        font-family: monospace;
+        font-weight: 900;
+        color: #495057;
+    }
+
+    .badge-type {
+        padding: 7px 11px;
+        border-radius: 12px;
+        font-weight: 900;
+        font-size: .78rem;
+        display: inline-block;
+        white-space: nowrap;
+    }
+
+    .type-income {
+        background: rgba(25, 135, 84, .12);
+        color: #198754;
+    }
+
+    .type-expense {
+        background: rgba(220, 53, 69, .12);
+        color: #dc3545;
+    }
+
+    .type-transfer {
+        background: rgba(13, 110, 253, .12);
+        color: #0d6efd;
+    }
+
+    .type-pending {
+        background: rgba(255, 193, 7, .18);
+        color: #856404;
+    }
+
+    .type-cancelled {
+        background: rgba(108, 117, 125, .12);
+        color: #6c757d;
+    }
+
+    .amount-in {
+        color: #198754;
+        font-weight: 900;
+        font-family: 'Courier New', monospace;
+    }
+
+    .amount-out {
+        color: #dc3545;
+        font-weight: 900;
+        font-family: 'Courier New', monospace;
+    }
+
+    .amount-zero {
+        color: #adb5bd;
+        font-weight: 800;
+    }
+
+    .running-balance {
+        font-weight: 900;
+        color: #0d6efd;
+        font-family: 'Courier New', monospace;
+    }
+
+    .description-cell {
+        max-width: 260px;
+        white-space: normal;
+    }
+
+    .empty-state {
+        background: white;
+        border-radius: 20px;
+        padding: 55px 25px;
+        text-align: center;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+
+    .empty-icon {
+        width: 90px;
+        height: 90px;
+        border-radius: 25px;
+        background: linear-gradient(135deg, rgba(21, 101, 192, .08), rgba(13, 71, 161, .08));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        color: #1565c0;
+        font-size: 3rem;
+    }
+
+    .btn-soft {
+        border: none;
+        border-radius: 12px;
+        padding: 10px 17px;
+        font-weight: 900;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        transition: all .3s ease;
+    }
+
+    .btn-soft:hover {
+        transform: translateY(-2px);
+        text-decoration: none;
+    }
+
+    .btn-back {
+        background: linear-gradient(135deg, #6c757d, #5a6268);
+        color: white;
+    }
+
+    .btn-back:hover { color: white; }
+
+    .btn-primary-soft {
+        background: linear-gradient(135deg, #1565c0, #0d47a1);
+        color: white;
+    }
+
+    .btn-primary-soft:hover { color: white; }
+
+    .btn-green-soft {
+        background: linear-gradient(135deg, #198754, #157347);
+        color: white;
+    }
+
+    .btn-green-soft:hover { color: white; }
+
+    @media print {
+        .no-print,
+        .sidebar,
+        .navbar,
+        .breadcrumb,
+        .filter-card,
+        .hero-actions,
+        .btn,
+        .table-card-header .no-print {
+            display: none !important;
+        }
+
+        .statement-page {
+            background: white;
+            padding: 0;
+            margin: 0;
+        }
+
+        .hero-card,
+        .summary-box,
+        .table-card {
+            box-shadow: none;
+            border: 1px solid #ddd;
+        }
+
+        .hero-card {
+            background: #f8f9fa !important;
+            color: #000 !important;
+        }
+
+        .hero-title h2,
+        .hero-subtitle,
+        .hero-metric-label,
+        .hero-metric-value {
+            color: #000 !important;
+        }
+
+        .hero-metric {
+            background: white !important;
+            border-color: #ddd !important;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .statement-page {
+            padding: 15px;
+            margin: -5px;
+        }
+
+        .hero-card {
+            padding: 22px;
+        }
+
+        .hero-card .d-flex {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 18px;
+        }
+
+        .hero-actions {
+            justify-content: flex-start;
+            width: 100%;
+        }
+
+        .hero-btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .hero-title {
+            align-items: flex-start;
+        }
+
+        .hero-title h2 {
+            font-size: 1.55rem;
+        }
+
+        .table-card {
+            border-radius: 14px;
+        }
+
+        .description-cell {
+            max-width: 180px;
+        }
+    }
+
+    @keyframes drift {
+        0% { transform: rotate(0deg) translateX(0); }
+        100% { transform: rotate(360deg) translateX(20px); }
+    }
+
+    .fade-in {
+        animation: fadeInUp .75s ease-out;
+    }
+
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(24px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="statement-page">
+
+    <!-- Hero Header -->
+    <div class="hero-card fade-in">
+        <div class="hero-content">
+            <div class="d-flex justify-content-between align-items-start gap-3">
+                <div>
+                    <div class="hero-title">
+                        <div class="hero-icon">
+                            <i class="fas fa-history"></i>
+                        </div>
+                        <div>
+                            <h2>حركة الخزنة</h2>
+                            <p class="hero-subtitle">
+                                {{ treasury.name }} |
+                                الحساب المرتبط:
+                                <strong>{{ treasury.account.code }} - {{ treasury.account.name }}</strong>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hero-actions no-print">
+                    <a href="{% url 'treasury_management:treasury_detail' treasury.id %}" class="hero-btn">
+                        <i class="fas fa-arrow-right"></i>
+                        تفاصيل الخزنة
+                    </a>
+
+                    <a href="{% url 'treasury_management:add_transaction' %}?treasury={{ treasury.id }}" class="hero-btn solid">
+                        <i class="fas fa-plus"></i>
+                        إضافة عملية
+                    </a>
+
+                    <button type="button" class="hero-btn" onclick="window.print()">
+                        <i class="fas fa-print"></i>
+                        طباعة
+                    </button>
+                </div>
+            </div>
+
+            <div class="balance-hero">
+                <div class="hero-metric">
+                    <div class="hero-metric-label">الرصيد الحالي داخل الخزنة</div>
+                    <div class="hero-metric-value">{{ treasury.current_balance|default:0|floatformat:2 }}</div>
+                </div>
+
+                <div class="hero-metric">
+                    <div class="hero-metric-label">كود الخزنة</div>
+                    <div class="hero-metric-value">{{ treasury.code }}</div>
+                </div>
+
+                <div class="hero-metric">
+                    <div class="hero-metric-label">الفترة المعروضة</div>
+                    <div class="hero-metric-value" style="font-size: 1.05rem;">
+                        {% if from_date or to_date %}
+                            {{ from_date|default:"البداية" }} إلى {{ to_date|default:"اليوم" }}
+                        {% else %}
+                            كل الفترات
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="summary-strip fade-in" style="animation-delay: .1s;">
+        <div class="summary-box in">
+            <div class="summary-icon">
+                <i class="fas fa-arrow-down"></i>
+            </div>
+            <div class="summary-label">إجمالي الداخل</div>
+            <div class="summary-value">{{ total_in|default:0|floatformat:2 }}</div>
+        </div>
+
+        <div class="summary-box out">
+            <div class="summary-icon">
+                <i class="fas fa-arrow-up"></i>
+            </div>
+            <div class="summary-label">إجمالي الخارج</div>
+            <div class="summary-value">{{ total_out|default:0|floatformat:2 }}</div>
+        </div>
+
+        <div class="summary-box net">
+            <div class="summary-icon">
+                <i class="fas fa-scale-balanced"></i>
+            </div>
+            <div class="summary-label">صافي الحركة</div>
+            <div class="summary-value">{{ net_movement|default:0|floatformat:2 }}</div>
+        </div>
+
+        <div class="summary-box count">
+            <div class="summary-icon">
+                <i class="fas fa-list-check"></i>
+            </div>
+            <div class="summary-label">عدد العمليات</div>
+            <div class="summary-value">{{ transactions_count|default:0 }}</div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card filter-card fade-in no-print" style="animation-delay: .15s;">
+        <div class="card-body">
+            <form method="get">
+                <div class="row align-items-end">
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <label class="form-label fw-bold">من تاريخ</label>
+                        <input type="date" name="from_date" value="{{ from_date }}" class="form-control">
+                    </div>
+
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <label class="form-label fw-bold">إلى تاريخ</label>
+                        <input type="date" name="to_date" value="{{ to_date }}" class="form-control">
+                    </div>
+
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <label class="form-label fw-bold">نوع العملية</label>
+                        <select name="transaction_type" class="form-select">
+                            <option value="">كل العمليات</option>
+                            <option value="INCOME" {% if transaction_type == 'INCOME' %}selected{% endif %}>إيرادات</option>
+                            <option value="EXPENSE" {% if transaction_type == 'EXPENSE' %}selected{% endif %}>مصروفات</option>
+                            <option value="TRANSFER" {% if transaction_type == 'TRANSFER' %}selected{% endif %}>تحويلات</option>
+                        </select>
+                    </div>
+
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="btn-group w-100">
+                            <button type="submit" class="btn btn-primary fw-bold">
+                                <i class="fas fa-filter me-1"></i>
+                                تطبيق
+                            </button>
+                            <a href="{% url 'treasury_management:treasury_statement' treasury.id %}" class="btn btn-outline-secondary fw-bold">
+                                <i class="fas fa-refresh"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="?export=excel{% if from_date %}&from_date={{ from_date }}{% endif %}{% if to_date %}&to_date={{ to_date }}{% endif %}{% if transaction_type %}&transaction_type={{ transaction_type }}{% endif %}"
+                       class="btn-soft btn-green-soft">
+                        <i class="fas fa-file-excel"></i>
+                        تصدير Excel
+                    </a>
+
+                    <a href="{% url 'treasury_management:account_statement' treasury.account.id %}" class="btn-soft btn-primary-soft">
+                        <i class="fas fa-file-invoice"></i>
+                        كشف حساب الخزنة
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if statement_rows %}
+    <!-- Statement Table -->
+    <div class="table-card fade-in" style="animation-delay: .2s;">
+        <div class="table-card-header">
+            <h5 class="table-title">
+                <span class="table-title-icon">
+                    <i class="fas fa-table"></i>
+                </span>
+                سجل حركة الخزنة
+            </h5>
+
+            <div class="no-print">
+                <a href="{% url 'treasury_management:treasuries_list' %}" class="btn-soft btn-back">
+                    <i class="fas fa-arrow-right"></i>
+                    رجوع للخزائن
+                </a>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>رقم العملية</th>
+                        <th>نوع العملية</th>
+                        <th>الحساب</th>
+                        <th>الوصف</th>
+                        <th class="text-center">داخل</th>
+                        <th class="text-center">خارج</th>
+                        <th class="text-center">الرصيد التراكمي</th>
+                        <th class="text-center">الحالة</th>
+                        <th class="text-center no-print">تفاصيل</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for row in statement_rows %}
+                    <tr>
+                        <td>
+                            {{ row.transaction.transaction_date|date:"Y-m-d" }}
+                            <br>
+                            <small class="text-muted">{{ row.transaction.transaction_date|time:"H:i" }}</small>
+                        </td>
+
+                        <td>
+                            <span class="transaction-number">{{ row.transaction.transaction_number }}</span>
+                        </td>
+
+                        <td>
+                            {% if row.transaction.is_cancelled %}
+                                <span class="badge-type type-cancelled">ملغية</span>
+                            {% elif not row.transaction.is_approved %}
+                                <span class="badge-type type-pending">معلقة</span>
+                            {% elif row.transaction.transaction_type == 'INCOME' %}
+                                <span class="badge-type type-income">إيراد</span>
+                            {% elif row.transaction.transaction_type == 'EXPENSE' %}
+                                <span class="badge-type type-expense">مصروف</span>
+                            {% else %}
+                                <span class="badge-type type-transfer">تحويل</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {{ row.transaction.account.name }}
+                            <br>
+                            <small class="text-muted">{{ row.transaction.account.code }}</small>
+                        </td>
+
+                        <td class="description-cell">
+                            {{ row.transaction.description|truncatechars:80 }}
+                            {% if row.transaction.to_treasury %}
+                                <br>
+                                <small class="text-muted">إلى: {{ row.transaction.to_treasury.name }}</small>
+                            {% endif %}
+                        </td>
+
+                        <td class="text-center">
+                            {% if row.debit > 0 %}
+                                <span class="amount-in">{{ row.debit|floatformat:2 }}</span>
+                            {% else %}
+                                <span class="amount-zero">-</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="text-center">
+                            {% if row.credit > 0 %}
+                                <span class="amount-out">{{ row.credit|floatformat:2 }}</span>
+                            {% else %}
+                                <span class="amount-zero">-</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="text-center">
+                            <span class="running-balance">{{ row.balance|floatformat:2 }}</span>
+                        </td>
+
+                        <td class="text-center">
+                            {% if row.transaction.is_cancelled %}
+                                <span class="badge bg-danger">ملغية</span>
+                            {% elif row.transaction.is_approved %}
+                                <span class="badge bg-success">معتمدة</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">معلقة</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="text-center no-print">
+                            <a href="{% url 'treasury_management:transaction_detail' row.transaction.id %}"
+                               class="btn btn-sm btn-outline-info">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+                <tfoot class="table-light">
+                    <tr>
+                        <th colspan="5">الإجمالي</th>
+                        <th class="text-center amount-in">{{ total_in|default:0|floatformat:2 }}</th>
+                        <th class="text-center amount-out">{{ total_out|default:0|floatformat:2 }}</th>
+                        <th class="text-center running-balance">{{ closing_balance|default:0|floatformat:2 }}</th>
+                        <th colspan="2"></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state fade-in">
+        <div class="empty-icon">
+            <i class="fas fa-inbox"></i>
+        </div>
+        <h4 class="text-muted">لا توجد حركة لهذه الخزنة</h4>
+        <p class="text-muted mb-4">جرّب تعديل الفلاتر أو إضافة عملية مالية جديدة لهذه الخزنة.</p>
+
+        <div class="d-flex justify-content-center gap-2 flex-wrap no-print">
+            <a href="{% url 'treasury_management:add_transaction' %}?treasury={{ treasury.id }}" class="btn-soft btn-primary-soft">
+                <i class="fas fa-plus"></i>
+                إضافة عملية
+            </a>
+
+            <a href="{% url 'treasury_management:treasury_detail' treasury.id %}" class="btn-soft btn-back">
+                <i class="fas fa-arrow-right"></i>
+                تفاصيل الخزنة
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const elements = document.querySelectorAll('.hero-card, .summary-box, .filter-card, .table-card, .empty-state');
+
+    elements.forEach((el, index) => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(20px)';
+
+        setTimeout(() => {
+            el.style.transition = 'all 0.45s ease';
+            el.style.opacity = '1';
+            el.style.transform = 'translateY(0)';
+        }, index * 70);
+    });
+
+    console.log('✅ صفحة حركة الخزنة جاهزة');
+});
+</script>
+{% endblock %}

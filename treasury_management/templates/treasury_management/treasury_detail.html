@@ -11,9 +11,6 @@
 
 {% block content %}
 <style>
-    /* ===================================
-       🎨 TREASURY DETAIL STYLES
-    =================================== */
     .treasury-detail-container {
         background: linear-gradient(135deg, rgba(13, 71, 161, 0.02), rgba(21, 101, 192, 0.02));
         border-radius: 20px;
@@ -40,8 +37,9 @@
         right: -50%;
         width: 200%;
         height: 200%;
-        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
-        animation: float 20s linear infinite;
+        background: radial-gradient(circle, rgba(255,255,255,0.12) 1px, transparent 1px);
+        background-size: 22px 22px;
+        animation: drift 25s linear infinite;
     }
 
     .treasury-header-content {
@@ -71,21 +69,21 @@
 
     .treasury-name h1 {
         font-size: 2rem;
-        font-weight: 700;
+        font-weight: 800;
         margin: 0;
         color: white;
     }
 
     .treasury-code {
         font-size: 1.1rem;
-        opacity: 0.9;
+        opacity: 0.95;
         font-family: 'Courier New', monospace;
         color: white;
     }
 
     .treasury-balance {
         background: rgba(255, 255, 255, 0.15);
-        padding: 20px;
+        padding: 22px;
         border-radius: 15px;
         text-align: center;
         backdrop-filter: blur(10px);
@@ -94,15 +92,16 @@
     }
 
     .balance-label {
-        font-size: 0.9rem;
-        opacity: 0.8;
-        margin-bottom: 5px;
+        font-size: 0.95rem;
+        opacity: 0.88;
+        margin-bottom: 6px;
         color: white;
+        font-weight: 700;
     }
 
     .balance-amount {
         font-size: 2.5rem;
-        font-weight: 700;
+        font-weight: 900;
         color: white;
         margin: 0;
         font-family: 'Courier New', monospace;
@@ -114,7 +113,69 @@
         color: white;
     }
 
-    /* بطاقات المعلومات */
+    .header-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 20px;
+    }
+
+    .header-btn {
+        border: 1px solid rgba(255,255,255,.35);
+        background: rgba(255,255,255,.15);
+        color: white;
+        border-radius: 12px;
+        padding: 10px 16px;
+        text-decoration: none;
+        font-weight: 800;
+        transition: all .3s ease;
+        backdrop-filter: blur(8px);
+    }
+
+    .header-btn:hover {
+        background: rgba(255,255,255,.25);
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    .summary-strip {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 15px;
+        margin-bottom: 30px;
+    }
+
+    .summary-box {
+        background: white;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        text-align: center;
+        border-top: 4px solid #2196f3;
+    }
+
+    .summary-box.success { border-top-color: #4caf50; }
+    .summary-box.danger { border-top-color: #f44336; }
+    .summary-box.info { border-top-color: #00bcd4; }
+    .summary-box.warning { border-top-color: #ff9800; }
+
+    .summary-label {
+        color: #6c757d;
+        font-weight: 800;
+        font-size: .9rem;
+        margin-bottom: 6px;
+    }
+
+    .summary-value {
+        font-size: 1.35rem;
+        font-weight: 900;
+    }
+
+    .text-money-in { color: #198754; }
+    .text-money-out { color: #dc3545; }
+    .text-money-info { color: #0d6efd; }
+    .text-money-neutral { color: #6c757d; }
+
     .info-cards-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -141,7 +202,6 @@
     .info-card.primary { border-left-color: #2196f3; }
     .info-card.success { border-left-color: #4caf50; }
     .info-card.warning { border-left-color: #ff9800; }
-    .info-card.danger { border-left-color: #f44336; }
     .info-card.purple { border-left-color: #9c27b0; }
 
     .info-card-header {
@@ -165,27 +225,22 @@
     .info-card.primary .info-card-icon { background: #2196f3; }
     .info-card.success .info-card-icon { background: #4caf50; }
     .info-card.warning .info-card-icon { background: #ff9800; }
-    .info-card.danger .info-card-icon { background: #f44336; }
     .info-card.purple .info-card-icon { background: #9c27b0; }
 
     .info-card-title {
         font-size: 1rem;
-        font-weight: 600;
+        font-weight: 800;
         color: var(--text-primary);
         margin: 0;
-    }
-
-    .info-card-content {
-        color: var(--text-primary);
-        line-height: 1.6;
     }
 
     .info-item {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 8px 0;
+        padding: 9px 0;
         border-bottom: 1px solid #f1f3f4;
+        gap: 12px;
     }
 
     .info-item:last-child {
@@ -193,21 +248,21 @@
     }
 
     .info-label {
-        font-weight: 500;
+        font-weight: 700;
         color: #666;
     }
 
     .info-value {
-        font-weight: 600;
+        font-weight: 800;
         color: var(--text-primary);
+        text-align: left;
     }
 
-    /* حالة الخزنة */
     .status-badge {
         padding: 6px 12px;
         border-radius: 20px;
         font-size: 0.85rem;
-        font-weight: 600;
+        font-weight: 800;
     }
 
     .status-badge.active {
@@ -222,7 +277,6 @@
         border: 1px solid #9e9e9e;
     }
 
-    /* مؤشر الحدود */
     .limits-indicator {
         background: rgba(33, 150, 243, 0.05);
         border: 1px solid #2196f3;
@@ -243,18 +297,18 @@
     }
 
     .limit-label {
-        font-weight: 500;
+        font-weight: 700;
         color: #2196f3;
     }
 
     .limit-value {
-        font-weight: 600;
+        font-weight: 800;
         color: var(--text-primary);
         font-family: 'Courier New', monospace;
     }
 
-    /* أزرار الإجراءات */
-    .actions-card {
+    .actions-card,
+    .recent-transactions {
         background: white;
         border-radius: 15px;
         padding: 25px;
@@ -262,16 +316,32 @@
         margin-bottom: 25px;
     }
 
-    .actions-header {
+    .actions-header,
+    .table-header {
         display: flex;
+        justify-content: space-between;
         align-items: center;
-        margin-bottom: 20px;
+        margin-bottom: 18px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f1f3f4;
+        gap: 10px;
+        flex-wrap: wrap;
     }
 
-    .actions-icon {
+    .actions-title,
+    .table-title {
+        display: flex;
+        align-items: center;
+        font-size: 1.1rem;
+        font-weight: 900;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .actions-icon,
+    .table-icon {
         width: 35px;
         height: 35px;
-        background: linear-gradient(135deg, #ff5722, #e64a19);
         color: white;
         border-radius: 10px;
         display: flex;
@@ -281,16 +351,12 @@
         font-size: 1rem;
     }
 
-    .actions-title {
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: var(--text-primary);
-        margin: 0;
-    }
+    .actions-icon { background: linear-gradient(135deg, #ff5722, #e64a19); }
+    .table-icon { background: linear-gradient(135deg, #673ab7, #512da8); }
 
     .actions-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
         gap: 15px;
     }
 
@@ -301,7 +367,7 @@
         border: 2px solid;
         border-radius: 12px;
         text-decoration: none;
-        font-weight: 600;
+        font-weight: 800;
         transition: all 0.3s ease;
         font-size: 0.9rem;
     }
@@ -350,54 +416,15 @@
         color: white;
     }
 
-    .action-btn.danger {
+    .action-btn.purple {
         background: white;
-        border-color: #f44336;
-        color: #f44336;
+        border-color: #673ab7;
+        color: #673ab7;
     }
 
-    .action-btn.danger:hover {
-        background: #f44336;
+    .action-btn.purple:hover {
+        background: #673ab7;
         color: white;
-    }
-
-    /* جدول العمليات الأخيرة */
-    .recent-transactions {
-        background: white;
-        border-radius: 15px;
-        padding: 25px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-        margin-bottom: 25px;
-    }
-
-    .table-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-        padding-bottom: 15px;
-        border-bottom: 2px solid #f1f3f4;
-    }
-
-    .table-title {
-        display: flex;
-        align-items: center;
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: var(--text-primary);
-    }
-
-    .table-icon {
-        width: 35px;
-        height: 35px;
-        background: linear-gradient(135deg, #673ab7, #512da8);
-        color: white;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-left: 10px;
-        font-size: 1rem;
     }
 
     .table-responsive {
@@ -414,7 +441,7 @@
     .table th {
         background: linear-gradient(135deg, #f8f9fa, #e9ecef);
         color: var(--text-primary);
-        font-weight: 600;
+        font-weight: 800;
         border: none;
         padding: 15px 12px;
     }
@@ -432,10 +459,11 @@
     }
 
     .transaction-type {
-        padding: 4px 10px;
+        padding: 5px 10px;
         border-radius: 12px;
         font-size: 0.8rem;
-        font-weight: 600;
+        font-weight: 800;
+        display: inline-block;
     }
 
     .transaction-type.income {
@@ -448,7 +476,16 @@
         color: #f44336;
     }
 
-    /* رسالة فارغة */
+    .transaction-type.transfer {
+        background: rgba(13, 110, 253, 0.1);
+        color: #0d6efd;
+    }
+
+    .transaction-type.cancelled {
+        background: rgba(108, 117, 125, .12);
+        color: #6c757d;
+    }
+
     .empty-state {
         text-align: center;
         padding: 40px 20px;
@@ -461,30 +498,44 @@
         opacity: 0.5;
     }
 
-    /* الانيميشن */
-    @keyframes float {
-        0%, 100% { transform: translateX(0) translateY(0); }
-        25% { transform: translateX(3px) translateY(-3px); }
-        50% { transform: translateX(-2px) translateY(2px); }
-        75% { transform: translateX(-3px) translateY(-2px); }
-    }
-
     .fade-in {
         animation: fadeInUp 0.8s ease-out;
     }
 
+    @keyframes drift {
+        0% { transform: rotate(0deg) translateX(0); }
+        100% { transform: rotate(360deg) translateX(20px); }
+    }
+
     @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(30px);
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media print {
+        .no-print,
+        .sidebar,
+        .navbar,
+        .breadcrumb,
+        .actions-card {
+            display: none !important;
         }
-        to {
-            opacity: 1;
-            transform: translateY(0);
+
+        .treasury-detail-container {
+            background: white;
+            padding: 0;
+            margin: 0;
+        }
+
+        .treasury-header-card,
+        .info-card,
+        .recent-transactions,
+        .summary-box {
+            box-shadow: none;
+            border: 1px solid #ddd;
         }
     }
 
-    /* الاستجابة */
     @media (max-width: 768px) {
         .treasury-detail-container {
             padding: 15px;
@@ -512,28 +563,29 @@
             font-size: 2rem;
         }
 
-        .info-cards-grid {
+        .info-cards-grid,
+        .actions-grid,
+        .summary-strip {
             grid-template-columns: 1fr;
             gap: 15px;
-        }
-
-        .actions-grid {
-            grid-template-columns: 1fr;
         }
 
         .action-btn {
             justify-content: center;
         }
 
-        .table-responsive {
-            font-size: 0.8rem;
+        .info-item {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .info-value {
+            text-align: right;
         }
     }
 </style>
 
-<!-- محتوى الصفحة -->
 <div class="treasury-detail-container">
-    <!-- رأس الخزنة -->
     <div class="treasury-header-card fade-in">
         <div class="treasury-header-content">
             <div class="treasury-title">
@@ -545,20 +597,71 @@
                     <div class="treasury-code">كود الخزنة: {{ treasury.code }}</div>
                 </div>
             </div>
-            
+
             <div class="treasury-balance">
-                <div class="balance-label">الرصيد الحالي</div>
+                <div class="balance-label">الرصيد الحالي داخل الخزنة</div>
                 <h2 class="balance-amount">
-                    {{ treasury.current_balance|floatformat:2 }}
+                    {{ treasury.current_balance|default:0|floatformat:2 }}
                     <span class="balance-currency">ج.م</span>
                 </h2>
+                <small class="text-white-50">
+                    نفس رصيد الحساب المرتبط: {{ treasury.account.code }} - {{ treasury.account.name }}
+                </small>
+            </div>
+
+            <div class="header-actions no-print">
+                <a href="{% url 'treasury_management:treasuries_list' %}" class="header-btn">
+                    <i class="fas fa-arrow-right me-1"></i>
+                    رجوع للخزائن
+                </a>
+                <a href="{% url 'treasury_management:add_transaction' %}?treasury={{ treasury.id }}" class="header-btn">
+                    <i class="fas fa-plus me-1"></i>
+                    إضافة عملية
+                </a>
+                <a href="{% url 'treasury_management:account_statement' treasury.account.id %}" class="header-btn">
+                    <i class="fas fa-file-invoice me-1"></i>
+                    كشف حساب الخزنة
+                </a>
+                <button type="button" onclick="window.print()" class="header-btn">
+                    <i class="fas fa-print me-1"></i>
+                    طباعة
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- بطاقات المعلومات -->
+    <div class="summary-strip fade-in" style="animation-delay: 0.1s;">
+        <div class="summary-box success">
+            <div class="summary-label">إجمالي الداخل</div>
+            <div class="summary-value text-money-in">{{ total_in|default:0|floatformat:2 }}</div>
+            <small class="text-muted">إيرادات + تحويلات داخلة</small>
+        </div>
+
+        <div class="summary-box danger">
+            <div class="summary-label">إجمالي الخارج</div>
+            <div class="summary-value text-money-out">{{ total_out|default:0|floatformat:2 }}</div>
+            <small class="text-muted">مصروفات + تحويلات خارجة</small>
+        </div>
+
+        <div class="summary-box info">
+            <div class="summary-label">صافي الحركة</div>
+            <div class="summary-value
+                {% if net_movement > 0 %}text-money-in
+                {% elif net_movement < 0 %}text-money-out
+                {% else %}text-money-neutral{% endif %}">
+                {{ net_movement|default:0|floatformat:2 }}
+            </div>
+            <small class="text-muted">الداخل - الخارج</small>
+        </div>
+
+        <div class="summary-box warning">
+            <div class="summary-label">عدد العمليات المعتمدة</div>
+            <div class="summary-value text-money-info">{{ approved_count|default:0 }}</div>
+            <small class="text-muted">غير الملغية فقط</small>
+        </div>
+    </div>
+
     <div class="info-cards-grid fade-in" style="animation-delay: 0.2s;">
-        <!-- معلومات أساسية -->
         <div class="info-card primary">
             <div class="info-card-header">
                 <div class="info-card-icon">
@@ -566,6 +669,7 @@
                 </div>
                 <h3 class="info-card-title">المعلومات الأساسية</h3>
             </div>
+
             <div class="info-card-content">
                 <div class="info-item">
                     <span class="info-label">الموقع:</span>
@@ -584,7 +688,6 @@
             </div>
         </div>
 
-        <!-- المسؤول -->
         <div class="info-card success">
             <div class="info-card-header">
                 <div class="info-card-icon">
@@ -592,6 +695,7 @@
                 </div>
                 <h3 class="info-card-title">المسؤول عن الخزنة</h3>
             </div>
+
             <div class="info-card-content">
                 {% if treasury.responsible_person %}
                 <div class="info-item">
@@ -617,7 +721,6 @@
             </div>
         </div>
 
-        <!-- الحساب المرتبط -->
         <div class="info-card warning">
             <div class="info-card-header">
                 <div class="info-card-icon">
@@ -625,6 +728,7 @@
                 </div>
                 <h3 class="info-card-title">الحساب المحاسبي</h3>
             </div>
+
             <div class="info-card-content">
                 <div class="info-item">
                     <span class="info-label">كود الحساب:</span>
@@ -638,10 +742,13 @@
                     <span class="info-label">التصنيف:</span>
                     <span class="info-value">{{ treasury.account.category.name }}</span>
                 </div>
+                <div class="info-item">
+                    <span class="info-label">رصيد الحساب:</span>
+                    <span class="info-value">{{ treasury.account.current_balance|default:0|floatformat:2 }} ج.م</span>
+                </div>
             </div>
         </div>
 
-        <!-- الحدود المالية -->
         <div class="info-card purple">
             <div class="info-card-header">
                 <div class="info-card-icon">
@@ -649,22 +756,39 @@
                 </div>
                 <h3 class="info-card-title">الحدود المالية</h3>
             </div>
+
             <div class="info-card-content">
                 {% if treasury.min_limit or treasury.max_limit %}
                 <div class="limits-indicator">
-                    {% if treasury.min_limit %}
                     <div class="limits-item">
                         <span class="limit-label">الحد الأدنى:</span>
-                        <span class="limit-value">{{ treasury.min_limit|floatformat:2 }} ج.م</span>
+                        <span class="limit-value">{{ treasury.min_limit|default:0|floatformat:2 }} ج.م</span>
                     </div>
-                    {% endif %}
-                    {% if treasury.max_limit %}
                     <div class="limits-item">
                         <span class="limit-label">الحد الأقصى:</span>
-                        <span class="limit-value">{{ treasury.max_limit|floatformat:2 }} ج.م</span>
+                        <span class="limit-value">
+                            {% if treasury.max_limit %}
+                                {{ treasury.max_limit|floatformat:2 }} ج.م
+                            {% else %}
+                                غير محدد
+                            {% endif %}
+                        </span>
                     </div>
-                    {% endif %}
                 </div>
+
+                {% if treasury.current_balance < treasury.min_limit %}
+                    <div class="alert alert-warning mt-3 mb-0">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        الرصيد أقل من الحد الأدنى.
+                    </div>
+                {% endif %}
+
+                {% if treasury.max_limit and treasury.current_balance > treasury.max_limit %}
+                    <div class="alert alert-info mt-3 mb-0">
+                        <i class="fas fa-info-circle me-1"></i>
+                        الرصيد أعلى من الحد الأقصى.
+                    </div>
+                {% endif %}
                 {% else %}
                 <div class="empty-state">
                     <i class="fas fa-infinity"></i>
@@ -675,35 +799,39 @@
         </div>
     </div>
 
-    <!-- بطاقة الإجراءات -->
-    <div class="actions-card fade-in" style="animation-delay: 0.4s;">
+    <div class="actions-card fade-in no-print" style="animation-delay: 0.4s;">
         <div class="actions-header">
-            <div class="actions-icon">
-                <i class="fas fa-tools"></i>
+            <div class="actions-title">
+                <div class="actions-icon">
+                    <i class="fas fa-tools"></i>
+                </div>
+                الإجراءات المتاحة
             </div>
-            <h3 class="actions-title">الإجراءات المتاحة</h3>
         </div>
+
         <div class="actions-grid">
             <a href="{% url 'treasury_management:edit_treasury' treasury.pk %}" class="action-btn primary">
                 <i class="fas fa-edit"></i>
                 تحرير الخزنة
             </a>
-            <a href="{% url 'treasury_management:add_transaction' %}" class="action-btn success">
+
+            <a href="{% url 'treasury_management:add_transaction' %}?treasury={{ treasury.id }}" class="action-btn success">
                 <i class="fas fa-plus-circle"></i>
                 إضافة عملية مالية
             </a>
-            <a href="#" class="action-btn warning">
-                <i class="fas fa-chart-line"></i>
-                عرض التقارير
+
+            <a href="{% url 'treasury_management:account_statement' treasury.account.id %}" class="action-btn warning">
+                <i class="fas fa-file-invoice"></i>
+                كشف حساب الخزنة
             </a>
-            <a href="#" class="action-btn primary">
+
+            <a href="{% url 'treasury_management:treasury_statement' treasury.id %}" class="action-btn purple">
                 <i class="fas fa-history"></i>
-                تاريخ العمليات
+                حركة الخزنة
             </a>
         </div>
     </div>
 
-    <!-- العمليات الأخيرة -->
     <div class="recent-transactions fade-in" style="animation-delay: 0.6s;">
         <div class="table-header">
             <div class="table-title">
@@ -712,28 +840,95 @@
                 </div>
                 العمليات المالية الأخيرة
             </div>
-            <a href="#" class="btn btn-outline-primary btn-sm">
+
+            <a href="{% url 'treasury_management:treasury_statement' treasury.id %}" class="btn btn-outline-primary btn-sm no-print">
                 <i class="fas fa-external-link-alt me-1"></i>
                 عرض الكل
             </a>
         </div>
-        
-        <!-- جدول العمليات -->
+
         <div class="table-responsive">
             <table class="table">
                 <thead>
                     <tr>
                         <th>التاريخ</th>
+                        <th>رقم العملية</th>
                         <th>نوع العملية</th>
+                        <th>الحساب</th>
                         <th>الوصف</th>
-                        <th>المبلغ</th>
-                        <th>الرصيد بعد العملية</th>
+                        <th>داخل</th>
+                        <th>خارج</th>
+                        <th>الحالة</th>
+                        <th class="no-print">تفاصيل</th>
                     </tr>
                 </thead>
+
                 <tbody>
-                    <!-- هنا ستظهر العمليات المالية -->
+                    {% for row in recent_rows %}
                     <tr>
-                        <td colspan="5">
+                        <td>
+                            {{ row.transaction.transaction_date|date:"Y-m-d" }}
+                            <br>
+                            <small class="text-muted">{{ row.transaction.transaction_date|time:"H:i" }}</small>
+                        </td>
+
+                        <td>{{ row.transaction.transaction_number }}</td>
+
+                        <td>
+                            {% if row.transaction.is_cancelled %}
+                                <span class="transaction-type cancelled">ملغية</span>
+                            {% elif row.transaction.transaction_type == 'INCOME' %}
+                                <span class="transaction-type income">إيراد</span>
+                            {% elif row.transaction.transaction_type == 'EXPENSE' %}
+                                <span class="transaction-type expense">مصروف</span>
+                            {% else %}
+                                <span class="transaction-type transfer">تحويل</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {{ row.transaction.account.name }}
+                            <br>
+                            <small class="text-muted">{{ row.transaction.account.code }}</small>
+                        </td>
+
+                        <td>{{ row.transaction.description|truncatechars:60 }}</td>
+
+                        <td>
+                            {% if row.debit > 0 %}
+                                <span class="text-money-in fw-bold">{{ row.debit|floatformat:2 }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if row.credit > 0 %}
+                                <span class="text-money-out fw-bold">{{ row.credit|floatformat:2 }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if row.transaction.is_cancelled %}
+                                <span class="badge bg-danger">ملغية</span>
+                            {% elif row.transaction.is_approved %}
+                                <span class="badge bg-success">معتمدة</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">معلقة</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="no-print">
+                            <a href="{% url 'treasury_management:transaction_detail' row.transaction.id %}" class="btn btn-sm btn-outline-info">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9">
                             <div class="empty-state">
                                 <i class="fas fa-inbox"></i>
                                 <p>لا توجد عمليات مالية مسجلة حتى الآن</p>
@@ -741,51 +936,41 @@
                             </div>
                         </td>
                     </tr>
+                    {% endfor %}
                 </tbody>
+
+                {% if recent_rows %}
+                <tfoot class="table-light">
+                    <tr>
+                        <th colspan="5">إجمالي آخر العمليات المعروضة</th>
+                        <th class="text-money-in">{{ recent_total_in|default:0|floatformat:2 }}</th>
+                        <th class="text-money-out">{{ recent_total_out|default:0|floatformat:2 }}</th>
+                        <th colspan="2"></th>
+                    </tr>
+                </tfoot>
+                {% endif %}
             </table>
         </div>
     </div>
 </div>
-
 {% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // تحديث الوقت بشكل دوري (اختياري)
-    setInterval(function() {
-        const now = new Date();
-        const timeElements = document.querySelectorAll('.live-time');
-        timeElements.forEach(element => {
-            element.textContent = now.toLocaleTimeString('ar-EG');
-        });
-    }, 1000);
-    
-    // تأثيرات تفاعلية للبطاقات
-    const cards = document.querySelectorAll('.info-card, .actions-card, .recent-transactions');
+    const cards = document.querySelectorAll('.info-card, .actions-card, .recent-transactions, .summary-box');
+
     cards.forEach(card => {
         card.addEventListener('mouseenter', function() {
             this.style.transform = 'translateY(-5px)';
         });
-        
+
         card.addEventListener('mouseleave', function() {
             this.style.transform = 'translateY(0)';
         });
     });
-    
-    // تحسين تجربة أزرار الإجراءات
-    const actionBtns = document.querySelectorAll('.action-btn');
-    actionBtns.forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            // إضافة تأثير النقر
-            this.style.transform = 'scale(0.95)';
-            setTimeout(() => {
-                this.style.transform = 'scale(1)';
-            }, 150);
-        });
-    });
-    
-    console.log('✅ صفحة تفاصيل الخزنة جاهزة');
+
+    console.log('✅ صفحة تفاصيل الخزنة جاهزة بحركات فعلية');
 });
 </script>
 {% endblock %}

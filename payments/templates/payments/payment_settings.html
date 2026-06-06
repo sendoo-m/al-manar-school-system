@@ -1,0 +1,526 @@
+{% extends 'payments/base.html' %}
+{% load humanize %}
+
+{% block title %}إعدادات المدفوعات - مدرسة المنار{% endblock %}
+{% block page_title %}إعدادات المدفوعات{% endblock %}
+{% block page_subtitle %}التحكم في بيانات الإيصالات وأهداف التحصيل وخيارات الدفع{% endblock %}
+{% block page_icon %}<i class="fas fa-cogs me-3"></i>{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'payments:payments_home' %}">لوحة المدفوعات</a></li>
+<li class="breadcrumb-item active">إعدادات المدفوعات</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'payments:payments_home' %}" class="btn btn-outline-primary btn-custom">
+        <i class="fas fa-tachometer-alt me-1"></i>لوحة المدفوعات
+    </a>
+
+    <a href="{% url 'payments:financial_reports' %}" class="btn btn-outline-info btn-custom">
+        <i class="fas fa-chart-line me-1"></i>التقارير المالية
+    </a>
+
+    <a href="{% url 'payments:all_payments' %}" class="btn btn-outline-secondary btn-custom">
+        <i class="fas fa-list me-1"></i>كل المدفوعات
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-hero {
+        background: linear-gradient(135deg, #6f42c1, #0d6efd);
+        color: white;
+        border-radius: 22px;
+        padding: 30px;
+        margin-bottom: 25px;
+        box-shadow: 0 8px 24px rgba(111, 66, 193, 0.25);
+    }
+
+    .settings-card {
+        background: white;
+        border-radius: 18px;
+        box-shadow: 0 5px 16px rgba(0,0,0,0.08);
+        overflow: hidden;
+        margin-bottom: 24px;
+    }
+
+    .settings-card-header {
+        background: #f8f9fa;
+        padding: 18px 22px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .settings-card-header h5 {
+        margin: 0;
+        font-weight: 900;
+    }
+
+    .settings-card-body {
+        padding: 24px;
+    }
+
+    .form-label {
+        font-weight: 800;
+        color: #2c3e50;
+    }
+
+    .help-text {
+        font-size: 0.82rem;
+        color: #6c757d;
+        margin-top: 5px;
+    }
+
+    .switch-box {
+        background: #f8f9fa;
+        border-radius: 14px;
+        padding: 16px;
+        border: 1px solid #e9ecef;
+        margin-bottom: 12px;
+    }
+
+    .preview-receipt {
+        background: #ffffff;
+        border: 2px dashed #ced4da;
+        border-radius: 16px;
+        padding: 20px;
+        text-align: center;
+    }
+
+    .preview-title {
+        font-weight: 900;
+        color: #0d6efd;
+        font-size: 1.3rem;
+    }
+
+    .preview-subtitle {
+        color: #6c757d;
+        font-weight: 700;
+    }
+
+    .preview-footer {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 12px;
+        margin-top: 16px;
+        color: #495057;
+        font-size: 0.9rem;
+    }
+
+    .target-box {
+        background: linear-gradient(135deg, #f8f9fa, #eef7ff);
+        border-radius: 14px;
+        padding: 16px;
+        border-right: 5px solid #0d6efd;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="settings-hero">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div>
+            <h2 class="mb-2">
+                <i class="fas fa-cogs me-2"></i>
+                إعدادات المدفوعات
+            </h2>
+            <p class="mb-0">
+                اضبط بيانات الإيصالات، أهداف التحصيل، وخيارات الدفع العامة للنظام.
+            </p>
+        </div>
+
+        <div class="text-lg-end">
+            <div><strong>آخر تحديث:</strong></div>
+            <div>{{ settings_obj.updated_at|date:"Y/m/d H:i" }}</div>
+        </div>
+    </div>
+</div>
+
+<form method="post" id="paymentSettingsForm">
+    {% csrf_token %}
+
+    <div class="row">
+        <div class="col-lg-8">
+
+            <!-- بيانات المدرسة والإيصال -->
+            <div class="settings-card">
+                <div class="settings-card-header">
+                    <h5>
+                        <i class="fas fa-school me-2 text-primary"></i>
+                        بيانات المدرسة والإيصال
+                    </h5>
+                </div>
+
+                <div class="settings-card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">اسم المدرسة بالعربية</label>
+                            <input type="text"
+                                   name="school_name_ar"
+                                   class="form-control"
+                                   value="{{ settings_obj.school_name_ar }}"
+                                   required>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">اسم المدرسة بالإنجليزية</label>
+                            <input type="text"
+                                   name="school_name_en"
+                                   class="form-control"
+                                   value="{{ settings_obj.school_name_en }}">
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">بادئة رقم الإيصال</label>
+                            <input type="text"
+                                   name="receipt_prefix"
+                                   class="form-control"
+                                   value="{{ settings_obj.receipt_prefix }}"
+                                   maxlength="20"
+                                   required>
+                            <div class="help-text">
+                                مثال: REC وسيظهر رقم الإيصال مثل REC-1-20260606
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">طريقة الدفع الافتراضية</label>
+                            <select name="default_payment_method" class="form-control">
+                                {% for value, label in payment_method_choices %}
+                                <option value="{{ value }}" {% if settings_obj.default_payment_method == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">نص أسفل الإيصال</label>
+                            <textarea name="receipt_footer_text"
+                                      class="form-control"
+                                      rows="4"
+                                      placeholder="اكتب النص الذي يظهر أسفل الإيصال">{{ settings_obj.receipt_footer_text }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- أهداف التحصيل -->
+            <div class="settings-card">
+                <div class="settings-card-header">
+                    <h5>
+                        <i class="fas fa-bullseye me-2 text-success"></i>
+                        أهداف التحصيل
+                    </h5>
+                </div>
+
+                <div class="settings-card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="target-box">
+                                <label class="form-label">هدف التحصيل اليومي</label>
+                                <div class="input-group">
+                                    <input type="number"
+                                           name="daily_collection_target"
+                                           class="form-control"
+                                           step="0.01"
+                                           min="0"
+                                           value="{{ settings_obj.daily_collection_target|floatformat:2 }}">
+                                    <span class="input-group-text">ج.م</span>
+                                </div>
+                                <div class="help-text">
+                                    يستخدم في التقرير اليومي لقياس نسبة تحقيق الهدف.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <div class="target-box">
+                                <label class="form-label">هدف التحصيل الشهري</label>
+                                <div class="input-group">
+                                    <input type="number"
+                                           name="monthly_collection_target"
+                                           class="form-control"
+                                           step="0.01"
+                                           min="0"
+                                           value="{{ settings_obj.monthly_collection_target|floatformat:2 }}">
+                                    <span class="input-group-text">ج.م</span>
+                                </div>
+                                <div class="help-text">
+                                    يستخدم في التقارير الشهرية ومؤشرات الإدارة.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- خيارات النظام -->
+            <div class="settings-card">
+                <div class="settings-card-header">
+                    <h5>
+                        <i class="fas fa-sliders-h me-2 text-warning"></i>
+                        خيارات النظام
+                    </h5>
+                </div>
+
+                <div class="settings-card-body">
+                    <div class="switch-box">
+                        <div class="form-check form-switch">
+                            <input type="checkbox"
+                                   name="auto_generate_receipt_number"
+                                   id="autoGenerateReceipt"
+                                   class="form-check-input"
+                                   {% if settings_obj.auto_generate_receipt_number %}checked{% endif %}>
+                            <label for="autoGenerateReceipt" class="form-check-label fw-bold">
+                                توليد رقم الإيصال تلقائيًا
+                            </label>
+                        </div>
+                        <div class="help-text">
+                            عند تفعيلها، يتم إنشاء رقم إيصال تلقائي عند الدفع.
+                        </div>
+                    </div>
+
+                    <div class="switch-box">
+                        <div class="form-check form-switch">
+                            <input type="checkbox"
+                                   name="allow_overpayment"
+                                   id="allowOverpayment"
+                                   class="form-check-input"
+                                   {% if settings_obj.allow_overpayment %}checked{% endif %}>
+                            <label for="allowOverpayment" class="form-check-label fw-bold">
+                                السماح بدفع مبلغ أكبر من المطلوب
+                            </label>
+                        </div>
+                        <div class="help-text">
+                            يفضل تركها غير مفعلة لمنع أخطاء التحصيل.
+                        </div>
+                    </div>
+
+                    <div class="switch-box">
+                        <div class="form-check form-switch">
+                            <input type="checkbox"
+                                   name="show_school_name_on_receipt"
+                                   id="showSchoolName"
+                                   class="form-check-input"
+                                   {% if settings_obj.show_school_name_on_receipt %}checked{% endif %}>
+                            <label for="showSchoolName" class="form-check-label fw-bold">
+                                إظهار اسم المدرسة في الإيصال
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="switch-box">
+                        <div class="form-check form-switch">
+                            <input type="checkbox"
+                                   name="show_payment_records_on_receipt"
+                                   id="showRecords"
+                                   class="form-check-input"
+                                   {% if settings_obj.show_payment_records_on_receipt %}checked{% endif %}>
+                            <label for="showRecords" class="form-check-label fw-bold">
+                                إظهار سجل الدفعات في الإيصال
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="switch-box">
+                        <div class="form-check form-switch">
+                            <input type="checkbox"
+                                   name="is_active"
+                                   id="isActive"
+                                   class="form-check-input"
+                                   {% if settings_obj.is_active %}checked{% endif %}>
+                            <label for="isActive" class="form-check-label fw-bold">
+                                تفعيل إعدادات المدفوعات
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mb-4">
+                <button type="submit" class="btn btn-success btn-lg btn-custom">
+                    <i class="fas fa-save me-2"></i>
+                    حفظ الإعدادات
+                </button>
+
+                <a href="{% url 'payments:payments_home' %}" class="btn btn-outline-secondary btn-lg btn-custom">
+                    <i class="fas fa-times me-2"></i>
+                    إلغاء
+                </a>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- معاينة الإيصال -->
+            <div class="settings-card">
+                <div class="settings-card-header">
+                    <h5>
+                        <i class="fas fa-eye me-2 text-info"></i>
+                        معاينة بيانات الإيصال
+                    </h5>
+                </div>
+
+                <div class="settings-card-body">
+                    <div class="preview-receipt">
+                        <div class="mb-3">
+                            <i class="fas fa-graduation-cap fa-3x text-primary"></i>
+                        </div>
+
+                        <div class="preview-title" id="previewSchoolAr">
+                            {{ settings_obj.school_name_ar }}
+                        </div>
+
+                        <div class="preview-subtitle" id="previewSchoolEn">
+                            {{ settings_obj.school_name_en }}
+                        </div>
+
+                        <hr>
+
+                        <div>
+                            <strong>رقم الإيصال:</strong>
+                            <span dir="ltr" id="previewReceiptPrefix">{{ settings_obj.receipt_prefix }}</span>-0001
+                        </div>
+
+                        <div class="mt-2">
+                            <strong>طريقة الدفع:</strong>
+                            {% for value, label in payment_method_choices %}
+                                {% if settings_obj.default_payment_method == value %}
+                                    {{ label }}
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+
+                        <div class="preview-footer" id="previewFooterText">
+                            {{ settings_obj.receipt_footer_text }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="settings-card">
+                <div class="settings-card-header">
+                    <h5>
+                        <i class="fas fa-sync-alt me-2 text-danger"></i>
+                        صيانة الحسابات المالية
+                    </h5>
+                </div>
+
+                <div class="settings-card-body">
+                    <p class="text-muted">
+                        استخدم هذا الزر لإعادة حساب إجماليات الطلاب من واقع الأقساط والمدفوعات الحالية.
+                    </p>
+
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        هذه العملية ستحدث حقول إجمالي المطلوب، المدفوع، والمتبقي لكل الطلاب النشطين.
+                    </div>
+
+                    <form method="post" id="recalculateFinanceForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="recalculate_student_finances">
+
+                        <button type="submit" class="btn btn-danger w-100">
+                            <i class="fas fa-calculator me-2"></i>
+                            إعادة حساب إجماليات الطلاب
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- معلومات -->
+            <div class="settings-card">
+                <div class="settings-card-header">
+                    <h5>
+                        <i class="fas fa-info-circle me-2 text-primary"></i>
+                        ملاحظات مهمة
+                    </h5>
+                </div>
+
+                <div class="settings-card-body">
+                    <ul class="mb-0">
+                        <li class="mb-2">بعد حفظ الإعدادات يمكن استخدامها لاحقًا في الإيصالات والتقارير.</li>
+                        <li class="mb-2">أهداف التحصيل تساعد في قياس أداء الإدارة المالية.</li>
+                        <li class="mb-2">يفضل عدم تفعيل الدفع الزائد إلا عند الحاجة.</li>
+                        <li>رقم الإيصال يعتمد على البادئة المحددة هنا.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const schoolArInput = document.querySelector('input[name="school_name_ar"]');
+    const schoolEnInput = document.querySelector('input[name="school_name_en"]');
+    const prefixInput = document.querySelector('input[name="receipt_prefix"]');
+    const footerInput = document.querySelector('textarea[name="receipt_footer_text"]');
+
+    if (schoolArInput) {
+        schoolArInput.addEventListener('input', function() {
+            const preview = document.getElementById('previewSchoolAr');
+            if (preview) preview.textContent = this.value || 'اسم المدرسة';
+        });
+    }
+
+    if (schoolEnInput) {
+        schoolEnInput.addEventListener('input', function() {
+            const preview = document.getElementById('previewSchoolEn');
+            if (preview) preview.textContent = this.value || 'School Name';
+        });
+    }
+
+    if (prefixInput) {
+        prefixInput.addEventListener('input', function() {
+            const preview = document.getElementById('previewReceiptPrefix');
+            if (preview) preview.textContent = this.value || 'REC';
+        });
+    }
+
+    if (footerInput) {
+        footerInput.addEventListener('input', function() {
+            const preview = document.getElementById('previewFooterText');
+            if (preview) preview.textContent = this.value || '';
+        });
+    }
+
+    const settingsForm = document.getElementById('paymentSettingsForm');
+
+    if (settingsForm) {
+        settingsForm.addEventListener('submit', function(e) {
+            const dailyTargetInput = settingsForm.querySelector('input[name="daily_collection_target"]');
+            const monthlyTargetInput = settingsForm.querySelector('input[name="monthly_collection_target"]');
+
+            const dailyTarget = parseFloat(dailyTargetInput ? dailyTargetInput.value || 0 : 0);
+            const monthlyTarget = parseFloat(monthlyTargetInput ? monthlyTargetInput.value || 0 : 0);
+
+            if (dailyTarget < 0 || monthlyTarget < 0) {
+                e.preventDefault();
+                alert('أهداف التحصيل لا يمكن أن تكون أقل من صفر');
+                return;
+            }
+
+            if (!confirm('هل تريد حفظ إعدادات المدفوعات؟')) {
+                e.preventDefault();
+            }
+        });
+    }
+
+    const recalculateForm = document.getElementById('recalculateFinanceForm');
+
+    if (recalculateForm) {
+        recalculateForm.addEventListener('submit', function(e) {
+            if (!confirm('هل أنت متأكد من إعادة حساب إجماليات الطلاب المالية؟')) {
+                e.preventDefault();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

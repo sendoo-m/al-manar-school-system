@@ -15,6 +15,772 @@
 <style>
     .dashboard-grid {
         display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 25px;
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border: none;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        min-height: 155px;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(135deg, var(--card-color-1), var(--card-color-2));
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    }
+
+    .stat-card.primary {
+        --card-color-1: #3498db;
+        --card-color-2: #2980b9;
+    }
+
+    .stat-card.success {
+        --card-color-1: #28a745;
+        --card-color-2: #20c997;
+    }
+
+    .stat-card.info {
+        --card-color-1: #17a2b8;
+        --card-color-2: #138496;
+    }
+
+    .stat-card.warning {
+        --card-color-1: #ffc107;
+        --card-color-2: #e0a800;
+    }
+
+    .stat-card.danger {
+        --card-color-1: #dc3545;
+        --card-color-2: #c82333;
+    }
+
+    .stat-card.secondary {
+        --card-color-1: #6c757d;
+        --card-color-2: #5a6268;
+    }
+
+    .stat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        gap: 15px;
+    }
+
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        min-width: 60px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        color: white;
+        background: linear-gradient(135deg, var(--card-color-1), var(--card-color-2));
+    }
+
+    .stat-number {
+        font-size: 2.4rem;
+        font-weight: 800;
+        color: #2c3e50;
+        margin-bottom: 5px;
+        line-height: 1;
+    }
+
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.95rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .stat-change {
+        font-size: 0.8rem;
+        padding: 4px 9px;
+        border-radius: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .stat-change.positive {
+        background: rgba(40, 167, 69, 0.1);
+        color: #28a745;
+    }
+
+    .stat-change.warning {
+        background: rgba(255, 193, 7, 0.15);
+        color: #856404;
+    }
+
+    .chart-container {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+    }
+
+    .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f8f9fa;
+        gap: 15px;
+    }
+
+    .chart-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin: 0;
+    }
+
+    .progress-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        gap: 15px;
+    }
+
+    .progress-item:hover {
+        background: #e9ecef;
+        transform: translateX(5px);
+    }
+
+    .progress-info {
+        flex: 1;
+    }
+
+    .progress-label {
+        font-weight: 700;
+        color: #495057;
+        margin-bottom: 5px;
+    }
+
+    .progress {
+        height: 8px;
+        border-radius: 4px;
+        background: #e9ecef;
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        transition: width 0.8s ease;
+        border-radius: 4px;
+    }
+
+    .progress-value {
+        font-weight: 800;
+        color: #2c3e50;
+        font-size: 1.1rem;
+        min-width: 55px;
+        text-align: center;
+    }
+
+    .quick-actions {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+    }
+
+    .action-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+    }
+
+    .action-btn {
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+        padding: 15px;
+        text-align: center;
+        color: white;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+        font-weight: 700;
+    }
+
+    .action-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.4);
+        transform: translateY(-2px);
+        color: white;
+        text-decoration: none;
+    }
+
+    .action-btn i {
+        font-size: 1.5rem;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    .recent-activity {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+
+    .activity-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid #f1f3f4;
+        transition: all 0.3s ease;
+    }
+
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+
+    .activity-item:hover {
+        background: rgba(52, 152, 219, 0.05);
+        border-radius: 8px;
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 15px;
+        font-size: 0.9rem;
+        color: white;
+    }
+
+    .activity-content {
+        flex: 1;
+    }
+
+    .activity-text {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 3px;
+    }
+
+    .activity-time {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+
+    .financial-section {
+        background: linear-gradient(135deg, #1757b8, #17159c);
+        color: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 8px 22px rgba(23, 21, 156, 0.22);
+    }
+
+    .financial-box {
+        background: rgba(255,255,255,0.12);
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        height: 100%;
+    }
+
+    .financial-value {
+        font-size: 1.8rem;
+        font-weight: 800;
+        margin-bottom: 6px;
+    }
+
+    .financial-label {
+        font-size: 0.9rem;
+        opacity: 0.92;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 30px 10px;
+        color: #6c757d;
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .chart-header {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .progress-item {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .progress-value {
+            text-align: right;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- الإحصائيات الرئيسية -->
+<div class="dashboard-grid">
+    <div class="stat-card primary">
+        <div class="stat-header">
+            <div class="stat-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-change positive">
+                <i class="fas fa-check me-1"></i>نشط
+            </div>
+        </div>
+        <div class="stat-number">{{ total_students|default:0 }}</div>
+        <div class="stat-label">إجمالي الطلاب النشطين</div>
+    </div>
+
+    <div class="stat-card info">
+        <div class="stat-header">
+            <div class="stat-icon">
+                <i class="fas fa-male"></i>
+            </div>
+            <div class="stat-change positive">
+                ذكور
+            </div>
+        </div>
+        <div class="stat-number">{{ male_students|default:0 }}</div>
+        <div class="stat-label">طلاب ذكور</div>
+    </div>
+
+    <div class="stat-card success">
+        <div class="stat-header">
+            <div class="stat-icon">
+                <i class="fas fa-female"></i>
+            </div>
+            <div class="stat-change positive">
+                إناث
+            </div>
+        </div>
+        <div class="stat-number">{{ female_students|default:0 }}</div>
+        <div class="stat-label">طالبات إناث</div>
+    </div>
+
+    <div class="stat-card warning">
+        <div class="stat-header">
+            <div class="stat-icon">
+                <i class="fas fa-user-plus"></i>
+            </div>
+            <div class="stat-change warning">
+                هذا الشهر
+            </div>
+        </div>
+        <div class="stat-number">{{ new_this_month|default:0 }}</div>
+        <div class="stat-label">طلاب جدد هذا الشهر</div>
+    </div>
+
+    <div class="stat-card secondary">
+        <div class="stat-header">
+            <div class="stat-icon">
+                <i class="fas fa-calendar"></i>
+            </div>
+            <div class="stat-change positive">
+                هذا العام
+            </div>
+        </div>
+        <div class="stat-number">{{ new_this_year|default:0 }}</div>
+        <div class="stat-label">طلاب جدد هذا العام</div>
+    </div>
+
+    <div class="stat-card danger">
+        <div class="stat-header">
+            <div class="stat-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="stat-change warning">
+                يحتاج مراجعة
+            </div>
+        </div>
+        <div class="stat-number">{{ students_without_grade|default:0 }}</div>
+        <div class="stat-label">طلاب بدون صف دراسي</div>
+    </div>
+</div>
+
+<!-- المالية -->
+{% if user_role == 'SYSTEM_ADMIN' and financial_summary %}
+<div class="financial-section">
+    <h5 class="mb-4 text-center">
+        <i class="fas fa-coins me-2"></i>الملخص المالي للطلاب
+    </h5>
+
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div class="financial-box">
+                <div class="financial-value">{{ financial_summary.total_required|default:0|floatformat:0 }}</div>
+                <div class="financial-label">إجمالي المطلوب</div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="financial-box">
+                <div class="financial-value">{{ financial_summary.total_paid|default:0|floatformat:0 }}</div>
+                <div class="financial-label">إجمالي المدفوع</div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="financial-box">
+                <div class="financial-value">{{ financial_summary.total_owed|default:0|floatformat:0 }}</div>
+                <div class="financial-label">إجمالي المستحقات</div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="financial-box">
+                <div class="financial-value">{{ financial_summary.collection_percentage|default:0|floatformat:1 }}%</div>
+                <div class="financial-label">نسبة التحصيل</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-1">
+        <div class="col-md-6">
+            <div class="financial-box">
+                <div class="financial-value">{{ financial_summary.paid_students|default:0 }}</div>
+                <div class="financial-label">طلاب مسددون بالكامل</div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="financial-box">
+                <div class="financial-value">{{ financial_summary.owing_students|default:0 }}</div>
+                <div class="financial-label">طلاب عليهم مستحقات</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- توزيع الطلاب حسب المراحل -->
+        <div class="chart-container">
+            <div class="chart-header">
+                <h5 class="chart-title">
+                    <i class="fas fa-chart-pie me-2"></i>توزيع الطلاب حسب المراحل التعليمية
+                </h5>
+
+                <div class="text-muted">
+                    <small>آخر تحديث: الآن</small>
+                </div>
+            </div>
+
+            <div class="progress-list">
+                {% for item in education_distribution %}
+                <div class="progress-item">
+                    <div class="progress-info">
+                        <div class="progress-label">
+                            {{ item.level.name }}
+                        </div>
+
+                        <div class="progress">
+                            <div class="progress-bar bg-primary" style="width: {{ item.percentage }}%"></div>
+                        </div>
+
+                        <small class="text-muted">{{ item.percentage }}%</small>
+                    </div>
+
+                    <div class="progress-value">{{ item.count }}</div>
+                </div>
+                {% empty %}
+                <div class="empty-state">
+                    <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">لا توجد بيانات مراحل لعرضها</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- توزيع الطلاب حسب الصفوف -->
+        <div class="chart-container">
+            <div class="chart-header">
+                <h5 class="chart-title">
+                    <i class="fas fa-chalkboard me-2"></i>توزيع الطلاب حسب الصفوف الدراسية
+                </h5>
+            </div>
+
+            <div class="progress-list">
+                {% for item in grade_distribution %}
+                <div class="progress-item">
+                    <div class="progress-info">
+                        <div class="progress-label">
+                            {% if item.grade.education_level %}
+                                {{ item.grade.education_level.name }} -
+                            {% endif %}
+                            {{ item.grade.name }}
+                        </div>
+
+                        <div class="progress">
+                            <div class="progress-bar bg-success" style="width: {{ item.percentage }}%"></div>
+                        </div>
+
+                        <small class="text-muted">{{ item.percentage }}%</small>
+                    </div>
+
+                    <div class="progress-value">{{ item.count }}</div>
+                </div>
+                {% empty %}
+                <div class="empty-state">
+                    <i class="fas fa-chalkboard fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">لا توجد بيانات صفوف لعرضها</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- توزيع الطلاب حسب الجنس -->
+        <div class="chart-container">
+            <div class="chart-header">
+                <h5 class="chart-title">
+                    <i class="fas fa-venus-mars me-2"></i>توزيع الطلاب حسب الجنس
+                </h5>
+            </div>
+
+            <div class="row text-center">
+                <div class="col-md-6">
+                    <div class="progress-item">
+                        <div class="progress-info">
+                            <div class="progress-label">
+                                <i class="fas fa-male text-info me-2"></i>طلاب ذكور
+                            </div>
+
+                            <div class="progress">
+                                <div class="progress-bar bg-info"
+                                     style="width: {% widthratio male_students total_students 100 %}%">
+                                </div>
+                            </div>
+
+                            <small class="text-muted">
+                                {% if total_students %}
+                                    {% widthratio male_students total_students 100 %}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </small>
+                        </div>
+
+                        <div class="progress-value">{{ male_students|default:0 }}</div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="progress-item">
+                        <div class="progress-info">
+                            <div class="progress-label">
+                                <i class="fas fa-female text-danger me-2"></i>طالبات إناث
+                            </div>
+
+                            <div class="progress">
+                                <div class="progress-bar bg-danger"
+                                     style="width: {% widthratio female_students total_students 100 %}%">
+                                </div>
+                            </div>
+
+                            <small class="text-muted">
+                                {% if total_students %}
+                                    {% widthratio female_students total_students 100 %}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </small>
+                        </div>
+
+                        <div class="progress-value">{{ female_students|default:0 }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- الإجراءات السريعة -->
+        <div class="quick-actions">
+            <h5 class="mb-0">
+                <i class="fas fa-bolt me-2"></i>إجراءات سريعة
+            </h5>
+
+            <div class="action-grid">
+                <a href="{% url 'students:add_student' %}" class="action-btn">
+                    <i class="fas fa-user-plus"></i>
+                    <div>إضافة طالب</div>
+                </a>
+
+                <a href="{% url 'students:student_list' %}" class="action-btn">
+                    <i class="fas fa-list"></i>
+                    <div>قائمة الطلاب</div>
+                </a>
+
+                <a href="{% url 'students:search_student' %}" class="action-btn">
+                    <i class="fas fa-search"></i>
+                    <div>بحث متقدم</div>
+                </a>
+
+                <a href="{% url 'students:all_reports' %}" class="action-btn">
+                    <i class="fas fa-chart-line"></i>
+                    <div>التقارير الشاملة</div>
+                </a>
+
+                {% if user_role == 'SYSTEM_ADMIN' %}
+                <a href="{% url 'students:export_students' %}" class="action-btn">
+                    <i class="fas fa-download"></i>
+                    <div>تصدير</div>
+                </a>
+
+                <a href="{% url 'students:import_students_advanced' %}" class="action-btn">
+                    <i class="fas fa-upload"></i>
+                    <div>استيراد</div>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- النشاط الأخير -->
+        <div class="recent-activity">
+            <h5 class="mb-4">
+                <i class="fas fa-history me-2"></i>ملخص النشاط
+            </h5>
+
+            <div class="activity-list">
+                <div class="activity-item">
+                    <div class="activity-icon bg-success">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+
+                    <div class="activity-content">
+                        <div class="activity-text">تم إضافة {{ new_this_month|default:0 }} طالب هذا الشهر</div>
+                        <div class="activity-time">الشهر الحالي</div>
+                    </div>
+                </div>
+
+                <div class="activity-item">
+                    <div class="activity-icon bg-primary">
+                        <i class="fas fa-calendar"></i>
+                    </div>
+
+                    <div class="activity-content">
+                        <div class="activity-text">تم إضافة {{ new_this_year|default:0 }} طالب هذا العام</div>
+                        <div class="activity-time">العام الحالي</div>
+                    </div>
+                </div>
+
+                <div class="activity-item">
+                    <div class="activity-icon bg-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+
+                    <div class="activity-content">
+                        <div class="activity-text">{{ students_without_grade|default:0 }} طالب بدون صف دراسي</div>
+                        <div class="activity-time">يحتاج مراجعة</div>
+                    </div>
+                </div>
+
+                {% if user_role == 'SYSTEM_ADMIN' and financial_summary %}
+                <div class="activity-item">
+                    <div class="activity-icon bg-info">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+
+                    <div class="activity-content">
+                        <div class="activity-text">نسبة التحصيل {{ financial_summary.collection_percentage|default:0|floatformat:1 }}%</div>
+                        <div class="activity-time">حسب العام الحالي</div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const progressBars = document.querySelectorAll('.progress-bar');
+
+    progressBars.forEach((bar, index) => {
+        const width = bar.style.width;
+        bar.style.width = '0%';
+
+        setTimeout(() => {
+            bar.style.width = width;
+        }, index * 150 + 350);
+    });
+
+    const statCards = document.querySelectorAll('.stat-card');
+
+    statCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-8px) scale(1.02)';
+        });
+
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+        });
+    });
+});
+</script>
+{% endblock %}
+
+{% comment %} <!-- students/templates/students/student_dashboard.html -->
+{% extends 'students/base.html' %}
+
+{% block title %}لوحة إحصائيات الطلاب - نظام إدارة الطلاب{% endblock %}
+{% block page_title %}لوحة إحصائيات الطلاب{% endblock %}
+{% block page_icon %}<i class="fas fa-tachometer-alt"></i>{% endblock %}
+{% block page_subtitle %}نظرة شاملة على إحصائيات وأرقام الطلاب{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'students:home' %}">الرئيسية</a></li>
+<li class="breadcrumb-item active">لوحة الإحصائيات</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-grid {
+        display: grid;
         grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
         gap: 25px;
         margin-bottom: 30px;
@@ -511,4 +1277,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-{% endblock %}
+{% endblock %} {% endcomment %}

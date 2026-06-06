@@ -1,9 +1,9 @@
 {% extends 'students/base.html' %}
 
-{% block title %}التقرير اليومي - {{ report_date|date:"d/m/Y" }} - {{ system_settings.school_name }}{% endblock %}
+{% block title %}التقرير اليومي - {{ selected_date|date:"d/m/Y" }} - {{ system_settings.school_name|default:"نظام المدرسة" }}{% endblock %}
 {% block page_title %}التقرير اليومي{% endblock %}
 {% block page_icon %}<i class="fas fa-calendar-day"></i>{% endblock %}
-{% block page_subtitle %}تقرير مفصل عن أنشطة اليوم والإحصائيات{% endblock %}
+{% block page_subtitle %}تقرير مفصل عن تسجيلات الطلاب والتحديثات اليومية{% endblock %}
 
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'students:home' %}">الرئيسية</a></li>
@@ -22,6 +22,7 @@
         margin-bottom: 30px;
         position: relative;
         overflow: hidden;
+        box-shadow: 0 8px 22px rgba(40, 167, 69, 0.22);
     }
 
     .daily-header::before {
@@ -33,6 +34,11 @@
         height: 200%;
         background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
         animation: float 15s linear infinite;
+    }
+
+    @keyframes float {
+        0% { transform: translateX(-20px) translateY(-20px); }
+        100% { transform: translateX(20px) translateY(20px); }
     }
 
     .daily-header-content {
@@ -62,6 +68,7 @@
         transition: all 0.3s ease;
         border-top: 4px solid;
         text-align: center;
+        min-height: 160px;
     }
 
     .quick-stat:hover {
@@ -74,6 +81,7 @@
     .quick-stat.info { border-top-color: #17a2b8; }
     .quick-stat.warning { border-top-color: #ffc107; }
     .quick-stat.danger { border-top-color: #dc3545; }
+    .quick-stat.secondary { border-top-color: #6c757d; }
 
     .stat-icon {
         width: 50px;
@@ -91,11 +99,13 @@
     .stat-icon.info { background: linear-gradient(135deg, #17a2b8, #138496); color: white; }
     .stat-icon.warning { background: linear-gradient(135deg, #ffc107, #e0a800); color: #212529; }
     .stat-icon.danger { background: linear-gradient(135deg, #dc3545, #c82333); color: white; }
+    .stat-icon.secondary { background: linear-gradient(135deg, #6c757d, #5a6268); color: white; }
 
     .stat-value {
-        font-size: 2.5rem;
-        font-weight: 700;
+        font-size: 2.4rem;
+        font-weight: 800;
         margin-bottom: 5px;
+        line-height: 1.2;
     }
 
     .stat-value.success { color: #28a745; }
@@ -103,10 +113,11 @@
     .stat-value.info { color: #17a2b8; }
     .stat-value.warning { color: #ffc107; }
     .stat-value.danger { color: #dc3545; }
+    .stat-value.secondary { color: #6c757d; }
 
     .stat-label {
         color: #6c757d;
-        font-weight: 600;
+        font-weight: 700;
         margin-bottom: 5px;
     }
 
@@ -125,7 +136,7 @@
 
     .section-title {
         color: #28a745;
-        font-weight: 700;
+        font-weight: 800;
         margin-bottom: 20px;
         display: flex;
         align-items: center;
@@ -152,17 +163,17 @@
         border-radius: 12px;
         padding: 15px;
         margin-bottom: 15px;
-        border-left: 4px solid #28a745;
+        border-right: 4px solid #28a745;
         transition: all 0.3s ease;
     }
 
     .student-card:hover {
         background: #e8f5e9;
-        transform: translateX(5px);
+        transform: translateX(-5px);
     }
 
     .student-name {
-        font-weight: 600;
+        font-weight: 700;
         color: #495057;
         margin-bottom: 5px;
     }
@@ -186,105 +197,15 @@
         padding: 4px 10px;
         border-radius: 15px;
         font-size: 0.8rem;
-        font-weight: 600;
-    }
-
-    .week-chart {
-        display: flex;
-        align-items: end;
-        justify-content: space-between;
-        height: 200px;
-        background: #f8f9fa;
-        border-radius: 10px;
-        padding: 20px;
-        margin: 20px 0;
-    }
-
-    .week-bar {
-        flex: 1;
-        margin: 0 5px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .bar {
-        background: linear-gradient(135deg, #28a745, #20c997);
-        border-radius: 4px 4px 0 0;
-        min-height: 10px;
-        width: 100%;
-        transition: all 0.3s ease;
-        margin-bottom: 10px;
-    }
-
-    .bar.today {
-        background: linear-gradient(135deg, #ffc107, #e0a800);
-        animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-    }
-
-    .bar-label {
-        font-size: 0.8rem;
-        color: #6c757d;
-        text-align: center;
-        font-weight: 600;
-    }
-
-    .bar-value {
-        font-size: 0.9rem;
-        color: #495057;
         font-weight: 700;
-        margin-bottom: 5px;
-    }
-
-    .hourly-stats {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 15px;
-        margin: 20px 0;
-    }
-
-    .hour-stat {
-        background: #f8f9fa;
-        border-radius: 10px;
-        padding: 15px;
-        text-align: center;
-        border-left: 4px solid #17a2b8;
-    }
-
-    .hour-time {
-        font-weight: 600;
-        color: #17a2b8;
-        margin-bottom: 5px;
-    }
-
-    .hour-count {
-        font-size: 1.2rem;
-        font-weight: 700;
-        color: #495057;
-    }
-
-    .empty-state {
-        text-align: center;
-        padding: 60px 20px;
-        color: #6c757d;
-    }
-
-    .empty-icon {
-        font-size: 4rem;
-        color: #dee2e6;
-        margin-bottom: 20px;
     }
 
     .badge-custom {
         padding: 8px 15px;
         border-radius: 20px;
-        font-weight: 600;
+        font-weight: 700;
         font-size: 0.85rem;
+        display: inline-block;
     }
 
     .table-daily {
@@ -295,9 +216,10 @@
         background: linear-gradient(135deg, #28a745, #20c997);
         color: white;
         border: none;
-        font-weight: 600;
+        font-weight: 700;
         padding: 15px;
         vertical-align: middle;
+        white-space: nowrap;
     }
 
     .table-daily tbody tr {
@@ -306,46 +228,12 @@
 
     .table-daily tbody tr:hover {
         background: rgba(40, 167, 69, 0.05);
-        transform: scale(1.01);
     }
 
     .table-daily tbody td {
         padding: 15px;
         vertical-align: middle;
         border-color: #e9ecef;
-    }
-
-    @media (max-width: 768px) {
-        .daily-header {
-            padding: 20px;
-        }
-        
-        .date-selector {
-            flex-direction: column;
-            gap: 10px;
-        }
-        
-        .quick-stat {
-            padding: 15px;
-        }
-        
-        .stat-value {
-            font-size: 2rem;
-        }
-        
-        .week-chart {
-            height: 150px;
-            padding: 15px;
-        }
-        
-        .hourly-stats {
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-        }
-        
-        .student-details {
-            flex-direction: column;
-            align-items: flex-start;
-        }
     }
 
     .alert-today {
@@ -363,19 +251,98 @@
         padding: 15px;
         margin-bottom: 20px;
     }
+
+    .progress-custom {
+        height: 10px;
+        border-radius: 5px;
+        background: #e9ecef;
+        overflow: hidden;
+        min-width: 90px;
+    }
+
+    .progress-bar-custom {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        transition: width 0.5s ease;
+        height: 100%;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6c757d;
+    }
+
+    .empty-icon {
+        font-size: 4rem;
+        color: #dee2e6;
+        margin-bottom: 20px;
+    }
+
+    .ltr-value {
+        direction: ltr;
+        unicode-bidi: plaintext;
+        display: inline-block;
+    }
+
+    @media (max-width: 768px) {
+        .daily-header {
+            padding: 20px;
+        }
+
+        .date-selector {
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .date-selector form {
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .quick-stat {
+            padding: 15px;
+            min-height: auto;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+        }
+
+        .student-details {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .btn-group {
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .btn-group .btn {
+            width: 100%;
+            margin-bottom: 8px;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
+
+{% now "Y-m-d" as today_string %}
+
 <!-- Header التقرير -->
 <div class="daily-header">
     <div class="daily-header-content">
         <h1 class="display-4 mb-0">
             <i class="fas fa-calendar-day me-3"></i>التقرير اليومي
         </h1>
-        <p class="lead mb-3">تقرير شامل عن أنشطة يوم {{ report_date|date:"d F Y" }}</p>
+
+        <p class="lead mb-3">
+            تقرير شامل عن أنشطة يوم {{ selected_date|date:"d F Y" }}
+        </p>
+
         <div class="text-light">
-            {% if is_today %}
+            {% if selected_date_str == today_string %}
                 <span class="badge bg-warning text-dark me-2">
                     <i class="fas fa-clock me-1"></i>تقرير مباشر
                 </span>
@@ -384,23 +351,31 @@
                     <i class="fas fa-history me-1"></i>تقرير تاريخي
                 </span>
             {% endif %}
-            <i class="fas fa-school me-2"></i>{{ system_settings.school_name }}
+
+            <i class="fas fa-school me-2"></i>{{ system_settings.school_name|default:"نظام المدرسة" }}
         </div>
     </div>
 </div>
 
 <!-- اختيار التاريخ -->
 <div class="date-selector">
-    <form method="get" class="d-flex align-items-center gap-3">
+    <form method="get" class="d-flex align-items-center gap-3 flex-wrap">
         <label for="date" class="form-label mb-0 fw-bold">
             <i class="fas fa-calendar me-2"></i>اختر التاريخ:
         </label>
-        <input type="date" id="date" name="date" class="form-control" 
-               value="{{ selected_date }}" max="{% now 'Y-m-d' %}">
+
+        <input type="date"
+               id="date"
+               name="date"
+               class="form-control"
+               value="{{ selected_date_str }}"
+               max="{% now 'Y-m-d' %}">
+
         <button type="submit" class="btn btn-primary">
             <i class="fas fa-search me-2"></i>عرض التقرير
         </button>
-        {% if not is_today %}
+
+        {% if selected_date_str != today_string %}
         <a href="{% url 'students:daily_report' %}" class="btn btn-outline-success">
             <i class="fas fa-calendar-day me-2"></i>اليوم
         </a>
@@ -409,15 +384,23 @@
 </div>
 
 <!-- التنبيهات -->
-{% if is_today %}
+{% if selected_date_str == today_string %}
 <div class="alert-today">
-    <h6><i class="fas fa-info-circle me-2"></i>تقرير مباشر لليوم:</h6>
-    <p class="mb-0">هذا التقرير يعرض البيانات المحدثة لحظياً ليوم {{ report_date|date:"d/m/Y" }}. البيانات قابلة للتغيير خلال اليوم.</p>
+    <h6>
+        <i class="fas fa-info-circle me-2"></i>تقرير مباشر لليوم:
+    </h6>
+    <p class="mb-0">
+        هذا التقرير يعرض البيانات المحدثة لحظيًا ليوم {{ selected_date|date:"d/m/Y" }}. البيانات قابلة للتغيير خلال اليوم.
+    </p>
 </div>
 {% else %}
 <div class="alert-historical">
-    <h6><i class="fas fa-history me-2"></i>تقرير تاريخي:</h6>
-    <p class="mb-0">هذا التقرير يعرض البيانات النهائية ليوم {{ report_date|date:"d/m/Y" }}.</p>
+    <h6>
+        <i class="fas fa-history me-2"></i>تقرير تاريخي:
+    </h6>
+    <p class="mb-0">
+        هذا التقرير يعرض البيانات المسجلة ليوم {{ selected_date|date:"d/m/Y" }}.
+    </p>
 </div>
 {% endif %}
 
@@ -428,42 +411,44 @@
             <div class="stat-icon success">
                 <i class="fas fa-user-plus"></i>
             </div>
-            <div class="stat-value success">{{ today_stats.new_students }}</div>
+            <div class="stat-value success">{{ total_new_today|default:0 }}</div>
             <div class="stat-label">طلاب جدد</div>
-            <div class="stat-subtitle">مسجلون اليوم</div>
+            <div class="stat-subtitle">مسجلون في التاريخ المحدد</div>
         </div>
     </div>
-    
+
     <div class="col-lg-3 col-md-6">
         <div class="quick-stat primary">
             <div class="stat-icon primary">
                 <i class="fas fa-users"></i>
             </div>
-            <div class="stat-value primary">{{ today_stats.total_active }}</div>
+            <div class="stat-value primary">{{ total_students|default:0 }}</div>
             <div class="stat-label">إجمالي الطلاب</div>
-            <div class="stat-subtitle">النشطون في النظام</div>
+            <div class="stat-subtitle">الطلاب النشطون في النظام</div>
         </div>
     </div>
-    
+
     <div class="col-lg-3 col-md-6">
         <div class="quick-stat info">
             <div class="stat-icon info">
-                <i class="fas fa-male"></i>
+                <i class="fas fa-edit"></i>
             </div>
-            <div class="stat-value info">{{ today_stats.total_male_today }}</div>
-            <div class="stat-label">ذكور جدد</div>
-            <div class="stat-subtitle">من طلاب اليوم</div>
+            <div class="stat-value info">{{ total_updated_today|default:0 }}</div>
+            <div class="stat-label">تحديثات اليوم</div>
+            <div class="stat-subtitle">طلاب تم تحديث بياناتهم</div>
         </div>
     </div>
-    
+
     <div class="col-lg-3 col-md-6">
         <div class="quick-stat warning">
             <div class="stat-icon warning">
-                <i class="fas fa-female"></i>
+                <i class="fas fa-venus-mars"></i>
             </div>
-            <div class="stat-value warning">{{ today_stats.total_female_today }}</div>
-            <div class="stat-label">إناث جدد</div>
-            <div class="stat-subtitle">من طلاب اليوم</div>
+            <div class="stat-value warning">
+                {{ male_new_today|default:0 }} / {{ female_new_today|default:0 }}
+            </div>
+            <div class="stat-label">ذكور / إناث جدد</div>
+            <div class="stat-subtitle">حسب تاريخ التقرير</div>
         </div>
     </div>
 </div>
@@ -471,67 +456,64 @@
 <!-- الإحصائيات المالية -->
 {% if user_role == 'SYSTEM_ADMIN' and financial_summary %}
 <div class="row">
-    <div class="col-lg-6 col-md-6">
+    <div class="col-lg-3 col-md-6">
+        <div class="quick-stat primary">
+            <div class="stat-icon primary">
+                <i class="fas fa-calculator"></i>
+            </div>
+            <div class="stat-value primary">{{ financial_summary.total_required|default:0|floatformat:0 }}</div>
+            <div class="stat-label">إجمالي المطلوب</div>
+            <div class="stat-subtitle">من الطلاب الجدد في اليوم</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
         <div class="quick-stat success">
             <div class="stat-icon success">
                 <i class="fas fa-money-bill-wave"></i>
             </div>
-            <div class="stat-value success">{{ financial_summary.expected_fees_from_new_students|floatformat:0 }}</div>
-            <div class="stat-label">مصروفات متوقعة</div>
-            <div class="stat-subtitle">من الطلاب الجدد اليوم</div>
+            <div class="stat-value success">{{ financial_summary.total_paid|default:0|floatformat:0 }}</div>
+            <div class="stat-label">إجمالي المدفوع</div>
+            <div class="stat-subtitle">لطلاب اليوم</div>
         </div>
     </div>
-    
-    <div class="col-lg-6 col-md-6">
+
+    <div class="col-lg-3 col-md-6">
+        <div class="quick-stat {% if financial_summary.total_owed > 0 %}danger{% else %}success{% endif %}">
+            <div class="stat-icon {% if financial_summary.total_owed > 0 %}danger{% else %}success{% endif %}">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="stat-value {% if financial_summary.total_owed > 0 %}danger{% else %}success{% endif %}">
+                {{ financial_summary.total_owed|default:0|floatformat:0 }}
+            </div>
+            <div class="stat-label">إجمالي المستحقات</div>
+            <div class="stat-subtitle">لطلاب اليوم</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
         <div class="quick-stat info">
             <div class="stat-icon info">
-                <i class="fas fa-calculator"></i>
+                <i class="fas fa-percentage"></i>
             </div>
-            <div class="stat-value info">{{ financial_summary.average_fee_per_new_student|floatformat:0 }}</div>
-            <div class="stat-label">متوسط المصروفات</div>
-            <div class="stat-subtitle">لكل طالب جديد</div>
+            <div class="stat-value info">{{ financial_summary.collection_percentage|default:0|floatformat:1 }}%</div>
+            <div class="stat-label">نسبة التحصيل</div>
+            <div class="stat-subtitle">لطلاب اليوم</div>
         </div>
     </div>
 </div>
 {% endif %}
 
-<!-- إحصائيات الأسبوع -->
-{% if week_stats %}
-<div class="report-section">
-    <div class="section-title">
-        <div class="section-icon">
-            <i class="fas fa-chart-bar"></i>
-        </div>
-        <span>إحصائيات الأسبوع</span>
-    </div>
-    
-    <div class="week-chart">
-        {% for day_stat in week_stats %}
-        <div class="week-bar">
-            <div class="bar-value">{{ day_stat.students_count }}</div>
-            
-            <div class="bar {% if day_stat.is_today %}today{% endif %}"  style="height: {{ day_stat.bar_height }}px;"></div>
-
-            <div class="bar-label">
-                {{ day_stat.day_name_ar }}<br>
-                <small>{{ day_stat.date|date:"d/m" }}</small>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-</div>
-{% endif %}
-
-<!-- الطلاب الجدد اليوم -->
+<!-- الطلاب الجدد -->
 {% if new_students_today %}
 <div class="report-section">
     <div class="section-title">
         <div class="section-icon">
             <i class="fas fa-user-plus"></i>
         </div>
-        <span>الطلاب المسجلون اليوم ({{ new_students_today|length }})</span>
+        <span>الطلاب المسجلون في هذا اليوم ({{ total_new_today }})</span>
     </div>
-    
+
     <div class="table-responsive">
         <table class="table table-daily">
             <thead>
@@ -542,19 +524,23 @@
                     <th>الصف الدراسي</th>
                     <th>الجنس</th>
                     <th>وقت التسجيل</th>
+                    <th>الإجراء</th>
                 </tr>
             </thead>
+
             <tbody>
                 {% for student in new_students_today %}
                 <tr>
                     <td>
                         <strong>{{ student.name }}</strong>
                     </td>
+
                     <td>
-                        <span class="font-monospace">{{ student.national_number }}</span>
+                        <span class="font-monospace ltr-value">{{ student.national_number }}</span>
                     </td>
+
                     <td>
-                        {% if student.grade_level %}
+                        {% if student.grade_level and student.grade_level.education_level %}
                             <span class="badge-custom" style="background: rgba(40, 167, 69, 0.1); color: #28a745;">
                                 {{ student.grade_level.education_level.name }}
                             </span>
@@ -562,6 +548,7 @@
                             <span class="text-muted">غير محدد</span>
                         {% endif %}
                     </td>
+
                     <td>
                         {% if student.grade_level %}
                             <span class="badge-custom" style="background: rgba(23, 162, 184, 0.1); color: #17a2b8;">
@@ -571,6 +558,7 @@
                             <span class="text-muted">غير محدد</span>
                         {% endif %}
                     </td>
+
                     <td>
                         {% if student.gender == 'M' %}
                             <span class="badge-custom" style="background: rgba(0, 123, 255, 0.1); color: #007bff;">
@@ -584,10 +572,80 @@
                             <span class="text-muted">غير محدد</span>
                         {% endif %}
                     </td>
+
                     <td>
                         <span class="student-time">
                             {{ student.created_at|date:"H:i" }}
                         </span>
+                    </td>
+
+                    <td>
+                        <a href="{% url 'students:student_detail' student.pk %}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-eye me-1"></i>عرض
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- الطلاب المحدثون -->
+{% if updated_students_today %}
+<div class="report-section">
+    <div class="section-title">
+        <div class="section-icon">
+            <i class="fas fa-edit"></i>
+        </div>
+        <span>طلاب تم تحديث بياناتهم في هذا اليوم ({{ total_updated_today }})</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-daily">
+            <thead>
+                <tr>
+                    <th>اسم الطالب</th>
+                    <th>الرقم القومي</th>
+                    <th>المرحلة / الصف</th>
+                    <th>وقت آخر تحديث</th>
+                    <th>الإجراء</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for student in updated_students_today %}
+                <tr>
+                    <td>
+                        <strong>{{ student.name }}</strong>
+                    </td>
+
+                    <td>
+                        <span class="font-monospace ltr-value">{{ student.national_number }}</span>
+                    </td>
+
+                    <td>
+                        {% if student.grade_level %}
+                            {% if student.grade_level.education_level %}
+                                {{ student.grade_level.education_level.name }} -
+                            {% endif %}
+                            {{ student.grade_level.name }}
+                        {% else %}
+                            <span class="text-muted">غير محدد</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        <span class="student-time">
+                            {{ student.updated_at|date:"H:i" }}
+                        </span>
+                    </td>
+
+                    <td>
+                        <a href="{% url 'students:student_detail' student.pk %}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-eye me-1"></i>عرض
+                        </a>
                     </td>
                 </tr>
                 {% endfor %}
@@ -598,7 +656,7 @@
 {% endif %}
 
 <!-- إحصائيات المراحل التعليمية لليوم -->
-{% if education_levels_today %}
+{% if education_level_stats %}
 <div class="report-section">
     <div class="section-title">
         <div class="section-icon">
@@ -606,20 +664,26 @@
         </div>
         <span>توزيع الطلاب الجدد حسب المراحل</span>
     </div>
-    
+
     <div class="row">
-        {% for level_stat in education_levels_today %}
+        {% for item in education_level_stats %}
         <div class="col-lg-4 col-md-6">
             <div class="student-card">
-                <div class="student-name">{{ level_stat.level.name }}</div>
+                <div class="student-name">{{ item.level.name }}</div>
+
                 <div class="student-details">
                     <div class="student-info">
                         <i class="fas fa-users me-1"></i>
-                        {{ level_stat.students_count }} طالب جديد
+                        {{ item.count }} طالب جديد
                     </div>
+
                     <div class="student-time">
-                        {{ level_stat.percentage }}%
+                        {{ item.percentage }}%
                     </div>
+                </div>
+
+                <div class="progress-custom mt-3">
+                    <div class="progress-bar-custom" style="width: {{ item.percentage }}%"></div>
                 </div>
             </div>
         </div>
@@ -628,22 +692,42 @@
 </div>
 {% endif %}
 
-<!-- إحصائيات الساعات -->
-{% if hourly_stats %}
+<!-- إحصائيات الصفوف الدراسية لليوم -->
+{% if grade_level_stats %}
 <div class="report-section">
     <div class="section-title">
         <div class="section-icon">
-            <i class="fas fa-clock"></i>
+            <i class="fas fa-chalkboard"></i>
         </div>
-        <span>توزيع التسجيل حسب الساعات</span>
+        <span>توزيع الطلاب الجدد حسب الصفوف</span>
     </div>
-    
-    <div class="hourly-stats">
-        {% for hour_stat in hourly_stats %}
-        <div class="hour-stat">
-            <div class="hour-time">{{ hour_stat.hour_range }}</div>
-            <div class="hour-count">{{ hour_stat.count }} طالب</div>
-            <small class="text-muted">{{ hour_stat.percentage }}%</small>
+
+    <div class="row">
+        {% for item in grade_level_stats %}
+        <div class="col-lg-4 col-md-6">
+            <div class="student-card">
+                <div class="student-name">
+                    {% if item.grade.education_level %}
+                        {{ item.grade.education_level.name }} -
+                    {% endif %}
+                    {{ item.grade.name }}
+                </div>
+
+                <div class="student-details">
+                    <div class="student-info">
+                        <i class="fas fa-users me-1"></i>
+                        {{ item.count }} طالب جديد
+                    </div>
+
+                    <div class="student-time">
+                        {{ item.percentage }}%
+                    </div>
+                </div>
+
+                <div class="progress-custom mt-3">
+                    <div class="progress-bar-custom" style="width: {{ item.percentage }}%"></div>
+                </div>
+            </div>
         </div>
         {% endfor %}
     </div>
@@ -651,15 +735,19 @@
 {% endif %}
 
 <!-- رسالة فارغة -->
-{% if today_stats.new_students == 0 %}
+{% if total_new_today == 0 and total_updated_today == 0 %}
 <div class="report-section">
     <div class="empty-state">
         <div class="empty-icon">
             <i class="fas fa-calendar-times"></i>
         </div>
-        <h5>لا توجد تسجيلات جديدة</h5>
-        <p class="text-muted">لم يتم تسجيل أي طلاب جدد في يوم {{ report_date|date:"d/m/Y" }}</p>
-        {% if is_today %}
+
+        <h5>لا توجد أنشطة في هذا اليوم</h5>
+        <p class="text-muted">
+            لم يتم تسجيل أو تحديث أي طلاب في يوم {{ selected_date|date:"d/m/Y" }}.
+        </p>
+
+        {% if selected_date_str == today_string %}
         <a href="{% url 'students:add_student' %}" class="btn btn-success">
             <i class="fas fa-user-plus me-2"></i>إضافة طالب جديد
         </a>
@@ -670,17 +758,20 @@
 
 <!-- أزرار الإجراءات -->
 <div class="text-center mt-4">
-    <div class="btn-group" role="group">
+    <div class="btn-group flex-wrap" role="group">
         <a href="{% url 'students:all_reports' %}" class="btn btn-outline-primary btn-lg">
             <i class="fas fa-chart-line me-2"></i>التقارير الشاملة
         </a>
+
         <a href="{% url 'students:report' %}" class="btn btn-outline-success btn-lg">
             <i class="fas fa-file-alt me-2"></i>التقرير العام
         </a>
+
         <button onclick="window.print()" class="btn btn-outline-info btn-lg">
             <i class="fas fa-print me-2"></i>طباعة التقرير
         </button>
-        {% if user_role in 'SYSTEM_ADMIN,SCHOOL_MANAGER,STUDENT_AFFAIRS' %}
+
+        {% if user_role == 'SYSTEM_ADMIN' or user_role == 'ADMIN' or user_role == 'STUDENT_AFFAIRS' %}
         <a href="{% url 'students:add_student' %}" class="btn btn-outline-warning btn-lg">
             <i class="fas fa-user-plus me-2"></i>إضافة طالب جديد
         </a>
@@ -693,34 +784,24 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // تحريك الرسوم البيانية
-    const bars = document.querySelectorAll('.bar');
-    bars.forEach((bar, index) => {
-        const height = bar.style.height;
-        bar.style.height = '10px';
+    const progressBars = document.querySelectorAll('.progress-bar-custom');
+
+    progressBars.forEach((bar, index) => {
+        const width = bar.style.width;
+        bar.style.width = '0%';
+
         setTimeout(() => {
-            bar.style.height = height;
+            bar.style.width = width;
         }, 200 + (index * 100));
     });
-    
-    // تحديث تلقائي للتقرير الحالي كل 5 دقائق
-    {% if is_today %}
-    setInterval(function() {
-        // يمكن إضافة تحديث AJAX هنا
-        console.log('تحديث تلقائي للتقرير اليومي');
-    }, 300000); // 5 دقائق
-    {% endif %}
-    
-    // تحسين تجربة الطباعة
+
     window.addEventListener('beforeprint', function() {
         document.body.classList.add('printing');
     });
-    
+
     window.addEventListener('afterprint', function() {
         document.body.classList.remove('printing');
     });
-    
-    console.log('تم تحميل التقرير اليومي بنجاح');
 });
 </script>
 {% endblock %}

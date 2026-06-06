@@ -1,0 +1,1010 @@
+<!-- treasury_management/templates/treasury_management/daily_closing.html -->
+{% extends 'treasury_management/base.html' %}
+{% load static %}
+
+{% block title %}قفل اليومية{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">قفل اليومية</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .daily-closing-page {
+        background: linear-gradient(135deg, rgba(13, 71, 161, 0.03), rgba(111, 66, 193, 0.04));
+        border-radius: 20px;
+        padding: 25px;
+        margin: -10px;
+        min-height: calc(100vh - 200px);
+    }
+
+    .hero-card {
+        background: linear-gradient(135deg, #6f42c1, #4527a0);
+        color: white;
+        border-radius: 22px;
+        padding: 30px;
+        margin-bottom: 28px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 12px 35px rgba(69, 39, 160, 0.22);
+    }
+
+    .hero-card::before {
+        content: '';
+        position: absolute;
+        top: -60%;
+        right: -50%;
+        width: 220%;
+        height: 220%;
+        background: radial-gradient(circle, rgba(255,255,255,0.12) 1px, transparent 1px);
+        background-size: 24px 24px;
+        animation: drift 26s linear infinite;
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .hero-title {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 12px;
+    }
+
+    .hero-icon {
+        width: 64px;
+        height: 64px;
+        background: rgba(255,255,255,0.18);
+        border: 2px solid rgba(255,255,255,0.28);
+        border-radius: 17px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.9rem;
+        backdrop-filter: blur(10px);
+    }
+
+    .hero-title h2 {
+        color: white;
+        margin: 0;
+        font-weight: 900;
+        font-size: 2rem;
+    }
+
+    .hero-subtitle {
+        color: rgba(255,255,255,.88);
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .hero-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .hero-btn {
+        border: 1px solid rgba(255,255,255,.35);
+        background: rgba(255,255,255,.14);
+        color: white;
+        border-radius: 13px;
+        padding: 11px 18px;
+        text-decoration: none;
+        font-weight: 800;
+        transition: all .3s ease;
+        backdrop-filter: blur(10px);
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+    .hero-btn:hover {
+        color: white;
+        background: rgba(255,255,255,.25);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(0,0,0,.12);
+    }
+
+    .hero-btn.solid {
+        background: white;
+        color: #4527a0;
+    }
+
+    .hero-btn.solid:hover {
+        color: #4527a0;
+        background: rgba(255,255,255,.94);
+    }
+
+    .hero-metrics {
+        margin-top: 22px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 14px;
+    }
+
+    .hero-metric {
+        background: rgba(255,255,255,.14);
+        border: 1px solid rgba(255,255,255,.22);
+        border-radius: 16px;
+        padding: 17px;
+        backdrop-filter: blur(10px);
+        text-align: center;
+    }
+
+    .hero-metric-label {
+        color: rgba(255,255,255,.82);
+        font-weight: 800;
+        margin-bottom: 6px;
+        font-size: .88rem;
+    }
+
+    .hero-metric-value {
+        color: white;
+        font-weight: 900;
+        font-size: 1.35rem;
+        font-family: 'Courier New', monospace;
+        line-height: 1.2;
+    }
+
+    .summary-strip {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .summary-box {
+        background: white;
+        border-radius: 18px;
+        padding: 21px;
+        box-shadow: 0 8px 22px rgba(0,0,0,0.08);
+        border-top: 5px solid var(--summary-color);
+        transition: all .3s ease;
+        text-align: center;
+    }
+
+    .summary-box:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 14px 30px rgba(0,0,0,0.12);
+    }
+
+    .summary-box.opening { --summary-color: #0d6efd; }
+    .summary-box.income { --summary-color: #198754; }
+    .summary-box.expense { --summary-color: #dc3545; }
+    .summary-box.closing { --summary-color: #6f42c1; }
+
+    .summary-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        background: color-mix(in srgb, var(--summary-color) 14%, white);
+        color: var(--summary-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 10px;
+        font-size: 1.25rem;
+    }
+
+    .summary-label {
+        color: #6c757d;
+        font-weight: 800;
+        font-size: .9rem;
+        margin-bottom: 5px;
+    }
+
+    .summary-value {
+        font-size: 1.45rem;
+        font-weight: 900;
+        color: var(--summary-color);
+        font-family: 'Courier New', monospace;
+    }
+
+    .filter-card,
+    .table-card,
+    .info-card {
+        background: white;
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        overflow: hidden;
+        margin-bottom: 25px;
+    }
+
+    .filter-card .card-body {
+        padding: 22px;
+    }
+
+    .section-header {
+        background: linear-gradient(135deg, #f8f9fa, #eef1f4);
+        padding: 18px 22px;
+        border-bottom: 1px solid #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .section-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 900;
+        color: #2c3e50;
+        margin: 0;
+        font-size: 1.1rem;
+    }
+
+    .title-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #6f42c1, #4527a0);
+        color: white;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table th {
+        background: #f8f9fa;
+        color: #2c3e50;
+        font-weight: 900;
+        border-bottom: 2px solid #e9ecef;
+        padding: 14px 12px;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .table td {
+        padding: 13px 12px;
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f3f5;
+    }
+
+    .table tbody tr:hover {
+        background: rgba(111, 66, 193, .035);
+    }
+
+    .amount {
+        font-weight: 900;
+        font-family: 'Courier New', monospace;
+        white-space: nowrap;
+        direction: ltr;
+        display: inline-block;
+    }
+
+    .amount-income { color: #198754; }
+    .amount-expense { color: #dc3545; }
+    .amount-purple { color: #6f42c1; }
+    .amount-blue { color: #0d6efd; }
+
+    .treasury-code {
+        font-family: monospace;
+        font-weight: 900;
+        color: white;
+        background: linear-gradient(135deg, #6f42c1, #4527a0);
+        padding: 5px 9px;
+        border-radius: 8px;
+        display: inline-block;
+    }
+
+    .btn-soft {
+        border: none;
+        border-radius: 12px;
+        padding: 10px 17px;
+        font-weight: 900;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        transition: all .3s ease;
+    }
+
+    .btn-soft:hover {
+        transform: translateY(-2px);
+        text-decoration: none;
+    }
+
+    .btn-purple-soft {
+        background: linear-gradient(135deg, #6f42c1, #4527a0);
+        color: white;
+    }
+
+    .btn-green-soft {
+        background: linear-gradient(135deg, #198754, #157347);
+        color: white;
+    }
+
+    .btn-red-soft {
+        background: linear-gradient(135deg, #dc3545, #b02a37);
+        color: white;
+    }
+
+    .btn-blue-soft {
+        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+        color: white;
+    }
+
+    .btn-purple-soft:hover,
+    .btn-green-soft:hover,
+    .btn-red-soft:hover,
+    .btn-blue-soft:hover {
+        color: white;
+    }
+
+    .closing-note {
+        border-radius: 16px;
+        padding: 16px;
+        background: linear-gradient(135deg, rgba(13, 202, 240, .09), rgba(13, 110, 253, .05));
+        border: 1px solid rgba(13, 202, 240, .18);
+        color: #0c5460;
+        font-weight: 700;
+    }
+
+    .empty-state {
+        padding: 45px 20px;
+        text-align: center;
+        color: #6c757d;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        color: #adb5bd;
+        margin-bottom: 15px;
+    }
+
+
+    /* ============================================================
+       تحسين تنسيق أعمدة جدولي قفل اليومية
+    ============================================================ */
+    .closing-table-wrap {
+        overflow-x: auto;
+        border-radius: 0 0 20px 20px;
+    }
+
+    .closing-main-table,
+    .recent-closing-table {
+        margin-bottom: 0;
+        table-layout: fixed;
+    }
+
+    .closing-main-table {
+        min-width: 1180px;
+    }
+
+    .recent-closing-table {
+        min-width: 980px;
+    }
+
+    .closing-main-table th,
+    .closing-main-table td,
+    .recent-closing-table th,
+    .recent-closing-table td {
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .closing-main-table .col-treasury,
+    .closing-main-table .treasury-cell,
+    .recent-closing-table .col-closed-by,
+    .recent-closing-table .closed-by-cell {
+        text-align: right !important;
+    }
+
+    .closing-main-table .col-treasury { width: 220px; }
+    .closing-main-table .col-opening { width: 125px; }
+    .closing-main-table .col-income { width: 145px; }
+    .closing-main-table .col-expense { width: 145px; }
+    .closing-main-table .col-net { width: 115px; }
+    .closing-main-table .col-closing { width: 135px; }
+    .closing-main-table .col-count { width: 95px; }
+    .closing-main-table .col-status { width: 145px; }
+    .closing-main-table .col-action { width: 175px; }
+
+    .recent-closing-table .col-date { width: 125px; }
+    .recent-closing-table .col-treasury { width: 170px; }
+    .recent-closing-table .col-opening { width: 135px; }
+    .recent-closing-table .col-income { width: 135px; }
+    .recent-closing-table .col-expense { width: 135px; }
+    .recent-closing-table .col-closing { width: 135px; }
+    .recent-closing-table .col-closed-by { width: 185px; }
+    .recent-closing-table .col-action { width: 95px; }
+
+    .treasury-cell-content {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 10px;
+        text-align: right;
+    }
+
+    .treasury-cell-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 13px;
+        background: linear-gradient(135deg, rgba(111, 66, 193, .14), rgba(69, 39, 160, .08));
+        color: #6f42c1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 42px;
+        font-size: 1.05rem;
+    }
+
+    .treasury-cell-info {
+        min-width: 0;
+        line-height: 1.45;
+    }
+
+    .treasury-cell-info strong,
+    .closed-by-cell strong {
+        display: block;
+        font-weight: 900;
+        color: #2c3e50;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .treasury-cell-info strong,
+    .treasury-cell-info small {
+        max-width: 145px;
+    }
+
+    .treasury-cell-info small,
+    .closed-by-cell small {
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .closed-by-cell small {
+        direction: ltr;
+        text-align: right;
+    }
+
+    .amount-box {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 105px;
+        padding: 7px 10px;
+        border-radius: 11px;
+        background: #f8f9fa;
+        border: 1px solid #eef1f4;
+    }
+
+    .amount-box.income { background: rgba(25, 135, 84, .08); border-color: rgba(25, 135, 84, .16); }
+    .amount-box.expense { background: rgba(220, 53, 69, .08); border-color: rgba(220, 53, 69, .16); }
+    .amount-box.blue { background: rgba(13, 110, 253, .08); border-color: rgba(13, 110, 253, .16); }
+    .amount-box.purple { background: rgba(111, 66, 193, .08); border-color: rgba(111, 66, 193, .16); }
+
+    .transfer-note {
+        display: block;
+        margin-top: 5px;
+        font-size: .72rem;
+        line-height: 1.35;
+        white-space: normal;
+    }
+
+    .count-badges,
+    .status-badges {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        flex-wrap: wrap;
+    }
+
+    .status-badges small {
+        width: 100%;
+        margin-top: 4px;
+        line-height: 1.35;
+    }
+
+    .close-action-box .form-control {
+        border-radius: 10px;
+        font-size: .78rem;
+        padding: 6px 8px;
+        text-align: right;
+    }
+
+    .close-action-box .btn-soft {
+        padding: 8px 12px;
+        width: 100%;
+        justify-content: center;
+        font-size: .82rem;
+    }
+
+    .recent-date-box {
+        font-weight: 900;
+        color: #2c3e50;
+        direction: ltr;
+        display: inline-block;
+        background: #f8f9fa;
+        border: 1px solid #eef1f4;
+        padding: 6px 10px;
+        border-radius: 10px;
+    }
+
+
+    @media print {
+        .no-print,
+        .sidebar,
+        .navbar,
+        .breadcrumb,
+        .filter-card,
+        .hero-actions,
+        .btn,
+        .modal {
+            display: none !important;
+        }
+
+        .daily-closing-page {
+            background: white;
+            padding: 0;
+            margin: 0;
+        }
+
+        .hero-card,
+        .summary-box,
+        .table-card {
+            box-shadow: none;
+            border: 1px solid #ddd;
+        }
+
+        .hero-card {
+            background: #f8f9fa !important;
+            color: #000 !important;
+        }
+
+        .hero-title h2,
+        .hero-subtitle,
+        .hero-metric-label,
+        .hero-metric-value {
+            color: #000 !important;
+        }
+    }
+
+    @media(max-width:768px) {
+        .daily-closing-page {
+            padding: 15px;
+            margin: -5px;
+        }
+
+        .hero-card {
+            padding: 22px;
+        }
+
+        .hero-card .d-flex {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 18px;
+        }
+
+        .hero-actions {
+            justify-content: flex-start;
+            width: 100%;
+        }
+
+        .hero-btn,
+        .btn-soft {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .hero-title h2 {
+            font-size: 1.55rem;
+        }
+    }
+
+    @keyframes drift {
+        0% { transform: rotate(0deg) translateX(0); }
+        100% { transform: rotate(360deg) translateX(20px); }
+    }
+
+    .fade-in {
+        animation: fadeInUp .75s ease-out;
+    }
+
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(24px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="daily-closing-page">
+
+    <div class="hero-card fade-in">
+        <div class="hero-content">
+            <div class="d-flex justify-content-between align-items-start gap-3">
+                <div>
+                    <div class="hero-title">
+                        <div class="hero-icon">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                        <div>
+                            <h2>قفل اليومية</h2>
+                            <p class="hero-subtitle">إغلاق حركة اليوم لكل خزنة وحفظ رصيد بداية ونهاية اليوم</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hero-actions no-print">
+                    <a href="{% url 'treasury_management:daily_summary' %}?date={{ selected_date|date:'Y-m-d' }}" class="hero-btn">
+                        <i class="fas fa-calendar-day"></i>
+                        الملخص اليومي
+                    </a>
+
+                    <button type="button" onclick="window.print()" class="hero-btn solid">
+                        <i class="fas fa-print"></i>
+                        طباعة
+                    </button>
+                </div>
+            </div>
+
+            <div class="hero-metrics">
+                <div class="hero-metric">
+                    <div class="hero-metric-label">تاريخ القفل</div>
+                    <div class="hero-metric-value">{{ selected_date|date:"Y-m-d" }}</div>
+                </div>
+
+                <div class="hero-metric">
+                    <div class="hero-metric-label">الخزائن المقفلة</div>
+                    <div class="hero-metric-value">{{ closed_count }} / {{ treasuries_count }}</div>
+                </div>
+
+                <div class="hero-metric">
+                    <div class="hero-metric-label">عمليات معلقة</div>
+                    <div class="hero-metric-value">{{ pending_count_total }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="summary-strip fade-in" style="animation-delay:.1s;">
+        <div class="summary-box opening">
+            <div class="summary-icon"><i class="fas fa-door-open"></i></div>
+            <div class="summary-label">إجمالي رصيد بداية اليوم</div>
+            <div class="summary-value">{{ total_opening|floatformat:2 }}</div>
+        </div>
+
+        <div class="summary-box income">
+            <div class="summary-icon"><i class="fas fa-arrow-down"></i></div>
+            <div class="summary-label">إجمالي الداخل</div>
+            <div class="summary-value">{{ total_income|floatformat:2 }}</div>
+        </div>
+
+        <div class="summary-box expense">
+            <div class="summary-icon"><i class="fas fa-arrow-up"></i></div>
+            <div class="summary-label">إجمالي الخارج</div>
+            <div class="summary-value">{{ total_expenses|floatformat:2 }}</div>
+        </div>
+
+        <div class="summary-box closing">
+            <div class="summary-icon"><i class="fas fa-lock"></i></div>
+            <div class="summary-label">إجمالي رصيد نهاية اليوم</div>
+            <div class="summary-value">{{ total_closing|floatformat:2 }}</div>
+        </div>
+    </div>
+
+    <div class="filter-card fade-in no-print" style="animation-delay:.15s;">
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-end">
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label fw-bold">تاريخ اليومية</label>
+                    <input type="date" name="date" class="form-control" value="{{ selected_date|date:'Y-m-d' }}">
+                </div>
+
+                <div class="col-lg-5 col-md-6">
+                    <label class="form-label fw-bold">ملاحظات عند قفل كل الخزائن</label>
+                    <input type="text" form="closeAllForm" name="notes" class="form-control" placeholder="مثال: تم مراجعة جميع عمليات اليوم">
+                </div>
+
+                <div class="col-lg-4 col-md-12">
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="submit" class="btn-soft btn-blue-soft">
+                            <i class="fas fa-search"></i>
+                            عرض التاريخ
+                        </button>
+
+                        <a href="?date={{ previous_date|date:'Y-m-d' }}" class="btn btn-outline-secondary fw-bold">
+                            <i class="fas fa-chevron-right"></i>
+                            السابق
+                        </a>
+
+                        <a href="?date={{ next_date|date:'Y-m-d' }}" class="btn btn-outline-secondary fw-bold">
+                            التالي
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </div>
+                </div>
+            </form>
+
+            <form method="POST" id="closeAllForm" class="mt-3" onsubmit="return confirm('هل تريد قفل يومية كل الخزائن المتاحة لهذا التاريخ؟')">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="close_all">
+                <input type="hidden" name="closing_date" value="{{ selected_date|date:'Y-m-d' }}">
+
+                <button type="submit" class="btn-soft btn-purple-soft">
+                    <i class="fas fa-lock"></i>
+                    قفل كل الخزائن المتاحة بتاريخ {{ selected_date|date:"Y-m-d" }}
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="table-card fade-in">
+        <div class="section-header">
+            <h5 class="section-title">
+                <span class="title-icon"><i class="fas fa-vault"></i></span>
+                حالة قفل الخزائن
+            </h5>
+
+            <span class="badge bg-primary">{{ total_transactions }} عملية معتمدة</span>
+        </div>
+
+        {% if treasury_summaries %}
+        <div class="table-responsive closing-table-wrap">
+            <table class="table table-hover closing-main-table">
+                <colgroup>
+                    <col class="col-treasury">
+                    <col class="col-opening">
+                    <col class="col-income">
+                    <col class="col-expense">
+                    <col class="col-net">
+                    <col class="col-closing">
+                    <col class="col-count">
+                    <col class="col-status">
+                    <col class="col-action">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th class="col-treasury">الخزنة</th>
+                        <th class="col-opening">رصيد البداية</th>
+                        <th class="col-income">الداخل</th>
+                        <th class="col-expense">الخارج</th>
+                        <th class="col-net">الصافي</th>
+                        <th class="col-closing">رصيد النهاية</th>
+                        <th class="col-count">العمليات</th>
+                        <th class="col-status">الحالة</th>
+                        <th class="col-action no-print">الإجراء</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for item in treasury_summaries %}
+                    <tr>
+                        <td class="treasury-cell">
+                            <div class="treasury-cell-content">
+                                <div class="treasury-cell-icon">
+                                    <i class="fas fa-vault"></i>
+                                </div>
+                                <div class="treasury-cell-info">
+                                    <span class="treasury-code">{{ item.treasury.code }}</span>
+                                    <strong>{{ item.treasury.name }}</strong>
+                                    {% if item.treasury.responsible_person %}
+                                        <small class="text-muted">
+                                            المسؤول: {{ item.treasury.responsible_person.get_full_name|default:item.treasury.responsible_person.username }}
+                                        </small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+
+                        <td class="text-center">
+                            <span class="amount-box blue"><span class="amount amount-blue">{{ item.numbers.opening_balance|floatformat:2 }}</span></span>
+                        </td>
+
+                        <td class="text-center">
+                            <span class="amount-box income"><span class="amount amount-income">{{ item.numbers.total_income|floatformat:2 }}</span></span>
+                            {% if item.numbers.incoming_transfer %}
+                            <br>
+                            <small class="text-muted transfer-note">تحويلات داخلة: {{ item.numbers.incoming_transfer|floatformat:2 }}</small>
+                            {% endif %}
+                        </td>
+
+                        <td class="text-center">
+                            <span class="amount-box expense"><span class="amount amount-expense">{{ item.numbers.total_expenses|floatformat:2 }}</span></span>
+                            {% if item.numbers.outgoing_transfer %}
+                            <br>
+                            <small class="text-muted transfer-note">تحويلات خارجة: {{ item.numbers.outgoing_transfer|floatformat:2 }}</small>
+                            {% endif %}
+                        </td>
+
+                        <td class="text-center">
+                            <span class="amount {% if item.numbers.net_change >= 0 %}amount-income{% else %}amount-expense{% endif %}">
+                                {{ item.numbers.net_change|floatformat:2 }}
+                            </span>
+                        </td>
+
+                        <td class="text-center">
+                            <span class="amount-box purple"><span class="amount amount-purple">{{ item.numbers.closing_balance|floatformat:2 }}</span></span>
+                        </td>
+
+                        <td>
+                            <div class="count-badges">
+                                <span class="badge bg-info">{{ item.numbers.transactions_count }}</span>
+                                {% if item.pending_count %}
+                                    <span class="badge bg-warning text-dark">{{ item.pending_count }} معلقة</span>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <td>
+                            <div class="status-badges">
+                                {% if item.existing_closing %}
+                                    <span class="badge bg-success">مغلقة</span>
+                                    <small class="text-muted">
+                                        {{ item.existing_closing.closed_at|date:"H:i" }}
+                                        {% if item.existing_closing.closed_by %}
+                                        بواسطة {{ item.existing_closing.closed_by.get_full_name|default:item.existing_closing.closed_by.username }}
+                                        {% endif %}
+                                    </small>
+                                {% elif item.pending_count %}
+                                    <span class="badge bg-warning text-dark">لا يمكن القفل</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">مفتوحة</span>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <td class="text-center no-print">
+                            {% if item.can_close %}
+                            <form method="POST" class="close-action-box" onsubmit="return confirm('هل تريد قفل يومية {{ item.treasury.name }}؟')">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="close_one">
+                                <input type="hidden" name="treasury_id" value="{{ item.treasury.id }}">
+                                <input type="hidden" name="closing_date" value="{{ selected_date|date:'Y-m-d' }}">
+
+                                <div class="input-group input-group-sm mb-2">
+                                    <input type="text" name="notes" class="form-control" placeholder="ملاحظات">
+                                </div>
+
+                                <button type="submit" class="btn-soft btn-green-soft">
+                                    <i class="fas fa-lock"></i>
+                                    قفل
+                                </button>
+                            </form>
+                            {% elif item.existing_closing %}
+                                <button type="button" class="btn btn-sm btn-outline-success" disabled>
+                                    <i class="fas fa-check"></i>
+                                    تم القفل
+                                </button>
+                            {% else %}
+                                <button type="button" class="btn btn-sm btn-outline-warning" disabled>
+                                    اعتمد العمليات أولًا
+                                </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+                <tfoot class="table-light">
+                    <tr>
+                        <th>الإجمالي</th>
+                        <th class="text-center amount amount-blue">{{ total_opening|floatformat:2 }}</th>
+                        <th class="text-center amount amount-income">{{ total_income|floatformat:2 }}</th>
+                        <th class="text-center amount amount-expense">{{ total_expenses|floatformat:2 }}</th>
+                        <th class="text-center amount {% if total_net >= 0 %}amount-income{% else %}amount-expense{% endif %}">{{ total_net|floatformat:2 }}</th>
+                        <th class="text-center amount amount-purple">{{ total_closing|floatformat:2 }}</th>
+                        <th class="text-center">{{ total_transactions }}</th>
+                        <th colspan="2"></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-vault"></i>
+            <h5>لا توجد خزائن نشطة</h5>
+            <p class="mb-0">أضف خزنة نشطة أولًا حتى تتمكن من قفل اليومية.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="info-card fade-in">
+        <div class="section-header">
+            <h5 class="section-title">
+                <span class="title-icon"><i class="fas fa-history"></i></span>
+                آخر اليوميات المقفلة
+            </h5>
+        </div>
+
+        {% if recent_closings %}
+        <div class="table-responsive closing-table-wrap">
+            <table class="table table-hover mb-0 recent-closing-table">
+                <colgroup>
+                    <col class="col-date">
+                    <col class="col-treasury">
+                    <col class="col-opening">
+                    <col class="col-income">
+                    <col class="col-expense">
+                    <col class="col-closing">
+                    <col class="col-closed-by">
+                    <col class="col-action">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th class="col-date">التاريخ</th>
+                        <th class="col-treasury">الخزنة</th>
+                        <th class="col-opening">بداية اليوم</th>
+                        <th class="col-income">الداخل</th>
+                        <th class="col-expense">الخارج</th>
+                        <th class="col-closing">نهاية اليوم</th>
+                        <th class="col-closed-by">أغلق بواسطة</th>
+                        <th class="col-action no-print">الإجراء</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for closing in recent_closings %}
+                    <tr>
+                        <td><span class="recent-date-box">{{ closing.closing_date|date:"Y-m-d" }}</span></td>
+                        <td class="treasury-cell"><strong>{{ closing.treasury.name }}</strong></td>
+                        <td><span class="amount-box blue"><span class="amount amount-blue">{{ closing.opening_balance|floatformat:2 }}</span></span></td>
+                        <td><span class="amount-box income"><span class="amount amount-income">{{ closing.total_income|floatformat:2 }}</span></span></td>
+                        <td><span class="amount-box expense"><span class="amount amount-expense">{{ closing.total_expenses|floatformat:2 }}</span></span></td>
+                        <td><span class="amount-box purple"><span class="amount amount-purple">{{ closing.closing_balance|floatformat:2 }}</span></span></td>
+                        <td class="closed-by-cell">
+                            {% if closing.closed_by %}
+                                <strong>{{ closing.closed_by.get_full_name|default:closing.closed_by.username }}</strong>
+                            {% else %}
+                                <strong>-</strong>
+                            {% endif %}
+                            <small class="text-muted">{{ closing.closed_at|date:"Y-m-d H:i" }}</small>
+                        </td>
+                        <td class="text-center no-print">
+                            {% if can_delete_records %}
+                            <form method="POST" action="{% url 'treasury_management:delete_daily_closing' closing.id %}" onsubmit="return confirm('هل تريد حذف قفل هذه اليومية؟')">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-lock-open"></i>
+            <h5>لا توجد يوميات مقفلة حتى الآن</h5>
+            <p class="mb-0">بعد قفل أي خزنة ستظهر هنا.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="closing-note fade-in">
+        <h6 class="fw-bold">
+            <i class="fas fa-info-circle me-1"></i>
+            ملاحظات مهمة عن قفل اليومية
+        </h6>
+        <ul class="mb-0">
+            <li>لا يمكن قفل خزنة في يوم يحتوي على عمليات معلقة غير معتمدة.</li>
+            <li>قفل اليومية لا يغيّر رصيد الخزنة، بل يحفظ لقطة رسمية للحركة والرصيد.</li>
+            <li>يتم إنشاء أو تحديث لقطة يومية في TreasurySnapshot عند القفل.</li>
+            <li>لو تمت إضافة عمليات بعد قفل اليوم، ستحتاج سياسة لاحقة لمنع ذلك أو فتح اليومية بصلاحية مدير.</li>
+        </ul>
+    </div>
+
+</div>
+{% endblock %}

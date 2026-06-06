@@ -1,6 +1,6 @@
 {% extends 'students/base.html' %}
 
-{% block title %}التقرير العام - {{ system_settings.school_name }}{% endblock %}
+{% block title %}التقرير العام - {{ system_settings.school_name|default:"نظام المدرسة" }}{% endblock %}
 {% block page_title %}التقرير العام{% endblock %}
 {% block page_icon %}<i class="fas fa-file-alt"></i>{% endblock %}
 {% block page_subtitle %}تقرير شامل عن حالة الطلاب والإحصائيات العامة{% endblock %}
@@ -21,6 +21,7 @@
         margin-bottom: 30px;
         position: relative;
         overflow: hidden;
+        box-shadow: 0 8px 22px rgba(40, 167, 69, 0.22);
     }
 
     .report-header::before {
@@ -34,23 +35,40 @@
         animation: float 15s linear infinite;
     }
 
+    @keyframes float {
+        0% { transform: translateX(-20px) translateY(-20px); }
+        100% { transform: translateX(20px) translateY(20px); }
+    }
+
     .report-header-content {
         position: relative;
         z-index: 2;
     }
 
-    .stats-container {
+    .stats-container,
+    .stages-section,
+    .financial-section {
         background: white;
         border-radius: 15px;
         padding: 25px;
         margin-bottom: 25px;
         box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+
+    .stats-container {
         border-right: 5px solid #28a745;
     }
 
-    .stats-title {
-        color: #28a745;
-        font-weight: 700;
+    .stages-section {
+        border-right: 5px solid #17a2b8;
+    }
+
+    .financial-section {
+        border-right: 5px solid #1757b8;
+    }
+
+    .section-title {
+        font-weight: 800;
         margin-bottom: 20px;
         display: flex;
         align-items: center;
@@ -59,10 +77,13 @@
         padding-bottom: 15px;
     }
 
-    .stats-icon {
+    .section-title.success { color: #28a745; }
+    .section-title.info { color: #17a2b8; }
+    .section-title.primary { color: #1757b8; }
+
+    .section-icon {
         width: 40px;
         height: 40px;
-        background: linear-gradient(135deg, #28a745, #20c997);
         color: white;
         border-radius: 10px;
         display: flex;
@@ -70,6 +91,18 @@
         justify-content: center;
         margin-left: 15px;
         font-size: 1.1rem;
+    }
+
+    .section-icon.success {
+        background: linear-gradient(135deg, #28a745, #20c997);
+    }
+
+    .section-icon.info {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+    }
+
+    .section-icon.primary {
+        background: linear-gradient(135deg, #1757b8, #17159c);
     }
 
     .stat-item {
@@ -82,6 +115,7 @@
         align-items: center;
         transition: all 0.3s ease;
         border-left: 4px solid transparent;
+        gap: 15px;
     }
 
     .stat-item:hover {
@@ -91,47 +125,56 @@
     }
 
     .stat-label {
-        font-weight: 600;
+        font-weight: 700;
         color: #495057;
     }
 
     .stat-value {
-        font-weight: 700;
+        font-weight: 800;
         font-size: 1.2rem;
         color: #28a745;
+        white-space: nowrap;
     }
 
-    .stages-section {
-        background: white;
-        border-radius: 15px;
-        padding: 25px;
-        margin-bottom: 25px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-        border-right: 5px solid #17a2b8;
+    .stat-value.primary { color: #1757b8; }
+    .stat-value.info { color: #17a2b8; }
+    .stat-value.warning { color: #ffc107; }
+    .stat-value.danger { color: #dc3545; }
+
+    .summary-card {
+        background: #f8f9fa;
+        border-radius: 14px;
+        padding: 20px;
+        text-align: center;
+        height: 100%;
+        border-top: 4px solid;
+        transition: all 0.3s ease;
     }
 
-    .stages-title {
-        color: #17a2b8;
+    .summary-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    }
+
+    .summary-card.primary { border-top-color: #1757b8; }
+    .summary-card.success { border-top-color: #28a745; }
+    .summary-card.warning { border-top-color: #ffc107; }
+    .summary-card.danger { border-top-color: #dc3545; }
+
+    .summary-number {
+        font-size: 2rem;
+        font-weight: 800;
+        margin-bottom: 6px;
+    }
+
+    .summary-number.primary { color: #1757b8; }
+    .summary-number.success { color: #28a745; }
+    .summary-number.warning { color: #ffc107; }
+    .summary-number.danger { color: #dc3545; }
+
+    .summary-label {
+        color: #6c757d;
         font-weight: 700;
-        margin-bottom: 20px;
-        display: flex;
-        align-items: center;
-        font-size: 1.3rem;
-        border-bottom: 2px solid #e9ecef;
-        padding-bottom: 15px;
-    }
-
-    .stages-icon {
-        width: 40px;
-        height: 40px;
-        background: linear-gradient(135deg, #17a2b8, #138496);
-        color: white;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-left: 15px;
-        font-size: 1.1rem;
     }
 
     .table-modern {
@@ -146,10 +189,11 @@
         background: linear-gradient(135deg, #17a2b8, #138496);
         color: white;
         border: none;
-        font-weight: 600;
-        padding: 20px 15px;
+        font-weight: 700;
+        padding: 16px 14px;
         vertical-align: middle;
         text-align: center;
+        white-space: nowrap;
     }
 
     .table-modern tbody tr {
@@ -159,7 +203,6 @@
 
     .table-modern tbody tr:hover {
         background: rgba(23, 162, 184, 0.05);
-        transform: scale(1.01);
     }
 
     .table-modern tbody tr:last-child {
@@ -167,14 +210,14 @@
     }
 
     .table-modern tbody td {
-        padding: 20px 15px;
+        padding: 16px 14px;
         vertical-align: middle;
         text-align: center;
         border: none;
     }
 
     .stage-name {
-        font-weight: 600;
+        font-weight: 700;
         color: #495057;
         text-align: right;
     }
@@ -184,36 +227,9 @@
         color: white;
         padding: 8px 15px;
         border-radius: 20px;
-        font-weight: 600;
+        font-weight: 700;
         display: inline-block;
         min-width: 60px;
-    }
-
-    .gender-stats {
-        display: flex;
-        gap: 10px;
-        justify-content: center;
-        align-items: center;
-    }
-
-    .gender-badge {
-        padding: 5px 12px;
-        border-radius: 15px;
-        font-weight: 600;
-        font-size: 0.85rem;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-    }
-
-    .gender-badge.male {
-        background: linear-gradient(135deg, #007bff, #0056b3);
-        color: white;
-    }
-
-    .gender-badge.female {
-        background: linear-gradient(135deg, #e83e8c, #d73384);
-        color: white;
     }
 
     .percentage-bar {
@@ -235,7 +251,7 @@
     .percentage-text {
         font-size: 0.85rem;
         color: #6c757d;
-        font-weight: 600;
+        font-weight: 700;
     }
 
     .quick-actions {
@@ -251,32 +267,19 @@
         margin: 5px;
         padding: 12px 25px;
         border-radius: 25px;
-        font-weight: 600;
+        font-weight: 700;
         text-decoration: none;
         transition: all 0.3s ease;
         border: none;
         position: relative;
         overflow: hidden;
-    }
-
-    .action-btn::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-        transition: left 0.5s;
-    }
-
-    .action-btn:hover::before {
-        left: 100%;
+        display: inline-block;
     }
 
     .action-btn:hover {
         transform: translateY(-2px);
         box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        text-decoration: none;
     }
 
     .btn-primary-custom {
@@ -299,56 +302,86 @@
         color: #212529;
     }
 
+    .btn-secondary-custom {
+        background: linear-gradient(135deg, #6c757d, #5a6268);
+        color: white;
+    }
+
+    .empty-state {
+        text-align: center;
+        color: #6c757d;
+        padding: 30px 10px;
+    }
+
     @media (max-width: 768px) {
         .report-header {
             padding: 20px;
         }
-        
+
         .stats-container,
-        .stages-section {
+        .stages-section,
+        .financial-section {
             padding: 20px;
         }
-        
-        .gender-stats {
-            flex-direction: column;
-        }
-        
+
         .action-btn {
             display: block;
             margin: 10px 0;
         }
-        
+
         .table-responsive {
             font-size: 0.9rem;
+        }
+
+        .stat-item {
+            flex-direction: column;
+            align-items: flex-start;
         }
     }
 
     @media print {
         .quick-actions,
-        .breadcrumb-container {
+        .breadcrumb,
+        .page-actions,
+        .navbar,
+        .sidebar {
             display: none !important;
         }
-        
+
         .report-header {
             background: #28a745 !important;
             -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .stats-container,
+        .stages-section,
+        .financial-section {
+            box-shadow: none !important;
         }
     }
 </style>
 {% endblock %}
 
 {% block content %}
+
+{% now "d F Y" as today_display %}
+
 <!-- Header التقرير -->
 <div class="report-header">
     <div class="report-header-content">
         <h1 class="display-4 mb-0">
             <i class="fas fa-file-alt me-3"></i>التقرير العام
         </h1>
-        <p class="lead mb-3">ملخص شامل لحالة الطلاب والإحصائيات العامة</p>
+
+        <p class="lead mb-3">
+            ملخص شامل لحالة الطلاب والإحصائيات العامة
+        </p>
+
         <div class="text-light">
-            <i class="fas fa-calendar me-2"></i>{{ report_date|date:"d F Y" }}
+            <i class="fas fa-calendar me-2"></i>{{ today_display }}
             <span class="mx-3">|</span>
-            <i class="fas fa-school me-2"></i>{{ system_settings.school_name|default:"المدرسة" }}
+            <i class="fas fa-school me-2"></i>{{ system_settings.school_name|default:"نظام المدرسة" }}
         </div>
     </div>
 </div>
@@ -357,139 +390,286 @@
     <!-- الإحصائيات العامة -->
     <div class="col-lg-6">
         <div class="stats-container">
-            <div class="stats-title">
-                <div class="stats-icon">
+            <div class="section-title success">
+                <div class="section-icon success">
                     <i class="fas fa-chart-bar"></i>
                 </div>
                 <span>الإحصائيات العامة</span>
             </div>
-            
+
             <div class="stat-item">
                 <span class="stat-label">
-                    <i class="fas fa-users me-2"></i>عدد الطلاب المسجلين:
+                    <i class="fas fa-users me-2"></i>عدد الطلاب النشطين:
                 </span>
-                <span class="stat-value">{{ stats.registered_students }}</span>
+                <span class="stat-value">{{ total_students|default:0 }}</span>
             </div>
-            
+
             <div class="stat-item">
                 <span class="stat-label">
                     <i class="fas fa-male me-2"></i>إجمالي الطلاب الذكور:
                 </span>
-                <span class="stat-value">{{ stats.total_male_students }}</span>
+                <span class="stat-value info">{{ male_students|default:0 }}</span>
             </div>
-            
+
             <div class="stat-item">
                 <span class="stat-label">
                     <i class="fas fa-female me-2"></i>إجمالي الطالبات الإناث:
                 </span>
-                <span class="stat-value">{{ stats.total_female_students }}</span>
+                <span class="stat-value warning">{{ female_students|default:0 }}</span>
             </div>
-            
+
             <div class="stat-item">
                 <span class="stat-label">
-                    <i class="fas fa-calendar-plus me-2"></i>طلاب جدد اليوم:
+                    <i class="fas fa-exclamation-triangle me-2"></i>طلاب بدون صف دراسي:
                 </span>
-                <span class="stat-value">{{ stats.new_today }}</span>
+                <span class="stat-value danger">{{ students_without_grade|default:0 }}</span>
             </div>
-            
+
             <div class="stat-item">
                 <span class="stat-label">
-                    <i class="fas fa-calendar-week me-2"></i>طلاب جدد هذا الأسبوع:
+                    <i class="fas fa-percentage me-2"></i>نسبة الذكور:
                 </span>
-                <span class="stat-value">{{ stats.new_this_week }}</span>
+                <span class="stat-value primary">
+                    {% if total_students %}
+                        {% widthratio male_students total_students 100 %}%
+                    {% else %}
+                        0%
+                    {% endif %}
+                </span>
             </div>
-            
+
             <div class="stat-item">
                 <span class="stat-label">
-                    <i class="fas fa-calendar-alt me-2"></i>طلاب جدد هذا الشهر:
+                    <i class="fas fa-percentage me-2"></i>نسبة الإناث:
                 </span>
-                <span class="stat-value">{{ stats.new_this_month }}</span>
-            </div>
-            
-            {% if user_role in 'SYSTEM_ADMIN,SCHOOL_MANAGER' %}
-            <div class="stat-item">
-                <span class="stat-label">
-                    <i class="fas fa-coins me-2"></i>إجمالي الأقساط المدفوعة:
+                <span class="stat-value primary">
+                    {% if total_students %}
+                        {% widthratio female_students total_students 100 %}%
+                    {% else %}
+                        0%
+                    {% endif %}
                 </span>
-                <span class="stat-value">{{ stats.total_paid_installments|floatformat:0 }}</span>
             </div>
-            
-            <div class="stat-item">
-                <span class="stat-label">
-                    <i class="fas fa-exclamation-triangle me-2"></i>عدد الطلاب المتأخرين:
-                </span>
-                <span class="stat-value text-warning">{{ stats.total_unpaid_students }}</span>
-            </div>
-            
-            <div class="stat-item">
-                <span class="stat-label">
-                    <i class="fas fa-calculator me-2"></i>إجمالي المصروفات:
-                </span>
-                <span class="stat-value">{{ stats.total_tuitions|floatformat:0 }}</span>
-            </div>
-            {% endif %}
         </div>
     </div>
-    
-    
 
-    <!-- إحصائيات المراحل -->
+    <!-- الملخص المالي -->
     <div class="col-lg-6">
-        <div class="stages-section">
-            <div class="stages-title">
-                <div class="stages-icon">
-                    <i class="fas fa-layer-group"></i>
+        {% if user_role == 'SYSTEM_ADMIN' and financial_summary %}
+        <div class="financial-section">
+            <div class="section-title primary">
+                <div class="section-icon primary">
+                    <i class="fas fa-coins"></i>
                 </div>
-                <span>إحصائيات المراحل</span>
+                <span>الملخص المالي</span>
             </div>
-            
-            <div class="table-responsive">
-                <table class="table table-modern">
-                    <thead>
-                        <tr>
-                            <th>المرحلة التعليمية</th>
-                            <th>عدد الطلاب</th>
-                            <th>النسبة</th>
-                            <th>التوزيع</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for stage_stat in stage_stats %}
-                        <tr>
-                            <td class="stage-name">{{ stage_stat.stage.name }}</td>
-                            <td>
-                                <span class="student-count">{{ stage_stat.total_stage_students }}</span>
-                            </td>
-                            <td>
-                                <div class="percentage-bar">
-                                    <div class="percentage-fill" style="width: {{ stage_stat.percentage }}%"></div>
-                                </div>
-                                <div class="percentage-text">{{ stage_stat.percentage }}%</div>
-                            </td>
-                            <td>
-                                <div class="gender-stats">
-                                    <span class="gender-badge male">
-                                        <i class="fas fa-male"></i>
-                                        {{ stage_stat.male_students }}
-                                    </span>
-                                    <span class="gender-badge female">
-                                        <i class="fas fa-female"></i>
-                                        {{ stage_stat.female_students }}
-                                    </span>
-                                </div>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="4" class="text-center text-muted">
-                                <i class="fas fa-inbox me-2"></i>لا توجد مراحل تعليمية مسجلة
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="summary-card primary">
+                        <div class="summary-number primary">
+                            {{ financial_summary.total_required|default:0|floatformat:0 }}
+                        </div>
+                        <div class="summary-label">إجمالي المطلوب</div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="summary-card success">
+                        <div class="summary-number success">
+                            {{ financial_summary.total_paid|default:0|floatformat:0 }}
+                        </div>
+                        <div class="summary-label">إجمالي المدفوع</div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="summary-card {% if financial_summary.total_owed > 0 %}danger{% else %}success{% endif %}">
+                        <div class="summary-number {% if financial_summary.total_owed > 0 %}danger{% else %}success{% endif %}">
+                            {{ financial_summary.total_owed|default:0|floatformat:0 }}
+                        </div>
+                        <div class="summary-label">إجمالي المستحقات</div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="summary-card warning">
+                        <div class="summary-number warning">
+                            {{ financial_summary.collection_percentage|default:0|floatformat:1 }}%
+                        </div>
+                        <div class="summary-label">نسبة التحصيل</div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="summary-card success">
+                        <div class="summary-number success">
+                            {{ financial_summary.paid_students|default:0 }}
+                        </div>
+                        <div class="summary-label">طلاب مسددون بالكامل</div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="summary-card danger">
+                        <div class="summary-number danger">
+                            {{ financial_summary.owing_students|default:0 }}
+                        </div>
+                        <div class="summary-label">طلاب عليهم مستحقات</div>
+                    </div>
+                </div>
             </div>
         </div>
+        {% else %}
+        <div class="stats-container">
+            <div class="section-title success">
+                <div class="section-icon success">
+                    <i class="fas fa-info-circle"></i>
+                </div>
+                <span>معلومات التقرير</span>
+            </div>
+
+            <div class="stat-item">
+                <span class="stat-label">
+                    <i class="fas fa-calendar-alt me-2"></i>العام الدراسي:
+                </span>
+                <span class="stat-value">
+                    {{ current_year.name|default:"غير محدد" }}
+                </span>
+            </div>
+
+            <div class="stat-item">
+                <span class="stat-label">
+                    <i class="fas fa-layer-group me-2"></i>عدد المراحل المعروضة:
+                </span>
+                <span class="stat-value">
+                    {{ education_level_stats|length }}
+                </span>
+            </div>
+
+            <div class="stat-item">
+                <span class="stat-label">
+                    <i class="fas fa-chalkboard me-2"></i>عدد الصفوف المعروضة:
+                </span>
+                <span class="stat-value">
+                    {{ grade_level_stats|length }}
+                </span>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- إحصائيات المراحل -->
+<div class="stages-section">
+    <div class="section-title info">
+        <div class="section-icon info">
+            <i class="fas fa-layer-group"></i>
+        </div>
+        <span>إحصائيات المراحل التعليمية</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-modern">
+            <thead>
+                <tr>
+                    <th>المرحلة التعليمية</th>
+                    <th>عدد الطلاب</th>
+                    <th>النسبة</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for item in education_level_stats %}
+                <tr>
+                    <td class="stage-name">
+                        {{ item.level.name }}
+                    </td>
+
+                    <td>
+                        <span class="student-count">{{ item.count }}</span>
+                    </td>
+
+                    <td>
+                        <div class="percentage-bar">
+                            <div class="percentage-fill" style="width: {{ item.percentage }}%"></div>
+                        </div>
+                        <div class="percentage-text">{{ item.percentage }}%</div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3">
+                        <div class="empty-state">
+                            <i class="fas fa-inbox me-2"></i>
+                            لا توجد مراحل تعليمية بها طلاب
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- إحصائيات الصفوف -->
+<div class="stages-section">
+    <div class="section-title info">
+        <div class="section-icon info">
+            <i class="fas fa-chalkboard"></i>
+        </div>
+        <span>إحصائيات الصفوف الدراسية</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-modern">
+            <thead>
+                <tr>
+                    <th>المرحلة التعليمية</th>
+                    <th>الصف الدراسي</th>
+                    <th>عدد الطلاب</th>
+                    <th>النسبة</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for item in grade_level_stats %}
+                <tr>
+                    <td>
+                        {% if item.grade.education_level %}
+                            {{ item.grade.education_level.name }}
+                        {% else %}
+                            <span class="text-muted">غير محدد</span>
+                        {% endif %}
+                    </td>
+
+                    <td class="stage-name">
+                        {{ item.grade.name }}
+                    </td>
+
+                    <td>
+                        <span class="student-count">{{ item.count }}</span>
+                    </td>
+
+                    <td>
+                        <div class="percentage-bar">
+                            <div class="percentage-fill" style="width: {{ item.percentage }}%"></div>
+                        </div>
+                        <div class="percentage-text">{{ item.percentage }}%</div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4">
+                        <div class="empty-state">
+                            <i class="fas fa-inbox me-2"></i>
+                            لا توجد صفوف دراسية بها طلاب
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 
@@ -498,28 +678,32 @@
     <h5 class="mb-4">
         <i class="fas fa-bolt me-2"></i>إجراءات سريعة
     </h5>
-    
+
     <a href="{% url 'students:all_reports' %}" class="action-btn btn-primary-custom">
         <i class="fas fa-chart-line me-2"></i>التقارير الشاملة
     </a>
-    
+
     <a href="{% url 'students:daily_report' %}" class="action-btn btn-success-custom">
         <i class="fas fa-calendar-day me-2"></i>التقرير اليومي
     </a>
-    
+
     <a href="{% url 'students:student_dashboard' %}" class="action-btn btn-info-custom">
         <i class="fas fa-tachometer-alt me-2"></i>لوحة الإحصائيات
     </a>
-    
+
     <button onclick="window.print()" class="action-btn btn-warning-custom">
         <i class="fas fa-print me-2"></i>طباعة التقرير
     </button>
-    
+
     {% if user_role == 'SYSTEM_ADMIN' %}
     <a href="{% url 'students:export_students' %}" class="action-btn btn-primary-custom">
         <i class="fas fa-download me-2"></i>تصدير البيانات
     </a>
     {% endif %}
+
+    <a href="{% url 'students:student_list' %}" class="action-btn btn-secondary-custom">
+        <i class="fas fa-list me-2"></i>قائمة الطلاب
+    </a>
 </div>
 
 {% endblock %}
@@ -527,38 +711,24 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // تحريك شرائط النسب المئوية
     const progressBars = document.querySelectorAll('.percentage-fill');
+
     progressBars.forEach(bar => {
         const width = bar.style.width;
         bar.style.width = '0%';
+
         setTimeout(() => {
             bar.style.width = width;
         }, 500);
     });
-    
-    // تأثيرات hover للجداول
-    const tableRows = document.querySelectorAll('.table-modern tbody tr');
-    tableRows.forEach(row => {
-        row.addEventListener('mouseenter', function() {
-            this.style.backgroundColor = 'rgba(23, 162, 184, 0.1)';
-        });
-        
-        row.addEventListener('mouseleave', function() {
-            this.style.backgroundColor = '';
-        });
-    });
-    
-    // تحسين تجربة الطباعة
+
     window.addEventListener('beforeprint', function() {
         document.body.classList.add('printing');
     });
-    
+
     window.addEventListener('afterprint', function() {
         document.body.classList.remove('printing');
     });
-    
-    console.log('تم تحميل صفحة التقرير العام بنجاح');
 });
 </script>
 {% endblock %}

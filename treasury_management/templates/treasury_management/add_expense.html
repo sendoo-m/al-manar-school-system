@@ -22,7 +22,6 @@
         min-height: calc(100vh - 200px);
     }
 
-    /* التخطيط الجانبي */
     .expense-layout {
         display: flex;
         gap: 25px;
@@ -95,7 +94,6 @@
         color: white;
     }
 
-    /* أقسام النموذج */
     .form-section {
         background: rgba(248, 249, 250, 0.8);
         border: 2px solid rgba(231, 76, 60, 0.1);
@@ -152,7 +150,6 @@
     .section-icon.info { background: linear-gradient(135deg, #3498db, #2980b9); }
     .section-icon.warning { background: linear-gradient(135deg, #f39c12, #e67e22); }
 
-    /* الحقول */
     .form-label {
         color: var(--text-primary);
         font-weight: 600;
@@ -204,9 +201,20 @@
         color: #17a2b8;
     }
 
-    /* ===================================
-       🎨 ENHANCED PREVIEW STYLES
-    =================================== */
+    .errorlist {
+        color: #dc3545;
+        list-style: none;
+        padding: 0;
+        margin: 8px 0 0;
+        font-size: 0.9rem;
+        font-weight: 700;
+    }
+
+    .field-error {
+        border-color: #dc3545 !important;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.12) !important;
+    }
+
     .preview-card {
         background: white;
         border: none;
@@ -246,10 +254,7 @@
         animation: drift 25s linear infinite;
     }
 
-    .preview-header-content {
-        position: relative;
-        z-index: 2;
-    }
+    .preview-header-content { position: relative; z-index: 2; }
 
     .preview-icon {
         width: 60px;
@@ -280,11 +285,8 @@
         color: white;
     }
 
-    .preview-content {
-        padding: 25px 20px;
-    }
+    .preview-content { padding: 25px 20px; }
 
-    /* مؤشر حالة النموذج */
     .preview-status {
         background: linear-gradient(135deg, #f8f9fa, #e9ecef);
         border-radius: 15px;
@@ -307,9 +309,7 @@
         font-size: 0.9rem;
     }
 
-    .status-text.active {
-        color: #2ecc71;
-    }
+    .status-text.active { color: #2ecc71; }
 
     .completion-bar {
         width: 100%;
@@ -328,10 +328,7 @@
         width: 0%;
     }
 
-    /* أقسام المعاينة */
-    .preview-section {
-        margin-bottom: 20px;
-    }
+    .preview-section { margin-bottom: 20px; }
 
     .preview-section-title {
         font-weight: 700;
@@ -466,7 +463,6 @@
         overflow: hidden;
     }
 
-    /* مؤشر المخاطر */
     .risk-indicator {
         background: white;
         border-radius: 10px;
@@ -507,7 +503,6 @@
         font-size: 1rem;
     }
 
-    /* أزرار المعاينة */
     .preview-actions {
         padding: 15px 20px;
         background: #f8f9fa;
@@ -543,7 +538,6 @@
         box-shadow: none;
     }
 
-    /* رسائل التحذير */
     .alert {
         border: none;
         border-radius: 12px;
@@ -584,7 +578,6 @@
         border-right: 4px solid #6c757d;
     }
 
-    /* الأزرار */
     .form-footer {
         background: linear-gradient(135deg, #f8f9fa, #e9ecef);
         padding: 20px 30px;
@@ -639,7 +632,6 @@
         color: white;
     }
 
-    /* بطاقات الدليل */
     .guide-card {
         border: none;
         border-radius: 15px;
@@ -672,27 +664,11 @@
         font-size: 1.1rem;
     }
 
-    .border-danger .card-header {
-        background: linear-gradient(135deg, #e74c3c, #c0392b);
-        color: white;
-    }
+    .border-danger .card-header { background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; }
+    .border-warning .card-header { background: linear-gradient(135deg, #f39c12, #e67e22); color: white; }
+    .border-info .card-header { background: linear-gradient(135deg, #17a2b8, #138496); color: white; }
+    .border-success .card-header { background: linear-gradient(135deg, #27ae60, #229954); color: white; }
 
-    .border-warning .card-header {
-        background: linear-gradient(135deg, #f39c12, #e67e22);
-        color: white;
-    }
-
-    .border-info .card-header {
-        background: linear-gradient(135deg, #17a2b8, #138496);
-        color: white;
-    }
-
-    .border-success .card-header {
-        background: linear-gradient(135deg, #27ae60, #229954);
-        color: white;
-    }
-
-    /* الجداول */
     .table {
         font-size: 0.9rem;
         margin-bottom: 0;
@@ -712,9 +688,7 @@
         color: var(--text-primary);
     }
 
-    .table-hover tbody tr:hover {
-        background-color: rgba(231, 76, 60, 0.05);
-    }
+    .table-hover tbody tr:hover { background-color: rgba(231, 76, 60, 0.05); }
 
     .badge {
         font-weight: 600;
@@ -723,7 +697,6 @@
         font-size: 0.8rem;
     }
 
-    /* سير العمل */
     .workflow-step {
         text-align: center;
         margin-bottom: 20px;
@@ -743,9 +716,7 @@
         transition: all 0.3s ease;
     }
 
-    .workflow-step:hover .workflow-icon {
-        transform: scale(1.05);
-    }
+    .workflow-step:hover .workflow-icon { transform: scale(1.05); }
 
     .workflow-step h6 {
         color: var(--text-primary);
@@ -758,7 +729,6 @@
         font-weight: 500;
     }
 
-    /* الانيميشن */
     @keyframes float {
         0%, 100% { transform: translateX(0) translateY(0); }
         25% { transform: translateX(3px) translateY(-3px); }
@@ -782,32 +752,16 @@
         75% { transform: translateX(0px); }
     }
 
-    .fade-in {
-        animation: fadeInUp 0.8s ease-out;
-    }
+    .fade-in { animation: fadeInUp 0.8s ease-out; }
 
     @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(30px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
-    /* الاستجابة */
     @media (max-width: 1200px) {
-        .expense-layout {
-            flex-direction: column;
-        }
-        
-        .form-wrapper,
-        .preview-wrapper {
-            flex: none;
-        }
-        
+        .expense-layout { flex-direction: column; }
+        .form-wrapper, .preview-wrapper { flex: none; }
         .preview-card {
             position: static;
             max-height: none;
@@ -821,14 +775,8 @@
             margin: -5px;
         }
 
-        .expense-header {
-            padding: 20px 25px;
-        }
-
-        .expense-header h4 {
-            font-size: 1.4rem;
-        }
-
+        .expense-header { padding: 20px 25px; }
+        .expense-header h4 { font-size: 1.4rem; }
         .form-section {
             padding: 20px;
             margin-bottom: 20px;
@@ -840,33 +788,21 @@
             font-size: 0.9rem;
         }
 
-        .form-footer {
-            padding: 15px 20px;
-        }
-
+        .form-footer { padding: 15px 20px; }
         .btn {
             width: 100%;
             margin-bottom: 10px;
         }
 
-        .preview-content {
-            padding: 20px 15px;
-        }
-        
+        .preview-content { padding: 20px 15px; }
         .preview-icon {
             width: 50px;
             height: 50px;
             font-size: 1.2rem;
         }
-        
-        .preview-item {
-            padding: 12px;
-        }
 
-        .workflow-step {
-            margin-bottom: 15px;
-        }
-
+        .preview-item { padding: 12px; }
+        .workflow-step { margin-bottom: 15px; }
         .workflow-icon {
             width: 50px;
             height: 50px;
@@ -875,10 +811,8 @@
     }
 </style>
 
-<!-- محتوى الصفحة -->
 <div class="expense-container">
     <div class="expense-layout">
-        <!-- النموذج -->
         <div class="form-wrapper">
             <div class="expense-card fade-in">
                 <div class="expense-header">
@@ -890,12 +824,18 @@
                         <p>تسجيل المصروفات اليومية والإدارية للمدرسة</p>
                     </div>
                 </div>
-                
-                <form method="POST" id="expenseForm">
+
+                <form method="POST" id="expenseForm" novalidate>
                     {% csrf_token %}
                     <div class="card-body" style="padding: 30px;">
-                        
-                        <!-- قسم التصنيف والنوع -->
+
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
+
                         <div class="form-section">
                             <div class="section-title">
                                 <div class="section-icon">
@@ -908,52 +848,28 @@
                                     <div class="mb-3">
                                         <label class="form-label">
                                             <span class="text-danger">*</span>
-                                            تصنيف المصروف
+                                            {{ form.category.label }}
                                         </label>
-                                        <select class="form-select" name="category" id="categorySelect" required>
-                                            <option value="">اختر التصنيف المناسب</option>
-                                            {% for category in expense_categories %}
-                                            <option value="{{ category.id }}" 
-                                                    data-account="{{ category.account.name }}"
-                                                    data-budget="{{ category.monthly_budget|default:0 }}">
-                                                💰 {{ category.name }}
-                                                {% if category.monthly_budget %}
-                                                - ميزانية: {{ category.monthly_budget|floatformat:0 }} ج.م
-                                                {% endif %}
-                                            </option>
-                                            {% endfor %}
-                                        </select>
+                                        {{ form.category }}
+                                        {{ form.category.errors }}
                                         <div class="form-text" id="accountInfo">اختر التصنيف المناسب للمصروف</div>
                                     </div>
                                 </div>
-                                
+
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label class="form-label">
                                             <span class="text-danger">*</span>
-                                            نوع المصروف
+                                            {{ form.expense_type.label }}
                                         </label>
-                                        <select class="form-select" name="expense_type" required>
-                                            <option value="">اختر النوع</option>
-                                            <option value="SALARIES">👥 مرتبات وأجور</option>
-                                            <option value="UTILITIES">⚡ مرافق (كهرباء، ماء، غاز)</option>
-                                            <option value="SUPPLIES">📝 مستلزمات ومواد</option>
-                                            <option value="MAINTENANCE">🔧 صيانة وإصلاح</option>
-                                            <option value="MARKETING">📢 دعاية وتسويق</option>
-                                            <option value="TRANSPORTATION">🚌 نقل ومواصلات</option>
-                                            <option value="FOOD">🍽️ تغذية وطعام</option>
-                                            <option value="MEDICAL">💊 طبي وصحي</option>
-                                            <option value="CLEANING">🧹 نظافة وتعقيم</option>
-                                            <option value="EDUCATION">📚 تعليمي وتدريبي</option>
-                                            <option value="OTHER">📋 أخرى</option>
-                                        </select>
+                                        {{ form.expense_type }}
+                                        {{ form.expense_type.errors }}
                                         <div class="form-text">نوع المصروف لتنظيم الإحصائيات</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- قسم الوصف -->
                         <div class="form-section">
                             <div class="section-title">
                                 <div class="section-icon success">
@@ -964,15 +880,14 @@
                             <div class="mb-3">
                                 <label class="form-label">
                                     <span class="text-danger">*</span>
-                                    وصف تفصيلي للمصروف
+                                    {{ form.description.label }}
                                 </label>
-                                <textarea class="form-control" name="description" rows="3" required 
-                                          placeholder="مثال: دفع فاتورة كهرباء شهر أكتوبر 2025 - مبنى المدرسة الرئيسي"></textarea>
-                                <div class="form-text">وصف مفصل وواضح للمصروف (سيظهر في التقارير)</div>
+                                {{ form.description }}
+                                {{ form.description.errors }}
+                                <div class="form-text">وصف مفصل وواضح للمصروف، سيظهر في التقارير</div>
                             </div>
                         </div>
 
-                        <!-- قسم المبلغ والخزنة -->
                         <div class="form-section">
                             <div class="section-title">
                                 <div class="section-icon info">
@@ -985,39 +900,32 @@
                                     <div class="mb-3">
                                         <label class="form-label">
                                             <span class="text-danger">*</span>
-                                            المبلغ
+                                            {{ form.amount.label }}
                                         </label>
                                         <div class="input-group">
-                                            <input type="number" class="form-control" name="amount" id="amountInput"
-                                                   min="0.01" step="0.01" required placeholder="0.00">
+                                            {{ form.amount }}
                                             <span class="input-group-text">ج.م</span>
                                         </div>
+                                        {{ form.amount.errors }}
                                         <div class="invalid-feedback" id="amountError"></div>
                                         <div class="form-text" id="budgetInfo">مبلغ المصروف بالجنيه المصري</div>
                                     </div>
                                 </div>
-                                
+
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label class="form-label">
                                             <span class="text-danger">*</span>
-                                            الخزنة
+                                            {{ form.treasury.label }}
                                         </label>
-                                        <select class="form-select" name="treasury" id="treasurySelect" required>
-                                            <option value="">اختر الخزنة</option>
-                                            {% for treasury in treasuries %}
-                                            <option value="{{ treasury.id }}" data-balance="{{ treasury.current_balance }}">
-                                                🏦 {{ treasury.name }} - الرصيد: {{ treasury.current_balance|floatformat:2 }} ج.م
-                                            </option>
-                                            {% endfor %}
-                                        </select>
+                                        {{ form.treasury }}
+                                        {{ form.treasury.errors }}
                                         <div class="form-text" id="treasuryBalance">اختر الخزنة التي سيتم الخصم منها</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- قسم التفاصيل الإضافية -->
                         <div class="form-section">
                             <div class="section-title">
                                 <div class="section-icon warning">
@@ -1028,59 +936,56 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label class="form-label">اسم المورد أو الجهة</label>
-                                        <input type="text" class="form-control" name="vendor_name" 
-                                               placeholder="مثال: شركة الكهرباء">
+                                        <label class="form-label">{{ form.vendor_name.label }}</label>
+                                        {{ form.vendor_name }}
+                                        {{ form.vendor_name.errors }}
                                         <div class="form-text">الجهة المدفوع لها المبلغ</div>
                                     </div>
                                 </div>
-                                
+
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label class="form-label">رقم الفاتورة أو الإيصال</label>
-                                        <input type="text" class="form-control" name="invoice_number" 
-                                               placeholder="مثال: INV-2025-001">
+                                        <label class="form-label">{{ form.invoice_number.label }}</label>
+                                        {{ form.invoice_number }}
+                                        {{ form.invoice_number.errors }}
                                         <div class="form-text">رقم مرجعي للفاتورة أو الإيصال</div>
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label class="form-label">تاريخ المصروف</label>
-                                        <input type="date" class="form-control" name="expense_date" 
-                                               value="{{ today|date:'Y-m-d' }}">
+                                        <label class="form-label">{{ form.expense_date.label }}</label>
+                                        {{ form.expense_date }}
+                                        {{ form.expense_date.errors }}
                                         <div class="form-text">تاريخ حدوث المصروف الفعلي</div>
                                     </div>
                                 </div>
-                                
+
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label class="form-label">ملاحظات إضافية</label>
-                                        <input type="text" class="form-control" name="notes" 
-                                               placeholder="أي ملاحظات أو تفاصيل إضافية">
+                                        <label class="form-label">{{ form.notes.label }}</label>
+                                        {{ form.notes }}
+                                        {{ form.notes.errors }}
                                         <div class="form-text">ملاحظات داخلية للمراجعة</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- تحذيرات الميزانية -->
                         <div class="alert alert-warning d-none" id="budgetWarning">
                             <i class="fas fa-exclamation-triangle me-2"></i>
                             <strong>تحذير الميزانية:</strong>
                             <div id="budgetWarningText"></div>
                         </div>
 
-                        <!-- معاينة المصروف -->
                         <div class="alert alert-light border d-none" id="expensePreview">
                             <h6><i class="fas fa-eye me-2"></i>معاينة المصروف:</h6>
                             <div id="previewContent"></div>
                         </div>
-                        
                     </div>
-                    
+
                     <div class="form-footer">
                         <div class="d-flex justify-content-between align-items-center">
                             <a href="{% url 'treasury_management:expenses_list' %}" class="btn btn-secondary">
@@ -1100,7 +1005,6 @@
             </div>
         </div>
 
-        <!-- المعاينة المحسنة -->
         <div class="preview-wrapper">
             <div class="preview-card fade-in" style="animation-delay: 0.2s;">
                 <div class="preview-header">
@@ -1112,9 +1016,8 @@
                         <p>متابعة حية للبيانات المدخلة</p>
                     </div>
                 </div>
-                
+
                 <div class="preview-content">
-                    <!-- مؤشر حالة النموذج -->
                     <div class="preview-status" id="previewStatus">
                         <div class="status-text" id="statusText">ابدأ بملء البيانات</div>
                         <div class="completion-bar">
@@ -1122,7 +1025,6 @@
                         </div>
                     </div>
 
-                    <!-- القسم الأساسي -->
                     <div class="preview-section">
                         <div class="preview-section-title">
                             <div class="preview-section-icon">
@@ -1130,39 +1032,32 @@
                             </div>
                             البيانات الأساسية
                         </div>
-                        
+
                         <div class="preview-item" id="previewCategory">
                             <div class="preview-label">
-                                <div class="preview-label-icon">
-                                    <i class="fas fa-tag"></i>
-                                </div>
+                                <div class="preview-label-icon"><i class="fas fa-tag"></i></div>
                                 تصنيف المصروف
                             </div>
                             <div class="preview-value empty">لم يتم اختيار التصنيف</div>
                         </div>
-                        
+
                         <div class="preview-item" id="previewType">
                             <div class="preview-label">
-                                <div class="preview-label-icon">
-                                    <i class="fas fa-list"></i>
-                                </div>
+                                <div class="preview-label-icon"><i class="fas fa-list"></i></div>
                                 نوع المصروف
                             </div>
                             <div class="preview-value empty">لم يتم اختيار النوع</div>
                         </div>
-                        
+
                         <div class="preview-item" id="previewDescription">
                             <div class="preview-label">
-                                <div class="preview-label-icon">
-                                    <i class="fas fa-file-alt"></i>
-                                </div>
+                                <div class="preview-label-icon"><i class="fas fa-file-alt"></i></div>
                                 وصف المصروف
                             </div>
                             <div class="preview-value empty truncated">لم يتم إدخال الوصف</div>
                         </div>
                     </div>
 
-                    <!-- القسم المالي -->
                     <div class="preview-section">
                         <div class="preview-section-title">
                             <div class="preview-section-icon">
@@ -1170,28 +1065,23 @@
                             </div>
                             التفاصيل المالية
                         </div>
-                        
+
                         <div class="preview-item" id="previewAmount">
                             <div class="preview-label">
-                                <div class="preview-label-icon">
-                                    <i class="fas fa-dollar-sign"></i>
-                                </div>
+                                <div class="preview-label-icon"><i class="fas fa-dollar-sign"></i></div>
                                 المبلغ المطلوب
                             </div>
                             <div class="preview-value amount empty">0.00 ج.م</div>
                         </div>
-                        
+
                         <div class="preview-item" id="previewTreasury">
                             <div class="preview-label">
-                                <div class="preview-label-icon">
-                                    <i class="fas fa-university"></i>
-                                </div>
+                                <div class="preview-label-icon"><i class="fas fa-university"></i></div>
                                 الخزنة المحددة
                             </div>
                             <div class="preview-value empty">لم يتم اختيار الخزنة</div>
                         </div>
 
-                        <!-- مؤشر المخاطر -->
                         <div class="risk-indicator" id="riskIndicator" style="display: none;">
                             <p class="risk-text" id="riskText">
                                 <i class="fas fa-shield-alt risk-icon"></i>
@@ -1200,7 +1090,6 @@
                         </div>
                     </div>
 
-                    <!-- القسم الإضافي -->
                     <div class="preview-section">
                         <div class="preview-section-title">
                             <div class="preview-section-icon">
@@ -1208,32 +1097,26 @@
                             </div>
                             معلومات إضافية
                         </div>
-                        
+
                         <div class="preview-item" id="previewDate">
                             <div class="preview-label">
-                                <div class="preview-label-icon">
-                                    <i class="fas fa-calendar"></i>
-                                </div>
+                                <div class="preview-label-icon"><i class="fas fa-calendar"></i></div>
                                 تاريخ المصروف
                             </div>
                             <div class="preview-value">{{ today|date:'d/m/Y' }}</div>
                         </div>
-                        
+
                         <div class="preview-item" id="previewVendor" style="display: none;">
                             <div class="preview-label">
-                                <div class="preview-label-icon">
-                                    <i class="fas fa-user-tie"></i>
-                                </div>
+                                <div class="preview-label-icon"><i class="fas fa-user-tie"></i></div>
                                 اسم المورد
                             </div>
                             <div class="preview-value"></div>
                         </div>
-                        
+
                         <div class="preview-item" id="previewInvoice" style="display: none;">
                             <div class="preview-label">
-                                <div class="preview-label-icon">
-                                    <i class="fas fa-receipt"></i>
-                                </div>
+                                <div class="preview-label-icon"><i class="fas fa-receipt"></i></div>
                                 رقم الفاتورة
                             </div>
                             <div class="preview-value"></div>
@@ -1241,9 +1124,7 @@
 
                         <div class="preview-item" id="previewNotes" style="display: none;">
                             <div class="preview-label">
-                                <div class="preview-label-icon">
-                                    <i class="fas fa-sticky-note"></i>
-                                </div>
+                                <div class="preview-label-icon"><i class="fas fa-sticky-note"></i></div>
                                 ملاحظات
                             </div>
                             <div class="preview-value"></div>
@@ -1251,7 +1132,6 @@
                     </div>
                 </div>
 
-                <!-- أزرار المعاينة -->
                 <div class="preview-actions">
                     <button type="button" class="preview-btn" id="validateBtn" disabled>
                         <i class="fas fa-check-circle"></i>
@@ -1262,10 +1142,8 @@
         </div>
     </div>
 
-    <!-- دليل المصروفات -->
     <div class="row mt-4">
         <div class="col-lg-10 mx-auto">
-            <!-- تعليمات الاستخدام -->
             <div class="guide-card border-danger fade-in" style="animation-delay: 0.4s;">
                 <div class="card-header">
                     <h5><i class="fas fa-info-circle"></i>كيفية إضافة مصروف يومي</h5>
@@ -1275,7 +1153,7 @@
                         <div class="col-md-6">
                             <h6 class="text-primary"><i class="fas fa-list-ol me-2"></i>خطوات الإضافة:</h6>
                             <ol class="mb-3">
-                                <li><strong>اختر التصنيف:</strong> نوع المصروف (مرتبات، مرافق، إلخ)</li>
+                                <li><strong>اختر التصنيف:</strong> نوع المصروف مثل صيانة أو مرافق</li>
                                 <li><strong>حدد النوع:</strong> تصنيف فرعي للمصروف</li>
                                 <li><strong>اكتب الوصف:</strong> وصف مفصل وواضح</li>
                                 <li><strong>أدخل المبلغ:</strong> قيمة المصروف بدقة</li>
@@ -1284,7 +1162,7 @@
                                 <li><strong>احفظ المصروف:</strong> راجع البيانات ثم احفظ</li>
                             </ol>
                         </div>
-                        
+
                         <div class="col-md-6">
                             <h6 class="text-danger"><i class="fas fa-exclamation-triangle me-2"></i>نصائح مهمة:</h6>
                             <ul class="mb-3">
@@ -1299,7 +1177,6 @@
                 </div>
             </div>
 
-            <!-- أمثلة المصروفات -->
             <div class="guide-card border-warning fade-in" style="animation-delay: 0.6s;">
                 <div class="card-header">
                     <h5><i class="fas fa-lightbulb"></i>أمثلة على المصروفات اليومية</h5>
@@ -1318,31 +1195,15 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr>
-                                            <td>⚡ كهرباء</td>
-                                            <td>فاتورة كهرباء أكتوبر 2025</td>
-                                            <td>فواتير الكهرباء</td>
-                                        </tr>
-                                        <tr>
-                                            <td>💧 مياه</td>
-                                            <td>فاتورة مياه الشرب والري</td>
-                                            <td>فواتير المياه</td>
-                                        </tr>
-                                        <tr>
-                                            <td>📝 قرطاسية</td>
-                                            <td>شراء أوراق طباعة وأقلام</td>
-                                            <td>مستلزمات تعليمية</td>
-                                        </tr>
-                                        <tr>
-                                            <td>🧹 نظافة</td>
-                                            <td>مواد تنظيف وتعقيم الفصول</td>
-                                            <td>صيانة ونظافة</td>
-                                        </tr>
+                                        <tr><td>⚡ كهرباء</td><td>فاتورة كهرباء أكتوبر</td><td>مرافق</td></tr>
+                                        <tr><td>💧 مياه</td><td>فاتورة مياه الشرب والري</td><td>مرافق</td></tr>
+                                        <tr><td>📝 قرطاسية</td><td>شراء أوراق طباعة وأقلام</td><td>مستلزمات</td></tr>
+                                        <tr><td>🧹 نظافة</td><td>مواد تنظيف وتعقيم الفصول</td><td>مستلزمات</td></tr>
                                     </tbody>
                                 </table>
                             </div>
                         </div>
-                        
+
                         <div class="col-md-6">
                             <h6 class="text-success">مصروفات موسمية:</h6>
                             <div class="table-responsive">
@@ -1355,26 +1216,10 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr>
-                                            <td>🏫 صيانة</td>
-                                            <td>ترميم الفصول الدراسية</td>
-                                            <td>بداية العام</td>
-                                        </tr>
-                                        <tr>
-                                            <td>🎓 احتفالات</td>
-                                            <td>مصروفات حفل التخرج</td>
-                                            <td>نهاية العام</td>
-                                        </tr>
-                                        <tr>
-                                            <td>📚 كتب</td>
-                                            <td>شراء مناهج جديدة</td>
-                                            <td>بداية الترم</td>
-                                        </tr>
-                                        <tr>
-                                            <td>🌡️ تكييف</td>
-                                            <td>صيانة أجهزة التكييف</td>
-                                            <td>فصل الصيف</td>
-                                        </tr>
+                                        <tr><td>🏫 صيانة</td><td>ترميم الفصول الدراسية</td><td>بداية العام</td></tr>
+                                        <tr><td>🎓 احتفالات</td><td>مصروفات حفل التخرج</td><td>نهاية العام</td></tr>
+                                        <tr><td>📚 كتب</td><td>شراء مناهج جديدة</td><td>بداية الترم</td></tr>
+                                        <tr><td>🌡️ تكييف</td><td>صيانة أجهزة التكييف</td><td>فصل الصيف</td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -1383,7 +1228,6 @@
                 </div>
             </div>
 
-            <!-- مراقبة الميزانية -->
             <div class="guide-card border-info fade-in" style="animation-delay: 0.8s;">
                 <div class="card-header">
                     <h5><i class="fas fa-chart-pie"></i>مراقبة الميزانية</h5>
@@ -1398,7 +1242,7 @@
                                 <li><span class="badge bg-dark me-2">⛔</span>تجاوز الميزانية المحددة</li>
                             </ul>
                         </div>
-                        
+
                         <div class="col-md-6">
                             <h6 class="text-success">نصائح الميزانية:</h6>
                             <ul class="list-unstyled">
@@ -1411,7 +1255,6 @@
                 </div>
             </div>
 
-            <!-- سير العمل -->
             <div class="guide-card border-success fade-in" style="animation-delay: 1s;">
                 <div class="card-header">
                     <h5><i class="fas fa-cogs"></i>ماذا يحدث بعد الحفظ؟</h5>
@@ -1427,27 +1270,27 @@
                                 <small>يتم حفظ المصروف برقم مرجعي</small>
                             </div>
                         </div>
-                        
+
                         <div class="col-md-3">
                             <div class="workflow-step">
                                 <div class="workflow-icon" style="background: linear-gradient(135deg, #f39c12, #e67e22);">
                                     <i class="fas fa-clock"></i>
                                 </div>
-                                <h6>انتظار الاعتماد</h6>
-                                <small>يحتاج موافقة من الإدارة</small>
+                                <h6>اعتماد حسب الإعدادات</h6>
+                                <small>قد يحتاج موافقة الإدارة</small>
                             </div>
                         </div>
-                        
+
                         <div class="col-md-3">
                             <div class="workflow-step">
                                 <div class="workflow-icon" style="background: linear-gradient(135deg, #27ae60, #229954);">
                                     <i class="fas fa-check"></i>
                                 </div>
-                                <h6>اعتماد المصروف</h6>
-                                <small>الموافقة وتحديث الأرصدة</small>
+                                <h6>تحديث الأرصدة</h6>
+                                <small>عند الاعتماد يتم خصم الخزنة</small>
                             </div>
                         </div>
-                        
+
                         <div class="col-md-3">
                             <div class="workflow-step">
                                 <div class="workflow-icon" style="background: linear-gradient(135deg, #17a2b8, #138496);">
@@ -1458,11 +1301,11 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="alert alert-info mt-3">
                         <i class="fas fa-info-circle me-2"></i>
-                        <strong>ملاحظة:</strong> المصروفات أقل من 500 جنيه يتم اعتمادها تلقائياً، 
-                        أما المصروفات الأكبر فتحتاج موافقة من الإدارة.
+                        <strong>ملاحظة:</strong>
+                        تأثير المصروف على رصيد الخزنة يحدث من خلال العملية المالية المرتبطة به عند الاعتماد.
                     </div>
                 </div>
             </div>
@@ -1475,192 +1318,226 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('expenseForm');
-    const categorySelect = document.getElementById('categorySelect');
-    const treasurySelect = document.getElementById('treasurySelect');
-    const amountInput = document.getElementById('amountInput');
+    const categorySelect = document.getElementById('id_category');
+    const treasurySelect = document.getElementById('id_treasury');
+    const amountInput = document.getElementById('id_amount');
     const previewBtn = document.getElementById('previewBtn');
     const previewDiv = document.getElementById('expensePreview');
     const budgetWarning = document.getElementById('budgetWarning');
-    
-    // تحديث المعاينة عند تغيير أي حقل
-    form.addEventListener('input', updatePreview);
-    form.addEventListener('change', updatePreview);
-    
+    const validateBtn = document.getElementById('validateBtn');
+
+    const categoryMeta = {
+        {% for category in expense_categories %}
+        "{{ category.id }}": {
+            name: "{{ category.name|escapejs }}",
+            account: "{{ category.account.name|escapejs }}",
+            budget: "{{ category.monthly_budget|default:0 }}"
+        },
+        {% endfor %}
+    };
+
+    const treasuryMeta = {
+        {% for treasury in treasuries %}
+        "{{ treasury.id }}": {
+            name: "{{ treasury.name|escapejs }}",
+            balance: "{{ treasury.current_balance|default:0 }}"
+        },
+        {% endfor %}
+    };
+
+    function getSelectedText(selectEl) {
+        if (!selectEl || selectEl.selectedIndex < 0) return '';
+        return selectEl.options[selectEl.selectedIndex].text || '';
+    }
+
+    function getAmount() {
+        return parseFloat(amountInput ? amountInput.value : 0) || 0;
+    }
+
+    function getBalance() {
+        const treasuryId = treasurySelect ? treasurySelect.value : '';
+        const meta = treasuryMeta[treasuryId];
+        return meta ? (parseFloat(meta.balance) || 0) : 0;
+    }
+
+    function setPreviewItem(itemId, value, emptyText, filled=true) {
+        const item = document.getElementById(itemId);
+        if (!item) return;
+
+        const valueEl = item.querySelector('.preview-value');
+        if (!valueEl) return;
+
+        if (filled && value) {
+            item.classList.add('filled');
+            valueEl.classList.remove('empty');
+            valueEl.textContent = value;
+        } else {
+            item.classList.remove('filled', 'danger', 'warning');
+            valueEl.classList.add('empty');
+            valueEl.textContent = emptyText;
+        }
+    }
+
     function updatePreview() {
         let completedFields = 0;
-        const totalRequiredFields = 4; // التصنيف، النوع، الوصف، المبلغ
-        
-        // التصنيف
-        const categoryOption = categorySelect.selectedOptions[0];
-        const categoryItem = document.getElementById('previewCategory');
-        if (categoryOption && categoryOption.value) {
-            categoryItem.classList.add('filled');
-            categoryItem.querySelector('.preview-value').classList.remove('empty');
-            categoryItem.querySelector('.preview-value').textContent = categoryOption.text.replace('💰 ', '').split(' - ')[0];
+        const totalRequiredFields = 5;
+
+        const categoryId = categorySelect ? categorySelect.value : '';
+        const category = categoryMeta[categoryId];
+
+        if (category) {
+            setPreviewItem('previewCategory', category.name, 'لم يتم اختيار التصنيف');
             completedFields++;
         } else {
-            categoryItem.classList.remove('filled');
-            categoryItem.querySelector('.preview-value').classList.add('empty');
-            categoryItem.querySelector('.preview-value').textContent = 'لم يتم اختيار التصنيف';
+            setPreviewItem('previewCategory', '', 'لم يتم اختيار التصنيف', false);
         }
-        
-        // النوع
-        const typeOption = document.querySelector('select[name="expense_type"]').selectedOptions[0];
-        const typeItem = document.getElementById('previewType');
-        if (typeOption && typeOption.value) {
-            typeItem.classList.add('filled');
-            typeItem.querySelector('.preview-value').classList.remove('empty');
-            typeItem.querySelector('.preview-value').textContent = typeOption.text;
+
+        const typeSelect = document.getElementById('id_expense_type');
+        const typeText = getSelectedText(typeSelect);
+
+        if (typeSelect && typeSelect.value) {
+            setPreviewItem('previewType', typeText, 'لم يتم اختيار النوع');
             completedFields++;
         } else {
-            typeItem.classList.remove('filled');
-            typeItem.querySelector('.preview-value').classList.add('empty');
-            typeItem.querySelector('.preview-value').textContent = 'لم يتم اختيار النوع';
+            setPreviewItem('previewType', '', 'لم يتم اختيار النوع', false);
         }
-        
-        // المبلغ
-        const amount = parseFloat(amountInput.value) || 0;
+
+        const descriptionEl = document.getElementById('id_description');
+        const description = descriptionEl ? descriptionEl.value.trim() : '';
+
+        if (description) {
+            const shortDesc = description.length > 50 ? description.substring(0, 50) + '...' : description;
+            setPreviewItem('previewDescription', shortDesc, 'لم يتم إدخال الوصف');
+            completedFields++;
+        } else {
+            setPreviewItem('previewDescription', '', 'لم يتم إدخال الوصف', false);
+        }
+
+        const amount = getAmount();
         const amountItem = document.getElementById('previewAmount');
-        const amountValue = amountItem.querySelector('.preview-value');
-        if (amount > 0) {
+        const amountValue = amountItem ? amountItem.querySelector('.preview-value') : null;
+
+        if (amount > 0 && amountItem && amountValue) {
             amountItem.classList.add('filled');
             amountValue.classList.remove('empty');
             amountValue.textContent = amount.toLocaleString() + ' ج.م';
-            
+            completedFields++;
+
             if (amount >= 10000) {
                 amountValue.classList.add('large');
             } else {
                 amountValue.classList.remove('large');
             }
-            completedFields++;
-        } else {
-            amountItem.classList.remove('filled');
+        } else if (amountItem && amountValue) {
+            amountItem.classList.remove('filled', 'warning', 'danger');
             amountValue.classList.add('empty');
             amountValue.textContent = '0.00 ج.م';
             amountValue.classList.remove('large');
         }
-        
-        // الخزنة
-        const treasuryOption = treasurySelect.selectedOptions[0];
+
+        const treasuryId = treasurySelect ? treasurySelect.value : '';
+        const treasury = treasuryMeta[treasuryId];
         const treasuryItem = document.getElementById('previewTreasury');
-        if (treasuryOption && treasuryOption.value) {
-            const balance = parseFloat(treasuryOption.dataset.balance);
+
+        if (treasury && treasuryItem) {
+            const balance = parseFloat(treasury.balance) || 0;
             treasuryItem.classList.add('filled');
             treasuryItem.querySelector('.preview-value').classList.remove('empty');
-            
+
             if (amount > balance) {
                 treasuryItem.classList.add('danger');
-                treasuryItem.querySelector('.preview-value').textContent = treasuryOption.text.split(' - ')[0].replace('🏦 ', '') + ' (رصيد غير كافٍ!)';
+                treasuryItem.querySelector('.preview-value').textContent = treasury.name + ' (رصيد غير كافٍ!)';
             } else {
                 treasuryItem.classList.remove('danger');
-                treasuryItem.querySelector('.preview-value').textContent = treasuryOption.text.split(' - ')[0].replace('🏦 ', '');
+                treasuryItem.querySelector('.preview-value').textContent = treasury.name;
             }
-        } else {
+
+            completedFields++;
+        } else if (treasuryItem) {
             treasuryItem.classList.remove('filled', 'danger');
             treasuryItem.querySelector('.preview-value').classList.add('empty');
             treasuryItem.querySelector('.preview-value').textContent = 'لم يتم اختيار الخزنة';
         }
-        
-        // الوصف
-        const description = document.querySelector('textarea[name="description"]').value;
-        const descItem = document.getElementById('previewDescription');
-        if (description.trim()) {
-            descItem.classList.add('filled');
-            descItem.querySelector('.preview-value').classList.remove('empty');
-            const shortDesc = description.length > 50 ? description.substring(0, 50) + '...' : description;
-            descItem.querySelector('.preview-value').textContent = shortDesc;
-            completedFields++;
-        } else {
-            descItem.classList.remove('filled');
-            descItem.querySelector('.preview-value').classList.add('empty');
-            descItem.querySelector('.preview-value').textContent = 'لم يتم إدخال الوصف';
-        }
-        
-        // التاريخ
-        const date = document.querySelector('input[name="expense_date"]').value;
+
+        const dateEl = document.getElementById('id_expense_date');
         const dateItem = document.getElementById('previewDate');
-        if (date) {
-            const formattedDate = new Date(date).toLocaleDateString('ar-EG');
+
+        if (dateEl && dateEl.value && dateItem) {
+            const formattedDate = new Date(dateEl.value).toLocaleDateString('ar-EG');
             dateItem.classList.add('filled');
             dateItem.querySelector('.preview-value').textContent = formattedDate;
         }
-        
-        // الحقول الاختيارية
-        const vendor = document.querySelector('input[name="vendor_name"]').value;
+
+        const vendorEl = document.getElementById('id_vendor_name');
         const vendorItem = document.getElementById('previewVendor');
-        if (vendor.trim()) {
+        if (vendorEl && vendorEl.value.trim() && vendorItem) {
             vendorItem.style.display = 'block';
             vendorItem.classList.add('filled');
-            vendorItem.querySelector('.preview-value').textContent = vendor;
-        } else {
+            vendorItem.querySelector('.preview-value').textContent = vendorEl.value.trim();
+        } else if (vendorItem) {
             vendorItem.style.display = 'none';
         }
-        
-        const invoice = document.querySelector('input[name="invoice_number"]').value;
+
+        const invoiceEl = document.getElementById('id_invoice_number');
         const invoiceItem = document.getElementById('previewInvoice');
-        if (invoice.trim()) {
+        if (invoiceEl && invoiceEl.value.trim() && invoiceItem) {
             invoiceItem.style.display = 'block';
             invoiceItem.classList.add('filled');
-            invoiceItem.querySelector('.preview-value').textContent = invoice;
-        } else {
+            invoiceItem.querySelector('.preview-value').textContent = invoiceEl.value.trim();
+        } else if (invoiceItem) {
             invoiceItem.style.display = 'none';
         }
 
-        const notes = document.querySelector('input[name="notes"]').value;
+        const notesEl = document.getElementById('id_notes');
         const notesItem = document.getElementById('previewNotes');
-        if (notes.trim()) {
+        if (notesEl && notesEl.value.trim() && notesItem) {
             notesItem.style.display = 'block';
             notesItem.classList.add('filled');
-            notesItem.querySelector('.preview-value').textContent = notes;
-        } else {
+            notesItem.querySelector('.preview-value').textContent = notesEl.value.trim();
+        } else if (notesItem) {
             notesItem.style.display = 'none';
         }
-        
-        // تحديث شريط التقدم
+
         const completionPercentage = (completedFields / totalRequiredFields) * 100;
         document.getElementById('completionFill').style.width = completionPercentage + '%';
-        
-        // تحديث حالة النموذج
+
         const statusElement = document.getElementById('previewStatus');
         const statusText = document.getElementById('statusText');
-        const validateBtn = document.getElementById('validateBtn');
-        
+
         if (completedFields === totalRequiredFields) {
             statusElement.classList.add('active');
             statusText.classList.add('active');
             statusText.textContent = '✅ جميع البيانات المطلوبة مكتملة';
-            validateBtn.disabled = false;
+            if (validateBtn) validateBtn.disabled = false;
         } else {
             statusElement.classList.remove('active');
             statusText.classList.remove('active');
             statusText.textContent = `مطلوب ${totalRequiredFields - completedFields} حقل إضافي`;
-            validateBtn.disabled = true;
+            if (validateBtn) validateBtn.disabled = true;
         }
-        
-        // تحديث مؤشر المخاطر
-        updateRiskIndicator(amount, treasuryOption);
-        
-        // فحص الميزانية
+
+        updateRiskIndicator(amount);
         checkBudget();
     }
 
-    function updateRiskIndicator(amount, treasuryOption) {
+    function updateRiskIndicator(amount) {
         const riskIndicator = document.getElementById('riskIndicator');
         const riskText = document.getElementById('riskText');
-        
-        if (!amount || !treasuryOption) {
+
+        const balance = getBalance();
+
+        if (!amount || !treasurySelect || !treasurySelect.value) {
             riskIndicator.style.display = 'none';
             return;
         }
-        
-        const balance = parseFloat(treasuryOption.dataset.balance);
+
         riskIndicator.style.display = 'block';
-        
+
         if (amount > balance) {
             riskIndicator.className = 'risk-indicator danger';
             riskText.className = 'risk-text danger';
             riskText.innerHTML = '<i class="fas fa-exclamation-triangle risk-icon"></i>تحذير: المبلغ يتجاوز الرصيد المتاح';
-        } else if (amount > balance * 0.8) {
+        } else if (amount > balance * 0.8 && balance > 0) {
             riskIndicator.className = 'risk-indicator warning';
             riskText.className = 'risk-text warning';
             riskText.innerHTML = '<i class="fas fa-exclamation-circle risk-icon"></i>تحذير: المبلغ يستنزف معظم الرصيد';
@@ -1670,163 +1547,209 @@ document.addEventListener('DOMContentLoaded', function() {
             riskText.innerHTML = '<i class="fas fa-shield-alt risk-icon"></i>آمن ضمن الحدود المسموحة';
         }
     }
-    
-    // عرض الحساب والميزانية المرتبطة بالتصنيف
-    categorySelect.addEventListener('change', function() {
-        const selectedOption = this.options[this.selectedIndex];
-        const accountName = selectedOption.getAttribute('data-account');
-        const budget = selectedOption.getAttribute('data-budget');
-        
-        if (accountName) {
-            let infoText = `<span class="text-info"><strong>الحساب المرتبط:</strong> ${accountName}</span>`;
-            if (budget && budget > 0) {
-                infoText += `<br><span class="text-warning"><strong>الميزانية الشهرية:</strong> ${parseFloat(budget).toLocaleString()} جنيه</span>`;
+
+    function updateCategoryInfo() {
+        const categoryId = categorySelect ? categorySelect.value : '';
+        const meta = categoryMeta[categoryId];
+
+        if (meta) {
+            let infoText = `<span class="text-info"><strong>الحساب المرتبط:</strong> ${meta.account}</span>`;
+            const budget = parseFloat(meta.budget) || 0;
+
+            if (budget > 0) {
+                infoText += `<br><span class="text-warning"><strong>الميزانية الشهرية:</strong> ${budget.toLocaleString()} جنيه</span>`;
             }
+
             document.getElementById('accountInfo').innerHTML = infoText;
+        } else {
+            document.getElementById('accountInfo').innerHTML = 'اختر التصنيف المناسب للمصروف';
         }
-    });
-    
-    // عرض رصيد الخزنة
-    treasurySelect.addEventListener('change', function() {
-        const selectedOption = this.options[this.selectedIndex];
-        const balance = selectedOption.getAttribute('data-balance');
-        
-        if (balance) {
-            const formattedBalance = parseFloat(balance).toLocaleString();
-            document.getElementById('treasuryBalance').innerHTML = 
-                `<span class="text-info"><strong>الرصيد الحالي:</strong> ${formattedBalance} جنيه</span>`;
+    }
+
+    function updateTreasuryInfo() {
+        const treasuryId = treasurySelect ? treasurySelect.value : '';
+        const meta = treasuryMeta[treasuryId];
+
+        if (meta) {
+            const balance = parseFloat(meta.balance) || 0;
+            document.getElementById('treasuryBalance').innerHTML =
+                `<span class="text-info"><strong>الرصيد الحالي:</strong> ${balance.toLocaleString()} جنيه</span>`;
+        } else {
+            document.getElementById('treasuryBalance').innerHTML = 'اختر الخزنة التي سيتم الخصم منها';
         }
-    });
-    
+    }
+
     function checkBudget() {
-        const amount = parseFloat(amountInput.value) || 0;
-        const selectedCategory = categorySelect.options[categorySelect.selectedIndex];
-        const budget = parseFloat(selectedCategory?.getAttribute('data-budget')) || 0;
-        
+        const amount = getAmount();
+        const categoryId = categorySelect ? categorySelect.value : '';
+        const meta = categoryMeta[categoryId];
+        const budget = meta ? (parseFloat(meta.budget) || 0) : 0;
+        const previewAmount = document.getElementById('previewAmount');
+
         if (budget > 0 && amount > 0) {
             const percentage = (amount / budget) * 100;
             let warningClass = 'alert-info';
             let warningText = '';
-            
+
             if (percentage > 100) {
                 warningClass = 'alert-danger';
                 warningText = `🚨 المبلغ يتجاوز الميزانية الشهرية بـ ${(amount - budget).toLocaleString()} جنيه!`;
-                document.getElementById('previewAmount').classList.add('danger');
+                previewAmount.classList.add('danger');
             } else if (percentage > 90) {
                 warningClass = 'alert-danger';
                 warningText = `⚠️ المبلغ يستنزف ${percentage.toFixed(1)}% من الميزانية الشهرية!`;
-                document.getElementById('previewAmount').classList.add('warning');
+                previewAmount.classList.add('warning');
             } else if (percentage > 70) {
                 warningClass = 'alert-warning';
                 warningText = `📊 المبلغ يمثل ${percentage.toFixed(1)}% من الميزانية الشهرية`;
-                document.getElementById('previewAmount').classList.add('warning');
-            } else if (percentage > 0) {
+                previewAmount.classList.add('warning');
+            } else {
                 warningClass = 'alert-success';
                 warningText = `✅ المبلغ ضمن الميزانية (${percentage.toFixed(1)}% من الميزانية)`;
-                document.getElementById('previewAmount').classList.remove('warning', 'danger');
+                previewAmount.classList.remove('warning', 'danger');
             }
-            
-            if (warningText) {
-                budgetWarning.className = `alert ${warningClass}`;
-                document.getElementById('budgetWarningText').innerHTML = warningText;
-                budgetWarning.classList.remove('d-none');
-            } else {
-                budgetWarning.classList.add('d-none');
-            }
+
+            budgetWarning.className = `alert ${warningClass}`;
+            document.getElementById('budgetWarningText').innerHTML = warningText;
+            budgetWarning.classList.remove('d-none');
         } else {
             budgetWarning.classList.add('d-none');
-            document.getElementById('previewAmount').classList.remove('warning', 'danger');
+            if (previewAmount) previewAmount.classList.remove('warning', 'danger');
         }
     }
-    
-    // معاينة المصروف
-    previewBtn.addEventListener('click', function() {
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData);
-        
-        if (!data.category || !data.amount || !data.description) {
-            alert('⚠️ يرجى ملء الحقول المطلوبة أولاً (التصنيف، المبلغ، الوصف)');
-            return;
-        }
-        
-        const categoryName = categorySelect.options[categorySelect.selectedIndex].text;
-        const treasuryName = treasurySelect.options[treasurySelect.selectedIndex].text;
-        const expenseTypeName = document.querySelector('select[name="expense_type"]').options[document.querySelector('select[name="expense_type"]').selectedIndex].text;
-        
-        const previewContent = `
-            <div class="row">
-                <div class="col-md-6">
-                    <strong>التصنيف:</strong> ${categoryName.replace('💰 ', '')}<br>
-                    <strong>النوع:</strong> ${expenseTypeName}<br>
-                    <strong>المبلغ:</strong> <span class="fw-bold text-danger">${parseFloat(data.amount).toLocaleString()} جنيه</span><br>
-                    <strong>التاريخ:</strong> ${data.expense_date}
-                </div>
-                <div class="col-md-6">
-                    <strong>الخزنة:</strong> ${treasuryName.split(' - ')[0].replace('🏦 ', '')}<br>
-                    ${data.vendor_name ? `<strong>المورد:</strong> ${data.vendor_name}<br>` : ''}
-                    ${data.invoice_number ? `<strong>رقم الفاتورة:</strong> ${data.invoice_number}<br>` : ''}
-                    ${data.notes ? `<strong>ملاحظات:</strong> ${data.notes}` : ''}
-                </div>
-            </div>
-            <div class="mt-3">
-                <strong>الوصف:</strong> <em>${data.description}</em>
-            </div>
-        `;
-        
-        document.getElementById('previewContent').innerHTML = previewContent;
-        previewDiv.classList.remove('d-none');
-        previewDiv.scrollIntoView({ behavior: 'smooth' });
-    });
 
-    // زر التحقق من البيانات
-    document.getElementById('validateBtn').addEventListener('click', function() {
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData);
-        
-        if (data.category && data.expense_type && data.description && data.amount && data.treasury) {
+    if (categorySelect) {
+        categorySelect.addEventListener('change', function() {
+            updateCategoryInfo();
+            updatePreview();
+        });
+    }
+
+    if (treasurySelect) {
+        treasurySelect.addEventListener('change', function() {
+            updateTreasuryInfo();
+            updatePreview();
+        });
+    }
+
+    if (form) {
+        form.addEventListener('input', updatePreview);
+        form.addEventListener('change', updatePreview);
+    }
+
+    if (previewBtn) {
+        previewBtn.addEventListener('click', function() {
+            const categoryText = categorySelect && categorySelect.value ? categoryMeta[categorySelect.value].name : '';
+            const treasuryText = treasurySelect && treasurySelect.value ? treasuryMeta[treasurySelect.value].name : '';
+            const typeText = getSelectedText(document.getElementById('id_expense_type'));
+            const amount = getAmount();
+            const description = document.getElementById('id_description') ? document.getElementById('id_description').value : '';
+            const vendor = document.getElementById('id_vendor_name') ? document.getElementById('id_vendor_name').value : '';
+            const invoice = document.getElementById('id_invoice_number') ? document.getElementById('id_invoice_number').value : '';
+            const notes = document.getElementById('id_notes') ? document.getElementById('id_notes').value : '';
+            const date = document.getElementById('id_expense_date') ? document.getElementById('id_expense_date').value : '';
+
+            if (!categoryText || !amount || !description || !treasuryText) {
+                alert('⚠️ يرجى ملء الحقول المطلوبة أولاً: التصنيف، الخزنة، المبلغ، الوصف');
+                return;
+            }
+
+            const previewContent = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>التصنيف:</strong> ${categoryText}<br>
+                        <strong>النوع:</strong> ${typeText}<br>
+                        <strong>المبلغ:</strong> <span class="fw-bold text-danger">${amount.toLocaleString()} جنيه</span><br>
+                        <strong>التاريخ:</strong> ${date || '-'}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>الخزنة:</strong> ${treasuryText}<br>
+                        ${vendor ? `<strong>المورد:</strong> ${vendor}<br>` : ''}
+                        ${invoice ? `<strong>رقم الفاتورة:</strong> ${invoice}<br>` : ''}
+                        ${notes ? `<strong>ملاحظات:</strong> ${notes}` : ''}
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <strong>الوصف:</strong> <em>${description}</em>
+                </div>
+            `;
+
+            document.getElementById('previewContent').innerHTML = previewContent;
+            previewDiv.classList.remove('d-none');
+            previewDiv.scrollIntoView({ behavior: 'smooth' });
+        });
+    }
+
+    if (validateBtn) {
+        validateBtn.addEventListener('click', function() {
             this.innerHTML = '<i class="fas fa-check"></i> البيانات صحيحة!';
             this.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
-            
+
             setTimeout(() => {
                 this.innerHTML = '<i class="fas fa-check-circle"></i> التحقق من البيانات';
                 this.style.background = 'linear-gradient(135deg, #2ecc71, #27ae60)';
             }, 2000);
-        }
-    });
-    
-    // إرسال النموذج
-    form.addEventListener('submit', function(e) {
-        const amount = parseFloat(amountInput.value);
-        const selectedTreasury = treasurySelect.options[treasurySelect.selectedIndex];
-        const balance = parseFloat(selectedTreasury?.getAttribute('data-balance'));
-        
-        if (amount > balance) {
-            e.preventDefault();
-            document.getElementById('amountError').textContent = 
-                `❌ المبلغ أكبر من الرصيد المتاح (${balance.toLocaleString()} جنيه)`;
-            amountInput.classList.add('is-invalid');
-            amountInput.scrollIntoView({ behavior: 'smooth' });
-            return false;
-        }
-        
-        amountInput.classList.remove('is-invalid');
-        
-        // تأكيد الحفظ
-        const confirmed = confirm(`هل أنت متأكد من حفظ هذا المصروف؟\n\nالمبلغ: ${amount.toLocaleString()} جنيه\nالتصنيف: ${categorySelect.options[categorySelect.selectedIndex].text}`);
-        if (!confirmed) {
-            e.preventDefault();
-        } else {
-            // إظهار رسالة التحميل
+        });
+    }
+
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const amount = getAmount();
+            const balance = getBalance();
+
+            if (amount > balance) {
+                e.preventDefault();
+
+                const amountError = document.getElementById('amountError');
+                if (amountError) {
+                    amountError.textContent = `❌ المبلغ أكبر من الرصيد المتاح (${balance.toLocaleString()} جنيه)`;
+                    amountError.style.display = 'block';
+                }
+
+                if (amountInput) {
+                    amountInput.classList.add('is-invalid');
+                    amountInput.scrollIntoView({ behavior: 'smooth' });
+                }
+
+                return false;
+            }
+
+            if (amountInput) amountInput.classList.remove('is-invalid');
+
+            const categoryText = categorySelect && categorySelect.value ? categoryMeta[categorySelect.value].name : '';
+            const confirmed = confirm(
+                `هل أنت متأكد من حفظ هذا المصروف؟\n\n` +
+                `المبلغ: ${amount.toLocaleString()} جنيه\n` +
+                `التصنيف: ${categoryText}`
+            );
+
+            if (!confirmed) {
+                e.preventDefault();
+                return false;
+            }
+
             const submitBtn = document.getElementById('submitBtn');
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>جاري الحفظ...';
-            submitBtn.disabled = true;
+            if (submitBtn) {
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>جاري الحفظ...';
+                submitBtn.disabled = true;
+            }
+        });
+    }
+
+    // وسم الحقول التي بها أخطاء من السيرفر
+    document.querySelectorAll('.errorlist').forEach(function(errorList) {
+        const fieldWrapper = errorList.closest('.mb-3');
+        if (fieldWrapper) {
+            const input = fieldWrapper.querySelector('.form-control, .form-select');
+            if (input) input.classList.add('field-error');
         }
     });
-    
-    // تحديث المعاينة في البداية
+
+    updateCategoryInfo();
+    updateTreasuryInfo();
     updatePreview();
-    
-    console.log('✅ نموذج المصروفات مع المعاينة الجانبية جاهز');
+
+    console.log('✅ نموذج المصروفات مع DailyExpenseForm والمعاينة الجانبية جاهز');
 });
 </script>
 {% endblock %}

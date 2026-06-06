@@ -17,19 +17,15 @@ from django.utils import timezone
 from django.db import transaction, IntegrityError
 from django.template.loader import render_to_string
 from django.conf import settings
-from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.urls import reverse
 from django.core.files.storage import default_storage
-from django.urls import reverse
 import logging
-from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.db import models
 from decimal import Decimal, InvalidOperation
 import json
 import csv
-import logging
 from datetime import date, datetime, timedelta
 from functools import wraps
 
@@ -52,11 +48,15 @@ except ImportError:
     logger.warning("نموذج Student غير متوفر")
 
 try:
-    from groups.models import Group
-    logger.info("تم استيراد نموذج Group بنجاح")
+    from students.models import StudentGroup as Group
+    logger.info("تم استيراد نموذج StudentGroup بنجاح")
 except ImportError:
-    Group = None
-    logger.warning("نموذج Group غير متوفر")
+    try:
+        from students.models import Group
+        logger.info("تم استيراد نموذج Group من students بنجاح")
+    except ImportError:
+        Group = None
+        # لا نطبع تحذير هنا حتى لا تظهر رسالة مزعجة عند تشغيل السيرفر
 
 try:
     from payments.models import Tuition
@@ -316,11 +316,11 @@ def comprehensive_settings(request):
                 elif hasattr(Student, 'registration_date'):
                     recent_stats['students_added_last_week'] = Student.objects.filter(registration_date__gte=last_week).count()
                 else:
-                    recent_stats['students_added_last_week'] = random.randint(2, 8)
+                    recent_stats['students_added_last_week'] = 0
             else:
-                recent_stats['students_added_last_week'] = random.randint(2, 8)
+                recent_stats['students_added_last_week'] = 0
         except:
-            recent_stats['students_added_last_week'] = random.randint(2, 8)
+            recent_stats['students_added_last_week'] = 0
         
         # مصروفات محدثة آخر شهر
         try:
@@ -329,9 +329,9 @@ def comprehensive_settings(request):
             elif hasattr(SchoolFeesSettings, 'modified_at'):
                 recent_stats['fees_updated_last_month'] = SchoolFeesSettings.objects.filter(modified_at__gte=last_month).count()
             else:
-                recent_stats['fees_updated_last_month'] = random.randint(1, 5)
+                recent_stats['fees_updated_last_month'] = 0
         except:
-            recent_stats['fees_updated_last_month'] = random.randint(1, 5)
+            recent_stats['fees_updated_last_month'] = 0
         
         # خصومات جديدة آخر شهر
         try:
@@ -340,9 +340,9 @@ def comprehensive_settings(request):
             elif hasattr(DiscountSettings, 'date_created'):
                 recent_stats['new_discounts_last_month'] = DiscountSettings.objects.filter(date_created__gte=last_month).count()
             else:
-                recent_stats['new_discounts_last_month'] = random.randint(0, 3)
+                recent_stats['new_discounts_last_month'] = 0
         except:
-            recent_stats['new_discounts_last_month'] = random.randint(0, 3)
+            recent_stats['new_discounts_last_month'] = 0
         
         context['recent_stats'] = recent_stats
         
@@ -354,11 +354,11 @@ def comprehensive_settings(request):
             if total_students == 0:
                 # بيانات تجريبية إذا لم يكن هناك طلاب
                 for level in EducationLevel.objects.filter(is_active=True)[:4]:
-                    fake_count = random.randint(15, 50)
+                    fake_count = 0
                     levels_with_students.append({
                         'name': level.name,
                         'count': fake_count,
-                        'percentage': random.randint(20, 40)
+                        'percentage': 0
                     })
             else:
                 # محاولة حساب البيانات الحقيقية
@@ -377,9 +377,9 @@ def comprehensive_settings(request):
                                 students_in_level = Student.objects.filter(grade__in=level_grades).count()
                             else:
                                 # توزيع عشوائي للطلاب
-                                students_in_level = random.randint(5, total_students // 2)
+                                students_in_level = 0
                         except:
-                            students_in_level = random.randint(5, total_students // 3)
+                            students_in_level = 0
                     
                     percentage = (students_in_level / total_students * 100) if total_students > 0 else 0
                     
@@ -393,9 +393,9 @@ def comprehensive_settings(request):
         else:
             # بيانات افتراضية إذا لم تكن هناك مراحل
             context['students_by_education_level'] = [
-                {'name': 'المرحلة الابتدائية', 'count': 120, 'percentage': 45},
-                {'name': 'المرحلة المتوسطة', 'count': 90, 'percentage': 35},
-                {'name': 'المرحلة الثانوية', 'count': 50, 'percentage': 20},
+                {'name': 'المرحلة الابتدائية', 'count': 0, 'percentage': 0},
+                {'name': 'المرحلة المتوسطة', 'count': 0, 'percentage': 0},
+                {'name': 'المرحلة الثانوية', 'count': 0, 'percentage': 0},
             ]
         
         # 🔥 إصلاح المصروفات حسب النوع
@@ -438,20 +438,20 @@ def comprehensive_settings(request):
             except:
                 # بيانات تجريبية للمصروفات
                 fees_by_type = [
-                    {'type': 'الرسوم الدراسية', 'total_amount': 5000, 'count': 1, 'percentage': 60},
-                    {'type': 'رسوم الكتب', 'total_amount': 1500, 'count': 1, 'percentage': 18},
-                    {'type': 'رسوم الأنشطة', 'total_amount': 1000, 'count': 1, 'percentage': 12},
-                    {'type': 'رسوم النقل', 'total_amount': 800, 'count': 1, 'percentage': 10},
+                    {'type': 'الرسوم الدراسية', 'total_amount': 0, 'count': 0, 'percentage': 0},
+                    {'type': 'رسوم الكتب', 'total_amount': 0, 'count': 0, 'percentage': 0},
+                    {'type': 'رسوم الأنشطة', 'total_amount': 0, 'count': 0, 'percentage': 0},
+                    {'type': 'رسوم النقل', 'total_amount': 0, 'count': 0, 'percentage': 0},
                 ]
             
             context['fees_by_type'] = fees_by_type
         else:
             # بيانات تجريبية إذا لم تكن هناك مصروفات
             context['fees_by_type'] = [
-                {'type': 'الرسوم الدراسية', 'total_amount': 5000, 'count': 1, 'percentage': 60},
-                {'type': 'رسوم الكتب', 'total_amount': 1500, 'count': 1, 'percentage': 18},
-                {'type': 'رسوم الأنشطة', 'total_amount': 1000, 'count': 1, 'percentage': 12},
-                {'type': 'رسوم النقل', 'total_amount': 800, 'count': 1, 'percentage': 10},
+                {'type': 'الرسوم الدراسية', 'total_amount': 0, 'count': 0, 'percentage': 0},
+                {'type': 'رسوم الكتب', 'total_amount': 0, 'count': 0, 'percentage': 0},
+                {'type': 'رسوم الأنشطة', 'total_amount': 0, 'count': 0, 'percentage': 0},
+                {'type': 'رسوم النقل', 'total_amount': 0, 'count': 0, 'percentage': 0},
             ]
         
         # إضافة التنبيهات
@@ -486,7 +486,7 @@ def comprehensive_settings(request):
         
         context['alerts'] = alerts
         context['recent_logs'] = SettingsLog.objects.select_related('user').order_by('-timestamp')[:5]
-        context['system_notifications'] = NotificationSettings.objects.filter(is_active=True).count() if NotificationSettings.objects.exists() else 0
+        context['system_notifications'] = NotificationSettings.objects.count()
         context['monthly_stats'] = get_monthly_settings_stats()
         
         return render(request, 'school_settings/comprehensive_settings.html', context)
@@ -1334,12 +1334,12 @@ def education_levels_list(request):
                     else:
                         # إذا لم نجد ربط واضح، استخدم بيانات تجريبية
                         import random
-                        students_count = random.randint(20, 80) if grades_count > 0 else 0
+                        students_count = 0 if grades_count > 0 else 0
                 except Exception as e:
                     logger.warning(f"تعذر حساب طلاب المرحلة {level.name}: {e}")
                     # بيانات تجريبية عند الخطأ
                     import random
-                    students_count = random.randint(15, 60) if grades_count > 0 else 0
+                    students_count = 0 if grades_count > 0 else 0
             
             total_students_count += students_count
             
@@ -1693,9 +1693,12 @@ def grade_levels_list(request):
             Student = None
             
         try:
-            from students.models import Group
+            from students.models import StudentGroup as Group
         except ImportError:
-            Group = None
+            try:
+                from students.models import Group
+            except ImportError:
+                Group = None
         
         # إعداد السياق الأساسي
         context = get_base_context(request)
@@ -1715,7 +1718,6 @@ def grade_levels_list(request):
             grade_levels_qs = grade_levels_qs.filter(
                 Q(name__icontains=search_query) |
                 Q(name_en__icontains=search_query) |
-                Q(description__icontains=search_query) |
                 Q(education_level__name__icontains=search_query)
             )
         
@@ -1737,7 +1739,6 @@ def grade_levels_list(request):
             'name': 'name',
             'order': ['education_level__order', 'order'],
             'level': 'education_level__name',
-            'created': '-created_date',
         }
         
         order_fields = sort_mapping.get(sort_by, ['education_level__order', 'order'])
@@ -2078,7 +2079,7 @@ def export_grades_to_excel(grades):
         ws.cell(row=row, column=6, value=grade.students_count)
         ws.cell(row=row, column=7, value=grade.groups_count)
         ws.cell(row=row, column=8, value='نشط' if grade.is_active else 'غير نشط')
-        ws.cell(row=row, column=9, value=grade.created_date.strftime('%Y-%m-%d') if grade.created_date else '')
+        ws.cell(row=row, column=9, value='')
     
     # ضبط عرض الأعمدة
     for column in ws.columns:
@@ -2534,8 +2535,6 @@ def school_fees_list(request):
         if search_query:
             fees_queryset = fees_queryset.filter(
                 Q(fee_name__icontains=search_query) |
-                Q(fee_name_en__icontains=search_query) |
-                Q(description__icontains=search_query) |
                 Q(grade_level__name__icontains=search_query)
             )
         
@@ -2569,7 +2568,6 @@ def school_fees_list(request):
             'year': '-academic_year__start_date',
             'grade': 'grade_level__name',
             'type': 'fee_type',
-            'created': '-created_date',
         }
         
         order_field = sort_mapping.get(sort_by, 'fee_name')
@@ -2861,7 +2859,7 @@ def create_school_fee(request):
                     log_settings_change(
                         user=request.user,
                         action='CREATE',
-                        setting_type='SCHOOL_FEES',
+                        setting_type='SCHOOL_FEE',
                         obj=school_fee,
                         new_value=f'{fee_name} - {total_amount}',
                         description=f'إنشاء مصروفات مدرسية: {fee_name} للعام {academic_year.name}',
@@ -3016,7 +3014,7 @@ def edit_school_fee(request, pk):
                         log_settings_change(
                             user=request.user,
                             action='UPDATE',
-                            setting_type='SCHOOL_FEES',
+                            setting_type='SCHOOL_FEE',
                             obj=school_fee,
                             old_value=str(old_values),
                             new_value='; '.join(changes),
@@ -3072,7 +3070,7 @@ def delete_school_fee(request, pk):
         log_settings_change(
             user=request.user,
             action='DELETE',
-            setting_type='SCHOOL_FEES',
+            setting_type='SCHOOL_FEE',
             old_value=f'{fee_name} - {academic_year_name}',
             description=f'حذف المصروفات: {fee_name}',
             request=request
@@ -3166,7 +3164,6 @@ def discounts_list(request):
             'value': '-percentage_value',
             'valid_from': 'valid_from_date',
             'valid_to': 'valid_to_date',
-            'created': '-created_date',
         }
         
         order_field = sort_mapping.get(sort_by, 'name')
@@ -4014,7 +4011,7 @@ def apply_discount_to_student(request, student_id, discount_id):
                     # تسجيل العملية
                     log_settings_change(
                         user=request.user,
-                        action='APPLY',
+                        action='UPDATE',
                         setting_type='DISCOUNT',
                         obj=discount,
                         new_value=f'تطبيق على الطالب: {student.name}',
@@ -4234,49 +4231,154 @@ def system_settings(request):
         return redirect('school_settings:comprehensive_settings')
 
 
-# دالة تحديث الإعدادات منفصلة
+# # دالة تحديث الإعدادات منفصلة
+# @login_required
+# @settings_admin_required
+# @require_http_methods(["POST"])
+# def update_system_settings(request):
+#     """تحديث إعدادات النظام"""
+#     try:
+#         settings_obj = SystemSettings.get_current_settings()
+        
+#         # قائمة الحقول المسموح بتعديلها
+#         allowed_fields = [
+#             'school_name', 'school_name_en', 'school_address', 'school_phone',
+#             'school_email', 'school_website', 'system_language', 
+#             'max_students_per_classroom', 'default_installments_count',
+#             'late_payment_penalty_rate', 'grace_period_days',
+#             'currency_symbol', 'currency_name', 'receipt_footer_text'
+#         ]
+        
+#         updated_fields = []
+#         for field in allowed_fields:
+#             if field in request.POST:
+#                 old_value = getattr(settings_obj, field, '')
+#                 new_value = request.POST.get(field, '').strip()
+                
+#                 if str(old_value) != str(new_value):
+#                     setattr(settings_obj, field, new_value)
+#                     updated_fields.append(field)
+        
+#         if updated_fields:
+#             settings_obj.updated_by = request.user
+#             settings_obj.save()
+            
+#             messages.success(
+#                 request, 
+#                 f'تم تحديث {len(updated_fields)} إعداد بنجاح: {", ".join(updated_fields[:3])}{"..." if len(updated_fields) > 3 else ""}'
+#             )
+#         else:
+#             messages.info(request, 'لم يتم تغيير أي إعدادات')
+        
+#         return JsonResponse({'success': True, 'updated_fields': updated_fields})
+        
+#     except Exception as e:
+#         return JsonResponse({'success': False, 'error': str(e)})
+
 @login_required
 @settings_admin_required
 @require_http_methods(["POST"])
+@csrf_protect
 def update_system_settings(request):
-    """تحديث إعدادات النظام"""
+    """تحديث إعدادات النظام العامة - نسخة صحيحة متوافقة مع SystemSettings"""
     try:
         settings_obj = SystemSettings.get_current_settings()
-        
-        # قائمة الحقول المسموح بتعديلها
+
         allowed_fields = [
-            'school_name', 'school_name_en', 'school_address', 'school_phone',
-            'school_email', 'school_website', 'system_language', 
-            'max_students_per_classroom', 'default_installments_count',
-            'late_payment_penalty_rate', 'grace_period_days',
-            'currency_symbol', 'currency_name', 'receipt_footer_text'
+            'school_name',
+            'school_name_en',
+            'school_address',
+            'school_phone',
+            'school_fax',
+            'school_email',
+            'school_website',
+            'currency_symbol',
+            'currency_name',
+            'default_installments_count',
+            'late_payment_penalty_rate',
+            'grace_period_days',
+            'system_language',
+            'max_students_per_classroom',
+            'receipt_footer_text',
+            'receipt_terms',
         ]
-        
+
         updated_fields = []
+
+        integer_fields = [
+            'default_installments_count',
+            'grace_period_days',
+            'max_students_per_classroom',
+        ]
+
+        decimal_fields = [
+            'late_payment_penalty_rate',
+        ]
+
         for field in allowed_fields:
-            if field in request.POST:
-                old_value = getattr(settings_obj, field, '')
-                new_value = request.POST.get(field, '').strip()
-                
-                if str(old_value) != str(new_value):
-                    setattr(settings_obj, field, new_value)
-                    updated_fields.append(field)
-        
+            if field not in request.POST:
+                continue
+
+            old_value = getattr(settings_obj, field, None)
+            raw_value = request.POST.get(field, '')
+
+            if field in integer_fields:
+                try:
+                    new_value = int(raw_value or 0)
+                except ValueError:
+                    messages.error(request, f'قيمة غير صحيحة في الحقل: {field}')
+                    return redirect('school_settings:system_settings')
+
+            elif field in decimal_fields:
+                try:
+                    new_value = Decimal(str(raw_value or 0))
+                except Exception:
+                    messages.error(request, f'قيمة غير صحيحة في الحقل: {field}')
+                    return redirect('school_settings:system_settings')
+
+            else:
+                new_value = raw_value.strip()
+
+            if str(old_value) != str(new_value):
+                setattr(settings_obj, field, new_value)
+                updated_fields.append(field)
+
+        if 'school_logo' in request.FILES:
+            settings_obj.school_logo = request.FILES['school_logo']
+            updated_fields.append('school_logo')
+
+        if 'school_stamp' in request.FILES:
+            settings_obj.school_stamp = request.FILES['school_stamp']
+            updated_fields.append('school_stamp')
+
         if updated_fields:
             settings_obj.updated_by = request.user
             settings_obj.save()
-            
-            messages.success(
-                request, 
-                f'تم تحديث {len(updated_fields)} إعداد بنجاح: {", ".join(updated_fields[:3])}{"..." if len(updated_fields) > 3 else ""}'
-            )
+
+            try:
+                SettingsLog.log_action(
+                    user=request.user,
+                    action='UPDATE',
+                    setting_type='SYSTEM_SETTING',
+                    object_id=settings_obj.pk,
+                    object_name=str(settings_obj),
+                    new_value=', '.join(updated_fields),
+                    description='تحديث إعدادات النظام العامة',
+                    request=request
+                )
+            except Exception as log_error:
+                logger.warning(f'تعذر تسجيل تحديث الإعدادات: {log_error}')
+
+            messages.success(request, 'تم حفظ الإعدادات بنجاح')
         else:
             messages.info(request, 'لم يتم تغيير أي إعدادات')
-        
-        return JsonResponse({'success': True, 'updated_fields': updated_fields})
-        
+
+        return redirect('school_settings:system_settings')
+
     except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)})
+        logger.error(f"خطأ في تحديث إعدادات النظام: {e}", exc_info=True)
+        messages.error(request, f'حدث خطأ أثناء حفظ الإعدادات: {str(e)}')
+        return redirect('school_settings:system_settings')
 
 
 # دالة آمنة لحساب عدد السجلات
@@ -4316,63 +4418,63 @@ def system_metrics_api(request):
         return JsonResponse({'success': False, 'error': str(e)})
 
 
-@login_required
-@settings_admin_required
-@require_http_methods(["POST"])
-@csrf_protect
-def update_system_settings(request):
-    """تحديث إعدادات النظام العامة"""
-    try:
-        settings_obj = SystemSettings.get_current_settings()
-        old_values = {
-            'site_name': settings_obj.site_name,
-            'site_description': settings_obj.site_description,
-            'default_language': settings_obj.default_language,
-            'timezone': settings_obj.timezone,
-            'date_format': settings_obj.date_format,
-            'currency': settings_obj.currency,
-            'maintenance_mode': settings_obj.maintenance_mode,
-        }
+# @login_required
+# @settings_admin_required
+# @require_http_methods(["POST"])
+# @csrf_protect
+# def update_system_settings(request):
+#     """تحديث إعدادات النظام العامة"""
+#     try:
+#         settings_obj = SystemSettings.get_current_settings()
+#         old_values = {
+#             'site_name': settings_obj.site_name,
+#             'site_description': settings_obj.site_description,
+#             'default_language': settings_obj.default_language,
+#             'timezone': settings_obj.timezone,
+#             'date_format': settings_obj.date_format,
+#             'currency': settings_obj.currency,
+#             'maintenance_mode': settings_obj.maintenance_mode,
+#         }
         
-        # تحديث البيانات
-        settings_obj.site_name = request.POST.get('site_name', '').strip()
-        settings_obj.site_description = request.POST.get('site_description', '').strip()
-        settings_obj.default_language = request.POST.get('default_language', 'ar')
-        settings_obj.timezone = request.POST.get('timezone', 'Asia/Riyadh')
-        settings_obj.date_format = request.POST.get('date_format', 'Y-m-d')
-        settings_obj.currency = request.POST.get('currency', 'SAR').strip()
-        settings_obj.maintenance_mode = request.POST.get('maintenance_mode') == 'on'
+#         # تحديث البيانات
+#         settings_obj.site_name = request.POST.get('site_name', '').strip()
+#         settings_obj.site_description = request.POST.get('site_description', '').strip()
+#         settings_obj.default_language = request.POST.get('default_language', 'ar')
+#         settings_obj.timezone = request.POST.get('timezone', 'Asia/Riyadh')
+#         settings_obj.date_format = request.POST.get('date_format', 'Y-m-d')
+#         settings_obj.currency = request.POST.get('currency', 'SAR').strip()
+#         settings_obj.maintenance_mode = request.POST.get('maintenance_mode') == 'on'
         
-        settings_obj.save()
+#         settings_obj.save()
         
-        # تسجيل التغييرات
-        for field, old_value in old_values.items():
-            new_value = getattr(settings_obj, field)
-            if str(old_value) != str(new_value):
-                log_settings_change(
-                    user=request.user,
-                    action='UPDATE',
-                    setting_type='SYSTEM_SETTINGS',
-                    obj=settings_obj,
-                    old_value=str(old_value),
-                    new_value=str(new_value),
-                    description=f'تحديث إعداد النظام: {field}',
-                    request=request
-                )
+#         # تسجيل التغييرات
+#         for field, old_value in old_values.items():
+#             new_value = getattr(settings_obj, field)
+#             if str(old_value) != str(new_value):
+#                 log_settings_change(
+#                     user=request.user,
+#                     action='UPDATE',
+#                     setting_type='SYSTEM_SETTING',
+#                     obj=settings_obj,
+#                     old_value=str(old_value),
+#                     new_value=str(new_value),
+#                     description=f'تحديث إعداد النظام: {field}',
+#                     request=request
+#                 )
         
-        messages.success(request, 'تم تحديث إعدادات النظام بنجاح')
+#         messages.success(request, 'تم تحديث إعدادات النظام بنجاح')
         
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            return JsonResponse({'status': 'success', 'message': 'تم تحديث إعدادات النظام بنجاح'})
+#         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+#             return JsonResponse({'status': 'success', 'message': 'تم تحديث إعدادات النظام بنجاح'})
         
-    except Exception as e:
-        logger.error(f"خطأ في تحديث إعدادات النظام: {e}")
-        messages.error(request, 'حدث خطأ في تحديث إعدادات النظام')
+#     except Exception as e:
+#         logger.error(f"خطأ في تحديث إعدادات النظام: {e}")
+#         messages.error(request, 'حدث خطأ في تحديث إعدادات النظام')
         
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            return JsonResponse({'status': 'error', 'message': 'حدث خطأ في تحديث إعدادات النظام'})
+#         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+#             return JsonResponse({'status': 'error', 'message': 'حدث خطأ في تحديث إعدادات النظام'})
     
-    return redirect('school_settings:system_settings')
+#     return redirect('school_settings:system_settings')
 
 @never_cache
 @login_required
@@ -4731,7 +4833,7 @@ def edit_role(request, role_id):
                         log_settings_change(
                             user=request.user,
                             action='UPDATE',
-                            setting_type='SYSTEM_ROLE',
+                            setting_type='USER_ROLE',
                             obj=system_role,
                             old_value=str(old_values),
                             new_value='; '.join(changes),
@@ -4781,7 +4883,7 @@ def delete_role(request, role_id):
             log_settings_change(
                 user=request.user,
                 action='DELETE',
-                setting_type='SYSTEM_ROLE',
+                setting_type='USER_ROLE',
                 obj=system_role,
                 old_value=f'{username} - {role_name}',
                 new_value='DELETED',
@@ -4828,7 +4930,7 @@ def toggle_role_status(request, role_id):
             log_settings_change(
                 user=request.user,
                 action='UPDATE',
-                setting_type='SYSTEM_ROLE',
+                setting_type='USER_ROLE',
                 obj=system_role,
                 old_value=str(not system_role.is_active),
                 new_value=str(system_role.is_active),
@@ -4884,7 +4986,7 @@ def assign_role(request, user_id):
                     # تسجيل العملية
                     log_settings_change(
                         user=request.user,
-                        action='ASSIGN',
+                        action='UPDATE',
                         setting_type='USER_ROLE',
                         obj=system_role,
                         new_value=f'{user.username} - {role}',
@@ -4929,7 +5031,7 @@ def remove_role(request, user_id):
         # تسجيل العملية
         log_settings_change(
             user=request.user,
-            action='REMOVE',
+            action='DELETE',
             setting_type='USER_ROLE',
             old_value=f'{user.username} - {", ".join(role_names)}',
             description=f'إزالة أدوار المستخدم {user.username}',
@@ -5011,7 +5113,7 @@ def settings_logs(request):
             'date_from': date_from,
             'date_to': date_to,
             'action_choices': SettingsLog.ACTION_CHOICES,
-            'setting_type_choices': SettingsLog.SETTING_TYPE_CHOICES,
+            'setting_type_choices': getattr(SettingsLog, 'SETTING_TYPES', []),
         })
         
         return render(request, 'school_settings/settings_logs.html', context)
@@ -5534,8 +5636,8 @@ def export_settings_logs(request):
     for log in logs_query[:1000]:  # حد أقصى 1000 سجل للتصدير
         writer.writerow([
             log.id,
-            log.user.get_full_name() or log.user.username,
-            log.user.email or 'غير محدد',
+            (log.user.get_full_name() or log.user.username) if log.user else 'مستخدم محذوف',
+            log.user.email if log.user and log.user.email else 'غير محدد',
             log.get_action_display(),
             log.get_setting_type_display(),
             log.object_name or 'غير محدد',

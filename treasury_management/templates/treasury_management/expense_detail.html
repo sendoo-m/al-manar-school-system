@@ -1,0 +1,394 @@
+{% extends 'treasury_management/base.html' %}
+{% load static %}
+
+{% block title %}تفاصيل المصروف اليومي - نظام الخزينة{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'treasury_management:expenses_list' %}">المصروفات اليومية</a></li>
+<li class="breadcrumb-item active">تفاصيل المصروف</li>
+{% endblock %}
+
+{% block content %}
+<style>
+    .detail-container {
+        background: linear-gradient(135deg, rgba(220, 53, 69, 0.04), rgba(255, 193, 7, 0.04));
+        border-radius: 20px;
+        padding: 25px;
+        margin: -10px;
+        min-height: calc(100vh - 200px);
+    }
+
+    .detail-card {
+        background: white;
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        overflow: hidden;
+        margin-bottom: 25px;
+    }
+
+    .detail-header {
+        background: linear-gradient(135deg, #dc3545, #fd7e14);
+        color: white;
+        padding: 25px 30px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .detail-header h4 {
+        margin: 0 0 8px 0;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        color: white;
+    }
+
+    .detail-header i {
+        background: rgba(255,255,255,0.2);
+        padding: 12px;
+        border-radius: 12px;
+        margin-left: 15px;
+    }
+
+    .detail-body {
+        padding: 30px;
+    }
+
+    .summary-strip {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        margin-bottom: 25px;
+    }
+
+    .summary-box {
+        flex: 1;
+        min-width: 180px;
+        background: #f8f9fa;
+        border-radius: 16px;
+        padding: 18px;
+        border: 2px solid #edf0f2;
+    }
+
+    .summary-label {
+        color: #6c757d;
+        font-weight: 700;
+        font-size: .85rem;
+        margin-bottom: 6px;
+    }
+
+    .summary-value {
+        color: #2c3e50;
+        font-weight: 800;
+        font-size: 1.05rem;
+    }
+
+    .amount-value {
+        color: #dc3545;
+        font-size: 1.4rem;
+        font-weight: 900;
+    }
+
+    .badge-status {
+        padding: 8px 14px;
+        border-radius: 22px;
+        font-weight: 800;
+        display: inline-block;
+    }
+
+    .badge-approved {
+        background: rgba(25, 135, 84, 0.12);
+        color: #198754;
+    }
+
+    .badge-pending {
+        background: rgba(255, 193, 7, 0.18);
+        color: #856404;
+    }
+
+    .section-card {
+        border: 2px solid #eef1f4;
+        border-radius: 16px;
+        overflow: hidden;
+        margin-bottom: 20px;
+        background: white;
+    }
+
+    .section-card-header {
+        padding: 15px 20px;
+        background: linear-gradient(135deg, #f8f9fa, #eef1f4);
+        font-weight: 800;
+        color: #2c3e50;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .section-card-body {
+        padding: 20px;
+    }
+
+    .info-table {
+        width: 100%;
+        margin: 0;
+    }
+
+    .info-table td {
+        padding: 10px 8px;
+        border-bottom: 1px solid #f1f3f5;
+        vertical-align: top;
+    }
+
+    .info-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .info-table td:first-child {
+        width: 35%;
+        color: #6c757d;
+        font-weight: 800;
+    }
+
+    .info-table td:last-child {
+        color: #2c3e50;
+        font-weight: 600;
+    }
+
+    .description-box {
+        background: #f8f9fa;
+        border-radius: 14px;
+        padding: 18px;
+        color: #2c3e50;
+        line-height: 1.8;
+        font-weight: 600;
+    }
+
+    .action-footer {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-top: 1px solid #e9ecef;
+        padding: 20px 30px;
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .btn-soft {
+        border: none;
+        border-radius: 12px;
+        padding: 10px 20px;
+        font-weight: 800;
+        color: white;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all .3s ease;
+    }
+
+    .btn-soft:hover {
+        transform: translateY(-2px);
+        color: white;
+    }
+
+    .btn-back { background: linear-gradient(135deg, #6c757d, #5a6268); }
+    .btn-list { background: linear-gradient(135deg, #dc3545, #fd7e14); }
+    .btn-transaction { background: linear-gradient(135deg, #0d6efd, #0b5ed7); }
+
+    @media (max-width: 768px) {
+        .detail-container {
+            padding: 15px;
+            margin: -5px;
+        }
+
+        .detail-body {
+            padding: 20px;
+        }
+
+        .action-footer {
+            flex-direction: column;
+        }
+
+        .btn-soft {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+
+<div class="detail-container">
+    <div class="detail-card">
+        <div class="detail-header">
+            <h4>
+                <i class="fas fa-receipt"></i>
+                تفاصيل المصروف اليومي
+            </h4>
+            <p class="mb-0">رقم المصروف: {{ expense.expense_number }}</p>
+        </div>
+
+        <div class="detail-body">
+            <div class="summary-strip">
+                <div class="summary-box">
+                    <div class="summary-label">التصنيف</div>
+                    <div class="summary-value">{{ expense.category.name }}</div>
+                </div>
+
+                <div class="summary-box">
+                    <div class="summary-label">الحالة</div>
+                    <div class="summary-value">
+                        {% if expense.is_approved %}
+                            <span class="badge-status badge-approved">✅ معتمد</span>
+                        {% else %}
+                            <span class="badge-status badge-pending">⏳ معلق</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="summary-box">
+                    <div class="summary-label">المبلغ</div>
+                    <div class="summary-value amount-value">
+                        - {{ expense.amount|floatformat:2 }} ج.م
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="section-card">
+                        <div class="section-card-header">
+                            <i class="fas fa-info-circle"></i>
+                            معلومات المصروف
+                        </div>
+                        <div class="section-card-body">
+                            <table class="info-table">
+                                <tr>
+                                    <td>رقم المصروف</td>
+                                    <td>{{ expense.expense_number }}</td>
+                                </tr>
+                                <tr>
+                                    <td>نوع المصروف</td>
+                                    <td>{{ expense.get_expense_type_display }}</td>
+                                </tr>
+                                <tr>
+                                    <td>تصنيف المصروف</td>
+                                    <td>
+                                        {{ expense.category.name }}
+                                        <br>
+                                        <small class="text-muted">{{ expense.category.code }}</small>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>الحساب المرتبط</td>
+                                    <td>
+                                        {{ expense.category.account.name }}
+                                        <br>
+                                        <small class="text-muted">{{ expense.category.account.code }}</small>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>المورد</td>
+                                    <td>{{ expense.vendor_name|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <td>رقم الفاتورة</td>
+                                    <td>{{ expense.invoice_number|default:"-" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="section-card">
+                        <div class="section-card-header">
+                            <i class="fas fa-calendar-alt"></i>
+                            التواريخ والمستخدمون
+                        </div>
+                        <div class="section-card-body">
+                            <table class="info-table">
+                                <tr>
+                                    <td>تاريخ المصروف</td>
+                                    <td>{{ expense.expense_date|date:"d/m/Y" }}</td>
+                                </tr>
+                                <tr>
+                                    <td>وقت الإنشاء</td>
+                                    <td>{{ expense.created_at|date:"d/m/Y H:i" }}</td>
+                                </tr>
+                                <tr>
+                                    <td>أنشأ بواسطة</td>
+                                    <td>{{ expense.created_by.get_full_name|default:expense.created_by.username }}</td>
+                                </tr>
+                                <tr>
+                                    <td>اعتمد بواسطة</td>
+                                    <td>
+                                        {% if expense.approved_by %}
+                                            {{ expense.approved_by.get_full_name|default:expense.approved_by.username }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>تاريخ الاعتماد</td>
+                                    <td>{{ expense.approved_at|date:"d/m/Y H:i"|default:"-" }}</td>
+                                </tr>
+                                {% if expense.transaction %}
+                                <tr>
+                                    <td>رقم العملية المالية</td>
+                                    <td>{{ expense.transaction.transaction_number }}</td>
+                                </tr>
+                                <tr>
+                                    <td>الخزنة</td>
+                                    <td>{{ expense.transaction.treasury.name }}</td>
+                                </tr>
+                                {% endif %}
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <div class="section-card-header">
+                    <i class="fas fa-comment"></i>
+                    وصف المصروف
+                </div>
+                <div class="section-card-body">
+                    <div class="description-box">{{ expense.description }}</div>
+                </div>
+            </div>
+
+            {% if expense.notes %}
+            <div class="section-card">
+                <div class="section-card-header">
+                    <i class="fas fa-sticky-note"></i>
+                    ملاحظات
+                </div>
+                <div class="section-card-body">
+                    <div class="description-box">{{ expense.notes }}</div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="action-footer">
+            <a href="{% url 'treasury_management:expenses_list' %}" class="btn-soft btn-list">
+                <i class="fas fa-list"></i>
+                قائمة المصروفات
+            </a>
+
+            {% if expense.transaction %}
+            <a href="{% url 'treasury_management:transaction_detail' expense.transaction.id %}" class="btn-soft btn-transaction">
+                <i class="fas fa-link"></i>
+                العملية المالية
+            </a>
+            {% endif %}
+
+            <a href="javascript:history.back()" class="btn-soft btn-back">
+                <i class="fas fa-arrow-right"></i>
+                رجوع
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

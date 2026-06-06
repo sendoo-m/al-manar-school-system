@@ -1,0 +1,554 @@
+{% extends 'payments/base.html' %}
+{% load humanize %}
+
+{% block title %}التقارير المالية - مدرسة المنار{% endblock %}
+{% block page_title %}التقارير المالية{% endblock %}
+{% block page_subtitle %}لوحة شاملة لمتابعة التحصيل، المتأخرات، طرق الدفع، والصفوف{% endblock %}
+{% block page_icon %}<i class="fas fa-chart-line me-3"></i>{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'payments:payments_home' %}">لوحة المدفوعات</a></li>
+<li class="breadcrumb-item active">التقارير المالية</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'payments:daily_report' %}" class="btn btn-outline-primary btn-custom">
+        <i class="fas fa-calendar-day me-1"></i>التقرير اليومي
+    </a>
+
+    <a href="{% url 'payments:monthly_report' %}?month={{ current_month }}&year={{ current_year }}" class="btn btn-outline-info btn-custom">
+        <i class="fas fa-calendar-alt me-1"></i>التقرير الشهري
+    </a>
+
+    <a href="{% url 'payments:all_payments' %}" class="btn btn-outline-secondary btn-custom">
+        <i class="fas fa-list me-1"></i>كل المدفوعات
+    </a>
+
+    <button type="button" class="btn btn-success btn-custom" onclick="window.print()">
+        <i class="fas fa-print me-1"></i>طباعة
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .reports-hero {
+        background: linear-gradient(135deg, #0d6efd, #0dcaf0);
+        color: white;
+        border-radius: 22px;
+        padding: 28px;
+        margin-bottom: 25px;
+        box-shadow: 0 8px 24px rgba(13, 110, 253, 0.25);
+    }
+
+    .reports-hero h2 {
+        font-weight: 900;
+        margin-bottom: 8px;
+    }
+
+    .summary-card {
+        background: white;
+        border-radius: 18px;
+        padding: 22px;
+        height: 100%;
+        box-shadow: 0 5px 16px rgba(0,0,0,0.08);
+        border-top: 5px solid #0d6efd;
+        transition: all 0.25s ease;
+        text-align: center;
+    }
+
+    .summary-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+    }
+
+    .summary-card.success { border-top-color: #198754; }
+    .summary-card.warning { border-top-color: #ffc107; }
+    .summary-card.danger { border-top-color: #dc3545; }
+    .summary-card.info { border-top-color: #0dcaf0; }
+
+    .summary-value {
+        font-size: 1.85rem;
+        font-weight: 900;
+        margin-bottom: 5px;
+        color: #0f172a;
+    }
+
+    .summary-label {
+        color: #64748b;
+        font-weight: 800;
+        font-size: 0.9rem;
+    }
+
+    .content-panel {
+        background: white;
+        border-radius: 18px;
+        box-shadow: 0 5px 16px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+        overflow: hidden;
+    }
+
+    .content-panel-header {
+        background: #f8f9fa;
+        padding: 18px 22px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .content-panel-header h5 {
+        margin: 0;
+        font-weight: 900;
+    }
+
+    .content-panel-body {
+        padding: 22px;
+    }
+
+    .progress-wrap {
+        background: #e9ecef;
+        height: 12px;
+        border-radius: 20px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        background: linear-gradient(135deg, #198754, #20c997);
+        height: 100%;
+        border-radius: 20px;
+    }
+
+    .quick-report-card {
+        border: 1px solid #e9ecef;
+        border-radius: 16px;
+        padding: 20px;
+        height: 100%;
+        text-align: center;
+        transition: all 0.25s ease;
+        background: white;
+    }
+
+    .quick-report-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        border-color: #0d6efd;
+    }
+
+    .quick-report-card i {
+        font-size: 2.6rem;
+        margin-bottom: 12px;
+    }
+
+    .reports-table thead th {
+        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+        color: white;
+        border: none;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    .reports-table td {
+        vertical-align: middle;
+        text-align: center;
+    }
+
+    .student-cell {
+        text-align: right !important;
+    }
+
+    .method-box,
+    .collector-box {
+        background: #f8f9fa;
+        border-radius: 14px;
+        padding: 14px;
+        margin-bottom: 10px;
+    }
+
+    @media print {
+        .page-actions,
+        .breadcrumb,
+        .breadcrumb-nav,
+        .btn,
+        .reports-hero {
+            display: none !important;
+        }
+
+        .content-panel,
+        .summary-card {
+            box-shadow: none !important;
+            border: 1px solid #ddd !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="reports-hero">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div>
+            <h2>
+                <i class="fas fa-chart-line me-2"></i>
+                التقارير المالية العامة
+            </h2>
+            <p class="mb-0">
+                ملخص شامل لحالة التحصيل والمدفوعات والمتأخرات حتى {{ today|date:"Y/m/d" }}
+            </p>
+        </div>
+
+        <div class="text-lg-end">
+            <div><strong>تاريخ اليوم:</strong> {{ today|date:"Y/m/d" }}</div>
+            <div><strong>نسبة التحصيل:</strong> {{ collection_percentage|floatformat:1 }}%</div>
+        </div>
+    </div>
+</div>
+
+<!-- روابط التقارير السريعة -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <a href="{% url 'payments:daily_report' %}" class="text-decoration-none text-dark">
+            <div class="quick-report-card">
+                <i class="fas fa-calendar-day text-primary"></i>
+                <h6 class="fw-bold">التقرير اليومي</h6>
+                <small class="text-muted">تحصيل اليوم والعمليات اليومية</small>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <a href="{% url 'payments:monthly_report' %}?month={{ current_month }}&year={{ current_year }}" class="text-decoration-none text-dark">
+            <div class="quick-report-card">
+                <i class="fas fa-calendar-alt text-info"></i>
+                <h6 class="fw-bold">التقرير الشهري</h6>
+                <small class="text-muted">تحليل الشهر الحالي</small>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <a href="{% url 'payments:all_payments' %}" class="text-decoration-none text-dark">
+            <div class="quick-report-card">
+                <i class="fas fa-list text-success"></i>
+                <h6 class="fw-bold">كل المدفوعات</h6>
+                <small class="text-muted">بحث وفلاتر تفصيلية</small>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <a href="{% url 'payments:overdue_payments' %}" class="text-decoration-none text-dark">
+            <div class="quick-report-card">
+                <i class="fas fa-exclamation-triangle text-danger"></i>
+                <h6 class="fw-bold">المتأخرات</h6>
+                <small class="text-muted">متابعة الأقساط المتأخرة</small>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- الإحصائيات العامة -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-lg-6 mb-3">
+        <div class="summary-card">
+            <div class="summary-value text-primary">{{ total_required|floatformat:2 }}</div>
+            <div class="summary-label">إجمالي المطلوب ج.م</div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 mb-3">
+        <div class="summary-card success">
+            <div class="summary-value text-success">{{ total_paid|floatformat:2 }}</div>
+            <div class="summary-label">إجمالي المدفوع ج.م</div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 mb-3">
+        <div class="summary-card danger">
+            <div class="summary-value text-danger">{{ total_remaining|floatformat:2 }}</div>
+            <div class="summary-label">إجمالي المتبقي ج.م</div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 mb-3">
+        <div class="summary-card info">
+            <div class="summary-value text-info">{{ collection_percentage|floatformat:1 }}%</div>
+            <div class="summary-label">نسبة التحصيل</div>
+        </div>
+    </div>
+</div>
+
+<!-- تحصيل اليوم والشهر -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="summary-card success">
+            <div class="summary-value text-success">{{ today_amount|floatformat:2 }}</div>
+            <div class="summary-label">تحصيل اليوم ج.م</div>
+            <small class="text-muted">{{ today_count }} عملية</small>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="summary-card info">
+            <div class="summary-value text-info">{{ month_amount|floatformat:2 }}</div>
+            <div class="summary-label">تحصيل الشهر ج.م</div>
+            <small class="text-muted">{{ month_count }} عملية</small>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="summary-card warning">
+            <div class="summary-value text-warning">{{ status_stats.partial_count }}</div>
+            <div class="summary-label">أقساط مدفوعة جزئياً</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="summary-card danger">
+            <div class="summary-value text-danger">{{ overdue_stats.amount|floatformat:2 }}</div>
+            <div class="summary-label">إجمالي المتأخرات ج.م</div>
+            <small class="text-muted">{{ overdue_stats.count }} قسط</small>
+        </div>
+    </div>
+</div>
+
+<!-- مؤشر التحصيل -->
+<div class="content-panel">
+    <div class="content-panel-header">
+        <h5>
+            <i class="fas fa-bullseye me-2 text-success"></i>
+            مؤشر التحصيل العام
+        </h5>
+    </div>
+
+    <div class="content-panel-body">
+        <div class="d-flex justify-content-between mb-2">
+            <strong>المدفوع من إجمالي المطلوب</strong>
+            <strong>{{ collection_percentage|floatformat:1 }}%</strong>
+        </div>
+
+        <div class="progress-wrap">
+            <div class="progress-fill" style="width: {{ collection_percentage|floatformat:0 }}%"></div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- طرق الدفع -->
+    <div class="col-lg-6">
+        <div class="content-panel">
+            <div class="content-panel-header">
+                <h5>
+                    <i class="fas fa-credit-card me-2 text-success"></i>
+                    طرق الدفع
+                </h5>
+            </div>
+
+            <div class="content-panel-body">
+                {% for method in payment_methods_stats %}
+                <div class="method-box">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>
+                                {% if method.payment_method == 'cash' %}نقدي
+                                {% elif method.payment_method == 'transfer' %}تحويل بنكي
+                                {% elif method.payment_method == 'card' %}بطاقة
+                                {% elif method.payment_method == 'check' %}شيك
+                                {% else %}{{ method.payment_method }}{% endif %}
+                            </strong>
+                            <br>
+                            <small class="text-muted">{{ method.count }} عملية</small>
+                        </div>
+                        <strong class="text-success">{{ method.amount|floatformat:2 }} ج.م</strong>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center text-muted py-4">لا توجد بيانات طرق دفع</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- المحاسبون -->
+    <div class="col-lg-6">
+        <div class="content-panel">
+            <div class="content-panel-header">
+                <h5>
+                    <i class="fas fa-user-tie me-2 text-primary"></i>
+                    المحاسبون
+                </h5>
+            </div>
+
+            <div class="content-panel-body">
+                {% for collector in collectors_stats %}
+                <div class="collector-box">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ collector.payment_user|default:"غير محدد" }}</strong>
+                            <br>
+                            <small class="text-muted">{{ collector.count }} عملية</small>
+                        </div>
+                        <strong class="text-primary">{{ collector.amount|floatformat:2 }} ج.م</strong>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center text-muted py-4">لا توجد بيانات محاسبين</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- إحصائيات الصفوف -->
+<div class="content-panel">
+    <div class="content-panel-header">
+        <h5>
+            <i class="fas fa-school me-2 text-info"></i>
+            التحصيل حسب الصفوف
+        </h5>
+    </div>
+
+    <div class="content-panel-body p-0">
+        <div class="table-responsive">
+            <table class="table reports-table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>المرحلة</th>
+                        <th>الصف</th>
+                        <th>طلاب</th>
+                        <th>أقساط</th>
+                        <th>المطلوب</th>
+                        <th>المدفوع</th>
+                        <th>المتبقي</th>
+                        <th>النسبة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for grade in grade_stats %}
+                    <tr>
+                        <td>{{ grade.education_level_name }}</td>
+                        <td><strong>{{ grade.grade_name }}</strong></td>
+                        <td>{{ grade.students_count }}</td>
+                        <td>{{ grade.installments_count }}</td>
+                        <td>{{ grade.total_required|floatformat:2 }}</td>
+                        <td class="text-success fw-bold">{{ grade.total_paid|floatformat:2 }}</td>
+                        <td class="text-danger fw-bold">{{ grade.total_remaining|floatformat:2 }}</td>
+                        <td>
+                            <span class="badge bg-info">{{ grade.percentage|floatformat:1 }}%</span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-muted py-4">لا توجد بيانات صفوف</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- آخر المدفوعات -->
+    <div class="col-lg-6">
+        <div class="content-panel">
+            <div class="content-panel-header">
+                <h5>
+                    <i class="fas fa-clock me-2 text-primary"></i>
+                    آخر المدفوعات
+                </h5>
+            </div>
+
+            <div class="content-panel-body p-0">
+                <div class="table-responsive">
+                    <table class="table reports-table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>الطالب</th>
+                                <th>المبلغ</th>
+                                <th>التاريخ</th>
+                                <th>إيصال</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in recent_payments %}
+                            <tr>
+                                <td class="student-cell">
+                                    <strong>{{ payment.student.name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ payment.student.national_number }}</small>
+                                </td>
+                                <td class="text-success fw-bold">{{ payment.amount_paid|floatformat:2 }}</td>
+                                <td>
+                                    {{ payment.payment_date|date:"Y/m/d" }}
+                                    <br>
+                                    <small>{{ payment.payment_date|date:"H:i" }}</small>
+                                </td>
+                                <td>
+                                    <a href="{% url 'payments:receipt' payment.pk %}" target="_blank" class="btn btn-outline-success btn-sm">
+                                        <i class="fas fa-print"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-muted py-4">لا توجد مدفوعات</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- أعلى المدفوعات -->
+    <div class="col-lg-6">
+        <div class="content-panel">
+            <div class="content-panel-header">
+                <h5>
+                    <i class="fas fa-trophy me-2 text-warning"></i>
+                    أعلى المدفوعات
+                </h5>
+            </div>
+
+            <div class="content-panel-body p-0">
+                <div class="table-responsive">
+                    <table class="table reports-table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>الطالب</th>
+                                <th>المبلغ</th>
+                                <th>نوع المصروف</th>
+                                <th>إيصال</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in top_payments %}
+                            <tr>
+                                <td class="student-cell">
+                                    <strong>{{ payment.student.name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ payment.student.national_number }}</small>
+                                </td>
+                                <td class="text-success fw-bold">{{ payment.amount_paid|floatformat:2 }}</td>
+                                <td>{{ payment.get_fee_type_display }}</td>
+                                <td>
+                                    <a href="{% url 'payments:receipt' payment.pk %}" target="_blank" class="btn btn-outline-success btn-sm">
+                                        <i class="fas fa-print"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-muted py-4">لا توجد مدفوعات</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

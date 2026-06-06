@@ -1,0 +1,485 @@
+<!-- home/templates/home/manage_inventory_staff.html -->
+{% extends 'dashboard_base.html' %}
+{% load static %}
+
+{% block title %}إدارة صلاحيات: {{ user_obj.get_full_name|default:user_obj.username }}{% endblock %}
+{% block page_title %}إدارة صلاحيات الموظف{% endblock %}
+{% block page_subtitle %}تعديل مجموعات وصلاحيات موظف المخازن{% endblock %}
+
+{% block extra_css %}
+<style>
+    .manage-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        border: none;
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+    
+    .user-header {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        padding: 25px;
+        text-align: center;
+    }
+    
+    .user-avatar-large {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #17a2b8, #20c997);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 2.5rem;
+        margin: 0 auto 20px;
+        border: 4px solid rgba(255,255,255,0.3);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    }
+    
+    .group-card {
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .group-card:hover {
+        border-color: #007bff;
+        box-shadow: 0 4px 15px rgba(0,123,255,0.1);
+    }
+    
+    .group-card.has-permission {
+        border-color: #28a745;
+        background: rgba(40, 167, 69, 0.05);
+    }
+    
+    .group-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        color: white;
+        margin-left: 15px;
+    }
+    
+    .permissions-list {
+        list-style: none;
+        padding: 0;
+        margin-top: 10px;
+    }
+    
+    .permissions-list li {
+        padding: 4px 0;
+        color: #6c757d;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .permissions-list li::before {
+        content: "✓";
+        color: #28a745;
+        font-weight: bold;
+        margin-left: 10px;
+        font-size: 1rem;
+    }
+    
+    .btn-group-action {
+        min-width: 100px;
+    }
+</style>
+{% endblock %}
+{% block sidebar_nav %}
+    <!-- الرئيسية -->
+    <a href="{% url 'home:admin_dashboard' %}" class="nav-link active">
+        <i class="fas fa-tachometer-alt me-2"></i>الرئيسية
+    </a>
+    
+    <!-- قسم إدارة المستخدمين -->
+    <div class="nav-link text-white-50 mt-3">
+        <small><i class="fas fa-users me-1"></i> إدارة المستخدمين</small>
+    </div>
+    <a href="{% url 'home:users_list' %}" class="nav-link">
+    <i class="fas fa-users me-2"></i>إدارة المستخدمين
+    </a>
+    <a href="{% url 'home:add_user' %}" class="nav-link">
+        <i class="fas fa-user-plus me-2"></i>إضافة مستخدم جديد
+    </a>
+    <a href="{% url 'home:inventory_staff_list' %}" class="nav-link"> <!-- ✅ إضافة جديدة -->
+        <i class="fas fa-warehouse me-2"></i>موظفي المخازن
+    </a>
+    
+
+    <!-- قسم إدارة الطلاب -->
+    <div class="nav-link text-white-50 mt-3">
+        <small><i class="fas fa-user-graduate me-1"></i> إدارة الطلاب</small>
+    </div>
+    <a href="{% url 'students:student_list' %}" class="nav-link">
+        <i class="fas fa-list me-2"></i>قائمة الطلاب
+    </a>
+    <a href="{% url 'students:add_student' %}" class="nav-link">
+        <i class="fas fa-user-plus me-2"></i>إضافة طالب جديد
+    </a>
+
+    
+    <!-- قسم الشؤون المالية -->
+    <div class="nav-link text-white-50 mt-3">
+        <small><i class="fas fa-money-bill-wave me-1"></i> الشؤون المالية</small>
+    </div>
+    <a href="{% url 'treasury_management:dashboard' %}" class="nav-link">
+        <i class="fas fa-vault me-2"></i>إدارة الخزينة
+    </a>
+    <a href="{% url 'treasury_management:treasuries_list' %}" class="nav-link">
+        <i class="fas fa-coins me-2"></i>الخزائن
+    </a>
+    <a href="{% url 'treasury_management:accounts_list' %}" class="nav-link">
+        <i class="fas fa-list-alt me-2"></i>الحسابات المالية
+    </a>
+    <a href="{% url 'treasury_management:reports' %}" class="nav-link">
+        <i class="fas fa-chart-line me-2"></i>التقارير المالية
+    </a>
+    <a href="{% url 'payments:all_payments' %}" class="nav-link">
+        <i class="fas fa-credit-card me-2"></i>المدفوعات
+    </a>
+
+    
+    <!-- قسم المخزون -->
+    <div class="nav-link text-white-50 mt-3">
+        <small><i class="fas fa-boxes me-1"></i> إدارة المخزون</small>
+    </div>
+    <a href="{% url 'books_inventory:books_list' %}" class="nav-link">
+        <i class="fas fa-book me-2"></i>مخزون الكتب
+    </a>
+
+    
+    <!-- قسم الإعدادات -->
+    <div class="nav-link text-white-50 mt-3">
+        <small><i class="fas fa-cogs me-1"></i> الإعدادات</small>
+    </div>
+    <a href="{% url 'school_settings:comprehensive_settings' %}" class="nav-link">
+        <i class="fas fa-school me-2"></i>إعدادات المدرسة
+    </a>
+
+    
+    <!-- قسم التقارير -->
+    <div class="nav-link text-white-50 mt-3">
+        <small><i class="fas fa-chart-bar me-1"></i> التقارير</small>
+    </div>
+
+    <a href="{% url 'treasury_management:daily_summary' %}" class="nav-link">
+        <i class="fas fa-calendar-day me-2"></i>الملخص اليومي
+    </a>
+   
+
+{% endblock %}
+
+{% block dashboard_content %}
+<!-- User Header -->
+<div class="manage-card">
+    <div class="user-header">
+        <div class="user-avatar-large">
+            {% if user_obj.first_name and user_obj.last_name %}
+                {{ user_obj.first_name|first }}{{ user_obj.last_name|first }}
+            {% else %}
+                {{ user_obj.username|first|upper }}
+            {% endif %}
+        </div>
+        
+        <h3 class="mb-2">{{ user_obj.get_full_name|default:user_obj.username }}</h3>
+        <p class="mb-0 opacity-75">{{ user_obj.username }} - {{ user_obj.email|default:"بدون بريد إلكتروني" }}</p>
+    </div>
+</div>
+
+<!-- Current Groups -->
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="manage-card">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-check-circle me-2"></i>
+                    المجموعات الحالية ({{ user_groups.count }})
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if user_groups %}
+                <div class="row">
+                    {% for group in user_groups %}
+                    <div class="col-md-6 mb-3">
+                        <div class="group-card has-permission">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="d-flex">
+                                    <div class="group-icon" style="background: linear-gradient(135deg, #28a745, #20c997);">
+                                        <i class="fas fa-check"></i>
+                                    </div>
+                                    <div>
+                                        <!-- ✅ بدون lookup filter -->
+                                        <h6 class="text-success mb-1">
+                                            {% if group.name == 'treasury_admin' %}
+                                                💼 مدير الخزينة العام
+                                            {% elif group.name == 'treasury_manager' %}
+                                                👨‍💼 مدير الخزينة
+                                            {% elif group.name == 'treasury_accountant' %}
+                                                🧾 محاسب الخزينة
+                                            {% elif group.name == 'treasury_cashier' %}
+                                                💰 أمين الخزينة
+                                            {% elif group.name == 'treasury_viewer' %}
+                                                👁️ مراجع الخزينة
+                                            {% elif group.name == 'books_inventory_staff' %}
+                                                📚 موظف مخزن الكتب
+                                            {% elif group.name == 'uniforms_inventory_staff' %}
+                                                👕 موظف مخزن الملابس
+                                            {% else %}
+                                                {{ group.name }}
+                                            {% endif %}
+                                        </h6>
+                                        
+                                        <p class="text-muted small mb-2">
+                                            {% if group.name == 'treasury_admin' %}
+                                                جميع صلاحيات الخزينة والإشراف الكامل
+                                            {% elif group.name == 'treasury_manager' %}
+                                                إدارة العمليات المالية والإشراف
+                                            {% elif group.name == 'treasury_accountant' %}
+                                                العمليات المحاسبية والمالية
+                                            {% elif group.name == 'treasury_cashier' %}
+                                                العمليات النقدية اليومية
+                                            {% elif group.name == 'treasury_viewer' %}
+                                                مراجعة وعرض العمليات فقط
+                                            {% elif group.name == 'books_inventory_staff' %}
+                                                إدارة مخزون الكتب والمواد التعليمية
+                                            {% elif group.name == 'uniforms_inventory_staff' %}
+                                                إدارة الزي المدرسي والملابس
+                                            {% else %}
+                                                وصف غير متاح
+                                            {% endif %}
+                                        </p>
+                                        
+                                        <ul class="permissions-list">
+                                            {% if group.name == 'treasury_admin' %}
+                                                <li>إدارة الخزائن</li>
+                                                <li>إدارة الحسابات</li>
+                                                <li>التقارير المالية</li>
+                                                <li>إدارة المستخدمين</li>
+                                            {% elif group.name == 'treasury_manager' %}
+                                                <li>إدارة العمليات</li>
+                                                <li>اعتماد المعاملات</li>
+                                                <li>التقارير الإدارية</li>
+                                            {% elif group.name == 'treasury_accountant' %}
+                                                <li>تسجيل المعاملات</li>
+                                                <li>التقارير المحاسبية</li>
+                                                <li>مراجعة الحسابات</li>
+                                            {% elif group.name == 'treasury_cashier' %}
+                                                <li>المعاملات النقدية</li>
+                                                <li>إدارة النقدية</li>
+                                                <li>تسجيل الإيرادات</li>
+                                            {% elif group.name == 'treasury_viewer' %}
+                                                <li>عرض المعاملات</li>
+                                                <li>التقارير الأساسية</li>
+                                                <li>المراجعة</li>
+                                            {% elif group.name == 'books_inventory_staff' %}
+                                                <li>إدارة مخزون الكتب</li>
+                                                <li>طلبات الكتب</li>
+                                                <li>توزيع المواد</li>
+                                                <li>تقارير المخزون</li>
+                                            {% elif group.name == 'uniforms_inventory_staff' %}
+                                                <li>إدارة الزي المدرسي</li>
+                                                <li>طلبات الملابس</li>
+                                                <li>تقارير مخزن الملابس</li>
+                                            {% else %}
+                                                <li>صلاحيات محدودة</li>
+                                            {% endif %}
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <form method="post" class="d-inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="group_name" value="{{ group.name }}">
+                                    <button type="submit" name="action" value="remove_group" 
+                                            class="btn btn-outline-danger btn-sm btn-group-action"
+                                            onclick="return confirm('هل أنت متأكد من إزالة هذه الصلاحية؟')">
+                                        <i class="fas fa-times me-1"></i>إزالة
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                    <h5 class="text-muted">لا توجد صلاحيات حالياً</h5>
+                    <p class="text-muted">يمكنك إضافة صلاحيات من القسم أدناه</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Available Groups -->
+<div class="row">
+    <div class="col-12">
+        <div class="manage-card">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-plus-circle me-2"></i>
+                    الصلاحيات المتاحة للإضافة
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for group in available_groups %}
+                    {% if group not in user_groups.all %}
+                    <div class="col-md-6 mb-3">
+                        <div class="group-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="d-flex">
+                                    <div class="group-icon" style="background: linear-gradient(135deg, #007bff, #6610f2);">
+                                        <i class="fas fa-plus"></i>
+                                    </div>
+                                    <div>
+                                        <!-- ✅ بدون lookup filter -->
+                                        <h6 class="text-primary mb-1">
+                                            {% if group.name == 'treasury_admin' %}
+                                                💼 مدير الخزينة العام
+                                            {% elif group.name == 'treasury_manager' %}
+                                                👨‍💼 مدير الخزينة
+                                            {% elif group.name == 'treasury_accountant' %}
+                                                🧾 محاسب الخزينة
+                                            {% elif group.name == 'treasury_cashier' %}
+                                                💰 أمين الخزينة
+                                            {% elif group.name == 'treasury_viewer' %}
+                                                👁️ مراجع الخزينة
+                                            {% elif group.name == 'books_inventory_staff' %}
+                                                📚 موظف مخزن الكتب
+                                            {% elif group.name == 'uniforms_inventory_staff' %}
+                                                👕 موظف مخزن الملابس
+                                            {% else %}
+                                                {{ group.name }}
+                                            {% endif %}
+                                        </h6>
+                                        
+                                        <p class="text-muted small mb-2">
+                                            {% if group.name == 'treasury_admin' %}
+                                                جميع صلاحيات الخزينة والإشراف الكامل
+                                            {% elif group.name == 'treasury_manager' %}
+                                                إدارة العمليات المالية والإشراف
+                                            {% elif group.name == 'treasury_accountant' %}
+                                                العمليات المحاسبية والمالية
+                                            {% elif group.name == 'treasury_cashier' %}
+                                                العمليات النقدية اليومية
+                                            {% elif group.name == 'treasury_viewer' %}
+                                                مراجعة وعرض العمليات فقط
+                                            {% elif group.name == 'books_inventory_staff' %}
+                                                إدارة مخزون الكتب والمواد التعليمية
+                                            {% elif group.name == 'uniforms_inventory_staff' %}
+                                                إدارة الزي المدرسي والملابس
+                                            {% else %}
+                                                وصف غير متاح
+                                            {% endif %}
+                                        </p>
+                                        
+                                        <ul class="permissions-list">
+                                            {% if group.name == 'treasury_admin' %}
+                                                <li>إدارة الخزائن</li>
+                                                <li>إدارة الحسابات</li>
+                                                <li>التقارير المالية</li>
+                                                <li>إدارة المستخدمين</li>
+                                            {% elif group.name == 'treasury_manager' %}
+                                                <li>إدارة العمليات</li>
+                                                <li>اعتماد المعاملات</li>
+                                                <li>التقارير الإدارية</li>
+                                            {% elif group.name == 'treasury_accountant' %}
+                                                <li>تسجيل المعاملات</li>
+                                                <li>التقارير المحاسبية</li>
+                                                <li>مراجعة الحسابات</li>
+                                            {% elif group.name == 'treasury_cashier' %}
+                                                <li>المعاملات النقدية</li>
+                                                <li>إدارة النقدية</li>
+                                                <li>تسجيل الإيرادات</li>
+                                            {% elif group.name == 'treasury_viewer' %}
+                                                <li>عرض المعاملات</li>
+                                                <li>التقارير الأساسية</li>
+                                                <li>المراجعة</li>
+                                            {% elif group.name == 'books_inventory_staff' %}
+                                                <li>إدارة مخزون الكتب</li>
+                                                <li>طلبات الكتب</li>
+                                                <li>توزيع المواد</li>
+                                                <li>تقارير المخزون</li>
+                                            {% elif group.name == 'uniforms_inventory_staff' %}
+                                                <li>إدارة الزي المدرسي</li>
+                                                <li>طلبات الملابس</li>
+                                                <li>تقارير مخزن الملابس</li>
+                                            {% else %}
+                                                <li>صلاحيات محدودة</li>
+                                            {% endif %}
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <form method="post" class="d-inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="group_name" value="{{ group.name }}">
+                                    <button type="submit" name="action" value="add_group" 
+                                            class="btn btn-outline-success btn-sm btn-group-action">
+                                        <i class="fas fa-plus me-1"></i>إضافة
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="d-flex justify-content-between align-items-center mt-4">
+    <a href="{% url 'home:inventory_staff_list' %}" class="btn btn-secondary btn-lg">
+        <i class="fas fa-arrow-right me-2"></i>العودة للقائمة
+    </a>
+    
+    <div class="d-flex gap-3">
+        <a href="{% url 'home:user_details' user_obj.id %}" class="btn btn-info btn-lg">
+            <i class="fas fa-eye me-2"></i>عرض التفاصيل
+        </a>
+        <a href="{% url 'home:edit_user' user_obj.id %}" class="btn btn-warning btn-lg">
+            <i class="fas fa-edit me-2"></i>تعديل البيانات
+        </a>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // تأثيرات الحركة للكروت
+    const cards = document.querySelectorAll('.manage-card, .group-card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+    
+    console.log('✅ صفحة إدارة صلاحيات الموظف جاهزة');
+});
+</script>
+{% endblock %}

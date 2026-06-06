@@ -5,811 +5,1036 @@
 {% block title %}التقارير المالية{% endblock %}
 
 {% block breadcrumb %}
-<li class="breadcrumb-item active">التقارير</li>
+<li class="breadcrumb-item active">التقارير المالية</li>
 {% endblock %}
 
-{% block content %}
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h2><i class="fas fa-chart-bar me-2"></i>التقارير المالية</h2>
-                <p class="text-muted mb-0">تقارير شاملة عن الوضع المالي للمدرسة</p>
-            </div>
-            <div>
-                <button type="button" class="btn btn-outline-primary me-2" onclick="printReport()">
-                    <i class="fas fa-print me-1"></i>طباعة
-                </button>
-                <div class="btn-group">
-                    <a href="?{{ request.GET.urlencode }}&export=pdf" class="btn btn-outline-danger">
-                        <i class="fas fa-file-pdf me-1"></i>PDF
-                    </a>
-                    <a href="?{{ request.GET.urlencode }}&export=excel" class="btn btn-outline-success">
-                        <i class="fas fa-file-excel me-1"></i>Excel
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- تبويبات التقارير -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <div class="nav nav-tabs card-header-tabs" role="tablist">
-                    <button class="nav-link {% if not report_type or report_type == 'summary' %}active{% endif %}" 
-                            type="button" onclick="changeReportType('summary')">
-                        <i class="fas fa-chart-pie me-1"></i>ملخص عام
-                    </button>
-                    <button class="nav-link {% if report_type == 'accounts' %}active{% endif %}" 
-                            type="button" onclick="changeReportType('accounts')">
-                        <i class="fas fa-list-alt me-1"></i>تقرير الحسابات
-                    </button>
-                    <button class="nav-link {% if report_type == 'daily' %}active{% endif %}" 
-                            type="button" onclick="changeReportType('daily')">
-                        <i class="fas fa-calendar-day me-1"></i>تقرير يومي
-                    </button>
-                    <button class="nav-link {% if report_type == 'monthly' %}active{% endif %}" 
-                            type="button" onclick="changeReportType('monthly')">
-                        <i class="fas fa-calendar-alt me-1"></i>تقرير شهري
-                    </button>
-                    <button class="nav-link {% if report_type == 'treasuries' %}active{% endif %}" 
-                            type="button" onclick="changeReportType('treasuries')">
-                        <i class="fas fa-vault me-1"></i>تقرير الخزائن
-                    </button>
-                </div>
-            </div>
-            
-            <div class="card-body">
-                <!-- فلاتر التقارير -->
-                <form method="GET" class="row g-3 mb-4" id="filtersForm">
-                    <input type="hidden" name="report_type" value="{{ report_type|default:'summary' }}">
-                    
-                    <div class="col-md-3">
-                        <label class="form-label">من تاريخ</label>
-                        <input type="date" class="form-control" name="start_date" 
-                               value="{{ start_date|date:'Y-m-d' }}">
-                    </div>
-                    
-                    <div class="col-md-3">
-                        <label class="form-label">إلى تاريخ</label>
-                        <input type="date" class="form-control" name="end_date" 
-                               value="{{ end_date|date:'Y-m-d' }}">
-                    </div>
-                    
-                    <div class="col-md-3">
-                        <label class="form-label">الخزنة</label>
-                        <select class="form-select" name="treasury">
-                            <option value="">جميع الخزائن</option>
-                            {% for treasury in treasuries %}
-                            <option value="{{ treasury.id }}" 
-                                    {% if selected_treasury == treasury.id|stringformat:"s" %}selected{% endif %}>
-                                {{ treasury.name }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <div class="col-md-3">
-                        <label class="form-label">&nbsp;</label>
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-search me-1"></i>تطبيق
-                            </button>
-                            <a href="?" class="btn btn-outline-secondary">
-                                <i class="fas fa-refresh me-1"></i>إعادة تعيين
-                            </a>
-                        </div>
-                    </div>
-                </form>
-
-                <!-- محتوى التقرير -->
-                <div id="reportContent">
-                    {% if report_type == 'summary' or not report_type %}
-                        <!-- الملخص العام -->
-                        <div class="row mb-4">
-                            <div class="col-lg-3 col-md-6">
-                                <div class="card bg-primary text-white">
-                                    <div class="card-body text-center">
-                                        <div class="h3 mb-1">{{ summary.total_income|floatformat:2 }}</div>
-                                        <div class="opacity-75">إجمالي الإيرادات</div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="col-lg-3 col-md-6">
-                                <div class="card bg-danger text-white">
-                                    <div class="card-body text-center">
-                                        <div class="h3 mb-1">{{ summary.total_expenses|floatformat:2 }}</div>
-                                        <div class="opacity-75">إجمالي المصروفات</div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="col-lg-3 col-md-6">
-                                <div class="card bg-{% if summary.net_income >= 0 %}success{% else %}warning{% endif %} text-white">
-                                    <div class="card-body text-center">
-                                        <div class="h3 mb-1">{{ summary.net_income|floatformat:2 }}</div>
-                                        <div class="opacity-75">صافي الربح/الخسارة</div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="col-lg-3 col-md-6">
-                                <div class="card bg-info text-white">
-                                    <div class="card-body text-center">
-                                        <div class="h3 mb-1">{{ summary.total_balance|floatformat:2 }}</div>
-                                        <div class="opacity-75">إجمالي الأرصدة</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- الرسم البياني -->
-                        <div class="row">
-                            <div class="col-lg-8">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h5>الإيرادات والمصروفات</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <canvas id="incomeExpenseChart" width="400" height="200"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="col-lg-4">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h5>توزيع الأرصدة</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <canvas id="treasuriesChart" width="300" height="300"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                    {% elif report_type == 'accounts' %}
-                        <!-- تقرير الحسابات -->
-                        <div class="card">
-                            <div class="card-header">
-                                <h5>تقرير الحسابات المالية</h5>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-hover mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>كود الحساب</th>
-                                            <th>اسم الحساب</th>
-                                            <th>التصنيف</th>
-                                            <th>الرصيد الافتتاحي</th>
-                                            <th>الرصيد الحالي</th>
-                                            <th>الحركة</th>
-                                            <th>النسبة</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for account in accounts %}
-                                        <tr>
-                                            <td><strong>{{ account.code }}</strong></td>
-                                            <td>{{ account.name }}</td>
-                                            <td>
-                                                <span class="badge bg-primary">{{ account.category.name }}</span>
-                                            </td>
-                                            <td>{{ account.opening_balance|floatformat:2 }}</td>
-                                            <td class="fw-bold">{{ account.current_balance|floatformat:2 }}</td>
-                                            <td>
-                                                {% with movement=account.current_balance|add:account.opening_balance|add:"-"|add:account.opening_balance %}
-                                                <span class="{% if movement >= 0 %}text-success{% else %}text-danger{% endif %}">
-                                                    {{ movement|floatformat:2 }}
-                                                </span>
-                                                {% endwith %}
-                                            </td>
-                                            <td>
-                                                {% if summary.total_balance > 0 %}
-                                                    {% widthratio account.current_balance summary.total_balance 100 %}%
-                                                {% else %}
-                                                    0%
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                        {% empty %}
-                                        <tr>
-                                            <td colspan="7" class="text-center text-muted">لا توجد حسابات</td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                    {% elif report_type == 'daily' %}
-                        <!-- التقرير اليومي -->
-                        <div class="card">
-                            <div class="card-header">
-                                <h5>التقرير اليومي</h5>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-hover mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>التاريخ</th>
-                                            <th>رقم العملية</th>
-                                            <th>النوع</th>
-                                            <th>الخزنة</th>
-                                            <th>الوصف</th>
-                                            <th>المبلغ</th>
-                                            <th>الحالة</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for transaction in transactions %}
-                                        <tr>
-                                            <td>{{ transaction.transaction_date|date:"d M Y" }}</td>
-                                            <td><strong>{{ transaction.transaction_number }}</strong></td>
-                                            <td>
-                                                {% if transaction.transaction_type == 'INCOME' %}
-                                                <span class="badge bg-success">إيراد</span>
-                                                {% else %}
-                                                <span class="badge bg-danger">مصروف</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>{{ transaction.treasury.name }}</td>
-                                            <td>{{ transaction.description|truncatechars:50 }}</td>
-                                            <td class="fw-bold {% if transaction.transaction_type == 'INCOME' %}text-success{% else %}text-danger{% endif %}">
-                                                {{ transaction.amount|floatformat:2 }}
-                                            </td>
-                                            <td>
-                                                {% if transaction.is_approved %}
-                                                <span class="badge bg-success">معتمد</span>
-                                                {% else %}
-                                                <span class="badge bg-warning">في انتظار الاعتماد</span>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                        {% empty %}
-                                        <tr>
-                                            <td colspan="7" class="text-center text-muted">لا توجد عمليات في الفترة المحددة</td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                    {% elif report_type == 'treasuries' %}
-                        <!-- تقرير الخزائن -->
-                        <div class="row">
-                            {% for treasury in treasuries %}
-                            <div class="col-lg-4 col-md-6 mb-4">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h6>{{ treasury.name }}</h6>
-                                        <small class="text-muted">{{ treasury.code }}</small>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="text-center mb-3">
-                                            <div class="h4 text-primary">{{ treasury.current_balance|floatformat:2 }}</div>
-                                            <small class="text-muted">الرصيد الحالي</small>
-                                        </div>
-                                        
-                                        <div class="row text-center">
-                                            <div class="col-6">
-                                                <div class="text-success">الإيرادات</div>
-                                                <div class="fw-bold">قيد التطوير</div>
-                                            </div>
-                                            <div class="col-6">
-                                                <div class="text-danger">المصروفات</div>
-                                                <div class="fw-bold">قيد التطوير</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-
-                    {% else %}
-                        <div class="alert alert-info text-center">
-                            <h5>اختر نوع التقرير من الأعلى</h5>
-                            <p class="mb-0">استخدم التبويبات لاختيار نوع التقرير المطلوب</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
+{% block extra_css %}
 <style>
-.nav-link {
-    border: none !important;
-    color: #6c757d;
-    background: transparent;
-}
-
-.nav-link.active {
-    color: #0d6efd !important;
-    background-color: #f8f9fa !important;
-    border-bottom: 2px solid #0d6efd !important;
-}
-
-.nav-link:hover {
-    color: #0d6efd;
-}
-</style>
-
-<style>
-    /* ===================================
-       🎨 ENHANCED REPORTS STYLES
-    =================================== */
-    
-    /* المتغيرات للألوان الأساسية */
-    :root {
-        --text-primary: #212529;
-        --text-secondary: #6c757d;
-        --text-muted: #9ca3af;
-        --bg-light: #f8f9fa;
-        --bg-white: #ffffff;
+    .reports-page {
+        background: linear-gradient(135deg, rgba(13, 71, 161, 0.03), rgba(21, 101, 192, 0.04));
+        border-radius: 20px;
+        padding: 25px;
+        margin: -10px;
+        min-height: calc(100vh - 200px);
     }
 
-    /* رأس الصفحة */
-    .page-header {
-        color: var(--text-primary) !important;
-    }
-
-    .page-header h2 {
-        color: var(--text-primary) !important;
-        font-weight: 700;
-    }
-
-    .page-header p {
-        color: var(--text-secondary) !important;
-    }
-
-    /* تبويبات التقارير */
-    .nav-tabs {
-        border-bottom: 2px solid #e9ecef;
-    }
-
-    .nav-link {
-        border: none !important;
-        color: var(--text-secondary) !important;
-        background: transparent !important;
-        font-weight: 600;
-        padding: 12px 20px;
-        transition: all 0.3s ease;
-    }
-
-    .nav-link:hover {
-        color: #0d6efd !important;
-        background-color: rgba(13, 110, 253, 0.1) !important;
-        border-radius: 8px 8px 0 0;
-    }
-
-    .nav-link.active {
-        color: #0d6efd !important;
-        background-color: var(--bg-white) !important;
-        border-bottom: 3px solid #0d6efd !important;
-        border-radius: 8px 8px 0 0;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    /* بطاقات الإحصائيات */
-    .card.bg-primary,
-    .card.bg-success,
-    .card.bg-danger,
-    .card.bg-warning,
-    .card.bg-info {
-        border: none;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        border-radius: 12px;
+    .hero-card {
+        background: linear-gradient(135deg, #1565c0, #0d47a1);
+        color: white;
+        border-radius: 22px;
+        padding: 30px;
+        margin-bottom: 28px;
+        position: relative;
         overflow: hidden;
+        box-shadow: 0 12px 35px rgba(13, 71, 161, 0.22);
     }
 
-    .card.bg-primary .card-body,
-    .card.bg-success .card-body,
-    .card.bg-danger .card-body,
-    .card.bg-warning .card-body,
-    .card.bg-info .card-body {
-        color: white !important;
+    .hero-card::before {
+        content: '';
+        position: absolute;
+        top: -60%;
+        right: -50%;
+        width: 220%;
+        height: 220%;
+        background: radial-gradient(circle, rgba(255,255,255,0.12) 1px, transparent 1px);
+        background-size: 24px 24px;
+        animation: drift 26s linear infinite;
     }
 
-    .card.bg-primary .h3,
-    .card.bg-success .h3,
-    .card.bg-danger .h3,
-    .card.bg-warning .h3,
-    .card.bg-info .h3 {
-        color: white !important;
-        font-weight: 700;
-        margin-bottom: 8px;
+    .hero-content {
+        position: relative;
+        z-index: 2;
     }
 
-    .card.bg-primary .opacity-75,
-    .card.bg-success .opacity-75,
-    .card.bg-danger .opacity-75,
-    .card.bg-warning .opacity-75,
-    .card.bg-info .opacity-75 {
-        color: rgba(255, 255, 255, 0.9) !important;
-        font-weight: 500;
+    .hero-title {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 12px;
     }
 
-    /* بطاقات عامة */
-    .card {
-        border: 1px solid #e9ecef;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        background: var(--bg-white);
+    .hero-icon {
+        width: 64px;
+        height: 64px;
+        background: rgba(255,255,255,0.18);
+        border: 2px solid rgba(255,255,255,0.28);
+        border-radius: 17px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.9rem;
+        backdrop-filter: blur(10px);
     }
 
-    .card-header {
-        background: linear-gradient(135deg, var(--bg-light), #e9ecef);
-        color: var(--text-primary) !important;
-        border-bottom: 2px solid #e9ecef;
-        font-weight: 600;
-        border-radius: 12px 12px 0 0 !important;
-    }
-
-    .card-header h5,
-    .card-header h6 {
-        color: var(--text-primary) !important;
-        font-weight: 700;
+    .hero-title h2 {
+        color: white;
         margin: 0;
+        font-weight: 900;
+        font-size: 2rem;
     }
 
-    .card-body {
-        color: var(--text-primary) !important;
-        background: var(--bg-white);
-    }
-
-    /* الجداول */
-    .table {
-        color: var(--text-primary) !important;
-        background: var(--bg-white);
-    }
-
-    .table th {
-        background-color: var(--bg-light) !important;
-        color: var(--text-primary) !important;
-        font-weight: 600;
-        border-bottom: 2px solid #dee2e6;
-        padding: 12px;
-    }
-
-    .table td {
-        color: var(--text-primary) !important;
-        padding: 10px 12px;
-        vertical-align: middle;
-        border-bottom: 1px solid #f1f3f4;
-    }
-
-    .table-hover tbody tr:hover {
-        background-color: rgba(13, 110, 253, 0.05) !important;
-    }
-
-    .table-light {
-        background-color: var(--bg-light) !important;
-    }
-
-    /* العناصر النصية */
-    .text-muted {
-        color: var(--text-muted) !important;
-    }
-
-    .fw-bold,
-    .font-weight-bold {
-        color: var(--text-primary) !important;
-        font-weight: 700 !important;
-    }
-
-    /* الشارات والعلامات */
-    .badge {
-        font-weight: 600;
-        padding: 6px 10px;
-        border-radius: 6px;
-        color: white !important;
-    }
-
-    .badge.bg-primary {
-        background-color: #0d6efd !important;
-        color: white !important;
-    }
-
-    .badge.bg-success {
-        background-color: #198754 !important;
-        color: white !important;
-    }
-
-    .badge.bg-danger {
-        background-color: #dc3545 !important;
-        color: white !important;
-    }
-
-    .badge.bg-warning {
-        background-color: #fd7e14 !important;
-        color: white !important;
-    }
-
-    .badge.bg-secondary {
-        background-color: #6c757d !important;
-        color: white !important;
-    }
-
-    /* ألوان النصوص المتخصصة */
-    .text-success {
-        color: #198754 !important;
+    .hero-subtitle {
+        color: rgba(255,255,255,.88);
+        margin: 0;
         font-weight: 600;
     }
 
-    .text-danger {
-        color: #dc3545 !important;
-        font-weight: 600;
+    .hero-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
     }
 
-    .text-primary {
-        color: #0d6efd !important;
-        font-weight: 600;
+    .hero-btn {
+        border: 1px solid rgba(255,255,255,.35);
+        background: rgba(255,255,255,.14);
+        color: white;
+        border-radius: 13px;
+        padding: 11px 18px;
+        text-decoration: none;
+        font-weight: 800;
+        transition: all .3s ease;
+        backdrop-filter: blur(10px);
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
     }
 
-    .text-info {
-        color: #0dcaf0 !important;
-        font-weight: 600;
+    .hero-btn:hover {
+        color: white;
+        background: rgba(255,255,255,.25);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(0,0,0,.12);
     }
 
-    .text-warning {
-        color: #fd7e14 !important;
-        font-weight: 600;
+    .hero-btn.solid {
+        background: white;
+        color: #0d47a1;
     }
 
-    /* النماذج والحقول */
-    .form-label {
-        color: var(--text-primary) !important;
-        font-weight: 600;
-        margin-bottom: 6px;
+    .hero-btn.solid:hover {
+        color: #0d47a1;
+        background: rgba(255,255,255,.94);
     }
 
-    .form-control,
-    .form-select {
-        color: var(--text-primary) !important;
-        background-color: var(--bg-white) !important;
-        border: 2px solid #e9ecef;
-        border-radius: 8px;
-        padding: 10px 12px;
+    .hero-metrics {
+        margin-top: 22px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 14px;
     }
 
-    .form-control:focus,
-    .form-select:focus {
-        color: var(--text-primary) !important;
-        background-color: var(--bg-white) !important;
-        border-color: #0d6efd;
-        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-    }
-
-    /* الأزرار */
-    .btn {
-        font-weight: 600;
-        padding: 8px 16px;
-        border-radius: 8px;
-        transition: all 0.3s ease;
-    }
-
-    .btn-primary {
-        background-color: #0d6efd;
-        border-color: #0d6efd;
-        color: white !important;
-    }
-
-    .btn-outline-primary {
-        color: #0d6efd !important;
-        border-color: #0d6efd;
-        background-color: transparent;
-    }
-
-    .btn-outline-primary:hover {
-        background-color: #0d6efd;
-        color: white !important;
-    }
-
-    .btn-outline-secondary {
-        color: #6c757d !important;
-        border-color: #6c757d;
-        background-color: transparent;
-    }
-
-    .btn-outline-secondary:hover {
-        background-color: #6c757d;
-        color: white !important;
-    }
-
-    .btn-outline-danger {
-        color: #dc3545 !important;
-        border-color: #dc3545;
-        background-color: transparent;
-    }
-
-    .btn-outline-danger:hover {
-        background-color: #dc3545;
-        color: white !important;
-    }
-
-    .btn-outline-success {
-        color: #198754 !important;
-        border-color: #198754;
-        background-color: transparent;
-    }
-
-    .btn-outline-success:hover {
-        background-color: #198754;
-        color: white !important;
-    }
-
-    /* التنبيهات */
-    .alert {
-        border-radius: 10px;
-        padding: 15px 20px;
-        border: none;
-        color: var(--text-primary) !important;
-    }
-
-    .alert-info {
-        background-color: rgba(13, 202, 240, 0.1);
-        color: #055160 !important;
-        border-right: 4px solid #0dcaf0;
-    }
-
-    .alert h5 {
-        color: inherit !important;
-        font-weight: 700;
-    }
-
-    /* المحتوى المركزي */
-    .text-center {
+    .hero-metric {
+        background: rgba(255,255,255,.14);
+        border: 1px solid rgba(255,255,255,.22);
+        border-radius: 16px;
+        padding: 17px;
+        backdrop-filter: blur(10px);
         text-align: center;
     }
 
-    .text-center h3,
-    .text-center h4,
-    .text-center h5 {
-        color: var(--text-primary) !important;
+    .hero-metric-label {
+        color: rgba(255,255,255,.82);
+        font-weight: 800;
+        margin-bottom: 6px;
+        font-size: .88rem;
     }
 
-    /* حالة فارغة */
-    .text-center.text-muted {
-        color: var(--text-muted) !important;
-        padding: 40px 20px;
+    .hero-metric-value {
+        color: white;
+        font-weight: 900;
+        font-size: 1.45rem;
+        font-family: 'Courier New', monospace;
+        line-height: 1.2;
     }
 
-    /* تحسينات إضافية */
-    .opacity-75 {
-        opacity: 0.85 !important;
+    .tabs-card,
+    .filter-card,
+    .panel-card {
+        background: white;
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        overflow: hidden;
+        margin-bottom: 25px;
     }
 
-    .mb-0, .mb-1, .mb-2, .mb-3, .mb-4 {
-        color: inherit !important;
+    .tabs-card {
+        padding: 14px;
     }
 
-    /* إصلاح النصوص في البطاقات الملونة */
-    .card.bg-primary *,
-    .card.bg-success *,
-    .card.bg-danger *,
-    .card.bg-warning *,
-    .card.bg-info * {
-        color: white !important;
+    .report-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        border: none;
     }
 
-    /* إصلاح النصوص في الجداول */
-    .table * {
-        color: var(--text-primary) !important;
+    .report-tab {
+        border: 2px solid #eef1f4;
+        background: linear-gradient(135deg, #f8f9fa, #ffffff);
+        color: #2c3e50;
+        border-radius: 14px;
+        padding: 12px 16px;
+        font-weight: 900;
+        transition: all .3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
     }
 
-    .table .badge {
-        color: white !important;
+    .report-tab:hover {
+        transform: translateY(-2px);
+        border-color: #1565c0;
+        color: #1565c0;
+        box-shadow: 0 8px 18px rgba(0,0,0,.08);
     }
 
-    /* تحسينات للطباعة */
+    .report-tab.active {
+        background: linear-gradient(135deg, #1565c0, #0d47a1);
+        color: white;
+        border-color: transparent;
+        box-shadow: 0 8px 18px rgba(13, 71, 161, .18);
+    }
+
+    .filter-card .card-body {
+        padding: 22px;
+    }
+
+    .summary-strip {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .summary-box {
+        background: white;
+        border-radius: 18px;
+        padding: 21px;
+        box-shadow: 0 8px 22px rgba(0,0,0,0.08);
+        border-top: 5px solid var(--summary-color);
+        transition: all .3s ease;
+        text-align: center;
+    }
+
+    .summary-box:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 14px 30px rgba(0,0,0,0.12);
+    }
+
+    .summary-box.in { --summary-color: #198754; }
+    .summary-box.out { --summary-color: #dc3545; }
+    .summary-box.net { --summary-color: #0d6efd; }
+    .summary-box.balance { --summary-color: #1565c0; }
+    .summary-box.count { --summary-color: #ff9800; }
+
+    .summary-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        background: color-mix(in srgb, var(--summary-color) 14%, white);
+        color: var(--summary-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 10px;
+        font-size: 1.25rem;
+    }
+
+    .summary-label {
+        color: #6c757d;
+        font-weight: 800;
+        font-size: .9rem;
+        margin-bottom: 5px;
+    }
+
+    .summary-value {
+        font-size: 1.42rem;
+        font-weight: 900;
+        color: var(--summary-color);
+        font-family: 'Courier New', monospace;
+    }
+
+    .panel-header {
+        background: linear-gradient(135deg, #f8f9fa, #eef1f4);
+        padding: 18px 22px;
+        border-bottom: 1px solid #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .panel-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 900;
+        color: #2c3e50;
+        margin: 0;
+        font-size: 1.1rem;
+    }
+
+    .panel-title-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #1565c0, #0d47a1);
+        color: white;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table th {
+        background: #f8f9fa;
+        color: #2c3e50;
+        font-weight: 900;
+        border-bottom: 2px solid #e9ecef;
+        padding: 14px 12px;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .table td {
+        padding: 13px 12px;
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f3f5;
+    }
+
+    .table tbody tr:hover {
+        background: rgba(13, 71, 161, .035);
+    }
+
+    .transaction-number,
+    .account-code {
+        font-family: monospace;
+        font-weight: 900;
+        color: #495057;
+    }
+
+    .badge-type {
+        padding: 7px 11px;
+        border-radius: 12px;
+        font-weight: 900;
+        font-size: .78rem;
+        display: inline-block;
+        white-space: nowrap;
+    }
+
+    .type-income { background: rgba(25, 135, 84, .12); color: #198754; }
+    .type-expense { background: rgba(220, 53, 69, .12); color: #dc3545; }
+    .type-transfer { background: rgba(13, 110, 253, .12); color: #0d6efd; }
+
+    .amount-income { color: #198754; font-weight: 900; font-family: 'Courier New', monospace; }
+    .amount-expense { color: #dc3545; font-weight: 900; font-family: 'Courier New', monospace; }
+    .amount-transfer { color: #0d6efd; font-weight: 900; font-family: 'Courier New', monospace; }
+
+    .chart-box {
+        height: 330px;
+        padding: 22px;
+    }
+
+    .treasury-card {
+        background: white;
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 8px 22px rgba(0,0,0,0.08);
+        overflow: hidden;
+        transition: all .3s ease;
+        height: 100%;
+    }
+
+    .treasury-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 32px rgba(0,0,0,0.13);
+    }
+
+    .treasury-header {
+        background: linear-gradient(135deg, #1565c0, #1976d2);
+        color: white;
+        padding: 18px 20px;
+    }
+
+    .treasury-header h5 {
+        color: white;
+        font-weight: 900;
+        margin: 0;
+    }
+
+    .treasury-body {
+        padding: 20px;
+    }
+
+    .treasury-balance {
+        background: linear-gradient(135deg, rgba(13, 71, 161, .06), rgba(23, 162, 184, .08));
+        border: 2px solid rgba(13, 71, 161, .12);
+        border-radius: 16px;
+        text-align: center;
+        padding: 18px;
+        margin-bottom: 15px;
+    }
+
+    .treasury-balance .value {
+        color: #1565c0;
+        font-weight: 900;
+        font-size: 1.7rem;
+        font-family: 'Courier New', monospace;
+    }
+
+    .mini-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        text-align: center;
+    }
+
+    .mini-stat {
+        border: 1px solid #eef1f4;
+        border-radius: 12px;
+        padding: 10px 6px;
+        background: #f8f9fa;
+    }
+
+    .mini-stat .label {
+        color: #6c757d;
+        font-weight: 800;
+        font-size: .75rem;
+        margin-bottom: 4px;
+    }
+
+    .mini-stat .value {
+        font-weight: 900;
+        font-size: .95rem;
+        font-family: 'Courier New', monospace;
+    }
+
+    .empty-state {
+        background: white;
+        border-radius: 20px;
+        padding: 50px 25px;
+        text-align: center;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+    }
+
+    .empty-icon {
+        width: 82px;
+        height: 82px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, rgba(21, 101, 192, .08), rgba(13, 71, 161, .08));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 18px;
+        color: #1565c0;
+        font-size: 2.7rem;
+    }
+
+    .btn-soft {
+        border: none;
+        border-radius: 12px;
+        padding: 10px 17px;
+        font-weight: 900;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        transition: all .3s ease;
+    }
+
+    .btn-soft:hover {
+        transform: translateY(-2px);
+        text-decoration: none;
+    }
+
+    .btn-primary-soft {
+        background: linear-gradient(135deg, #1565c0, #0d47a1);
+        color: white;
+    }
+
+    .btn-primary-soft:hover { color: white; }
+
+    .btn-green-soft {
+        background: linear-gradient(135deg, #198754, #157347);
+        color: white;
+    }
+
+    .btn-green-soft:hover { color: white; }
+
+    .btn-red-soft {
+        background: linear-gradient(135deg, #dc3545, #b02a37);
+        color: white;
+    }
+
+    .btn-red-soft:hover { color: white; }
+
     @media print {
-        * {
-            color: black !important;
-            background: white !important;
+        .no-print,
+        .sidebar,
+        .navbar,
+        .breadcrumb,
+        .filter-card,
+        .tabs-card,
+        .hero-actions,
+        .btn,
+        .panel-header .no-print {
+            display: none !important;
         }
-        
-        .card {
-            box-shadow: none !important;
-            border: 1px solid #ccc !important;
+
+        .reports-page {
+            background: white;
+            padding: 0;
+            margin: 0;
+        }
+
+        .hero-card,
+        .summary-box,
+        .panel-card,
+        .treasury-card {
+            box-shadow: none;
+            border: 1px solid #ddd;
+        }
+
+        .hero-card,
+        .treasury-header {
+            background: #f8f9fa !important;
+            color: #000 !important;
+        }
+
+        .hero-title h2,
+        .hero-subtitle,
+        .hero-metric-label,
+        .hero-metric-value,
+        .treasury-header h5 {
+            color: #000 !important;
         }
     }
 
-    /* التجاوب */
     @media (max-width: 768px) {
-        .nav-link {
-            padding: 10px 12px;
-            font-size: 0.9rem;
-        }
-        
-        .card-body {
+        .reports-page {
             padding: 15px;
+            margin: -5px;
         }
-        
-        .table-responsive {
-            font-size: 0.85rem;
+
+        .hero-card {
+            padding: 22px;
         }
+
+        .hero-card .d-flex {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 18px;
+        }
+
+        .hero-actions {
+            justify-content: flex-start;
+            width: 100%;
+        }
+
+        .hero-btn,
+        .report-tab {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .hero-title h2 {
+            font-size: 1.55rem;
+        }
+
+        .report-tabs {
+            flex-direction: column;
+        }
+
+        .mini-stats {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @keyframes drift {
+        0% { transform: rotate(0deg) translateX(0); }
+        100% { transform: rotate(360deg) translateX(20px); }
+    }
+
+    .fade-in {
+        animation: fadeInUp .75s ease-out;
+    }
+
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(24px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 </style>
+{% endblock %}
 
+{% block content %}
+<div class="reports-page">
 
+    <!-- Hero Header -->
+    <div class="hero-card fade-in">
+        <div class="hero-content">
+            <div class="d-flex justify-content-between align-items-start gap-3">
+                <div>
+                    <div class="hero-title">
+                        <div class="hero-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <div>
+                            <h2>التقارير المالية</h2>
+                            <p class="hero-subtitle">
+                                من {{ start_date|date:"Y-m-d" }} إلى {{ end_date|date:"Y-m-d" }}
+                                {% if selected_treasury_obj %}
+                                    | {{ selected_treasury_obj.name }}
+                                {% else %}
+                                    | جميع الخزائن
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hero-actions no-print">
+                    <button type="button" class="hero-btn" onclick="window.print()">
+                        <i class="fas fa-print"></i>
+                        طباعة
+                    </button>
+
+                    <a href="?{{ query_string_without_export }}&export=excel" class="hero-btn solid">
+                        <i class="fas fa-file-excel"></i>
+                        Excel
+                    </a>
+
+                    <a href="?{{ query_string_without_export }}&export=pdf" class="hero-btn">
+                        <i class="fas fa-file-pdf"></i>
+                        PDF
+                    </a>
+                </div>
+            </div>
+
+            <div class="hero-metrics">
+                <div class="hero-metric">
+                    <div class="hero-metric-label">إجمالي الإيرادات</div>
+                    <div class="hero-metric-value">{{ summary.total_income|default:0|floatformat:2 }}</div>
+                </div>
+
+                <div class="hero-metric">
+                    <div class="hero-metric-label">إجمالي المصروفات</div>
+                    <div class="hero-metric-value">{{ summary.total_expenses|default:0|floatformat:2 }}</div>
+                </div>
+
+                <div class="hero-metric">
+                    <div class="hero-metric-label">صافي الفترة</div>
+                    <div class="hero-metric-value">{{ summary.net_income|default:0|floatformat:2 }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Tabs -->
+    <div class="tabs-card fade-in no-print" style="animation-delay: .1s;">
+        <div class="report-tabs">
+            <button class="report-tab {% if report_type == 'summary' or not report_type %}active{% endif %}" type="button" onclick="changeReportType('summary')">
+                <i class="fas fa-chart-pie"></i>
+                ملخص عام
+            </button>
+
+            <button class="report-tab {% if report_type == 'accounts' %}active{% endif %}" type="button" onclick="changeReportType('accounts')">
+                <i class="fas fa-list-alt"></i>
+                تقرير الحسابات
+            </button>
+
+            <button class="report-tab {% if report_type == 'daily' %}active{% endif %}" type="button" onclick="changeReportType('daily')">
+                <i class="fas fa-calendar-day"></i>
+                تقرير العمليات
+            </button>
+
+            <button class="report-tab {% if report_type == 'treasuries' %}active{% endif %}" type="button" onclick="changeReportType('treasuries')">
+                <i class="fas fa-vault"></i>
+                تقرير الخزائن
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-card fade-in no-print" style="animation-delay: .15s;">
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-end" id="filtersForm">
+                <input type="hidden" name="report_type" value="{{ report_type|default:'summary' }}">
+
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label fw-bold">من تاريخ</label>
+                    <input type="date" class="form-control" name="start_date" value="{{ start_date|date:'Y-m-d' }}">
+                </div>
+
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label fw-bold">إلى تاريخ</label>
+                    <input type="date" class="form-control" name="end_date" value="{{ end_date|date:'Y-m-d' }}">
+                </div>
+
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label fw-bold">الخزنة</label>
+                    <select class="form-select" name="treasury">
+                        <option value="">جميع الخزائن</option>
+                        {% for treasury in treasuries %}
+                        <option value="{{ treasury.id }}" {% if selected_treasury == treasury.id|stringformat:"s" %}selected{% endif %}>
+                            {{ treasury.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-lg-3 col-md-6">
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="submit" class="btn-soft btn-primary-soft">
+                            <i class="fas fa-search"></i>
+                            تطبيق
+                        </button>
+
+                        <a href="{% url 'treasury_management:reports' %}" class="btn btn-outline-secondary fw-bold">
+                            <i class="fas fa-refresh me-1"></i>
+                            إعادة تعيين
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="summary-strip fade-in" style="animation-delay: .2s;">
+        <div class="summary-box in">
+            <div class="summary-icon">
+                <i class="fas fa-arrow-down"></i>
+            </div>
+            <div class="summary-label">إجمالي الإيرادات</div>
+            <div class="summary-value">{{ summary.total_income|default:0|floatformat:2 }}</div>
+        </div>
+
+        <div class="summary-box out">
+            <div class="summary-icon">
+                <i class="fas fa-arrow-up"></i>
+            </div>
+            <div class="summary-label">إجمالي المصروفات</div>
+            <div class="summary-value">{{ summary.total_expenses|default:0|floatformat:2 }}</div>
+        </div>
+
+        <div class="summary-box net">
+            <div class="summary-icon">
+                <i class="fas fa-scale-balanced"></i>
+            </div>
+            <div class="summary-label">صافي الفترة</div>
+            <div class="summary-value">{{ summary.net_income|default:0|floatformat:2 }}</div>
+        </div>
+
+        <div class="summary-box balance">
+            <div class="summary-icon">
+                <i class="fas fa-vault"></i>
+            </div>
+            <div class="summary-label">إجمالي أرصدة الخزائن</div>
+            <div class="summary-value">{{ summary.total_balance|default:0|floatformat:2 }}</div>
+        </div>
+
+        <div class="summary-box count">
+            <div class="summary-icon">
+                <i class="fas fa-list-check"></i>
+            </div>
+            <div class="summary-label">عدد العمليات</div>
+            <div class="summary-value">{{ summary.transactions_count|default:0 }}</div>
+        </div>
+    </div>
+
+    {% if report_type == 'summary' or not report_type %}
+    <!-- Summary Report -->
+    <div class="row">
+        <div class="col-lg-8 mb-4">
+            <div class="panel-card fade-in">
+                <div class="panel-header">
+                    <h5 class="panel-title">
+                        <span class="panel-title-icon">
+                            <i class="fas fa-chart-column"></i>
+                        </span>
+                        الإيرادات والمصروفات
+                    </h5>
+                </div>
+
+                <div class="chart-box">
+                    <canvas id="incomeExpenseChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 mb-4">
+            <div class="panel-card fade-in">
+                <div class="panel-header">
+                    <h5 class="panel-title">
+                        <span class="panel-title-icon">
+                            <i class="fas fa-chart-pie"></i>
+                        </span>
+                        توزيع أرصدة الخزائن
+                    </h5>
+                </div>
+
+                <div class="chart-box">
+                    <canvas id="treasuriesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel-card fade-in">
+        <div class="panel-header">
+            <h5 class="panel-title">
+                <span class="panel-title-icon">
+                    <i class="fas fa-clock"></i>
+                </span>
+                آخر العمليات في الفترة
+            </h5>
+
+            <button class="btn btn-outline-primary btn-sm fw-bold no-print" onclick="changeReportType('daily')">
+                عرض كل العمليات
+            </button>
+        </div>
+
+        {% include 'treasury_management/partials/reports_transactions_table.html' with transactions=transactions %}
+    </div>
+
+    {% elif report_type == 'accounts' %}
+    <!-- Accounts Report -->
+    <div class="panel-card fade-in">
+        <div class="panel-header">
+            <h5 class="panel-title">
+                <span class="panel-title-icon">
+                    <i class="fas fa-list-alt"></i>
+                </span>
+                تقرير الحسابات المالية
+            </h5>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>كود الحساب</th>
+                        <th>اسم الحساب</th>
+                        <th>التصنيف</th>
+                        <th>الرصيد الافتتاحي</th>
+                        <th>الرصيد الحالي / المعروض</th>
+                        <th>حركة الفترة</th>
+                        <th>نوع العرض</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for account in accounts_report %}
+                    <tr>
+                        <td><span class="account-code">{{ account.code }}</span></td>
+                        <td>
+                            <strong>{{ account.name }}</strong>
+                            {% if account.linked_treasury %}
+                                <br>
+                                <small class="text-primary">خزنة مرتبطة: {{ account.linked_treasury.name }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-primary">{{ account.category.name }}</span>
+                        </td>
+                        <td>{{ account.opening_balance|floatformat:2 }}</td>
+                        <td class="fw-bold">{{ account.display_balance|floatformat:2 }}</td>
+                        <td class="{% if account.period_movement >= 0 %}amount-income{% else %}amount-expense{% endif %}">
+                            {{ account.period_movement|floatformat:2 }}
+                        </td>
+                        <td>
+                            {% if account.linked_treasury %}
+                                <span class="badge bg-info">رصيد خزنة</span>
+                            {% elif account.category.category_type == 'REVENUE' %}
+                                <span class="badge bg-success">إيراد</span>
+                            {% elif account.category.category_type == 'EXPENSE' %}
+                                <span class="badge bg-danger">مصروف</span>
+                            {% else %}
+                                <span class="badge bg-secondary">حساب مالي</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">لا توجد حسابات</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% elif report_type == 'daily' %}
+    <!-- Transactions Report -->
+    <div class="panel-card fade-in">
+        <div class="panel-header">
+            <h5 class="panel-title">
+                <span class="panel-title-icon">
+                    <i class="fas fa-calendar-day"></i>
+                </span>
+                تقرير العمليات المالية
+            </h5>
+        </div>
+
+        {% include 'treasury_management/partials/reports_transactions_table.html' with transactions=transactions %}
+    </div>
+
+    {% elif report_type == 'treasuries' %}
+    <!-- Treasuries Report -->
+    <div class="row">
+        {% for treasury in treasuries_report %}
+        <div class="col-xl-4 col-lg-6 mb-4">
+            <div class="treasury-card fade-in">
+                <div class="treasury-header">
+                    <h5>
+                        <i class="fas fa-university me-2"></i>
+                        {{ treasury.name }}
+                    </h5>
+                    <small>{{ treasury.code }} | {{ treasury.account.code }} - {{ treasury.account.name }}</small>
+                </div>
+
+                <div class="treasury-body">
+                    <div class="treasury-balance">
+                        <div class="text-muted fw-bold">الرصيد الحالي</div>
+                        <div class="value">{{ treasury.current_balance|floatformat:2 }}</div>
+                    </div>
+
+                    <div class="mini-stats">
+                        <div class="mini-stat">
+                            <div class="label">داخل</div>
+                            <div class="value amount-income">{{ treasury.period_income|floatformat:2 }}</div>
+                        </div>
+
+                        <div class="mini-stat">
+                            <div class="label">خارج</div>
+                            <div class="value amount-expense">{{ treasury.period_expenses|floatformat:2 }}</div>
+                        </div>
+
+                        <div class="mini-stat">
+                            <div class="label">الصافي</div>
+                            <div class="value {% if treasury.period_net >= 0 %}amount-income{% else %}amount-expense{% endif %}">
+                                {{ treasury.period_net|floatformat:2 }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 no-print">
+                        <a href="{% url 'treasury_management:treasury_statement' treasury.id %}?from_date={{ start_date|date:'Y-m-d' }}&to_date={{ end_date|date:'Y-m-d' }}"
+                           class="btn btn-outline-primary btn-sm w-100 fw-bold">
+                            <i class="fas fa-history me-1"></i>
+                            حركة الخزنة في الفترة
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="fas fa-vault"></i>
+                </div>
+                <h4 class="text-muted">لا توجد خزائن نشطة</h4>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">
+            <i class="fas fa-info-circle"></i>
+        </div>
+        <h4 class="text-muted">اختر نوع التقرير من الأعلى</h4>
+        <p class="text-muted mb-0">استخدم التبويبات لاختيار نوع التقرير المطلوب.</p>
+    </div>
+    {% endif %}
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 function changeReportType(type) {
-    // تحديث الحقل المخفي
     document.querySelector('[name="report_type"]').value = type;
-    
-    // إرسال النموذج
     document.getElementById('filtersForm').submit();
 }
 
-function printReport() {
-    window.print();
-}
-
-// الرسوم البيانية
 document.addEventListener('DOMContentLoaded', function() {
+    const elements = document.querySelectorAll('.hero-card, .tabs-card, .filter-card, .summary-box, .panel-card, .treasury-card, .empty-state');
+
+    elements.forEach((el, index) => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(20px)';
+
+        setTimeout(() => {
+            el.style.transition = 'all 0.45s ease';
+            el.style.opacity = '1';
+            el.style.transform = 'translateY(0)';
+        }, index * 55);
+    });
+
     {% if report_type == 'summary' or not report_type %}
-    // رسم بياني للإيرادات والمصروفات
     const incomeExpenseCtx = document.getElementById('incomeExpenseChart');
     if (incomeExpenseCtx) {
         new Chart(incomeExpenseCtx, {
             type: 'bar',
             data: {
-                labels: ['الإيرادات', 'المصروفات'],
+                labels: ['الإيرادات', 'المصروفات', 'الصافي'],
                 datasets: [{
                     label: 'المبلغ',
-                    data: [{{ summary.total_income|default:0 }}, {{ summary.total_expenses|default:0 }}],
-                    backgroundColor: ['#28a745', '#dc3545']
+                    data: [
+                        {{ summary.total_income|default:0 }},
+                        {{ summary.total_expenses|default:0 }},
+                        {{ summary.net_income|default:0 }}
+                    ],
+                    backgroundColor: ['#198754', '#dc3545', '#0d6efd'],
+                    borderRadius: 8
                 }]
             },
             options: {
                 responsive: true,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
             }
         });
     }
 
-    // رسم بياني دائري للخزائن
     const treasuriesCtx = document.getElementById('treasuriesChart');
     if (treasuriesCtx) {
         new Chart(treasuriesCtx, {
             type: 'doughnut',
             data: {
-                labels: [{% for treasury in treasuries %}'{{ treasury.name }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+                labels: [
+                    {% for treasury in treasuries %}
+                    '{{ treasury.name|escapejs }}'{% if not forloop.last %},{% endif %}
+                    {% endfor %}
+                ],
                 datasets: [{
-                    data: [{% for treasury in treasuries %}{{ treasury.current_balance|default:0 }}{% if not forloop.last %},{% endif %}{% endfor %}],
-                    backgroundColor: [
-                        '#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1', '#fd7e14'
-                    ]
+                    data: [
+                        {% for treasury in treasuries %}
+                        {{ treasury.current_balance|default:0 }}{% if not forloop.last %},{% endif %}
+                        {% endfor %}
+                    ],
+                    backgroundColor: ['#1565c0', '#198754', '#ff9800', '#dc3545', '#6f42c1', '#0dcaf0'],
+                    borderWidth: 3,
+                    borderColor: '#ffffff'
                 }]
             },
             options: {
                 responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
-                }
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
             }
         });
     }

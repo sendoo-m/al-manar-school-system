@@ -5,352 +5,1010 @@
 {% block title %}تصنيفات المصروفات{% endblock %}
 
 {% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'treasury_management:dashboard' %}">لوحة التحكم</a></li>
 <li class="breadcrumb-item active">تصنيفات المصروفات</li>
 {% endblock %}
 
+{% block extra_css %}
+<style>
+    .expense-categories-page {
+        background: linear-gradient(135deg, rgba(13, 71, 161, 0.03), rgba(220, 53, 69, 0.035));
+        border-radius: 20px;
+        padding: 25px;
+        margin: -10px;
+        min-height: calc(100vh - 200px);
+    }
+
+    .hero-card {
+        background: linear-gradient(135deg, #dc3545, #842029);
+        color: white;
+        border-radius: 22px;
+        padding: 30px;
+        margin-bottom: 28px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 12px 35px rgba(132, 32, 41, 0.22);
+    }
+
+    .hero-card::before {
+        content: '';
+        position: absolute;
+        top: -60%;
+        right: -50%;
+        width: 220%;
+        height: 220%;
+        background: radial-gradient(circle, rgba(255,255,255,0.12) 1px, transparent 1px);
+        background-size: 24px 24px;
+        animation: drift 26s linear infinite;
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .hero-title {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 12px;
+    }
+
+    .hero-icon {
+        width: 64px;
+        height: 64px;
+        background: rgba(255,255,255,0.18);
+        border: 2px solid rgba(255,255,255,0.28);
+        border-radius: 17px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.9rem;
+        backdrop-filter: blur(10px);
+    }
+
+    .hero-title h2 {
+        color: white;
+        margin: 0;
+        font-weight: 900;
+        font-size: 2rem;
+    }
+
+    .hero-subtitle {
+        color: rgba(255,255,255,.88);
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .hero-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .hero-btn {
+        border: 1px solid rgba(255,255,255,.35);
+        background: rgba(255,255,255,.14);
+        color: white;
+        border-radius: 13px;
+        padding: 11px 18px;
+        text-decoration: none;
+        font-weight: 800;
+        transition: all .3s ease;
+        backdrop-filter: blur(10px);
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+    .hero-btn:hover {
+        color: white;
+        background: rgba(255,255,255,.25);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(0,0,0,.12);
+    }
+
+    .hero-btn.solid {
+        background: white;
+        color: #842029;
+    }
+
+    .hero-btn.solid:hover {
+        color: #842029;
+        background: rgba(255,255,255,.94);
+    }
+
+    .stats-strip {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .summary-box {
+        background: white;
+        border-radius: 18px;
+        padding: 21px;
+        box-shadow: 0 8px 22px rgba(0,0,0,0.08);
+        border-top: 5px solid var(--summary-color);
+        transition: all .3s ease;
+        text-align: center;
+    }
+
+    .summary-box:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 14px 30px rgba(0,0,0,0.12);
+    }
+
+    .summary-box.total { --summary-color: #dc3545; }
+    .summary-box.active { --summary-color: #198754; }
+    .summary-box.budget { --summary-color: #ff9800; }
+    .summary-box.with-budget { --summary-color: #0dcaf0; }
+
+    .summary-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        background: color-mix(in srgb, var(--summary-color) 14%, white);
+        color: var(--summary-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 10px;
+        font-size: 1.25rem;
+    }
+
+    .summary-label {
+        color: #6c757d;
+        font-weight: 800;
+        font-size: .9rem;
+        margin-bottom: 5px;
+    }
+
+    .summary-value {
+        font-size: 1.45rem;
+        font-weight: 900;
+        color: var(--summary-color);
+        font-family: 'Courier New', monospace;
+    }
+
+    .filter-card,
+    .table-card,
+    .pagination-card,
+    .help-card {
+        background: white;
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        overflow: hidden;
+        margin-bottom: 25px;
+    }
+
+    .filter-card .card-body {
+        padding: 22px;
+    }
+
+    .table-header,
+    .help-header {
+        background: linear-gradient(135deg, #f8f9fa, #eef1f4);
+        padding: 18px 22px;
+        border-bottom: 1px solid #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .table-title,
+    .help-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 900;
+        color: #2c3e50;
+        margin: 0;
+        font-size: 1.1rem;
+    }
+
+    .title-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #dc3545, #b02a37);
+        color: white;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .results-info {
+        background: linear-gradient(135deg, #dc3545, #b02a37);
+        color: white;
+        padding: 14px 18px;
+        border-radius: 15px;
+        margin-bottom: 18px;
+        font-weight: 800;
+        box-shadow: 0 8px 20px rgba(220, 53, 69, .18);
+    }
+
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table th {
+        background: #f8f9fa;
+        color: #2c3e50;
+        font-weight: 900;
+        border-bottom: 2px solid #e9ecef;
+        padding: 14px 12px;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .table td {
+        padding: 13px 12px;
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f3f5;
+    }
+
+    .table tbody tr:hover {
+        background: rgba(220, 53, 69, .035);
+    }
+
+    .category-code {
+        font-family: monospace;
+        font-weight: 900;
+        color: white;
+        background: linear-gradient(135deg, #dc3545, #b02a37);
+        padding: 5px 9px;
+        border-radius: 8px;
+        display: inline-block;
+    }
+
+    .amount-value {
+        font-weight: 900;
+        font-family: 'Courier New', monospace;
+        white-space: nowrap;
+    }
+
+    .amount-budget {
+        color: #ff9800;
+    }
+
+    .amount-spent {
+        color: #dc3545;
+    }
+
+    .progress {
+        height: 8px;
+        border-radius: 20px;
+        overflow: hidden;
+        background: #eef1f4;
+    }
+
+    .budget-safe { background-color: #198754; }
+    .budget-warn { background-color: #ff9800; }
+    .budget-danger { background-color: #dc3545; }
+
+    .btn-soft {
+        border: none;
+        border-radius: 12px;
+        padding: 10px 17px;
+        font-weight: 900;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        transition: all .3s ease;
+    }
+
+    .btn-soft:hover {
+        transform: translateY(-2px);
+        text-decoration: none;
+    }
+
+    .btn-red-soft {
+        background: linear-gradient(135deg, #dc3545, #b02a37);
+        color: white;
+    }
+
+    .btn-red-soft:hover { color: white; }
+
+    .btn-primary-soft {
+        background: linear-gradient(135deg, #1565c0, #0d47a1);
+        color: white;
+    }
+
+    .btn-primary-soft:hover { color: white; }
+
+    .btn-green-soft {
+        background: linear-gradient(135deg, #198754, #157347);
+        color: white;
+    }
+
+    .btn-green-soft:hover { color: white; }
+
+    .empty-state {
+        background: white;
+        border-radius: 20px;
+        padding: 55px 25px;
+        text-align: center;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+    }
+
+    .empty-icon {
+        width: 90px;
+        height: 90px;
+        border-radius: 25px;
+        background: linear-gradient(135deg, rgba(220, 53, 69, .08), rgba(132, 32, 41, .08));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        color: #dc3545;
+        font-size: 3rem;
+    }
+
+    .pagination .page-link {
+        border: none;
+        color: #6c757d;
+        padding: .55rem .8rem;
+        margin: 0 2px;
+        border-radius: 10px;
+        transition: all .3s ease;
+        font-weight: 800;
+    }
+
+    .pagination .page-link:hover {
+        background-color: #e9ecef;
+        color: #495057;
+        transform: translateY(-1px);
+    }
+
+    .pagination .page-item.active .page-link {
+        background: linear-gradient(135deg, #dc3545, #b02a37);
+        border-color: transparent;
+        color: white;
+        box-shadow: 0 4px 15px rgba(220, 53, 69, .35);
+    }
+
+    .example-box {
+        border: 1px solid #eef1f4;
+        border-radius: 15px;
+        padding: 16px;
+        height: 100%;
+        background: linear-gradient(135deg, #f8f9fa, #ffffff);
+    }
+
+    .example-box h6 {
+        font-weight: 900;
+        margin-bottom: 10px;
+    }
+
+    .example-box li {
+        margin-bottom: 4px;
+        color: #6c757d;
+        font-weight: 700;
+    }
+
+    @media print {
+        .no-print,
+        .sidebar,
+        .navbar,
+        .breadcrumb,
+        .filter-card,
+        .hero-actions,
+        .btn,
+        .pagination-card,
+        .table-header .no-print,
+        .modal {
+            display: none !important;
+        }
+
+        .expense-categories-page {
+            background: white;
+            padding: 0;
+            margin: 0;
+        }
+
+        .hero-card,
+        .summary-box,
+        .table-card,
+        .help-card {
+            box-shadow: none;
+            border: 1px solid #ddd;
+        }
+
+        .hero-card {
+            background: #f8f9fa !important;
+            color: #000 !important;
+        }
+
+        .hero-title h2,
+        .hero-subtitle {
+            color: #000 !important;
+        }
+    }
+
+    @media(max-width:768px) {
+        .expense-categories-page {
+            padding: 15px;
+            margin: -5px;
+        }
+
+        .hero-card {
+            padding: 22px;
+        }
+
+        .hero-card .d-flex {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 18px;
+        }
+
+        .hero-actions {
+            justify-content: flex-start;
+            width: 100%;
+        }
+
+        .hero-btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .hero-title h2 {
+            font-size: 1.55rem;
+        }
+    }
+
+    @keyframes drift {
+        0% { transform: rotate(0deg) translateX(0); }
+        100% { transform: rotate(360deg) translateX(20px); }
+    }
+
+    .fade-in {
+        animation: fadeInUp .75s ease-out;
+    }
+
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(24px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h2><i class="fas fa-tags me-2"></i>تصنيفات المصروفات</h2>
-                <p class="text-muted mb-0">إدارة تصنيفات المصروفات اليومية والميزانيات</p>
-            </div>
-            <div>
-                <a href="{% url 'treasury_management:setup_expense_categories' %}" class="btn btn-success me-2">
-                    <i class="fas fa-magic me-1"></i>إنشاء التصنيفات الأساسية
-                </a>
-                <a href="{% url 'treasury_management:add_expense_category' %}" class="btn btn-primary">
-                    <i class="fas fa-plus me-1"></i>إضافة تصنيف جديد
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
+<div class="expense-categories-page">
 
-<!-- إحصائيات سريعة -->
-<div class="row mb-4">
-    <div class="col-lg-3 col-md-6">
-        <div class="card bg-primary text-white">
-            <div class="card-body text-center">
-                <div class="h4 mb-1">{{ stats.total_categories }}</div>
-                <div class="opacity-75">إجمالي التصنيفات</div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-lg-3 col-md-6">
-        <div class="card bg-success text-white">
-            <div class="card-body text-center">
-                <div class="h4 mb-1">{{ stats.active_categories }}</div>
-                <div class="opacity-75">تصنيفات نشطة</div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-lg-3 col-md-6">
-        <div class="card bg-warning text-dark">
-            <div class="card-body text-center">
-                <div class="h4 mb-1">{{ stats.total_budget|floatformat:0 }}</div>
-                <div class="opacity-75">إجمالي الميزانيات</div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-lg-3 col-md-6">
-        <div class="card bg-info text-white">
-            <div class="card-body text-center">
-                <div class="h4 mb-1">{{ stats.categories_with_budget }}</div>
-                <div class="opacity-75">لها ميزانيات</div>
-            </div>
-        </div>
-    </div>
-</div>
-
-{% if not categories %}
-<!-- رسالة عدم وجود تصنيفات -->
-<div class="alert alert-info text-center">
-    <i class="fas fa-tags fa-2x mb-2"></i>
-    <h5>لا توجد تصنيفات للمصروفات</h5>
-    <p class="mb-3">ابدأ بإنشاء تصنيفات المصروفات لتنظيم النفقات اليومية</p>
-    <a href="{% url 'treasury_management:setup_expense_categories' %}" class="btn btn-success me-2">
-        <i class="fas fa-magic me-1"></i>إنشاء التصنيفات الأساسية تلقائياً
-    </a>
-    <a href="{% url 'treasury_management:add_expense_category' %}" class="btn btn-primary">
-        <i class="fas fa-plus me-1"></i>إضافة تصنيف يدوياً
-    </a>
-</div>
-{% else %}
-
-<!-- جدول التصنيفات -->
-<div class="card">
-    <div class="table-responsive">
-        <table class="table table-hover mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th>الكود</th>
-                    <th>اسم التصنيف</th>
-                    <th>الحساب المرتبط</th>
-                    <th>الميزانية الشهرية</th>
-                    <th>الإنفاق الحالي</th>
-                    <th>النسبة المستخدمة</th>
-                    <th>الحالة</th>
-                    <th>الإجراءات</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for category in categories %}
-                <tr>
-                    <td><strong>{{ category.code }}</strong></td>
-                    <td>
-                        {{ category.name }}
-                        {% if category.description %}
-                        <br><small class="text-muted">{{ category.description|truncatechars:40 }}</small>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <strong>{{ category.account.code }}</strong>
-                        <br><small class="text-muted">{{ category.account.name }}</small>
-                    </td>
-                    <td class="text-center">
-                        {% if category.monthly_budget %}
-                        <span class="fw-bold">{{ category.monthly_budget|floatformat:2 }}</span>
-                        {% else %}
-                        <span class="text-muted">غير محدد</span>
-                        {% endif %}
-                    </td>
-                    <td class="text-center">
-                        <!-- هنا يمكن إضافة حساب الإنفاق الحالي -->
-                        <span class="text-muted">0.00</span>
-                    </td>
-                    <td class="text-center">
-                        {% if category.monthly_budget %}
-                        <div class="progress" style="height: 6px;">
-                            <div class="progress-bar bg-info" style="width: 25%;"></div>
+    <div class="hero-card fade-in">
+        <div class="hero-content">
+            <div class="d-flex justify-content-between align-items-start gap-3">
+                <div>
+                    <div class="hero-title">
+                        <div class="hero-icon">
+                            <i class="fas fa-tags"></i>
                         </div>
-                        <small>25%</small>
-                        {% else %}
-                        <span class="text-muted">-</span>
-                        {% endif %}
-                    </td>
-                    <td class="text-center">
-                        {% if category.is_active %}
-                        <span class="badge bg-success">نشط</span>
-                        {% else %}
-                        <span class="badge bg-secondary">غير نشط</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <div class="btn-group" role="group">
-                            <button type="button" class="btn btn-sm btn-outline-info" 
-                                    onclick="showCategoryDetails({{ category.id }})"
-                                    title="تفاصيل">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <a href="{% url 'treasury_management:edit_expense_category' category.id %}" 
-                               class="btn btn-sm btn-outline-warning"
-                               title="تحرير">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                            <button type="button" class="btn btn-sm btn-outline-danger" 
-                                    onclick="deleteCategory({{ category.id }}, '{{ category.name }}')"
-                                    title="حذف">
-                                <i class="fas fa-trash"></i>
-                            </button>
+                        <div>
+                            <h2>تصنيفات المصروفات</h2>
+                            <p class="hero-subtitle">إدارة تصنيفات المصروفات اليومية والميزانيات الشهرية وربطها بالحسابات</p>
                         </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-{% endif %}
+                    </div>
+                </div>
 
-<!-- معلومات مساعدة -->
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card border-info">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>أمثلة لتصنيفات المصروفات</h5>
+                <div class="hero-actions no-print">
+                    <a href="{% url 'treasury_management:setup_expense_categories' %}" class="hero-btn">
+                        <i class="fas fa-magic"></i>
+                        إنشاء التصنيفات الأساسية
+                    </a>
+
+                    <a href="{% url 'treasury_management:add_expense_category' %}" class="hero-btn solid">
+                        <i class="fas fa-plus"></i>
+                        إضافة تصنيف جديد
+                    </a>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-3">
+        </div>
+    </div>
+
+    <div class="stats-strip fade-in" style="animation-delay:.1s;">
+        <div class="summary-box total">
+            <div class="summary-icon"><i class="fas fa-tags"></i></div>
+            <div class="summary-label">إجمالي التصنيفات</div>
+            <div class="summary-value">{{ stats.total_categories|default:0 }}</div>
+        </div>
+
+        <div class="summary-box active">
+            <div class="summary-icon"><i class="fas fa-check-circle"></i></div>
+            <div class="summary-label">تصنيفات نشطة</div>
+            <div class="summary-value">{{ stats.active_categories|default:0 }}</div>
+        </div>
+
+        <div class="summary-box budget">
+            <div class="summary-icon"><i class="fas fa-wallet"></i></div>
+            <div class="summary-label">إجمالي الميزانيات</div>
+            <div class="summary-value">{{ stats.total_monthly_budget|default:0|floatformat:0 }}</div>
+        </div>
+
+        <div class="summary-box with-budget">
+            <div class="summary-icon"><i class="fas fa-chart-pie"></i></div>
+            <div class="summary-label">لها ميزانية</div>
+            <div class="summary-value">{{ stats.categories_with_budget|default:0 }}</div>
+        </div>
+    </div>
+
+    <div class="filter-card fade-in no-print" style="animation-delay:.15s;">
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-end" id="filterForm">
+                <div class="col-lg-4 col-md-6">
+                    <label class="form-label fw-bold">البحث</label>
+                    <input type="text" name="search" class="form-control" value="{{ search }}" placeholder="اسم التصنيف / الكود / الوصف">
+                </div>
+
+                <div class="col-lg-2 col-md-6">
+                    <label class="form-label fw-bold">الحالة</label>
+                    <select name="active" class="form-select">
+                        <option value="">جميع الحالات</option>
+                        <option value="true" {% if is_active == 'true' %}selected{% endif %}>نشط</option>
+                        <option value="false" {% if is_active == 'false' %}selected{% endif %}>غير نشط</option>
+                    </select>
+                </div>
+
+                <div class="col-lg-2 col-md-6">
+                    <label class="form-label fw-bold">الميزانية</label>
+                    <select name="has_budget" class="form-select">
+                        <option value="">الكل</option>
+                        <option value="true" {% if has_budget == 'true' %}selected{% endif %}>لها ميزانية</option>
+                        <option value="false" {% if has_budget == 'false' %}selected{% endif %}>بدون ميزانية</option>
+                    </select>
+                </div>
+
+                <div class="col-lg-1 col-md-6">
+                    <label class="form-label fw-bold">عدد</label>
+                    <select name="per_page" class="form-select">
+                        <option value="5" {% if items_per_page == 5 %}selected{% endif %}>5</option>
+                        <option value="10" {% if items_per_page == 10 %}selected{% endif %}>10</option>
+                        <option value="15" {% if items_per_page == 15 %}selected{% endif %}>15</option>
+                        <option value="25" {% if items_per_page == 25 %}selected{% endif %}>25</option>
+                    </select>
+                </div>
+
+                <div class="col-lg-3 col-md-12">
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="submit" class="btn-soft btn-primary-soft">
+                            <i class="fas fa-search"></i>
+                            بحث
+                        </button>
+
+                        <a href="{% url 'treasury_management:expense_categories_list' %}" class="btn btn-outline-secondary fw-bold">
+                            <i class="fas fa-refresh me-1"></i>
+                            إعادة تعيين
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if categories %}
+    <div class="results-info fade-in">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <i class="fas fa-info-circle me-2"></i>
+                عرض {{ categories.start_index }}-{{ categories.end_index }} من {{ paginator.count }} تصنيف
+                {% if search %} - بحث: <strong>{{ search }}</strong>{% endif %}
+            </div>
+
+            <div class="col-md-4 text-end">
+                صفحة {{ categories.number }} من {{ paginator.num_pages }}
+            </div>
+        </div>
+    </div>
+
+    <div class="table-card fade-in">
+        <div class="table-header">
+            <h5 class="table-title">
+                <span class="title-icon"><i class="fas fa-table"></i></span>
+                قائمة تصنيفات المصروفات
+            </h5>
+
+            <div class="d-flex gap-2 flex-wrap no-print">
+                <button type="button" class="btn btn-sm btn-outline-info fw-bold" onclick="window.print()">
+                    <i class="fas fa-print me-1"></i>
+                    طباعة
+                </button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>الكود</th>
+                        <th>اسم التصنيف</th>
+                        <th>الحساب المرتبط</th>
+                        <th class="text-center">الميزانية الشهرية</th>
+                        <th class="text-center">إنفاق الشهر</th>
+                        <th class="text-center">النسبة المستخدمة</th>
+                        <th class="text-center">الحالة</th>
+                        <th class="text-center no-print">الإجراءات</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for category in categories %}
+                    <tr>
+                        <td>
+                            <span class="category-code">{{ category.code }}</span>
+                        </td>
+
+                        <td>
+                            <strong>{{ category.name }}</strong>
+                            {% if category.description %}
+                                <br>
+                                <small class="text-muted">{{ category.description|truncatechars:55 }}</small>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if category.account %}
+                                <strong>{{ category.account.code }}</strong>
+                                <br>
+                                <small class="text-muted">{{ category.account.name }}</small>
+                            {% else %}
+                                <span class="text-muted">غير محدد</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="text-center">
+                            {% if category.monthly_budget %}
+                                <span class="amount-value amount-budget">{{ category.monthly_budget|floatformat:2 }}</span>
+                            {% else %}
+                                <span class="text-muted">غير محدد</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="text-center">
+    <span class="amount-value amount-spent">
+        {{ category.view_current_month_spent|default:0|floatformat:2 }}
+    </span>
+</td>
+
+<td class="text-center">
+    {% if category.monthly_budget %}
+        <div class="progress mb-1">
+            <div class="progress-bar
+                {% if category.view_budget_percentage >= 100 %}budget-danger
+                {% elif category.view_budget_percentage >= 75 %}budget-warn
+                {% else %}budget-safe{% endif %}"
+                style="width: {{ category.view_budget_percentage_clamped }}%;">
+            </div>
+        </div>
+
+        <small class="
+            {% if category.view_budget_percentage >= 100 %}text-danger
+            {% elif category.view_budget_percentage >= 75 %}text-warning
+            {% else %}text-success{% endif %} fw-bold">
+            {{ category.view_budget_percentage|floatformat:1 }}%
+        </small>
+    {% else %}
+        <span class="text-muted">-</span>
+    {% endif %}
+</td>
+
+
+                        <td class="text-center">
+                            {% if category.is_active %}
+                                <span class="badge bg-success">نشط</span>
+                            {% else %}
+                                <span class="badge bg-secondary">غير نشط</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="text-center no-print">
+                            <div class="btn-group" role="group">
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-info"
+                                        onclick="showCategoryDetails({{ category.id }})"
+                                        title="تفاصيل">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+
+                                <a href="{% url 'treasury_management:edit_expense_category' category.id %}"
+                                   class="btn btn-sm btn-outline-warning"
+                                   title="تحرير">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-danger"
+                                        onclick="deleteCategory({{ category.id }}, '{{ category.name|escapejs }}')"
+                                        title="حذف">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+                <tfoot class="table-light">
+                    <tr>
+                        <th colspan="3">الإجمالي</th>
+                        <th class="text-center amount-value amount-budget">{{ stats.total_monthly_budget|default:0|floatformat:2 }}</th>
+                        <th class="text-center amount-value amount-spent">{{ stats.total_current_month_spent|default:0|floatformat:2 }}</th>
+                        <th colspan="3"></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <div class="pagination-card p-3 fade-in no-print">
+        <div class="row align-items-center">
+            <div class="col-md-4">
+                <small class="text-muted fw-bold">
+                    عرض {{ categories.start_index }}-{{ categories.end_index }} من {{ paginator.count }} تصنيف
+                </small>
+            </div>
+
+            <div class="col-md-8">
+                {% if paginator.num_pages > 1 %}
+                <nav>
+                    <ul class="pagination justify-content-end mb-0">
+                        {% if categories.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{{ query_string_without_page }}&page=1">الأولى</a>
+                        </li>
+
+                        <li class="page-item">
+                            <a class="page-link" href="?{{ query_string_without_page }}&page={{ categories.previous_page_number }}">السابقة</a>
+                        </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">{{ categories.number }} من {{ paginator.num_pages }}</span>
+                        </li>
+
+                        {% if categories.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{{ query_string_without_page }}&page={{ categories.next_page_number }}">التالية</a>
+                        </li>
+
+                        <li class="page-item">
+                            <a class="page-link" href="?{{ query_string_without_page }}&page={{ paginator.num_pages }}">الأخيرة</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state fade-in">
+        <div class="empty-icon">
+            <i class="fas fa-tags"></i>
+        </div>
+
+        <h3 class="text-muted">لا توجد تصنيفات للمصروفات</h3>
+        <p class="lead text-muted">ابدأ بإنشاء تصنيفات المصروفات لتنظيم النفقات اليومية.</p>
+
+        <div class="d-flex justify-content-center gap-2 flex-wrap no-print">
+            <a href="{% url 'treasury_management:setup_expense_categories' %}" class="btn-soft btn-green-soft">
+                <i class="fas fa-magic"></i>
+                إنشاء التصنيفات الأساسية
+            </a>
+
+            <a href="{% url 'treasury_management:add_expense_category' %}" class="btn-soft btn-primary-soft">
+                <i class="fas fa-plus"></i>
+                إضافة تصنيف يدوياً
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="help-card fade-in">
+        <div class="help-header">
+            <h5 class="help-title">
+                <span class="title-icon"><i class="fas fa-lightbulb"></i></span>
+                أمثلة لتصنيفات المصروفات
+            </h5>
+        </div>
+
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="example-box">
                         <h6 class="text-primary">المرتبات والأجور</h6>
-                        <ul class="list-unstyled">
-                            <li><small>• مرتبات المعلمين</small></li>
-                            <li><small>• مرتبات الإدارة</small></li>
-                            <li><small>• مكافآت وحوافز</small></li>
+                        <ul class="list-unstyled mb-0">
+                            <li>• مرتبات المعلمين</li>
+                            <li>• مرتبات الإدارة</li>
+                            <li>• مكافآت وحوافز</li>
                         </ul>
                     </div>
-                    
-                    <div class="col-md-3">
+                </div>
+
+                <div class="col-md-3">
+                    <div class="example-box">
                         <h6 class="text-success">المرافق والخدمات</h6>
-                        <ul class="list-unstyled">
-                            <li><small>• فواتير الكهرباء</small></li>
-                            <li><small>• فواتير المياه</small></li>
-                            <li><small>• خدمات الإنترنت</small></li>
+                        <ul class="list-unstyled mb-0">
+                            <li>• فواتير الكهرباء</li>
+                            <li>• فواتير المياه</li>
+                            <li>• خدمات الإنترنت</li>
                         </ul>
                     </div>
-                    
-                    <div class="col-md-3">
+                </div>
+
+                <div class="col-md-3">
+                    <div class="example-box">
                         <h6 class="text-warning">المستلزمات</h6>
-                        <ul class="list-unstyled">
-                            <li><small>• القرطاسية والكتب</small></li>
-                            <li><small>• مواد التنظيف</small></li>
-                            <li><small>• المستلزمات الطبية</small></li>
+                        <ul class="list-unstyled mb-0">
+                            <li>• القرطاسية والكتب</li>
+                            <li>• مواد التنظيف</li>
+                            <li>• المستلزمات الطبية</li>
                         </ul>
                     </div>
-                    
-                    <div class="col-md-3">
+                </div>
+
+                <div class="col-md-3">
+                    <div class="example-box">
                         <h6 class="text-danger">الصيانة</h6>
-                        <ul class="list-unstyled">
-                            <li><small>• صيانة المباني</small></li>
-                            <li><small>• صيانة المعدات</small></li>
-                            <li><small>• صيانة الحافلات</small></li>
+                        <ul class="list-unstyled mb-0">
+                            <li>• صيانة المباني</li>
+                            <li>• صيانة المعدات</li>
+                            <li>• صيانة الحافلات</li>
                         </ul>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Modal لتفاصيل التصنيف -->
-<div class="modal fade" id="categoryModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">تفاصيل تصنيف المصروفات</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="categoryDetails">
-                <div class="text-center">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">جاري التحميل...</span>
+    <!-- Modal تفاصيل التصنيف -->
+    <div class="modal fade" id="categoryModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" style="border: none; border-radius: 20px; overflow: hidden;">
+                <div class="modal-header text-white" style="background: linear-gradient(135deg, #dc3545, #b02a37);">
+                    <h5 class="modal-title">
+                        <i class="fas fa-tags me-2"></i>
+                        تفاصيل تصنيف المصروفات
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body" id="categoryDetails">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-danger" role="status"></div>
+                        <div class="mt-2">جاري تحميل التفاصيل...</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Modal للحذف -->
-<div class="modal fade" id="deleteModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">تأكيد الحذف</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-warning">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    هل أنت متأكد من حذف تصنيف المصروفات "<strong id="categoryNameToDelete"></strong>"؟
+    <!-- Modal الحذف -->
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content" style="border: none; border-radius: 20px; overflow: hidden;">
+                <div class="modal-header text-white" style="background: linear-gradient(135deg, #dc3545, #b02a37);">
+                    <h5 class="modal-title">
+                        <i class="fas fa-trash me-2"></i>
+                        تأكيد الحذف
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <p class="text-muted">هذا الإجراء لا يمكن التراجع عنه.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                <form method="POST" id="deleteForm" style="display: inline;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger">تأكيد الحذف</button>
-                </form>
+
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        هل أنت متأكد من حذف تصنيف المصروفات
+                        "<strong id="categoryNameToDelete"></strong>"؟
+                    </div>
+                    <p class="text-muted mb-0">هذا الإجراء لا يمكن التراجع عنه.</p>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <form method="POST" id="deleteForm" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">تأكيد الحذف</button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
+
 </div>
 {% endblock %}
 
-<!-- تحديث الـ JavaScript في expense_categories_list.html -->
 {% block extra_js %}
 <script>
 function showCategoryDetails(categoryId) {
-    const modal = new bootstrap.Modal(document.getElementById('categoryModal'));
+    const modalElement = document.getElementById('categoryModal');
     const detailsContainer = document.getElementById('categoryDetails');
-    
-    // إظهار شاشة التحميل
+
+    if (!modalElement || !detailsContainer) {
+        alert('لم يتم العثور على نافذة تفاصيل التصنيف داخل القالب.');
+        return;
+    }
+
+    const modal = new bootstrap.Modal(modalElement);
+
     detailsContainer.innerHTML = `
-        <div class="text-center py-4">
-            <div class="spinner-border text-primary mb-3" role="status">
-                <span class="visually-hidden">جاري التحميل...</span>
-            </div>
-            <div class="text-muted">جاري تحميل تفاصيل التصنيف...</div>
+        <div class="text-center py-5">
+            <div class="spinner-border text-danger" role="status"></div>
+            <div class="mt-2">جاري تحميل التفاصيل...</div>
         </div>
     `;
-    
+
     modal.show();
-    
-    // جلب التفاصيل عبر AJAX
+
     fetch(`/treasury/expense-category-detail/${categoryId}/`, {
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'Content-Type': 'application/json',
-        }
+        headers: {'X-Requested-With': 'XMLHttpRequest'}
     })
     .then(response => {
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error('HTTP ' + response.status);
         }
         return response.json();
     })
     .then(data => {
         if (data.success) {
             detailsContainer.innerHTML = data.html;
-            
-            // تفعيل tooltips إذا كانت موجودة
-            const tooltipTriggerList = [].slice.call(detailsContainer.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl);
-            });
         } else {
             detailsContainer.innerHTML = `
-                <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-circle me-2"></i>
+                <div class="alert alert-danger text-center">
                     حدث خطأ في تحميل التفاصيل: ${data.error || 'خطأ غير معروف'}
                 </div>
             `;
         }
     })
     .catch(error => {
-        console.error('Error fetching category details:', error);
         detailsContainer.innerHTML = `
-            <div class="alert alert-warning">
-                <h6><i class="fas fa-wifi me-2"></i>تعذر الاتصال بالخادم</h6>
-                <p class="mb-2">يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.</p>
-                <button class="btn btn-sm btn-outline-primary" onclick="showCategoryDetails(${categoryId})">
-                    <i class="fas fa-refresh me-1"></i>إعادة المحاولة
-                </button>
+            <div class="alert alert-warning text-center">
+                تعذر تحميل التفاصيل. تأكد من إضافة مسار ودالة تفاصيل تصنيف المصروفات.
+                <br>
+                <small>${error.message}</small>
             </div>
         `;
     });
 }
 
 function deleteCategory(categoryId, categoryName) {
-    // إظهار مربع تأكيد مخصص
-    if (confirm(`هل أنت متأكد من حذف تصنيف المصروفات "${categoryName}"؟\n\nهذا الإجراء لا يمكن التراجع عنه.`)) {
-        // إنشاء نموذج مخفي للحذف
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/treasury/delete-expense-category/${categoryId}/`;
-        
-        // إضافة CSRF token
-        const csrfInput = document.createElement('input');
-        csrfInput.type = 'hidden';
-        csrfInput.name = 'csrfmiddlewaretoken';
-        csrfInput.value = document.querySelector('[name=csrfmiddlewaretoken]').value;
-        form.appendChild(csrfInput);
-        
-        // إضافة النموذج للصفحة وإرساله
-        document.body.appendChild(form);
-        form.submit();
-    }
+    const modalElement = document.getElementById('deleteModal');
+    const form = document.getElementById('deleteForm');
+
+    document.getElementById('categoryNameToDelete').textContent = categoryName;
+    form.action = `/treasury/delete-expense-category/${categoryId}/`;
+
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
 }
 
-// تحديث الصفحة كل 5 دقائق لتحديث الإحصائيات
-setInterval(function() {
-    location.reload();
-}, 300000);
+document.addEventListener('DOMContentLoaded', function() {
+    const elements = document.querySelectorAll('.hero-card,.summary-box,.filter-card,.table-card,.pagination-card,.empty-state,.results-info,.help-card');
+
+    elements.forEach((el, index) => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(20px)';
+
+        setTimeout(() => {
+            el.style.transition = 'all .45s ease';
+            el.style.opacity = '1';
+            el.style.transform = 'translateY(0)';
+        }, index * 55);
+    });
+
+    const filterForm = document.getElementById('filterForm');
+
+    if (filterForm) {
+        filterForm.querySelectorAll('select').forEach(select => {
+            select.addEventListener('change', () => filterForm.submit());
+        });
+    }
+});
 </script>
 {% endblock %}

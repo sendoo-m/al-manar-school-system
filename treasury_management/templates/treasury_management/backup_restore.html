@@ -1,0 +1,674 @@
+<!-- treasury_management/templates/treasury_management/backup_restore.html -->
+{% extends 'treasury_management/base.html' %}
+{% load static %}
+
+{% block title %}النسخ الاحتياطي والاستعادة{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">النسخ الاحتياطي والاستعادة</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .backup-page {
+        background: linear-gradient(135deg, rgba(13, 71, 161, 0.03), rgba(111, 66, 193, 0.04));
+        border-radius: 20px;
+        padding: 25px;
+        margin: -10px;
+        min-height: calc(100vh - 200px);
+    }
+
+    .hero-card {
+        background: linear-gradient(135deg, #6f42c1, #4527a0);
+        color: white;
+        border-radius: 22px;
+        padding: 30px;
+        margin-bottom: 28px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 12px 35px rgba(69, 39, 160, 0.22);
+    }
+
+    .hero-card::before {
+        content: '';
+        position: absolute;
+        top: -60%;
+        right: -50%;
+        width: 220%;
+        height: 220%;
+        background: radial-gradient(circle, rgba(255,255,255,0.12) 1px, transparent 1px);
+        background-size: 24px 24px;
+        animation: drift 26s linear infinite;
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .hero-title {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 12px;
+    }
+
+    .hero-icon {
+        width: 64px;
+        height: 64px;
+        background: rgba(255,255,255,0.18);
+        border: 2px solid rgba(255,255,255,0.28);
+        border-radius: 17px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.9rem;
+        backdrop-filter: blur(10px);
+    }
+
+    .hero-title h2 {
+        color: white;
+        margin: 0;
+        font-weight: 900;
+        font-size: 2rem;
+    }
+
+    .hero-subtitle {
+        color: rgba(255,255,255,.88);
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .hero-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .hero-btn {
+        border: 1px solid rgba(255,255,255,.35);
+        background: rgba(255,255,255,.14);
+        color: white;
+        border-radius: 13px;
+        padding: 11px 18px;
+        text-decoration: none;
+        font-weight: 800;
+        transition: all .3s ease;
+        backdrop-filter: blur(10px);
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+    .hero-btn:hover {
+        color: white;
+        background: rgba(255,255,255,.25);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(0,0,0,.12);
+    }
+
+    .hero-btn.solid {
+        background: white;
+        color: #4527a0;
+    }
+
+    .hero-btn.solid:hover {
+        color: #4527a0;
+        background: rgba(255,255,255,.94);
+    }
+
+    .backup-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 22px;
+        margin-bottom: 25px;
+    }
+
+    .action-card,
+    .table-card,
+    .info-card {
+        background: white;
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        overflow: hidden;
+        transition: all .3s ease;
+    }
+
+    .action-card:hover,
+    .table-card:hover,
+    .info-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 14px 30px rgba(0,0,0,0.12);
+    }
+
+    .action-header {
+        padding: 24px;
+        color: white;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .action-header.backup {
+        background: linear-gradient(135deg, #198754, #157347);
+    }
+
+    .action-header.restore {
+        background: linear-gradient(135deg, #ff9800, #f57c00);
+    }
+
+    .action-header.danger {
+        background: linear-gradient(135deg, #dc3545, #b02a37);
+    }
+
+    .action-icon {
+        width: 70px;
+        height: 70px;
+        border-radius: 20px;
+        background: rgba(255,255,255,.18);
+        border: 2px solid rgba(255,255,255,.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        margin: 0 auto 14px;
+        backdrop-filter: blur(10px);
+    }
+
+    .action-header h5 {
+        color: white;
+        font-weight: 900;
+        margin-bottom: 5px;
+    }
+
+    .action-header p {
+        color: rgba(255,255,255,.84);
+        margin: 0;
+        font-weight: 700;
+        font-size: .9rem;
+    }
+
+    .action-body {
+        padding: 22px;
+    }
+
+    .feature-list {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 18px 0;
+    }
+
+    .feature-list li {
+        padding: 8px 0;
+        color: #6c757d;
+        font-weight: 700;
+        border-bottom: 1px solid #f1f3f5;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .feature-list li:last-child {
+        border-bottom: none;
+    }
+
+    .feature-list i {
+        color: #198754;
+    }
+
+    .btn-soft {
+        border: none;
+        border-radius: 12px;
+        padding: 11px 18px;
+        font-weight: 900;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        transition: all .3s ease;
+        width: 100%;
+    }
+
+    .btn-soft:hover {
+        transform: translateY(-2px);
+        text-decoration: none;
+    }
+
+    .btn-green-soft {
+        background: linear-gradient(135deg, #198754, #157347);
+        color: white;
+    }
+
+    .btn-orange-soft {
+        background: linear-gradient(135deg, #ff9800, #f57c00);
+        color: white;
+    }
+
+    .btn-purple-soft {
+        background: linear-gradient(135deg, #6f42c1, #4527a0);
+        color: white;
+    }
+
+    .btn-red-soft {
+        background: linear-gradient(135deg, #dc3545, #b02a37);
+        color: white;
+    }
+
+    .btn-green-soft:hover,
+    .btn-orange-soft:hover,
+    .btn-purple-soft:hover,
+    .btn-red-soft:hover {
+        color: white;
+    }
+
+    .section-header {
+        background: linear-gradient(135deg, #f8f9fa, #eef1f4);
+        padding: 18px 22px;
+        border-bottom: 1px solid #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .section-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 900;
+        color: #2c3e50;
+        margin: 0;
+        font-size: 1.1rem;
+    }
+
+    .title-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #6f42c1, #4527a0);
+        color: white;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .table th {
+        background: #f8f9fa;
+        color: #2c3e50;
+        font-weight: 900;
+        border-bottom: 2px solid #e9ecef;
+        padding: 14px 12px;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .table td {
+        padding: 13px 12px;
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f3f5;
+    }
+
+    .backup-name {
+        font-family: monospace;
+        font-weight: 900;
+        color: white;
+        background: linear-gradient(135deg, #6f42c1, #4527a0);
+        padding: 6px 10px;
+        border-radius: 9px;
+        display: inline-block;
+        direction: ltr;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 42px 20px;
+        color: #6c757d;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        color: #adb5bd;
+    }
+
+    .notice-box {
+        border-radius: 18px;
+        padding: 18px;
+        background: linear-gradient(135deg, rgba(13, 202, 240, .09), rgba(13, 110, 253, .05));
+        border: 1px solid rgba(13, 202, 240, .18);
+        color: #0c5460;
+        font-weight: 700;
+    }
+
+    .notice-box h6 {
+        font-weight: 900;
+        color: #0c5460;
+        margin-bottom: 10px;
+    }
+
+    .danger-confirm-box {
+        background: rgba(220, 53, 69, .08);
+        border: 1px solid rgba(220, 53, 69, .18);
+        border-radius: 15px;
+        padding: 15px;
+        margin-top: 15px;
+    }
+
+    @media(max-width:768px) {
+        .backup-page {
+            padding: 15px;
+            margin: -5px;
+        }
+
+        .hero-card {
+            padding: 22px;
+        }
+
+        .hero-card .d-flex {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 18px;
+        }
+
+        .hero-actions {
+            justify-content: flex-start;
+            width: 100%;
+        }
+
+        .hero-btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .hero-title h2 {
+            font-size: 1.55rem;
+        }
+    }
+
+    @keyframes drift {
+        0% { transform: rotate(0deg) translateX(0); }
+        100% { transform: rotate(360deg) translateX(20px); }
+    }
+
+    .fade-in {
+        animation: fadeInUp .75s ease-out;
+    }
+
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(24px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="backup-page">
+
+    <div class="hero-card fade-in">
+        <div class="hero-content">
+            <div class="d-flex justify-content-between align-items-start gap-3">
+                <div>
+                    <div class="hero-title">
+                        <div class="hero-icon">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <div>
+                            <h2>النسخ الاحتياطي والاستعادة</h2>
+                            <p class="hero-subtitle">إنشاء نسخة احتياطية فعلية من قاعدة البيانات واستعادتها عند الحاجة</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hero-actions no-print">
+                    <a href="{% url 'treasury_management:dashboard' %}" class="hero-btn">
+                        <i class="fas fa-arrow-right"></i>
+                        لوحة التحكم
+                    </a>
+
+                    <a href="{% url 'treasury_management:system_settings' %}" class="hero-btn solid">
+                        <i class="fas fa-sliders-h"></i>
+                        إعدادات النظام
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="backup-grid fade-in" style="animation-delay:.1s;">
+        <div class="action-card">
+            <div class="action-header backup">
+                <div class="action-icon">
+                    <i class="fas fa-download"></i>
+                </div>
+                <h5>إنشاء نسخة احتياطية</h5>
+                <p>حفظ نسخة ZIP من بيانات النظام الحالية</p>
+            </div>
+
+            <div class="action-body">
+                <ul class="feature-list">
+                    <li><i class="fas fa-check-circle"></i> حفظ العمليات المالية</li>
+                    <li><i class="fas fa-check-circle"></i> حفظ الخزائن والحسابات</li>
+                    <li><i class="fas fa-check-circle"></i> حفظ المستخدمين والصلاحيات</li>
+                    <li><i class="fas fa-check-circle"></i> حفظ التصنيفات والإعدادات</li>
+                </ul>
+
+                <form method="POST" onsubmit="return confirm('هل تريد إنشاء نسخة احتياطية الآن؟')">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create_backup">
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">وصف اختياري للنسخة</label>
+                        <input type="text" name="description" class="form-control" placeholder="مثال: قبل اعتماد مصروفات الشهر">
+                    </div>
+
+                    <button type="submit" class="btn-soft btn-green-soft">
+                        <i class="fas fa-download"></i>
+                        إنشاء نسخة احتياطية
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="action-card">
+            <div class="action-header restore">
+                <div class="action-icon">
+                    <i class="fas fa-upload"></i>
+                </div>
+                <h5>استعادة نسخة احتياطية</h5>
+                <p>استرجاع البيانات من ملف ZIP محفوظ</p>
+            </div>
+
+            <div class="action-body">
+                <div class="alert alert-danger">
+                    <strong>تحذير مهم:</strong>
+                    الاستعادة ستمسح البيانات الحالية وتستبدلها ببيانات النسخة الاحتياطية.
+                </div>
+
+                <form method="POST" enctype="multipart/form-data" onsubmit="return confirmRestoreBackup()">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="restore_backup">
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">ملف النسخة الاحتياطية</label>
+                        <input type="file" name="backup_file" class="form-control" accept=".zip" required>
+                    </div>
+
+                    <div class="danger-confirm-box">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="confirm_restore" id="confirmRestore">
+                            <label class="form-check-label fw-bold text-danger" for="confirmRestore">
+                                أؤكد أنني أفهم أن الاستعادة ستستبدل البيانات الحالية
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-soft btn-orange-soft mt-3">
+                        <i class="fas fa-upload"></i>
+                        استعادة النسخة
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="action-card">
+            <div class="action-header danger">
+                <div class="action-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h5>تنبيه أمان</h5>
+                <p>إرشادات مهمة قبل النسخ والاستعادة</p>
+            </div>
+
+            <div class="action-body">
+                <div class="notice-box">
+                    <h6><i class="fas fa-info-circle me-1"></i> ملاحظة مهمة</h6>
+                    <p class="mb-0">
+                        يفضل إنشاء نسخة احتياطية قبل أي تعديل كبير في النظام.
+                        ويفضل تنزيل نسخة والاحتفاظ بها خارج الجهاز.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-card fade-in" style="animation-delay:.2s;">
+        <div class="section-header">
+            <h5 class="section-title">
+                <span class="title-icon"><i class="fas fa-history"></i></span>
+                سجل النسخ الاحتياطية
+            </h5>
+
+            <span class="badge bg-secondary">{{ backups|length }} نسخة</span>
+        </div>
+
+        {% if backups %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>اسم النسخة</th>
+                        <th>تاريخ الإنشاء</th>
+                        <th>الحجم</th>
+                        <th>أنشأ بواسطة</th>
+                        <th>البيانات</th>
+                        <th class="text-center">الإجراءات</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for backup in backups %}
+                    <tr>
+                        <td>
+                            <span class="backup-name">{{ backup.name }}</span>
+                            {% if backup.description %}
+                            <br>
+                            <small class="text-muted">{{ backup.description }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ backup.created_at|date:"Y-m-d H:i" }}
+                            {% if backup.created_at_text %}
+                            <br>
+                            <small class="text-muted">{{ backup.created_at_text }}</small>
+                            {% endif %}
+                        </td>
+                        <td>{{ backup.size|default:"-" }}</td>
+                        <td>{{ backup.created_by|default:"-" }}</td>
+                        <td>
+                            <small class="text-muted">
+                                النماذج: {{ backup.models_count|default:"-" }}
+                                <br>
+                                العناصر: {{ backup.objects_count|default:"-" }}
+                            </small>
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group">
+                                <a href="{% url 'treasury_management:download_backup' backup.filename %}"
+                                   class="btn btn-sm btn-outline-primary"
+                                   title="تنزيل">
+                                    <i class="fas fa-download"></i>
+                                </a>
+
+                                <form method="POST" style="display:inline;" onsubmit="return confirm('هل تريد حذف هذه النسخة الاحتياطية؟')">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="delete_backup">
+                                    <input type="hidden" name="filename" value="{{ backup.filename }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="حذف">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-database"></i>
+            <h5>لا توجد نسخ احتياطية حتى الآن</h5>
+            <p class="mb-0">اضغط على زر إنشاء نسخة احتياطية وسيتم حفظها هنا.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="info-card fade-in" style="animation-delay:.3s;">
+        <div class="section-header">
+            <h5 class="section-title">
+                <span class="title-icon"><i class="fas fa-list-check"></i></span>
+                ماذا تحتوي النسخة الاحتياطية؟
+            </h5>
+        </div>
+
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="notice-box h-100">
+                        <h6>1. ملف data.json</h6>
+                        <p class="mb-0">يحتوي على بيانات قاعدة البيانات بصيغة يمكن استعادتها من Django.</p>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="notice-box h-100">
+                        <h6>2. ملف metadata.json</h6>
+                        <p class="mb-0">يحتوي على تاريخ الإنشاء واسم المستخدم وعدد العناصر.</p>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="notice-box h-100">
+                        <h6>3. نسخة SQLite اختيارية</h6>
+                        <p class="mb-0">لو قاعدة البيانات SQLite سيتم حفظ نسخة خام منها داخل ملف ZIP.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmRestoreBackup() {
+    const confirmCheckbox = document.getElementById('confirmRestore');
+
+    if (!confirmCheckbox.checked) {
+        alert('يجب تأكيد الاستعادة أولاً');
+        return false;
+    }
+
+    return confirm(
+        'تحذير نهائي!\n\n' +
+        'سيتم مسح البيانات الحالية واستبدالها ببيانات النسخة الاحتياطية.\n\n' +
+        'هل أنت متأكد من المتابعة؟'
+    );
+}
+</script>
+{% endblock %}

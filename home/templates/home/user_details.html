@@ -1,0 +1,611 @@
+<!-- home/templates/home/user_details.html -->
+{% extends 'dashboard_base.html' %}
+{% load static %}
+
+{% block title %}تفاصيل المستخدم: {{ user_obj.get_full_name|default:user_obj.username }}{% endblock %}
+{% block page_title %}تفاصيل المستخدم{% endblock %}
+{% block page_subtitle %}عرض تفصيلي لمعلومات وصلاحيات المستخدم{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        border: none;
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+    
+    .detail-header {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 25px;
+        text-align: center;
+    }
+    
+    .user-avatar-large {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ff7eb3, #ff758c);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 3rem;
+        margin: 0 auto 20px;
+        border: 5px solid rgba(255,255,255,0.3);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    }
+    
+    .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 16px;
+        border-radius: 25px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-top: 10px;
+    }
+    
+    .status-active {
+        background: rgba(40, 167, 69, 0.2);
+        color: #28a745;
+        border: 2px solid rgba(40, 167, 69, 0.3);
+    }
+    
+    .status-inactive {
+        background: rgba(220, 53, 69, 0.2);
+        color: #dc3545;
+        border: 2px solid rgba(220, 53, 69, 0.3);
+    }
+    
+    .info-section {
+        padding: 25px;
+    }
+    
+    .section-title {
+        color: #2c3e50;
+        font-weight: 700;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        font-size: 1.1rem;
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 10px;
+    }
+    
+    .section-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 15px;
+        font-size: 1.1rem;
+    }
+    
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid #f8f9fa;
+    }
+    
+    .info-item:last-child {
+        border-bottom: none;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+        display: flex;
+        align-items: center;
+    }
+    
+    .info-value {
+        color: #2c3e50;
+        font-weight: 500;
+    }
+    
+    .role-display {
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .role-SYSTEM_ADMIN { background: linear-gradient(135deg, #dc3545, #c82333); color: white; }
+    .role-SCHOOL_MANAGER { background: linear-gradient(135deg, #007bff, #0056b3); color: white; }
+    .role-ACCOUNTANT { background: linear-gradient(135deg, #28a745, #1e7e34); color: white; }
+    .role-STUDENT_AFFAIRS { background: linear-gradient(135deg, #17a2b8, #117a8b); color: white; }
+    .role-BOOKS_INVENTORY { background: linear-gradient(135deg, #ffc107, #e0a800); color: black; }
+    .role-UNIFORMS_INVENTORY { background: linear-gradient(135deg, #6f42c1, #5a32a3); color: white; }
+    .role-TEACHER { background: linear-gradient(135deg, #fd7e14, #e8590c); color: white; }
+    
+    .permissions-list {
+        list-style: none;
+        padding: 0;
+    }
+    
+    .permissions-list li {
+        padding: 8px 0;
+        display: flex;
+        align-items: center;
+        color: #495057;
+    }
+    
+    .permissions-list li::before {
+        content: "✓";
+        color: #28a745;
+        font-weight: bold;
+        margin-left: 12px;
+        font-size: 1.1rem;
+    }
+    
+    .btn-action {
+        padding: 12px 24px;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-action:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    /* أضف في home/templates/home/user_details.html في قسم extra_css */
+
+/* أدوار الخزينة والمخازن الجديدة */
+.role-TREASURY_ADMIN { background: linear-gradient(135deg, #dc3545, #c82333); color: white; }
+.role-TREASURY_MANAGER { background: linear-gradient(135deg, #28a745, #1e7e34); color: white; }
+.role-TREASURY_ACCOUNTANT { background: linear-gradient(135deg, #17a2b8, #117a8b); color: white; }
+.role-TREASURY_CASHIER { background: linear-gradient(135deg, #ffc107, #e0a800); color: black; }
+.role-TREASURY_VIEWER { background: linear-gradient(135deg, #6c757d, #5a6268); color: white; }
+.role-INVENTORY_MANAGER { background: linear-gradient(135deg, #fd7e14, #e8590c); color: white; }
+.role-BOOKS_INVENTORY { background: linear-gradient(135deg, #007bff, #0056b3); color: white; }
+.role-UNIFORMS_INVENTORY { background: linear-gradient(135deg, #6f42c1, #5a32a3); color: white; }
+
+</style>
+{% endblock %}
+{% block sidebar_nav %}
+    <!-- الرئيسية -->
+    <a href="{% url 'home:admin_dashboard' %}" class="nav-link active">
+        <i class="fas fa-tachometer-alt me-2"></i>الرئيسية
+    </a>
+    
+    <!-- قسم إدارة المستخدمين -->
+    <div class="nav-link text-white-50 mt-3">
+        <small><i class="fas fa-users me-1"></i> إدارة المستخدمين</small>
+    </div>
+    <a href="{% url 'home:users_list' %}" class="nav-link">
+    <i class="fas fa-users me-2"></i>إدارة المستخدمين
+    </a>
+    <a href="{% url 'home:add_user' %}" class="nav-link">
+        <i class="fas fa-user-plus me-2"></i>إضافة مستخدم جديد
+    </a>
+    <a href="{% url 'home:inventory_staff_list' %}" class="nav-link"> <!-- ✅ إضافة جديدة -->
+        <i class="fas fa-warehouse me-2"></i>موظفي المخازن
+    </a>
+    
+
+    <!-- قسم إدارة الطلاب -->
+    <div class="nav-link text-white-50 mt-3">
+        <small><i class="fas fa-user-graduate me-1"></i> إدارة الطلاب</small>
+    </div>
+    <a href="{% url 'students:student_list' %}" class="nav-link">
+        <i class="fas fa-list me-2"></i>قائمة الطلاب
+    </a>
+    <a href="{% url 'students:add_student' %}" class="nav-link">
+        <i class="fas fa-user-plus me-2"></i>إضافة طالب جديد
+    </a>
+
+    
+    <!-- قسم الشؤون المالية -->
+    <div class="nav-link text-white-50 mt-3">
+        <small><i class="fas fa-money-bill-wave me-1"></i> الشؤون المالية</small>
+    </div>
+    <a href="{% url 'treasury_management:dashboard' %}" class="nav-link">
+        <i class="fas fa-vault me-2"></i>إدارة الخزينة
+    </a>
+    <a href="{% url 'treasury_management:treasuries_list' %}" class="nav-link">
+        <i class="fas fa-coins me-2"></i>الخزائن
+    </a>
+    <a href="{% url 'treasury_management:accounts_list' %}" class="nav-link">
+        <i class="fas fa-list-alt me-2"></i>الحسابات المالية
+    </a>
+    <a href="{% url 'treasury_management:reports' %}" class="nav-link">
+        <i class="fas fa-chart-line me-2"></i>التقارير المالية
+    </a>
+    <a href="{% url 'payments:all_payments' %}" class="nav-link">
+        <i class="fas fa-credit-card me-2"></i>المدفوعات
+    </a>
+
+    
+    <!-- قسم المخزون -->
+    <div class="nav-link text-white-50 mt-3">
+        <small><i class="fas fa-boxes me-1"></i> إدارة المخزون</small>
+    </div>
+    <a href="{% url 'books_inventory:books_list' %}" class="nav-link">
+        <i class="fas fa-book me-2"></i>مخزون الكتب
+    </a>
+
+    
+    <!-- قسم الإعدادات -->
+    <div class="nav-link text-white-50 mt-3">
+        <small><i class="fas fa-cogs me-1"></i> الإعدادات</small>
+    </div>
+    <a href="{% url 'school_settings:comprehensive_settings' %}" class="nav-link">
+        <i class="fas fa-school me-2"></i>إعدادات المدرسة
+    </a>
+
+    
+    <!-- قسم التقارير -->
+    <div class="nav-link text-white-50 mt-3">
+        <small><i class="fas fa-chart-bar me-1"></i> التقارير</small>
+    </div>
+
+    <a href="{% url 'treasury_management:daily_summary' %}" class="nav-link">
+        <i class="fas fa-calendar-day me-2"></i>الملخص اليومي
+    </a>
+   
+
+{% endblock %}
+
+{% block dashboard_content %}
+<!-- Header Card -->
+<div class="detail-card">
+    <div class="detail-header">
+        <div class="user-avatar-large">
+            {% if user_obj.first_name and user_obj.last_name %}
+                {{ user_obj.first_name|first }}{{ user_obj.last_name|first }}
+            {% else %}
+                {{ user_obj.username|first|upper }}
+            {% endif %}
+        </div>
+        
+        <h3 class="mb-2">{{ user_obj.get_full_name|default:user_obj.username }}</h3>
+        <p class="mb-2 opacity-75">{{ user_obj.username }}</p>
+        
+        <div class="status-indicator status-{% if user_obj.is_active %}active{% else %}inactive{% endif %}">
+            <i class="fas fa-circle me-2"></i>
+            {% if user_obj.is_active %}نشط{% else %}غير نشط{% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- معلومات أساسية -->
+    <div class="col-lg-6 mb-4">
+        <div class="detail-card">
+            <div class="info-section">
+                <div class="section-title">
+                    <div class="section-icon">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <span>المعلومات الشخصية</span>
+                </div>
+                
+                <div class="info-item">
+                    <span class="info-label">
+                        <i class="fas fa-user me-2 text-primary"></i>
+                        الاسم الكامل
+                    </span>
+                    <span class="info-value">{{ user_obj.get_full_name|default:"غير محدد" }}</span>
+                </div>
+                
+                <div class="info-item">
+                    <span class="info-label">
+                        <i class="fas fa-at me-2 text-primary"></i>
+                        اسم المستخدم
+                    </span>
+                    <span class="info-value">{{ user_obj.username }}</span>
+                </div>
+                
+                <div class="info-item">
+                    <span class="info-label">
+                        <i class="fas fa-envelope me-2 text-primary"></i>
+                        البريد الإلكتروني
+                    </span>
+                    <span class="info-value">{{ user_obj.email|default:"غير محدد" }}</span>
+                </div>
+                
+                {% if user_obj.national_id %}
+                <div class="info-item">
+                    <span class="info-label">
+                        <i class="fas fa-id-card me-2 text-primary"></i>
+                        الرقم القومي
+                    </span>
+                    <span class="info-value">{{ user_obj.national_id }}</span>
+                </div>
+                {% endif %}
+                
+                {% if user_obj.date_of_enrollment %}
+                <div class="info-item">
+                    <span class="info-label">
+                        <i class="fas fa-calendar me-2 text-primary"></i>
+                        تاريخ التعيين
+                    </span>
+                    <span class="info-value">{{ user_obj.date_of_enrollment|date:"d F Y" }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- معلومات النظام -->
+    <div class="col-lg-6 mb-4">
+        <div class="detail-card">
+            <div class="info-section">
+                <div class="section-title">
+                    <div class="section-icon">
+                        <i class="fas fa-cog"></i>
+                    </div>
+                    <span>معلومات النظام</span>
+                </div>
+                
+                <div class="info-item">
+                    <span class="info-label">
+                        <i class="fas fa-calendar-plus me-2 text-success"></i>
+                        تاريخ الانضمام
+                    </span>
+                    <span class="info-value">{{ user_obj.date_joined|date:"d F Y - H:i" }}</span>
+                </div>
+                
+                <div class="info-item">
+                    <span class="info-label">
+                        <i class="fas fa-sign-in-alt me-2 text-info"></i>
+                        آخر تسجيل دخول
+                    </span>
+                    <span class="info-value">
+                        {% if user_obj.last_login %}
+                            {{ user_obj.last_login|date:"d F Y - H:i" }}
+                        {% else %}
+                            <span class="text-muted">لم يسجل دخول مطلقاً</span>
+                        {% endif %}
+                    </span>
+                </div>
+                
+                <div class="info-item">
+                    <span class="info-label">
+                        <i class="fas fa-shield-alt me-2 text-warning"></i>
+                        صلاحية الإدارة
+                    </span>
+                    <span class="info-value">
+                        {% if user_obj.is_staff %}
+                            <span class="text-success fw-bold">
+                                <i class="fas fa-check me-1"></i>متاحة
+                            </span>
+                        {% else %}
+                            <span class="text-muted">غير متاحة</span>
+                        {% endif %}
+                    </span>
+                </div>
+                
+                <div class="info-item">
+                    <span class="info-label">
+                        <i class="fas fa-user-shield me-2 text-danger"></i>
+                        مدير أعلى
+                    </span>
+                    <span class="info-value">
+                        {% if user_obj.is_superuser %}
+                            <span class="text-danger fw-bold">
+                                <i class="fas fa-check me-1"></i>نعم
+                            </span>
+                        {% else %}
+                            <span class="text-muted">لا</span>
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- الدور والصلاحيات -->
+<div class="row">
+    <div class="col-lg-8 mb-4">
+        <div class="detail-card">
+            <div class="info-section">
+                <div class="section-title">
+                    <div class="section-icon">
+                        <i class="fas fa-user-cog"></i>
+                    </div>
+                    <span>الدور والصلاحيات</span>
+                </div>
+                
+                <div class="info-item">
+                    <span class="info-label">
+                        <i class="fas fa-briefcase me-2 text-primary"></i>
+                        الدور الوظيفي
+                    </span>
+                    <span class="info-value">
+                        {% if user_role %}
+                            <span class="role-display role-{{ user_role.role }}">
+                                {{ user_role.get_role_display }}
+                            </span>
+                        {% else %}
+                            <span class="role-display bg-secondary text-white">غير محدد</span>
+                        {% endif %}
+                    </span>
+                </div>
+                
+                <!-- الصلاحيات - مُصحح -->
+                <!-- في home/templates/home/user_details.html - تحديث قسم الصلاحيات -->
+
+{% if user_role %}
+<div class="mt-4">
+    <h6 class="text-primary mb-3">
+        <i class="fas fa-list-ul me-2"></i>
+        الصلاحيات المتاحة:
+    </h6>
+    <ul class="permissions-list">
+        {% if user_role.role == 'SYSTEM_ADMIN' %}
+            <li>إدارة المستخدمين</li>
+            <li>إعدادات النظام</li>
+            <li>جميع التقارير</li>
+            <li>لوحة الإدارة</li>
+        {% elif user_role.role == 'SCHOOL_MANAGER' %}
+            <li>إدارة الطلاب</li>
+            <li>التقارير العامة</li>
+            <li>الإشراف على الأقسام</li>
+        {% elif user_role.role == 'ACCOUNTANT' %}
+            <li>نظام المدفوعات</li>
+            <li>التقارير المالية</li>
+            <li>إدارة الأقساط</li>
+            <li>صلاحيات الخزينة</li>
+        {% elif user_role.role == 'STUDENT_AFFAIRS' %}
+            <li>إضافة الطلاب</li>
+            <li>تعديل البيانات</li>
+            <li>التقارير الأكاديمية</li>
+        <!-- ✅ إضافة أدوار الخزينة -->
+        {% elif user_role.role == 'TREASURY_ADMIN' %}
+            <li>إدارة الخزائن</li>
+            <li>إدارة الحسابات</li>
+            <li>التقارير المالية</li>
+            <li>إدارة مستخدمي الخزينة</li>
+        {% elif user_role.role == 'TREASURY_MANAGER' %}
+            <li>إدارة العمليات</li>
+            <li>اعتماد المعاملات</li>
+            <li>التقارير الإدارية</li>
+        {% elif user_role.role == 'TREASURY_ACCOUNTANT' %}
+            <li>تسجيل المعاملات</li>
+            <li>التقارير المحاسبية</li>
+            <li>مراجعة الحسابات</li>
+        {% elif user_role.role == 'TREASURY_CASHIER' %}
+            <li>المعاملات النقدية</li>
+            <li>إدارة النقدية</li>
+            <li>تسجيل الإيرادات</li>
+        {% elif user_role.role == 'TREASURY_VIEWER' %}
+            <li>عرض المعاملات</li>
+            <li>التقارير الأساسية</li>
+            <li>المراجعة</li>
+        <!-- ✅ إضافة أدوار المخازن -->
+        {% elif user_role.role == 'BOOKS_INVENTORY' %}
+            <li>إدارة مخزون الكتب</li>
+            <li>طلبات الكتب</li>
+            <li>توزيع المواد</li>
+            <li>تقارير المخزون</li>
+        {% elif user_role.role == 'UNIFORMS_INVENTORY' %}
+            <li>إدارة الزي المدرسي</li>
+            <li>طلبات الملابس</li>
+            <li>تقارير مخزن الملابس</li>
+        {% elif user_role.role == 'INVENTORY_MANAGER' %}
+            <li>إدارة جميع المخازن</li>
+            <li>الإشراف على الموظفين</li>
+            <li>تقارير شاملة</li>
+            <li>صلاحيات الخزينة</li>
+        {% elif user_role.role == 'TEACHER' %}
+            <li>عرض الطلاب</li>
+            <li>الدرجات</li>
+            <li>التقارير الأكاديمية</li>
+        {% else %}
+            <li>صلاحيات محدودة</li>
+        {% endif %}
+    </ul>
+</div>
+{% endif %}
+
+
+            </div>
+        </div>
+    </div>
+    
+    <!-- في home/templates/home/user_details.html - تحديث الإجراءات السريعة -->
+
+<!-- استبدل قسم الإجراءات السريعة -->
+<div class="col-lg-4 mb-4">
+    <div class="detail-card">
+        <div class="info-section">
+            <div class="section-title">
+                <div class="section-icon">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <span>إجراءات سريعة</span>
+            </div>
+            
+            {% if is_system_admin %}
+                <!-- مدير النظام - إجراءات محدودة -->
+                <div class="alert alert-warning text-center">
+                    <i class="fas fa-shield-alt me-2"></i>
+                    <strong>مدير النظام</strong><br>
+                    <small>يمكن تعديله من لوحة الإدارة Django فقط</small>
+                </div>
+                
+                <div class="d-grid gap-3">
+                    <a href="/admin/auth/user/{{ user_obj.id }}/change/" 
+                       target="_blank" 
+                       class="btn btn-primary btn-action">
+                        <i class="fas fa-external-link-alt"></i>
+                        تعديل في لوحة الإدارة
+                    </a>
+                    
+                    <a href="{% url 'home:users_list' %}" class="btn btn-secondary btn-action">
+                        <i class="fas fa-arrow-right"></i>
+                        العودة للقائمة
+                    </a>
+                </div>
+            {% else %}
+                <!-- مستخدم عادي - إجراءات كاملة -->
+                <div class="d-grid gap-3">
+                    <a href="{% url 'home:edit_user' user_obj.id %}" class="btn btn-warning btn-action">
+                        <i class="fas fa-edit"></i>
+                        تعديل المستخدم
+                    </a>
+                    
+                    {% if user_obj != request.user %}
+                    <a href="{% url 'home:toggle_user_status' user_obj.id %}" 
+                       class="btn btn-{% if user_obj.is_active %}danger{% else %}success{% endif %} btn-action"
+                       onclick="return confirm('هل أنت متأكد من {% if user_obj.is_active %}إلغاء تفعيل{% else %}تفعيل{% endif %} هذا المستخدم؟')">
+                        <i class="fas fa-{% if user_obj.is_active %}user-times{% else %}user-check{% endif %}"></i>
+                        {% if user_obj.is_active %}إلغاء التفعيل{% else %}تفعيل المستخدم{% endif %}
+                    </a>
+                    {% endif %}
+                    
+                    <a href="{% url 'home:users_list' %}" class="btn btn-secondary btn-action">
+                        <i class="fas fa-arrow-right"></i>
+                        العودة للقائمة
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // تأثيرات الحركة للكروت
+    const cards = document.querySelectorAll('.detail-card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(30px)';
+        
+        setTimeout(() => {
+            card.style.transition = 'all 0.6s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 200);
+    });
+    
+    console.log('✅ صفحة تفاصيل المستخدم جاهزة');
+});
+</script>
+{% endblock %}

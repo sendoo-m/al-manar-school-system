@@ -1,5 +1,1059 @@
 <!-- templates/payments/pay_installment.html -->
 {% extends 'payments/base.html' %}
+{% load humanize %}
+
+{% block title %}مدفوعات الطالب - {{ student.name }}{% endblock %}
+{% block page_title %}مدفوعات الطالب: {{ student.name }}{% endblock %}
+{% block page_subtitle %}إدارة أقساط ومدفوعات الطالب وسجل السداد{% endblock %}
+{% block page_icon %}<i class="fas fa-money-bill-wave me-3"></i>{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'payments:payments_home' %}">لوحة المدفوعات</a></li>
+<li class="breadcrumb-item"><a href="{% url 'payments:all_payments' %}">جميع المدفوعات</a></li>
+<li class="breadcrumb-item active">مدفوعات الطالب</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'students:student_detail' student.pk %}" class="btn btn-outline-info btn-custom">
+        <i class="fas fa-user me-1"></i>ملف الطالب
+    </a>
+
+    <a href="{% url 'payments:all_payments' %}" class="btn btn-outline-secondary btn-custom">
+        <i class="fas fa-list me-1"></i>جميع المدفوعات
+    </a>
+
+    {% if permissions.can_reports %}
+    <button type="button" onclick="window.print()" class="btn btn-outline-primary btn-custom">
+        <i class="fas fa-print me-1"></i>طباعة
+    </button>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .student-hero {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+        border-radius: 20px;
+        padding: 28px;
+        margin-bottom: 25px;
+        box-shadow: 0 8px 22px rgba(0, 123, 255, 0.24);
+    }
+
+    .student-avatar-lg {
+        width: 72px;
+        height: 72px;
+        min-width: 72px;
+        border-radius: 20px;
+        background: rgba(255,255,255,0.18);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        font-weight: 900;
+        border: 1px solid rgba(255,255,255,0.25);
+    }
+
+    .summary-card {
+        background: white;
+        border-radius: 16px;
+        padding: 20px;
+        height: 100%;
+        box-shadow: 0 5px 16px rgba(0,0,0,0.08);
+        border-top: 5px solid;
+        text-align: center;
+        transition: all 0.25s ease;
+    }
+
+    .summary-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+    }
+
+    .summary-card.primary { border-top-color: #007bff; }
+    .summary-card.success { border-top-color: #28a745; }
+    .summary-card.warning { border-top-color: #ffc107; }
+    .summary-card.danger { border-top-color: #dc3545; }
+    .summary-card.info { border-top-color: #17a2b8; }
+
+    .summary-value {
+        font-size: 1.85rem;
+        font-weight: 900;
+        margin-bottom: 5px;
+    }
+
+    .summary-value.primary { color: #007bff; }
+    .summary-value.success { color: #28a745; }
+    .summary-value.warning { color: #ffc107; }
+    .summary-value.danger { color: #dc3545; }
+    .summary-value.info { color: #17a2b8; }
+
+    .summary-label {
+        color: #6c757d;
+        font-weight: 800;
+        font-size: 0.92rem;
+    }
+
+    .content-panel {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 5px 16px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+        overflow: hidden;
+    }
+
+    .content-panel-header {
+        background: #f8f9fa;
+        padding: 18px 22px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .content-panel-header h5,
+    .content-panel-header h6 {
+        margin: 0;
+        font-weight: 900;
+    }
+
+    .content-panel-body {
+        padding: 22px;
+    }
+
+    .installments-table thead th {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+        border: none;
+        padding: 14px 10px;
+        vertical-align: middle;
+        text-align: center;
+        white-space: nowrap;
+        font-size: 0.86rem;
+    }
+
+    .installments-table tbody td {
+        padding: 13px 10px;
+        vertical-align: middle;
+        text-align: center;
+        border-color: #edf0f2;
+        font-size: 0.9rem;
+    }
+
+    .installments-table tbody tr:hover {
+        background: rgba(23, 162, 184, 0.05);
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 10px;
+        font-size: 0.78rem;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .amount-main {
+        font-weight: 900;
+        font-size: 1rem;
+    }
+
+    .amount-sub {
+        display: block;
+        color: #6c757d;
+        font-size: 0.75rem;
+    }
+
+    .progress-wrap {
+        background: #e9ecef;
+        height: 10px;
+        border-radius: 20px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        height: 100%;
+        transition: width 0.8s ease;
+    }
+
+    .form-section-title {
+        font-weight: 900;
+        color: #2c3e50;
+        margin-bottom: 16px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #f1f3f5;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 45px 15px;
+        color: #6c757d;
+    }
+
+    .record-item {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 14px;
+        margin-bottom: 10px;
+        border-right: 4px solid #28a745;
+    }
+
+    .discount-preview {
+        background: linear-gradient(135deg, #f8f9fa, #eef7ff);
+        border: 1px solid #dbeafe;
+        border-radius: 14px;
+        padding: 14px;
+    }
+
+    .discount-preview-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 5px 0;
+        font-weight: 800;
+    }
+
+    @media (max-width: 768px) {
+        .student-hero {
+            padding: 20px;
+        }
+
+        .student-hero .d-flex {
+            flex-direction: column;
+            align-items: flex-start !important;
+        }
+
+        .summary-value {
+            font-size: 1.5rem;
+        }
+
+        .installments-table thead {
+            display: none;
+        }
+
+        .installments-table tbody tr {
+            display: block;
+            margin-bottom: 14px;
+            border: 1px solid #e9ecef;
+            border-radius: 14px;
+            overflow: hidden;
+        }
+
+        .installments-table tbody td {
+            display: block;
+            text-align: right !important;
+            border-bottom: 1px solid #f1f1f1;
+        }
+    }
+
+    @media print {
+        .page-actions,
+        .content-panel form,
+        .btn,
+        .modal {
+            display: none !important;
+        }
+
+        .content-panel,
+        .summary-card,
+        .student-hero {
+            box-shadow: none !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- بيانات الطالب -->
+<div class="student-hero">
+    <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
+        <div class="d-flex align-items-center gap-3">
+            <div class="student-avatar-lg">
+                {{ student.name.0|upper }}
+            </div>
+
+            <div>
+                <h3 class="mb-1">{{ student.name }}</h3>
+                <div class="opacity-75">
+                    <i class="fas fa-id-card me-1"></i>
+                    <span dir="ltr">{{ student.national_number }}</span>
+                </div>
+
+                <div class="mt-2">
+                    {% if student.grade_level %}
+                        <span class="badge bg-light text-dark">
+                            {% if student.grade_level.education_level %}
+                                {{ student.grade_level.education_level.name }} -
+                            {% endif %}
+                            {{ student.grade_level.name }}
+                        </span>
+                    {% else %}
+                        <span class="badge bg-warning text-dark">بدون صف دراسي</span>
+                    {% endif %}
+
+                    {% if current_year %}
+                        <span class="badge bg-info">{{ current_year.name }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="text-lg-end">
+            <div class="mb-1">
+                <i class="fas fa-phone me-1"></i>
+                <span dir="ltr">{{ student.phone_number|default:"غير محدد" }}</span>
+            </div>
+
+            <div>
+                <i class="fas fa-user-tie me-1"></i>
+                {{ student.parent_name|default:"ولي الأمر غير محدد" }}
+            </div>
+
+            {% if student.parent_phone %}
+            <div>
+                <i class="fas fa-mobile-alt me-1"></i>
+                <span dir="ltr">{{ student.parent_phone }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- الملخص المالي -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="summary-card primary">
+            <div class="summary-value primary">{{ summary.total_required|default:0|floatformat:0 }}</div>
+            <div class="summary-label">إجمالي المطلوب</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="summary-card success">
+            <div class="summary-value success">{{ summary.total_paid|default:0|floatformat:0 }}</div>
+            <div class="summary-label">إجمالي المدفوع</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="summary-card danger">
+            <div class="summary-value danger">{{ summary.total_remaining|default:0|floatformat:0 }}</div>
+            <div class="summary-label">إجمالي المتبقي</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="summary-card info">
+            <div class="summary-value info">{{ summary.collection_percentage|default:0|floatformat:1 }}%</div>
+            <div class="summary-label">نسبة التحصيل</div>
+        </div>
+    </div>
+</div>
+
+<!-- إحصائيات الأقساط -->
+<div class="row mb-4">
+    <div class="col-lg-2 col-md-4 col-6 mb-3">
+        <div class="summary-card info">
+            <div class="summary-value info">{{ summary.installments_count|default:0 }}</div>
+            <div class="summary-label">عدد الأقساط</div>
+        </div>
+    </div>
+
+    <div class="col-lg-2 col-md-4 col-6 mb-3">
+        <div class="summary-card success">
+            <div class="summary-value success">{{ summary.paid_count|default:0 }}</div>
+            <div class="summary-label">مدفوع</div>
+        </div>
+    </div>
+
+    <div class="col-lg-2 col-md-4 col-6 mb-3">
+        <div class="summary-card warning">
+            <div class="summary-value warning">{{ summary.partial_count|default:0 }}</div>
+            <div class="summary-label">جزئي</div>
+        </div>
+    </div>
+
+    <div class="col-lg-2 col-md-4 col-6 mb-3">
+        <div class="summary-card primary">
+            <div class="summary-value primary">{{ summary.pending_count|default:0 }}</div>
+            <div class="summary-label">معلق</div>
+        </div>
+    </div>
+
+    <div class="col-lg-2 col-md-4 col-6 mb-3">
+        <div class="summary-card danger">
+            <div class="summary-value danger">{{ summary.overdue_count|default:0 }}</div>
+            <div class="summary-label">متأخر</div>
+        </div>
+    </div>
+
+    <div class="col-lg-2 col-md-4 col-6 mb-3">
+        <div class="summary-card warning">
+            <div class="summary-value warning">{{ summary.total_discounts|default:0|floatformat:0 }}</div>
+            <div class="summary-label">خصومات</div>
+        </div>
+    </div>
+</div>
+
+<!-- شريط نسبة التحصيل -->
+<div class="content-panel">
+    <div class="content-panel-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <strong>مؤشر التحصيل</strong>
+            <strong>{{ summary.collection_percentage|default:0|floatformat:1 }}%</strong>
+        </div>
+
+        <div class="progress-wrap">
+            <div class="progress-fill" style="width: {{ summary.collection_percentage|default:0|floatformat:0 }}%"></div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- إنشاء قسط جديد -->
+    <div class="col-lg-5">
+        {% if permissions.can_add %}
+        <div class="content-panel">
+            <div class="content-panel-header">
+                <h5>
+                    <i class="fas fa-plus-circle me-2 text-success"></i>
+                    إنشاء قسط جديد
+                </h5>
+            </div>
+
+            <div class="content-panel-body">
+                <form method="post" id="createInstallmentForm" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create_installment">
+                    <input type="hidden" name="amount_tuition" id="finalAmountHiddenInput">
+
+                    <div class="form-section-title">
+                        <i class="fas fa-file-invoice me-1"></i>
+                        بيانات القسط
+                    </div>
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                            <div>{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">نوع المصروف</label>
+                            {{ form.fee_type }}
+                            {% for error in form.fee_type.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">اسم المصروف</label>
+                            {{ form.fee_name }}
+                            {% for error in form.fee_name.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">رقم القسط</label>
+                            {{ form.installment_number }}
+                            {% for error in form.installment_number.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">تاريخ الاستحقاق</label>
+                            {{ form.due_date }}
+                            {% for error in form.due_date.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">مبلغ القسط قبل الخصم</label>
+                            <div class="input-group">
+                                <input type="number"
+                                       name="original_amount"
+                                       id="originalAmountInput"
+                                       class="form-control"
+                                       step="0.01"
+                                       min="0.01"
+                                       placeholder="0.00"
+                                       required>
+                                <span class="input-group-text">ج.م</span>
+                            </div>
+                            <small class="text-muted">اكتب هنا قيمة القسط الأصلية قبل أي خصم.</small>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">قيمة الخصم</label>
+                            <div class="input-group">
+                                <input type="number"
+                                       name="discount_amount"
+                                       id="discountAmountInput"
+                                       class="form-control"
+                                       step="0.01"
+                                       min="0"
+                                       value="0">
+                                <span class="input-group-text">ج.م</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">نسبة الخصم</label>
+                            <div class="input-group">
+                                <input type="number"
+                                       name="discount_percentage"
+                                       id="discountPercentageInput"
+                                       class="form-control"
+                                       step="0.01"
+                                       min="0"
+                                       max="100"
+                                       value="0">
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-12 mb-3">
+                            <div class="discount-preview">
+                                <div class="discount-preview-row">
+                                    <span>المبلغ قبل الخصم:</span>
+                                    <strong><span id="previewOriginalAmount">0.00</span> ج.م</strong>
+                                </div>
+
+                                <div class="discount-preview-row">
+                                    <span>إجمالي الخصم:</span>
+                                    <strong class="text-danger"><span id="previewDiscountAmount">0.00</span> ج.م</strong>
+                                </div>
+
+                                <hr class="my-2">
+
+                                <div class="discount-preview-row">
+                                    <span>المبلغ المطلوب بعد الخصم:</span>
+                                    <strong class="text-success"><span id="previewFinalAmount">0.00</span> ج.م</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">المبلغ المدفوع الآن</label>
+                            <div class="input-group">
+                                {{ form.amount_paid }}
+                                <span class="input-group-text">ج.م</span>
+                            </div>
+                            {% for error in form.amount_paid.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">طريقة الدفع</label>
+                            <select name="payment_method" class="form-control" required>
+                                {% for value, label in payment_method_choices %}
+                                <option value="{{ value }}"
+                                    {% if payment_settings and payment_settings.default_payment_method == value %}
+                                        selected
+                                    {% elif not payment_settings and value == 'cash' %}
+                                        selected
+                                    {% endif %}
+                                >
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            {% for error in form.payment_method.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">ملاحظات</label>
+                            {{ form.notes }}
+                            {% for error in form.notes.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-1"></i>
+                        سيتم حفظ مبلغ القسط بعد الخصم في خانة المطلوب، وسيتم حفظ قيمة الخصم في سجل القسط.
+                    </div>
+
+                    <button type="submit" class="btn btn-success btn-custom w-100">
+                        <i class="fas fa-save me-2"></i>
+                        حفظ القسط
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- سجل الدفع -->
+        <div class="content-panel">
+            <div class="content-panel-header">
+                <h6>
+                    <i class="fas fa-history me-2 text-primary"></i>
+                    آخر سجلات الدفع
+                </h6>
+            </div>
+
+            <div class="content-panel-body">
+                {% for record in payment_records|slice:":8" %}
+                <div class="record-item">
+                    <div class="d-flex justify-content-between align-items-center gap-2">
+                        <div>
+                            <strong>{{ record.amount_paid|floatformat:2 }} ج.م</strong>
+                            <br>
+                            <small class="text-muted">
+                                {{ record.tuition.get_fee_type_display }} - قسط #{{ record.tuition.installment_number }}
+                            </small>
+                        </div>
+
+                        <div class="text-end">
+                            <small class="text-muted">{{ record.payment_date|date:"Y/m/d H:i" }}</small>
+                            <br>
+                            <small class="text-primary">{{ record.payment_user|default:"-" }}</small>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="empty-state">
+                    <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+                    <p class="mb-0">لا توجد سجلات دفع لهذا الطالب حتى الآن</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- الأقساط -->
+    <div class="col-lg-7">
+        <div class="content-panel">
+            <div class="content-panel-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h5>
+                    <i class="fas fa-list-alt me-2 text-info"></i>
+                    أقساط الطالب
+                </h5>
+
+                <span class="badge bg-info">{{ installments|length }} قسط</span>
+            </div>
+
+            <div class="content-panel-body p-0">
+                {% if installments %}
+                <div class="table-responsive">
+                    <table class="table installments-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>نوع المصروف</th>
+                                <th>القسط</th>
+                                <th>الخصم</th>
+                                <th>المطلوب</th>
+                                <th>المدفوع</th>
+                                <th>المتبقي</th>
+                                <th>الاستحقاق</th>
+                                <th>الحالة</th>
+                                <th>إجراء</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for installment in installments %}
+                            <tr>
+                                <td>
+                                    <strong>{{ installment.get_fee_type_display }}</strong>
+                                    {% if installment.fee_name %}
+                                        <br><small class="text-muted">{{ installment.fee_name }}</small>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    <span class="badge bg-primary">#{{ installment.installment_number }}</span>
+                                </td>
+
+                                <td>
+                                    {% if installment.discount_amount > 0 %}
+                                        <span class="amount-main text-warning">{{ installment.discount_amount|floatformat:2 }}</span>
+                                    {% else %}
+                                        <span class="text-muted">0.00</span>
+                                    {% endif %}
+                                    <span class="amount-sub">ج.م</span>
+                                </td>
+
+                                <td>
+                                    <span class="amount-main text-primary">{{ installment.amount_tuition|floatformat:2 }}</span>
+                                    <span class="amount-sub">ج.م</span>
+                                </td>
+
+                                <td>
+                                    <span class="amount-main text-success">{{ installment.amount_paid|floatformat:2 }}</span>
+                                    <span class="amount-sub">ج.م</span>
+                                </td>
+
+                                <td>
+                                    {% if installment.remaining_amount > 0 %}
+                                        <span class="amount-main text-danger">{{ installment.remaining_amount|floatformat:2 }}</span>
+                                    {% else %}
+                                        <span class="amount-main text-success">0.00</span>
+                                    {% endif %}
+                                    <span class="amount-sub">ج.م</span>
+                                </td>
+
+                                <td>
+                                    {% if installment.due_date %}
+                                        <small>{{ installment.due_date|date:"Y/m/d" }}</small>
+                                    {% else %}
+                                        <span class="text-muted">غير محدد</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if installment.payment_status == 'PAID' %}
+                                        <span class="status-badge" style="background: rgba(40,167,69,0.12); color:#198754;">مدفوع</span>
+                                    {% elif installment.payment_status == 'PARTIALLY_PAID' %}
+                                        <span class="status-badge" style="background: rgba(255,193,7,0.18); color:#856404;">جزئي</span>
+                                    {% elif installment.payment_status == 'OVERDUE' %}
+                                        <span class="status-badge" style="background: rgba(220,53,69,0.12); color:#dc3545;">متأخر</span>
+                                    {% elif installment.payment_status == 'PENDING' %}
+                                        <span class="status-badge" style="background: rgba(13,202,240,0.12); color:#087990;">معلق</span>
+                                    {% elif installment.payment_status == 'CANCELLED' %}
+                                        <span class="status-badge" style="background: rgba(108,117,125,0.12); color:#6c757d;">ملغي</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        {% if installment.remaining_amount > 0 and installment.payment_status != 'CANCELLED' %}
+                                        <button type="button"
+                                                class="btn btn-outline-success"
+                                                onclick="openPaymentModal('{{ installment.id }}', '{{ installment.remaining_amount }}', '{{ installment.get_fee_type_display|escapejs }}', '{{ installment.installment_number }}')"
+                                                title="تسجيل دفعة">
+                                            <i class="fas fa-hand-holding-usd"></i>
+                                        </button>
+                                        {% endif %}
+
+                                        {% if installment.amount_paid > 0 %}
+                                        <a href="{% url 'payments:receipt' installment.pk %}"
+                                           target="_blank"
+                                           class="btn btn-outline-primary"
+                                           title="طباعة إيصال">
+                                            <i class="fas fa-print"></i>
+                                        </a>
+                                        {% endif %}
+
+                                        {% if permissions.can_edit %}
+                                        <a href="{% url 'payments:edit_payment' installment.id %}"
+                                           class="btn btn-outline-warning"
+                                           title="تعديل">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% endif %}
+
+                                        {% if permissions.can_delete %}
+                                        <a href="{% url 'payments:delete_installment' installment.id %}"
+                                           class="btn btn-outline-danger"
+                                           title="حذف"
+                                           onclick="return confirm('هل تريد حذف هذا القسط؟');">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-file-invoice-dollar fa-4x text-muted mb-3"></i>
+                    <h5>لا توجد أقساط مسجلة</h5>
+                    <p>ابدأ بإنشاء أول قسط لهذا الطالب.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- كل سجلات الدفع -->
+        {% if payment_records %}
+        <div class="content-panel">
+            <div class="content-panel-header">
+                <h6>
+                    <i class="fas fa-receipt me-2 text-success"></i>
+                    سجل المدفوعات الكامل
+                </h6>
+            </div>
+
+            <div class="content-panel-body p-0">
+                <div class="table-responsive">
+                    <table class="table installments-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>القسط</th>
+                                <th>المبلغ</th>
+                                <th>طريقة الدفع</th>
+                                <th>المحاسب</th>
+                                <th>ملاحظات</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for record in payment_records %}
+                            <tr>
+                                <td>
+                                    {{ record.payment_date|date:"Y/m/d" }}
+                                    <br>
+                                    <small class="text-muted">{{ record.payment_date|date:"H:i" }}</small>
+                                </td>
+
+                                <td>
+                                    {{ record.tuition.get_fee_type_display }}
+                                    <br>
+                                    <small class="text-muted">قسط #{{ record.tuition.installment_number }}</small>
+                                </td>
+
+                                <td>
+                                    <strong class="text-success">{{ record.amount_paid|floatformat:2 }} ج.م</strong>
+                                </td>
+
+                                <td>{{ record.get_payment_method_display }}</td>
+
+                                <td>{{ record.payment_user|default:"-" }}</td>
+
+                                <td>
+                                    <small>{{ record.notes|default:"-" }}</small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal تسجيل دفعة -->
+<div class="modal fade" id="recordPaymentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" id="recordPaymentForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="record_payment">
+                <input type="hidden" name="tuition_id" id="modal_tuition_id">
+
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-hand-holding-usd me-2"></i>
+                        تسجيل دفعة
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <div><strong>نوع المصروف:</strong> <span id="modal_fee_type"></span></div>
+                        <div><strong>رقم القسط:</strong> #<span id="modal_installment_number"></span></div>
+                        <div><strong>المتبقي:</strong> <span id="modal_remaining_amount"></span> ج.م</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">المبلغ المدفوع</label>
+                        <div class="input-group">
+                            {{ payment_form.amount_paid }}
+                            <span class="input-group-text">ج.م</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">طريقة الدفع</label>
+                        {{ payment_form.payment_method }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">ملاحظات</label>
+                        {{ payment_form.notes }}
+                    </div>
+
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="fillRemainingAmount()">
+                        <i class="fas fa-check-circle me-1"></i>
+                        دفع كامل المتبقي
+                    </button>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        إغلاق
+                    </button>
+
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save me-1"></i>
+                        حفظ الدفعة
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let selectedRemainingAmount = 0;
+
+function openPaymentModal(tuitionId, remainingAmount, feeType, installmentNumber) {
+    selectedRemainingAmount = parseFloat(remainingAmount || 0);
+
+    document.getElementById('modal_tuition_id').value = tuitionId;
+    document.getElementById('modal_fee_type').textContent = feeType;
+    document.getElementById('modal_installment_number').textContent = installmentNumber;
+    document.getElementById('modal_remaining_amount').textContent = selectedRemainingAmount.toFixed(2);
+
+    const amountInput = document.querySelector('#recordPaymentModal input[name="amount_paid"]');
+    if (amountInput) {
+        amountInput.value = selectedRemainingAmount.toFixed(2);
+        amountInput.max = selectedRemainingAmount.toFixed(2);
+    }
+
+    const modal = new bootstrap.Modal(document.getElementById('recordPaymentModal'));
+    modal.show();
+}
+
+function fillRemainingAmount() {
+    const amountInput = document.querySelector('#recordPaymentModal input[name="amount_paid"]');
+
+    if (amountInput) {
+        amountInput.value = selectedRemainingAmount.toFixed(2);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const recordPaymentForm = document.getElementById('recordPaymentForm');
+
+    if (recordPaymentForm) {
+        recordPaymentForm.addEventListener('submit', function(e) {
+            const amountInput = recordPaymentForm.querySelector('input[name="amount_paid"]');
+            const amount = parseFloat(amountInput.value || 0);
+
+            if (amount <= 0) {
+                e.preventDefault();
+                alert('يجب إدخال مبلغ أكبر من صفر');
+                return;
+            }
+
+            if (amount > selectedRemainingAmount) {
+                e.preventDefault();
+                alert('المبلغ المدفوع لا يمكن أن يتجاوز المتبقي');
+            }
+        });
+    }
+
+    const createForm = document.getElementById('createInstallmentForm');
+    const originalAmountInput = document.getElementById('originalAmountInput');
+    const discountAmountInput = document.getElementById('discountAmountInput');
+    const discountPercentageInput = document.getElementById('discountPercentageInput');
+    const finalAmountHiddenInput = document.getElementById('finalAmountHiddenInput');
+
+    [originalAmountInput, discountAmountInput, discountPercentageInput].forEach(function(input) {
+        if (input) {
+            input.addEventListener('input', updateDiscountPreview);
+        }
+    });
+
+    updateDiscountPreview();
+
+    if (createForm) {
+        createForm.addEventListener('submit', function(e) {
+            updateDiscountPreview();
+
+            const original = parseFloat(originalAmountInput ? originalAmountInput.value || 0 : 0);
+            const finalAmount = parseFloat(finalAmountHiddenInput ? finalAmountHiddenInput.value || 0 : 0);
+            const paidInput = createForm.querySelector('input[name="amount_paid"]');
+            const paid = parseFloat(paidInput ? paidInput.value || 0 : 0);
+
+            if (original <= 0) {
+                e.preventDefault();
+                alert('يجب إدخال مبلغ القسط قبل الخصم');
+                return;
+            }
+
+            if (finalAmount <= 0) {
+                e.preventDefault();
+                alert('المبلغ المطلوب بعد الخصم يجب أن يكون أكبر من صفر');
+                return;
+            }
+
+            if (paid < 0) {
+                e.preventDefault();
+                alert('المبلغ المدفوع لا يمكن أن يكون أقل من صفر');
+                return;
+            }
+
+            if (paid > finalAmount) {
+                e.preventDefault();
+                alert('المبلغ المدفوع لا يمكن أن يتجاوز المطلوب بعد الخصم');
+            }
+        });
+    }
+});
+
+function updateDiscountPreview() {
+    const originalInput = document.getElementById('originalAmountInput');
+    const discountInput = document.getElementById('discountAmountInput');
+    const percentageInput = document.getElementById('discountPercentageInput');
+    const finalHiddenInput = document.getElementById('finalAmountHiddenInput');
+
+    const previewOriginal = document.getElementById('previewOriginalAmount');
+    const previewDiscount = document.getElementById('previewDiscountAmount');
+    const previewFinal = document.getElementById('previewFinalAmount');
+
+    if (!originalInput || !discountInput || !percentageInput || !finalHiddenInput) {
+        return;
+    }
+
+    const original = parseFloat(originalInput.value || 0);
+    const fixedDiscount = parseFloat(discountInput.value || 0);
+    const percentage = parseFloat(percentageInput.value || 0);
+
+    let percentageDiscount = 0;
+
+    if (percentage > 0) {
+        percentageDiscount = original * percentage / 100;
+    }
+
+    let totalDiscount = fixedDiscount + percentageDiscount;
+
+    if (totalDiscount > original) {
+        totalDiscount = original;
+    }
+
+    const finalAmount = Math.max(0, original - totalDiscount);
+
+    finalHiddenInput.value = finalAmount.toFixed(2);
+
+    if (previewOriginal) previewOriginal.textContent = original.toFixed(2);
+    if (previewDiscount) previewDiscount.textContent = totalDiscount.toFixed(2);
+    if (previewFinal) previewFinal.textContent = finalAmount.toFixed(2);
+
+    const paidInput = document.querySelector('#createInstallmentForm input[name="amount_paid"]');
+
+    if (paidInput) {
+        paidInput.max = finalAmount.toFixed(2);
+    }
+}
+</script>
+{% endblock %}
+
+{% comment %} <!-- templates/payments/pay_installment.html -->
+{% extends 'payments/base.html' %}
 
 {% block title %}{% if tuition.pk %}تعديل مدفوع{% else %}إضافة مدفوع جديد{% endif %} - مدرسة المنار{% endblock %}
 {% block page_title %}{% if tuition.pk %}تعديل مدفوع للطالب{% else %}إضافة مدفوع جديد للطالب{% endif %} {{ student.name }}{% endblock %}
@@ -846,289 +1900,5 @@ additionalStyle.textContent = `
     }
 `;
 document.head.appendChild(additionalStyle);
-</script>
-{% endblock %}
-
-{% comment %} {% extends 'payments/base.html' %}
-
-{% block title %}دفع قسط - {{ student.name }}{% endblock %}
-{% block page_title %}دفع قسط للطالب: {{ student.name }}{% endblock %}
-{% block page_subtitle %}تسجيل دفع قسط جديد للطالب{% endblock %}
-
-{% block extra_css %}
-<style>
-    .student-info-card {
-        background: linear-gradient(135deg, #007bff, #0056b3);
-        color: white;
-        border-radius: 15px;
-        padding: 25px;
-        margin-bottom: 25px;
-    }
-    
-    .form-container {
-        background: white;
-        border-radius: 15px;
-        padding: 30px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-    }
-    
-    .form-group {
-        margin-bottom: 20px;
-    }
-    
-    .form-label {
-        font-weight: 600;
-        color: #495057;
-        margin-bottom: 8px;
-    }
-    
-    .form-control, .form-select {
-        border-radius: 10px;
-        border: 2px solid #e9ecef;
-        padding: 12px 15px;
-        transition: all 0.3s ease;
-    }
-    
-    .form-control:focus, .form-select:focus {
-        border-color: #007bff;
-        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-    }
-    
-    .btn-custom {
-        padding: 12px 30px;
-        border-radius: 25px;
-        font-weight: 600;
-        transition: all 0.3s ease;
-    }
-    
-    .btn-custom:hover {
-        transform: translateY(-2px);
-    }
-</style>
-{% endblock %}
-
-{% block content %}
-<!-- معلومات الطالب -->
-<div class="student-info-card">
-    <div class="row align-items-center">
-        <div class="col-md-2 text-center">
-            <i class="fas fa-user-graduate fa-3x mb-2"></i>
-        </div>
-        <div class="col-md-6">
-            <h4 class="mb-1">{{ student.name }}</h4>
-            <p class="mb-1">الرقم القومي: {{ student.national_number }}</p>
-            <p class="mb-0">
-                الفصل: 
-                {% for classroom in student.classroom.all %}
-                    {{ classroom.name }}{% if not forloop.last %}, {% endif %}
-                {% endfor %}
-            </p>
-        </div>
-        <div class="col-md-4 text-md-end">
-            <h5 class="mb-1">رقم القسط التالي</h5>
-            <h2 class="mb-0" id="nextInstallmentNumber">جاري التحميل...</h2>
-        </div>
-    </div>
-</div>
-
-<!-- نموذج الدفع -->
-<div class="form-container">
-    <h5 class="mb-4">
-        <i class="fas fa-credit-card me-2 text-primary"></i>
-        تفاصيل الدفع
-    </h5>
-    
-    <form method="post" id="paymentForm">
-        {% csrf_token %}
-        
-        <div class="row">
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label class="form-label">رقم القسط</label>
-                    <input type="number" class="form-control" name="installment_number" 
-                           id="installmentNumber" readonly>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label class="form-label">مبلغ القسط *</label>
-                    <div class="input-group">
-                        <input type="number" class="form-control" name="amount_tuition" 
-                               placeholder="0.00" step="0.01" min="0.01" required>
-                        <span class="input-group-text">ج.م</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="row">
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label class="form-label">المبلغ المدفوع *</label>
-                    <div class="input-group">
-                        <input type="number" class="form-control" name="amount_paid" 
-                               placeholder="0.00" step="0.01" min="0.01" required>
-                        <span class="input-group-text">ج.م</span>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label class="form-label">طريقة الدفع</label>
-                    <select class="form-select" name="payment_method">
-                        <option value="cash">💵 نقدي</option>
-                        <option value="transfer">🏦 تحويل بنكي</option>
-                        <option value="check">📝 شيك</option>
-                        <option value="card">💳 بطاقة ائتمان</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-        
-        <div class="row">
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label class="form-label">تاريخ الاستحقاق</label>
-                    <input type="date" class="form-control" name="due_date">
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label class="form-label">مسجل بواسطة</label>
-                    <input type="text" class="form-control" value="{{ user.get_full_name|default:user.username }}" readonly>
-                </div>
-            </div>
-        </div>
-        
-        <div class="form-group">
-            <label class="form-label">ملاحظات</label>
-            <textarea class="form-control" name="notes" rows="3" 
-                      placeholder="ملاحظات إضافية (اختيارية)"></textarea>
-        </div>
-        
-        <div class="d-flex gap-3 mt-4">
-            <button type="submit" class="btn btn-success btn-custom">
-                <i class="fas fa-check me-1"></i>تسجيل الدفع
-            </button>
-            <a href="{% url 'students:student_detail' pk=student.pk %}" class="btn btn-secondary btn-custom">
-                <i class="fas fa-arrow-right me-1"></i>إلغاء
-            </a>
-            <button type="button" class="btn btn-info btn-custom" onclick="showPaymentHistory()">
-                <i class="fas fa-history me-1"></i>تاريخ المدفوعات
-            </button>
-        </div>
-    </form>
-</div>
-
-<!-- Modal لعرض تاريخ المدفوعات -->
-<div class="modal fade" id="paymentHistoryModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">تاريخ مدفوعات الطالب</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div id="paymentHistoryContent">
-                    <div class="text-center">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">جاري التحميل...</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-// جلب رقم القسط التالي عند تحميل الصفحة
-document.addEventListener('DOMContentLoaded', function() {
-    loadNextInstallmentNumber();
-    
-    // تعبئة تاريخ الاستحقاق بتاريخ اليوم
-    const today = new Date().toISOString().split('T')[0];
-    document.querySelector('input[name="due_date"]').value = today;
-});
-
-function loadNextInstallmentNumber() {
-    fetch(`/payments/api/student-payments/?student_id={{ student.id }}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                console.error('خطأ في جلب البيانات:', data.error);
-                return;
-            }
-            
-            const nextNumber = (data.total_payments || 0) + 1;
-            document.getElementById('nextInstallmentNumber').textContent = nextNumber;
-            document.getElementById('installmentNumber').value = nextNumber;
-        })
-        .catch(error => {
-            console.error('خطأ:', error);
-            document.getElementById('nextInstallmentNumber').textContent = '1';
-            document.getElementById('installmentNumber').value = '1';
-        });
-}
-
-function showPaymentHistory() {
-    const modal = new bootstrap.Modal(document.getElementById('paymentHistoryModal'));
-    modal.show();
-    
-    fetch(`/payments/api/student-payments/?student_id={{ student.id }}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                document.getElementById('paymentHistoryContent').innerHTML = 
-                    `<div class="alert alert-danger">${data.error}</div>`;
-                return;
-            }
-            
-            if (data.payments && data.payments.length > 0) {
-                let html = '<div class="table-responsive"><table class="table table-striped">';
-                html += '<thead><tr><th>رقم القسط</th><th>المبلغ</th><th>تاريخ الدفع</th><th>الحالة</th></tr></thead><tbody>';
-                
-                data.payments.forEach(payment => {
-                    const statusBadge = payment.payment_status === 'PAID' ? 
-                        '<span class="badge bg-success">مدفوع</span>' : 
-                        '<span class="badge bg-warning">معلق</span>';
-                    
-                    html += `
-                        <tr>
-                            <td>${payment.installment_number}</td>
-                            <td>${payment.amount_paid} ج.م</td>
-                            <td>${payment.payment_date || 'غير محدد'}</td>
-                            <td>${statusBadge}</td>
-                        </tr>
-                    `;
-                });
-                
-                html += '</tbody></table></div>';
-                document.getElementById('paymentHistoryContent').innerHTML = html;
-            } else {
-                document.getElementById('paymentHistoryContent').innerHTML = 
-                    '<div class="alert alert-info">لا توجد مدفوعات سابقة لهذا الطالب</div>';
-            }
-        })
-        .catch(error => {
-            console.error('خطأ:', error);
-            document.getElementById('paymentHistoryContent').innerHTML = 
-                '<div class="alert alert-danger">حدث خطأ في جلب البيانات</div>';
-        });
-}
-
-// تأكيد الإرسال
-document.getElementById('paymentForm').addEventListener('submit', function(e) {
-    const amount_tuition = parseFloat(document.querySelector('input[name="amount_tuition"]').value);
-    const amount_paid = parseFloat(document.querySelector('input[name="amount_paid"]').value);
-    
-    if (amount_paid > amount_tuition) {
-        if (!confirm('المبلغ المدفوع أكبر من مبلغ القسط. هل تريد المتابعة؟')) {
-            e.preventDefault();
-        }
-    }
-});
 </script>
 {% endblock %} {% endcomment %}

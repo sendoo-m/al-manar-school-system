@@ -117,6 +117,32 @@
     </div>
 </div>
 
+
+<div class="col-lg-3 col-md-6 mb-3">
+    <div class="stats-card">
+        <div class="stats-icon bg-primary">
+            <i class="fas fa-bullseye"></i>
+        </div>
+        <div class="stats-info">
+            <h4>{{ daily_target|floatformat:2 }}</h4>
+            <p>هدف اليوم</p>
+        </div>
+    </div>
+</div>
+
+<div class="col-lg-3 col-md-6 mb-3">
+    <div class="stats-card">
+        <div class="stats-icon bg-info">
+            <i class="fas fa-calendar-check"></i>
+        </div>
+        <div class="stats-info">
+            <h4>{{ monthly_target|floatformat:2 }}</h4>
+            <p>هدف الشهر</p>
+        </div>
+    </div>
+</div>
+
+
 <!-- الرسوم البيانية -->
 <div class="row mb-4">
     <!-- الرسم البياني لتوزيع المدفوعات على مدار اليوم -->
@@ -542,18 +568,18 @@ function changeReportDate(date) {
 
 function exportDailyReport(format) {
     const date = '{{ target_date|date:"Y-m-d" }}';
-    showPaymentMessage('info', `جاري تصدير التقرير بصيغة ${format.toUpperCase()}...`);
-    setTimeout(() => {
-        window.open(`/payments/export/daily-${format}/?date=${date}`, '_blank');
-    }, 1000);
+
+    if (format === 'pdf') {
+        window.open(`/payments/export/daily-pdf/?date=${date}`, '_blank');
+        return;
+    }
+
+    window.open(`/payments/print-daily-report/?date=${date}`, '_blank');
 }
 
 function printDailyReport() {
     const date = '{{ target_date|date:"Y-m-d" }}';
-    showPaymentMessage('info', 'جاري تحضير صفحة الطباعة...');
-    setTimeout(() => {
-        window.open(`/payments/print-daily-report/?date=${date}`, '_blank');
-    }, 1000);
+    window.open(`/payments/print-daily-report/?date=${date}`, '_blank');
 }
 
 function shareDailyReport() {

@@ -1,3 +1,4 @@
+<!-- home/templates/home/admin_dashboard.html -->
 {% extends 'dashboard_base.html' %}
 
 {% block title %}لوحة تحكم مدير النظام{% endblock %}
@@ -6,77 +7,142 @@
 {% block user_role %}مدير النظام{% endblock %}
 
 {% block sidebar_nav %}
+    <!-- الرئيسية -->
     <a href="{% url 'home:admin_dashboard' %}" class="nav-link active">
         <i class="fas fa-tachometer-alt me-2"></i>الرئيسية
     </a>
-    <a href="/admin/auth/user/" class="nav-link" target="_blank">
+    
+    <!-- قسم إدارة المستخدمين -->
+    <div class="nav-link text-white-50 mt-3">
+        <small><i class="fas fa-users me-1"></i> إدارة المستخدمين</small>
+    </div>
+    <a href="{% url 'home:users_list' %}" class="nav-link">
         <i class="fas fa-users me-2"></i>إدارة المستخدمين
     </a>
-    <a href="/admin/school_settings/" class="nav-link" target="_blank">
-        <i class="fas fa-cogs me-2"></i>إعدادات النظام
+    <a href="{% url 'home:add_user' %}" class="nav-link">
+        <i class="fas fa-user-plus me-2"></i>إضافة مستخدم جديد
     </a>
-    <a href="/admin/students/student/" class="nav-link" target="_blank">
-        <i class="fas fa-user-graduate me-2"></i>إدارة الطلاب
+    <a href="{% url 'home:inventory_staff_list' %}" class="nav-link">
+        <i class="fas fa-warehouse me-2"></i>موظفي المخازن
     </a>
-    <a href="/admin/students/classroom/" class="nav-link" target="_blank">
-        <i class="fas fa-chalkboard me-2"></i>الفصول الدراسية
-    </a>
-    <a href="/admin/students/tuition/" class="nav-link" target="_blank">
-        <i class="fas fa-money-bill me-2"></i>الأقساط المالية
-    </a>
+    
+    <!-- قسم إدارة الطلاب -->
     <div class="nav-link text-white-50 mt-3">
-        <small>التقارير</small>
+        <small><i class="fas fa-user-graduate me-1"></i> إدارة الطلاب</small>
     </div>
-    <a href="#" class="nav-link">
-        <i class="fas fa-chart-bar me-2"></i>تقارير شاملة
+    <a href="{% url 'students:student_list' %}" class="nav-link">
+        <i class="fas fa-list me-2"></i>قائمة الطلاب
     </a>
-    <a href="#" class="nav-link">
-        <i class="fas fa-file-export me-2"></i>تصدير البيانات
+    <a href="{% url 'students:add_student' %}" class="nav-link">
+        <i class="fas fa-user-plus me-2"></i>إضافة طالب جديد
+    </a>
+    
+    <!-- قسم الشؤون المالية -->
+    <div class="nav-link text-white-50 mt-3">
+        <small><i class="fas fa-money-bill-wave me-1"></i> الشؤون المالية</small>
+    </div>
+    <a href="{% url 'treasury_management:dashboard' %}" class="nav-link">
+        <i class="fas fa-vault me-2"></i>إدارة الخزينة
+    </a>
+    <a href="{% url 'treasury_management:treasuries_list' %}" class="nav-link">
+        <i class="fas fa-coins me-2"></i>الخزائن
+    </a>
+    <a href="{% url 'treasury_management:accounts_list' %}" class="nav-link">
+        <i class="fas fa-list-alt me-2"></i>الحسابات المالية
+    </a>
+    <a href="{% url 'treasury_management:reports' %}" class="nav-link">
+        <i class="fas fa-chart-line me-2"></i>التقارير المالية
+    </a>
+    <a href="{% url 'payments:all_payments' %}" class="nav-link">
+        <i class="fas fa-credit-card me-2"></i>المدفوعات
+    </a>
+    
+    <!-- قسم المخزون -->
+    <div class="nav-link text-white-50 mt-3">
+        <small><i class="fas fa-boxes me-1"></i> إدارة المخزون</small>
+    </div>
+    <a href="{% url 'books_inventory:books_list' %}" class="nav-link">
+        <i class="fas fa-book me-2"></i>مخزون الكتب
+    </a>
+    
+    <!-- قسم الإعدادات -->
+    <div class="nav-link text-white-50 mt-3">
+        <small><i class="fas fa-cogs me-1"></i> الإعدادات</small>
+    </div>
+    <a href="{% url 'school_settings:comprehensive_settings' %}" class="nav-link">
+        <i class="fas fa-school me-2"></i>إعدادات المدرسة
+    </a>
+    
+    <!-- قسم التقارير -->
+    <div class="nav-link text-white-50 mt-3">
+        <small><i class="fas fa-chart-bar me-1"></i> التقارير</small>
+    </div>
+    <a href="{% url 'treasury_management:daily_summary' %}" class="nav-link">
+        <i class="fas fa-calendar-day me-2"></i>الملخص اليومي
     </a>
 {% endblock %}
 
 {% block dashboard_content %}
-<!-- Statistics Cards -->
+<!-- Statistics Cards - بيانات حقيقية -->
 <div class="row mb-4">
     <div class="col-md-3 mb-3">
-        <div class="stats-card">
+        <div class="stats-card success">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h3 class="mb-1">150</h3>
+                    <h3 class="mb-1">{{ stats.total_users }}</h3>
                     <p class="mb-0">إجمالي المستخدمين</p>
+                    <small class="text-white">
+                        <i class="fas fa-user-check me-1"></i>
+                        {{ stats.active_users }} نشط
+                    </small>
                 </div>
                 <i class="fas fa-users fa-2x opacity-75"></i>
             </div>
         </div>
     </div>
+    
     <div class="col-md-3 mb-3">
         <div class="stats-card success">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h3 class="mb-1">1,250</h3>
+                    <h3 class="mb-1">{{ stats.total_students }}</h3>
                     <p class="mb-0">إجمالي الطلاب</p>
+                    <small class="text-white">
+                        <i class="fas fa-graduation-cap me-1"></i>
+                        {{ stats.active_students }} مسجل
+                    </small>
                 </div>
                 <i class="fas fa-user-graduate fa-2x opacity-75"></i>
             </div>
         </div>
     </div>
+    
     <div class="col-md-3 mb-3">
         <div class="stats-card warning">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h3 class="mb-1">24</h3>
+                    <h3 class="mb-1">{{ stats.total_classes }}</h3>
                     <p class="mb-0">الفصول الدراسية</p>
+                    <small class="text-white">
+                        <i class="fas fa-chalkboard-teacher me-1"></i>
+                        فصل نشط
+                    </small>
                 </div>
                 <i class="fas fa-chalkboard fa-2x opacity-75"></i>
             </div>
         </div>
     </div>
+    
     <div class="col-md-3 mb-3">
         <div class="stats-card danger">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h3 class="mb-1">85%</h3>
+                    <h3 class="mb-1">{{ stats.collection_rate }}%</h3>
                     <p class="mb-0">نسبة تحصيل الأقساط</p>
+                    <small class="text-white">
+                        <i class="fas fa-money-check-alt me-1"></i>
+                        {{ stats.paid_payments }}/{{ stats.total_payments }}
+                    </small>
                 </div>
                 <i class="fas fa-chart-pie fa-2x opacity-75"></i>
             </div>
@@ -84,7 +150,7 @@
     </div>
 </div>
 
-<!-- Quick Actions -->
+<!-- Quick Actions - كما هو -->
 <div class="row mb-4">
     <div class="col-12">
         <div class="card">
@@ -96,38 +162,116 @@
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <div class="card h-100 border-0 bg-light">
+                    <!-- إضافة مستخدم -->
+                    <div class="col-md-3 mb-3">
+                        <div class="card h-100 border-0 bg-light action-card">
                             <div class="card-body text-center">
                                 <i class="fas fa-user-plus fa-2x text-primary mb-3"></i>
                                 <h6>إضافة مستخدم جديد</h6>
                                 <p class="text-muted small">إنشاء حساب مستخدم جديد</p>
-                                <a href="/admin/auth/user/add/" class="btn btn-primary btn-sm" target="_blank">
-                                    إضافة الآن
+                                <a href="{% url 'home:add_user' %}" class="btn btn-primary btn-sm">
+                                إضافة الآن
                                 </a>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <div class="card h-100 border-0 bg-light">
+                    
+                    <!-- إضافة طالب -->
+                    <div class="col-md-3 mb-3">
+                        <div class="card h-100 border-0 bg-light action-card">
                             <div class="card-body text-center">
                                 <i class="fas fa-user-graduate fa-2x text-success mb-3"></i>
                                 <h6>إضافة طالب جديد</h6>
                                 <p class="text-muted small">تسجيل طالب في النظام</p>
-                                <a href="/admin/students/student/add/" class="btn btn-success btn-sm" target="_blank">
+                                <a href="{% url 'students:add_student' %}" class="btn btn-success btn-sm">
                                     تسجيل طالب
                                 </a>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <div class="card h-100 border-0 bg-light">
+                    
+                    <!-- إدارة الخزينة -->
+                    <div class="col-md-3 mb-3">
+                        <div class="card h-100 border-0 bg-light action-card">
                             <div class="card-body text-center">
-                                <i class="fas fa-cogs fa-2x text-warning mb-3"></i>
+                                <i class="fas fa-vault fa-2x text-warning mb-3"></i>
+                                <h6>إدارة الخزينة</h6>
+                                <p class="text-muted small">عمليات مالية سريعة</p>
+                                <a href="{% url 'treasury_management:dashboard' %}" class="btn btn-warning btn-sm">
+                                    فتح الخزينة
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- التقارير -->
+                    <div class="col-md-3 mb-3">
+                        <div class="card h-100 border-0 bg-light action-card">
+                            <div class="card-body text-center">
+                                <i class="fas fa-chart-bar fa-2x text-info mb-3"></i>
+                                <h6>التقارير والإحصائيات</h6>
+                                <p class="text-muted small">تقارير شاملة للنظام</p>
+                                <a href="{% url 'treasury_management:reports' %}" class="btn btn-info btn-sm">
+                                    عرض التقارير
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- صف ثاني للإجراءات -->
+                <div class="row">
+                    <!-- المدفوعات -->
+                    <div class="col-md-3 mb-3">
+                        <div class="card h-100 border-0 bg-light action-card">
+                            <div class="card-body text-center">
+                                <i class="fas fa-credit-card fa-2x text-danger mb-3"></i>
+                                <h6>إدارة المدفوعات</h6>
+                                <p class="text-muted small">مدفوعات الطلاب والأقساط</p>
+                                <a href="{% url 'payments:all_payments' %}" class="btn btn-danger btn-sm">
+                                    المدفوعات
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- المخزون -->
+                    <div class="col-md-3 mb-3">
+                        <div class="card h-100 border-0 bg-light action-card">
+                            <div class="card-body text-center">
+                                <i class="fas fa-boxes fa-2x text-secondary mb-3"></i>
+                                <h6>إدارة المخزون</h6>
+                                <p class="text-muted small">مخزون الكتب والمستلزمات</p>
+                                <a href="{% url 'books_inventory:books_list' %}" class="btn btn-secondary btn-sm">
+                                    المخزون
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- الإعدادات -->
+                    <div class="col-md-3 mb-3">
+                        <div class="card h-100 border-0 bg-light action-card">
+                            <div class="card-body text-center">
+                                <i class="fas fa-cogs fa-2x text-dark mb-3"></i>
                                 <h6>إعدادات النظام</h6>
                                 <p class="text-muted small">تخصيص إعدادات المدرسة</p>
-                                <a href="/admin/school_settings/" class="btn btn-warning btn-sm" target="_blank">
+                                <a href="{% url 'school_settings:comprehensive_settings' %}" class="btn btn-dark btn-sm">
                                     الإعدادات
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- موظفي المخازن -->
+                    <div class="col-md-3 mb-3">
+                        <div class="card h-100 border-0 bg-light action-card">
+                            <div class="card-body text-center">
+                                <i class="fas fa-warehouse fa-2x text-primary mb-3"></i>
+                                <h6>موظفي المخازن</h6>
+                                <p class="text-muted small">إدارة موظفي الخزينة والمخازن</p>
+                                <a href="{% url 'home:inventory_staff_list' %}" class="btn btn-primary btn-sm">
+                                    إدارة الموظفين
                                 </a>
                             </div>
                         </div>
@@ -138,7 +282,7 @@
     </div>
 </div>
 
-<!-- Recent Activities -->
+<!-- Recent Activities - بيانات حقيقية -->
 <div class="row">
     <div class="col-lg-8 mb-4">
         <div class="card">
@@ -149,56 +293,66 @@
                 </h5>
             </div>
             <div class="card-body">
+                {% if recent_activities %}
                 <div class="timeline">
+                    {% for activity in recent_activities %}
                     <div class="timeline-item">
-                        <div class="timeline-marker bg-success"></div>
+                        <div class="timeline-marker bg-{{ activity.color }}"></div>
                         <div class="timeline-content">
-                            <h6 class="mb-1">تسجيل طالب جديد</h6>
-                            <p class="text-muted small mb-1">تم تسجيل الطالب أحمد محمد</p>
-                            <small class="text-muted">منذ ساعة</small>
+                            <h6 class="mb-1">
+                                <i class="fas {{ activity.icon }} me-2"></i>
+                                {{ activity.title }}
+                            </h6>
+                            <p class="text-muted small mb-1">{{ activity.description }}</p>
+                            <small class="text-muted">{{ activity.time }}</small>
                         </div>
                     </div>
-                    <div class="timeline-item">
-                        <div class="timeline-marker bg-primary"></div>
-                        <div class="timeline-content">
-                            <h6 class="mb-1">تحديث الإعدادات</h6>
-                            <p class="text-muted small mb-1">تم تحديث إعدادات النظام</p>
-                            <small class="text-muted">منذ 3 ساعات</small>
-                        </div>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-marker bg-warning"></div>
-                        <div class="timeline-content">
-                            <h6 class="mb-1">دفع قسط</h6>
-                            <p class="text-muted small mb-1">تم دفع قسط للطالب فاطمة علي</p>
-                            <small class="text-muted">أمس</small>
-                        </div>
-                    </div>
+                    {% endfor %}
                 </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                    <h6 class="text-muted">لا توجد أنشطة حديثة</h6>
+                    <p class="text-muted small">ستظهر الأنشطة الجديدة هنا</p>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
+    
     <div class="col-lg-4 mb-4">
         <div class="card">
             <div class="card-header">
                 <h5 class="card-title mb-0">
                     <i class="fas fa-exclamation-triangle me-2 text-danger"></i>
-                    تنبيهات هامة
+                    تنبيهات النظام
                 </h5>
             </div>
             <div class="card-body">
-                <div class="alert alert-warning border-0">
-                    <i class="fas fa-money-bill me-2"></i>
-                    <strong>15 طالب</strong> لديهم أقساط متأخرة
+                {% for alert in alerts %}
+                <div class="alert alert-{{ alert.type }} border-0 mb-3">
+                    <i class="fas {{ alert.icon }} me-2"></i>
+                    <strong>{{ alert.title }}</strong><br>
+                    <small>{{ alert.description }}</small>
                 </div>
-                <div class="alert alert-info border-0">
-                    <i class="fas fa-database me-2"></i>
-                    آخر نسخة احتياطية: أمس
-                </div>
-                <div class="alert alert-success border-0">
-                    <i class="fas fa-check-circle me-2"></i>
-                    النظام يعمل بشكل طبيعي
-                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- معلومات إضافية -->
+<div class="row">
+    <div class="col-12">
+        <div class="card bg-light border-0">
+            <div class="card-body text-center">
+                <h6 class="text-muted mb-2">
+                    <i class="fas fa-calendar me-2"></i>
+                    تاريخ اليوم: {{ current_date|date:"l d F Y" }}
+                </h6>
+                <p class="text-muted small mb-0">
+                    آخر تحديث للإحصائيات: منذ دقائق قليلة
+                </p>
             </div>
         </div>
     </div>
@@ -207,6 +361,7 @@
 
 {% block extra_css %}
 <style>
+/* نفس الـ CSS السابق */
 .timeline {
     position: relative;
     padding-left: 30px;
@@ -240,5 +395,95 @@
 .timeline-content {
     padding-left: 10px;
 }
+
+.action-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.action-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+.stats-card {
+    transition: all 0.3s ease;
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 3px 15px rgba(0,0,0,0.08);
+}
+
+.stats-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.stats-card.success {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+}
+
+.stats-card.warning {
+    background: linear-gradient(135deg, #ffc107, #fd7e14);
+    color: white;
+}
+
+.stats-card.danger {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    color: white;
+}
+
+.nav-link {
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    margin: 2px 0;
+}
+
+.nav-link:hover {
+    background: rgba(255,255,255,0.1);
+    transform: translateX(5px);
+}
+
+.nav-link.active {
+    background: rgba(255,255,255,0.2);
+    border-left: 4px solid #fff;
+}
+
+.nav-link.text-white-50 {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    padding: 8px 0;
+    border-top: 1px solid rgba(255,255,255,0.1);
+}
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// تحديث الإحصائيات تلقائياً كل 5 دقائق
+setInterval(function() {
+    location.reload();
+}, 300000); // 5 دقائق
+
+// تأثيرات الحركة للبطاقات
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.action-card, .stats-card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            card.style.transition = 'all 0.6s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+
+    console.log('✅ لوحة تحكم المدير جاهزة مع البيانات الحقيقية');
+});
+</script>
 {% endblock %}

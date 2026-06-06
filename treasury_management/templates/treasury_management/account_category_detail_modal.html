@@ -1,49 +1,70 @@
-<!-- treasury_management/templates/treasury_management/account_detail_modal.html -->
+<!-- treasury_management/templates/treasury_management/account_category_detail_modal.html -->
 <div class="row">
-    <div class="col-md-6">
-        <div class="card border-primary">
+    <div class="col-md-6 mb-3">
+        <div class="card border-primary h-100">
             <div class="card-header bg-primary text-white">
-                <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>معلومات الحساب</h6>
+                <h6 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    معلومات التصنيف
+                </h6>
             </div>
+
             <div class="card-body">
                 <table class="table table-sm mb-0">
                     <tr>
-                        <td><strong>كود الحساب:</strong></td>
+                        <td><strong>الكود:</strong></td>
                         <td>
                             <span style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 0.25rem 0.5rem; border-radius: 6px; font-family: monospace; font-weight: bold;">
-                                {{ account.code }}
+                                {{ category.code }}
                             </span>
                         </td>
                     </tr>
+
                     <tr>
-                        <td><strong>اسم الحساب:</strong></td>
-                        <td>{{ account.name }}</td>
+                        <td><strong>اسم التصنيف:</strong></td>
+                        <td>{{ category.name }}</td>
                     </tr>
+
                     <tr>
-                        <td><strong>التصنيف:</strong></td>
+                        <td><strong>النوع:</strong></td>
                         <td>
-                            <span class="badge 
-                                {% if account.category.category_type == 'REVENUE' %}bg-success
-                                {% elif account.category.category_type == 'EXPENSE' %}bg-danger
-                                {% elif account.category.category_type == 'ASSET' %}bg-info
-                                {% elif account.category.category_type == 'LIABILITY' %}bg-warning
-                                {% else %}bg-secondary{% endif %}">
-                                {{ account.category.get_category_type_display }}
-                            </span>
-                            <br><small class="text-muted">{{ account.category.name }}</small>
+                            {% if category.category_type == 'ASSET' %}
+                                <span class="badge bg-info">أصول</span>
+                            {% elif category.category_type == 'REVENUE' %}
+                                <span class="badge bg-success">إيرادات</span>
+                            {% elif category.category_type == 'EXPENSE' %}
+                                <span class="badge bg-danger">مصروفات</span>
+                            {% elif category.category_type == 'LIABILITY' %}
+                                <span class="badge bg-warning text-dark">خصوم</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ category.get_category_type_display }}</span>
+                            {% endif %}
                         </td>
                     </tr>
+
+                    <tr>
+                        <td><strong>التصنيف الرئيسي:</strong></td>
+                        <td>
+                            {% if category.parent %}
+                                {{ category.parent.code }} - {{ category.parent.name }}
+                            {% else %}
+                                <span class="text-muted">تصنيف رئيسي</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+
                     <tr>
                         <td><strong>الوصف:</strong></td>
-                        <td>{{ account.description|default:"غير محدد" }}</td>
+                        <td>{{ category.description|default:"غير محدد" }}</td>
                     </tr>
+
                     <tr>
                         <td><strong>الحالة:</strong></td>
                         <td>
-                            {% if account.is_active %}
-                            <span class="badge bg-success">✓ نشط</span>
+                            {% if category.is_active %}
+                                <span class="badge bg-success">نشط</span>
                             {% else %}
-                            <span class="badge bg-secondary">✗ غير نشط</span>
+                                <span class="badge bg-secondary">غير نشط</span>
                             {% endif %}
                         </td>
                     </tr>
@@ -51,111 +72,122 @@
             </div>
         </div>
     </div>
-    
-    <div class="col-md-6">
-        <div class="card border-success">
+
+    <div class="col-md-6 mb-3">
+        <div class="card border-success h-100">
             <div class="card-header bg-success text-white">
-                <h6 class="mb-0"><i class="fas fa-chart-line me-2"></i>الأرصدة والإحصائيات</h6>
+                <h6 class="mb-0">
+                    <i class="fas fa-chart-line me-2"></i>
+                    الإحصائيات
+                </h6>
             </div>
+
             <div class="card-body">
                 <div class="row text-center mb-3">
-                    <div class="col-6">
-                        <div class="h5 text-info">{{ account.opening_balance|floatformat:2 }}</div>
-                        <small class="text-muted">الرصيد الافتتاحي</small>
+                    <div class="col-4">
+                        <div class="h5 text-primary">{{ accounts_count|default:0 }}</div>
+                        <small class="text-muted">حسابات</small>
                     </div>
-                    <div class="col-6">
-                        <div class="h5 {% if account.current_balance > 0 %}text-success{% elif account.current_balance < 0 %}text-danger{% else %}text-muted{% endif %}">
-                            {{ account.current_balance|floatformat:2 }}
+
+                    <div class="col-4">
+                        <div class="h5 text-info">{{ subcategories_count|default:0 }}</div>
+                        <small class="text-muted">فرعي</small>
+                    </div>
+
+                    <div class="col-4">
+                        <div class="h5 {% if total_balance > 0 %}text-success{% elif total_balance < 0 %}text-danger{% else %}text-secondary{% endif %}">
+                            {{ total_balance|default:0|floatformat:2 }}
                         </div>
-                        <small class="text-muted">الرصيد الحالي</small>
+                        <small class="text-muted">إجمالي الأرصدة</small>
                     </div>
                 </div>
-                
-                <div class="row text-center mb-3">
-                    <div class="col-6">
-                        <div class="h6 text-success">{{ total_income|floatformat:2 }}</div>
-                        <small class="text-muted">إجمالي الإيرادات</small>
-                        <br><small class="badge bg-success">{{ income_count }} عملية</small>
-                    </div>
-                    <div class="col-6">
-                        <div class="h6 text-danger">{{ total_expenses|floatformat:2 }}</div>
-                        <small class="text-muted">إجمالي المصروفات</small>
-                        <br><small class="badge bg-danger">{{ expense_count }} عملية</small>
-                    </div>
-                </div>
-                
-                <div class="text-center">
-                    <div class="h6 {% if account.current_balance > account.opening_balance %}text-success{% elif account.current_balance < account.opening_balance %}text-danger{% else %}text-muted{% endif %}">
-                        {% widthratio account.current_balance account.opening_balance 100 as balance_change %}
-                        {% if account.opening_balance != 0 %}
-                            {{ balance_change|floatformat:1 }}%
-                        {% else %}
-                            --
-                        {% endif %}
-                    </div>
-                    <small class="text-muted">نسبة التغيير</small>
+
+                <div class="alert alert-info mb-0">
+                    <i class="fas fa-info-circle me-1"></i>
+                    إذا كان التصنيف يحتوي على حسابات خزائن، يتم احتساب رصيد الخزنة الفعلي بدل الرصيد القديم للحساب.
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-{% if recent_transactions %}
-<div class="row mt-3">
+{% if subcategories %}
+<div class="row mt-2">
     <div class="col-12">
-        <div class="card">
+        <div class="card border-info">
             <div class="card-header">
-                <h6 class="mb-0"><i class="fas fa-history me-2"></i>آخر العمليات ({{ recent_transactions.count }})</h6>
+                <h6 class="mb-0">
+                    <i class="fas fa-folder-open me-2"></i>
+                    التصنيفات الفرعية
+                </h6>
             </div>
+
             <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-sm mb-0">
-                        <thead>
-                            <tr>
-                                <th>التاريخ</th>
-                                <th>النوع</th>
-                                <th>المبلغ</th>
-                                <th>الوصف</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for transaction in recent_transactions %}
-                            <tr>
-                                <td>
-                                    <small>{{ transaction.created_at|date:"Y-m-d" }}</small>
-                                    <br><small class="text-muted">{{ transaction.created_at|time:"H:i" }}</small>
-                                </td>
-                                <td>
-                                    {% if transaction.transaction_type == 'INCOME' %}
-                                    <span class="badge bg-success">💰 إيراد</span>
-                                    {% else %}
-                                    <span class="badge bg-danger">💸 مصروف</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-end {% if transaction.transaction_type == 'INCOME' %}text-success{% else %}text-danger{% endif %}">
-                                    {{ transaction.amount|floatformat:2 }}
-                                </td>
-                                <td>
-                                    <small>{{ transaction.description|truncatechars:40 }}</small>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                <div class="row">
+                    {% for subcategory in subcategories %}
+                    <div class="col-md-4 mb-2">
+                        <div class="border rounded p-2">
+                            <strong>{{ subcategory.code }}</strong>
+                            <br>
+                            <small>{{ subcategory.name }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>
     </div>
 </div>
-{% else %}
+{% endif %}
+
+{% if accounts %}
 <div class="row mt-3">
     <div class="col-12">
-        <div class="card border-warning">
-            <div class="card-body text-center">
-                <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
-                <p class="text-muted mb-0">لا توجد عمليات مسجلة لهذا الحساب</p>
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-wallet me-2"></i>
+                    الحسابات داخل التصنيف
+                </h6>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>الكود</th>
+                            <th>الحساب</th>
+                            <th>الرصيد</th>
+                            <th>الحالة</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for account in accounts %}
+                        <tr>
+                            <td><strong>{{ account.code }}</strong></td>
+                            <td>{{ account.name }}</td>
+                            <td class="{% if account.display_balance > 0 %}text-success{% elif account.display_balance < 0 %}text-danger{% else %}text-muted{% endif %}">
+                                {{ account.display_balance|default:0|floatformat:2 }}
+                            </td>
+                            <td>
+                                {% if account.is_active %}
+                                    <span class="badge bg-success">نشط</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">غير نشط</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
+</div>
+{% else %}
+<div class="alert alert-light border mt-3 mb-0">
+    <i class="fas fa-info-circle me-1"></i>
+    لا توجد حسابات داخل هذا التصنيف حتى الآن.
 </div>
 {% endif %}

@@ -1,7 +1,661 @@
-
-
-
 <!-- تحسين القالب الأساسي مع إضافة البحث والميزات الجديدة -->
+<!-- treasury_management/templates/treasury_management/transactions_list.html -->
+{% extends 'treasury_management/base.html' %}
+{% load static %}
+
+{% block title %}قائمة العمليات المالية{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-card {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+    }
+
+    .transaction-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+    }
+
+    .transaction-card:hover {
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transform: translateY(-1px);
+    }
+
+    .status-approved { color: #28a745; }
+    .status-pending { color: #ffc107; }
+    .status-cancelled { color: #dc3545; }
+
+    .amount-income { color: #28a745; font-weight: 600; }
+    .amount-expense { color: #dc3545; font-weight: 600; }
+
+    .stats-summary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .table-modern {
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    .table-modern th {
+        background: #f8f9fa;
+        font-weight: 600;
+        border: none;
+        padding: 1rem;
+    }
+
+    .table-modern td {
+        border: none;
+        padding: 0.75rem 1rem;
+        vertical-align: middle;
+    }
+
+    .pagination-modern .page-link {
+        border: none;
+        margin: 0 2px;
+        border-radius: 8px;
+        color: #667eea;
+        transition: all 0.3s ease;
+    }
+
+    .pagination-modern .page-item.active .page-link {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .pagination-modern .page-link:hover {
+        background-color: #e9ecef;
+        transform: translateY(-1px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- رأس الصفحة -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2><i class="fas fa-list me-2"></i>العمليات المالية</h2>
+                <p class="text-muted mb-0">جميع المعاملات والحركات المالية</p>
+            </div>
+            <div>
+                <a href="{% url 'treasury_management:add_transaction' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>إضافة عملية جديدة
+                </a>
+                <div class="btn-group">
+                    <button class="btn btn-outline-success" onclick="exportData('excel')">
+                        <i class="fas fa-file-excel me-1"></i>Excel
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="exportData('pdf')">
+                        <i class="fas fa-file-pdf me-1"></i>PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- الإحصائيات السريعة -->
+<div class="stats-summary">
+    <div class="row text-center">
+        <div class="col-lg-3 col-md-6">
+            <div class="h4 mb-1">{{ transactions.paginator.count }}</div>
+            <div class="opacity-75">إجمالي العمليات</div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="h4 mb-1">{{ page_stats.total_income|floatformat:0 }}</div>
+            <div class="opacity-75">إيرادات الصفحة</div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="h4 mb-1">{{ page_stats.total_expenses|floatformat:0 }}</div>
+            <div class="opacity-75">مصروفات الصفحة</div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="h4 mb-1">{{ page_stats.count }}</div>
+            <div class="opacity-75">عمليات الصفحة</div>
+        </div>
+    </div>
+</div>
+
+<!-- فلاتر البحث -->
+<div class="filter-card">
+    <div class="card-body">
+        <h5 class="mb-3"><i class="fas fa-filter me-2"></i>فلترة النتائج</h5>
+        
+        <form method="GET" class="row g-3" id="filterForm">
+            <div class="col-md-3">
+                <label class="form-label">البحث</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" name="search" class="form-control" 
+                           value="{{ filters.search }}" placeholder="رقم العملية أو الوصف">
+                </div>
+            </div>
+            
+            <div class="col-md-2">
+                <label class="form-label">نوع العملية</label>
+                <select name="type" class="form-select">
+                    <option value="">جميع الأنواع</option>
+                    <option value="INCOME" {% if filters.type == 'INCOME' %}selected{% endif %}>💰 إيرادات</option>
+                    <option value="EXPENSE" {% if filters.type == 'EXPENSE' %}selected{% endif %}>💸 مصروفات</option>
+                    <option value="TRANSFER" {% if filters.type == 'TRANSFER' %}selected{% endif %}>🔄 تحويلات</option>
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label class="form-label">الخزنة</label>
+                <select name="treasury" class="form-select">
+                    <option value="">جميع الخزائن</option>
+                    {% for treasury in treasuries %}
+                    <option value="{{ treasury.id }}" {% if filters.treasury == treasury.id|stringformat:'s' %}selected{% endif %}>
+                        {{ treasury.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label class="form-label">من تاريخ</label>
+                <input type="date" name="from_date" class="form-control" value="{{ filters.from_date }}">
+            </div>
+            
+            <div class="col-md-2">
+                <label class="form-label">إلى تاريخ</label>
+                <input type="date" name="to_date" class="form-control" value="{{ filters.to_date }}">
+            </div>
+            
+            <div class="col-md-1">
+                <label class="form-label">الحالة</label>
+                <select name="approved" class="form-select">
+                    <option value="">الكل</option>
+                    <option value="true" {% if filters.approved == 'true' %}selected{% endif %}>معتمدة</option>
+                    <option value="false" {% if filters.approved == 'false' %}selected{% endif %}>معلقة</option>
+                    <option value="cancelled" {% if filters.approved == 'cancelled' %}selected{% endif %}>ملغية</option>
+                </select>
+            </div>
+            
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="fas fa-search me-1"></i>بحث
+                </button>
+                <a href="{% url 'treasury_management:transactions_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-redo me-1"></i>إعادة تعيين
+                </a>
+                <div class="float-end">
+                    <select name="per_page" class="form-select form-select-sm" style="width: auto; display: inline-block;" onchange="this.form.submit()">
+                        <option value="10" {% if items_per_page == 10 %}selected{% endif %}>10</option>
+                        <option value="20" {% if items_per_page == 20 %}selected{% endif %}>20</option>
+                        <option value="50" {% if items_per_page == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if items_per_page == 100 %}selected{% endif %}>100</option>
+                    </select>
+                    <small class="text-muted">عنصر لكل صفحة</small>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if not transactions %}
+<!-- محتوى عند عدم وجود نتائج -->
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center py-5">
+                <div class="mb-4">
+                    <i class="fas fa-inbox fa-5x text-muted mb-3"></i>
+                    <h3 class="text-muted">
+                        {% if filters.search or filters.type or filters.treasury %}
+                            لا توجد نتائج للبحث
+                        {% else %}
+                            لا توجد عمليات مالية
+                        {% endif %}
+                    </h3>
+                    <p class="lead text-muted">
+                        {% if filters.search or filters.type or filters.treasury %}
+                            جرب تعديل معايير البحث أو الفلاتر
+                        {% else %}
+                            ابدأ بإضافة عملية مالية جديدة
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <div class="d-flex justify-content-center gap-3">
+                    {% if filters.search or filters.type or filters.treasury %}
+                        <a href="{% url 'treasury_management:transactions_list' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-refresh me-1"></i>إعادة تعيين الفلاتر
+                        </a>
+                    {% else %}
+                        <a href="{% url 'treasury_management:add_transaction' %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>إضافة عملية جديدة
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+
+<!-- قائمة العمليات -->
+<div class="table-modern">
+    <table class="table table-hover mb-0">
+        <thead>
+            <tr>
+                <th>رقم العملية</th>
+                <th>النوع</th>
+                <th>الخزنة</th>
+                <th>الحساب</th>
+                <th>المبلغ</th>
+                <th>التاريخ</th>
+                <th>الحالة</th>
+                <th class="no-print">الإجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for transaction in transactions %}
+            <tr>
+                <td>
+                    <strong>{{ transaction.transaction_number }}</strong>
+                    {% if transaction.reference_number %}
+                    <br><small class="text-muted">مرجع: {{ transaction.reference_number }}</small>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if transaction.transaction_type == 'INCOME' %}
+                    <span class="badge bg-success">💰 إيراد</span>
+                    {% elif transaction.transaction_type == 'EXPENSE' %}
+                    <span class="badge bg-danger">💸 مصروف</span>
+                    {% else %}
+                    <span class="badge bg-info">🔄 تحويل</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <strong>{{ transaction.treasury.name }}</strong>
+                    <br><small class="text-muted">{{ transaction.treasury.code }}</small>
+                </td>
+                <td>
+                    <strong>{{ transaction.account.name }}</strong>
+                    <br><small class="text-muted">{{ transaction.account.code }}</small>
+                </td>
+                <td class="text-center">
+                    <span class="{% if transaction.transaction_type == 'INCOME' %}amount-income{% elif transaction.transaction_type == 'EXPENSE' %}amount-expense{% else %}text-info fw-bold{% endif %}">
+                        {% if transaction.transaction_type == 'INCOME' %}+{% elif transaction.transaction_type == 'EXPENSE' %}-{% else %}↔{% endif %}
+                        {{ transaction.amount|floatformat:2 }}
+                    </span>
+                </td>
+                <td>
+                    {{ transaction.transaction_date|date:"d M Y" }}
+                    <br><small class="text-muted">{{ transaction.created_at|time:"H:i" }}</small>
+                </td>
+                <td class="text-center">
+                    {% if transaction.is_cancelled %}
+                    <span class="badge bg-danger">❌ ملغية</span>
+                    {% elif transaction.is_approved %}
+                    <span class="badge bg-success">✅ معتمدة</span>
+                    {% else %}
+                    <span class="badge bg-warning">⏳ معلقة</span>
+                    {% endif %}
+                </td>
+                <td class="no-print">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-info" 
+                                onclick="showTransactionDetails({{ transaction.id }})"
+                                title="تفاصيل">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        
+                        {% if not transaction.is_approved and not transaction.is_cancelled %}
+                        <button type="button" class="btn btn-sm btn-outline-success" 
+                                onclick="approveTransaction({{ transaction.id }})"
+                                title="اعتماد">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        {% endif %}
+                        
+                        {% if transaction.is_approved and not transaction.is_cancelled %}
+                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                onclick="cancelTransaction({{ transaction.id }})"
+                                title="إلغاء">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- التصفح المحسن -->
+{% if transactions.has_other_pages %}
+<div class="row mt-4">
+    <div class="col-md-6">
+        <p class="text-muted">
+            عرض {{ transactions.start_index }}-{{ transactions.end_index }} من {{ transactions.paginator.count }} عملية
+        </p>
+    </div>
+    <div class="col-md-6">
+        <nav aria-label="تنقل الصفحات">
+            <ul class="pagination pagination-modern justify-content-end mb-0">
+                {% if transactions.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page=1" title="الأولى">
+                        <i class="fas fa-angle-double-left"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ transactions.previous_page_number }}" title="السابقة">
+                        <i class="fas fa-angle-left"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link"><i class="fas fa-angle-double-left"></i></span>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link"><i class="fas fa-angle-left"></i></span>
+                </li>
+                {% endif %}
+                
+                <!-- أرقام الصفحات -->
+                {% for page_num in transactions.paginator.page_range %}
+                    {% if page_num == transactions.number %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                    {% elif page_num > transactions.number|add:'-3' and page_num < transactions.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_num }}">
+                                {{ page_num }}
+                            </a>
+                        </li>
+                    {% elif page_num == 1 or page_num == transactions.paginator.num_pages %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_num }}">
+                                {{ page_num }}
+                            </a>
+                        </li>
+                    {% elif page_num == 2 or page_num == transactions.paginator.num_pages|add:'-1' %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if transactions.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ transactions.next_page_number }}" title="التالية">
+                        <i class="fas fa-angle-right"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ transactions.paginator.num_pages }}" title="الأخيرة">
+                        <i class="fas fa-angle-double-right"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link"><i class="fas fa-angle-right"></i></span>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link"><i class="fas fa-angle-double-right"></i></span>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+
+<!-- Modal تفاصيل العملية -->
+<div class="modal fade" id="transactionModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-info-circle me-2"></i>تفاصيل العملية المالية</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="transactionDetails">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">جاري التحميل...</span>
+                    </div>
+                    <div class="mt-2">جاري تحميل التفاصيل...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal إلغاء العملية -->
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-times-circle me-2"></i>إلغاء العملية المالية</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="cancelForm" method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>تحذير:</strong> هذا الإجراء سيؤثر على أرصدة الخزائن والحسابات
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">سبب الإلغاء <span class="text-danger">*</span></label>
+                        <textarea class="form-control" name="cancellation_reason" rows="3" required 
+                                  placeholder="أدخل سبب إلغاء العملية"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>إلغاء
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-check me-1"></i>تأكيد الإلغاء
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showTransactionDetails(transactionId) {
+    const modal = new bootstrap.Modal(document.getElementById('transactionModal'));
+    const detailsContainer = document.getElementById('transactionDetails');
+    
+    detailsContainer.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">جاري التحميل...</span>
+            </div>
+            <div class="mt-2">جاري تحميل التفاصيل...</div>
+        </div>
+    `;
+    
+    modal.show();
+    
+    fetch(`/treasury/transaction-detail-ajax/${transactionId}/`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            detailsContainer.innerHTML = data.html;
+        } else {
+            detailsContainer.innerHTML = `
+                <div class="alert alert-danger text-center">
+                    <i class="fas fa-exclamation-circle fa-2x mb-2"></i>
+                    <h5>خطأ في تحميل التفاصيل</h5>
+                    <p>${data.error || 'حدث خطأ غير متوقع'}</p>
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        detailsContainer.innerHTML = `
+            <div class="alert alert-warning text-center">
+                <i class="fas fa-wifi fa-2x mb-2"></i>
+                <h5>خطأ في الاتصال</h5>
+                <p>تعذر الاتصال بالخادم. يرجى المحاولة مرة أخرى.</p>
+                <button class="btn btn-primary" onclick="showTransactionDetails(${transactionId})">
+                    <i class="fas fa-refresh me-1"></i>إعادة المحاولة
+                </button>
+            </div>
+        `;
+    });
+}
+
+function getCsrfToken() {
+    const tokenInput = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (tokenInput) {
+        return tokenInput.value;
+    }
+
+    const cookieValue = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='));
+
+    return cookieValue ? cookieValue.split('=')[1] : '';
+}
+
+function approveTransaction(transactionId) {
+    if (confirm('هل أنت متأكد من اعتماد هذه العملية؟')) {
+        fetch(`/treasury/transactions/${transactionId}/approve/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCsrfToken(),
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('حدث خطأ: ' + (data.error || data.message || 'تعذر تنفيذ العملية'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('حدث خطأ في الاتصال');
+        });
+    }
+}
+
+function cancelTransaction(transactionId) {
+    const modal = new bootstrap.Modal(document.getElementById('cancelModal'));
+    const form = document.getElementById('cancelForm');
+    
+    form.action = `/treasury/transactions/${transactionId}/cancel/`;
+    modal.show();
+}
+
+// تطبيق الفلاتر تلقائياً
+document.addEventListener('DOMContentLoaded', function() {
+    const filterForm = document.getElementById('filterForm');
+    const searchInput = filterForm.querySelector('[name="search"]');
+    
+    // البحث التلقائي بعد التوقف عن الكتابة
+    let searchTimeout;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            filterForm.submit();
+        }, 800);
+    });
+    
+    // تطبيق الفلاتر عند التغيير
+    filterForm.querySelectorAll('select').forEach(select => {
+        select.addEventListener('change', function() {
+            if (this.name !== 'per_page') {
+                filterForm.submit();
+            }
+        });
+    });
+    
+    // إرسال نموذج الإلغاء
+    document.getElementById('cancelForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken') || getCsrfToken(),
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('حدث خطأ: ' + (data.error || data.message || 'تعذر تنفيذ العملية'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('حدث خطأ في الاتصال');
+        });
+    });
+});
+
+// وظائف التصدير
+function exportData(format) {
+    const currentParams = new URLSearchParams(window.location.search);
+    currentParams.set('export', format);
+    window.location.href = '?' + currentParams.toString();
+}
+
+// تأثيرات الحركة
+document.addEventListener('DOMContentLoaded', function() {
+    const rows = document.querySelectorAll('tbody tr');
+    rows.forEach((row, index) => {
+        row.style.opacity = '0';
+        row.style.transform = 'translateX(-20px)';
+        
+        setTimeout(() => {
+            row.style.transition = 'all 0.3s ease';
+            row.style.opacity = '1';
+            row.style.transform = 'translateX(0)';
+        }, index * 50);
+    });
+});
+</script>
+{% endblock %}
+
+
+{% comment %} <!-- تحسين القالب الأساسي مع إضافة البحث والميزات الجديدة -->
 <!-- treasury_management/templates/treasury_management/transactions_list.html -->
 {% extends 'treasury_management/base.html' %}
 {% load static %}
@@ -639,4 +1293,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-{% endblock %}
+{% endblock %} {% endcomment %}

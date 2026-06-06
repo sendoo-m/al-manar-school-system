@@ -1,141 +1,3 @@
-{% comment %} <!-- treasury_management/templates/treasury_management/transaction_detail_modal.html -->
-<div class="transaction-details">
-    <div class="row">
-        <div class="col-md-6">
-            <h6>معلومات أساسية</h6>
-            <table class="table table-sm">
-                <tr>
-                    <td><strong>رقم العملية:</strong></td>
-                    <td>{{ transaction.transaction_number }}</td>
-                </tr>
-                <tr>
-                    <td><strong>النوع:</strong></td>
-                    <td>
-                        {% if transaction.transaction_type == 'INCOME' %}
-                        <span class="badge bg-success">إيراد</span>
-                        {% elif transaction.transaction_type == 'EXPENSE' %}
-                        <span class="badge bg-danger">مصروف</span>
-                        {% else %}
-                        <span class="badge bg-info">تحويل</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                <tr>
-                    <td><strong>المبلغ:</strong></td>
-                    <td class="h5 {% if transaction.transaction_type == 'INCOME' %}text-success{% else %}text-danger{% endif %}">
-                        {% if transaction.transaction_type == 'EXPENSE' %}-{% endif %}
-                        {{ transaction.amount|floatformat:2 }} ج.م
-                    </td>
-                </tr>
-                <tr>
-                    <td><strong>التاريخ:</strong></td>
-                    <td>{{ transaction.transaction_date|date:"d F Y - H:i" }}</td>
-                </tr>
-            </table>
-        </div>
-        
-        <div class="col-md-6">
-            <h6>تفاصيل الحسابات</h6>
-            <table class="table table-sm">
-                <tr>
-                    <td><strong>الخزنة:</strong></td>
-                    <td>{{ transaction.treasury.name }}</td>
-                </tr>
-                <tr>
-                    <td><strong>الحساب:</strong></td>
-                    <td>{{ transaction.account.code }} - {{ transaction.account.name }}</td>
-                </tr>
-                <tr>
-                    <td><strong>طريقة الدفع:</strong></td>
-                    <td>{{ transaction.get_payment_method_display }}</td>
-                </tr>
-                {% if transaction.reference_number %}
-                <tr>
-                    <td><strong>رقم المرجع:</strong></td>
-                    <td>{{ transaction.reference_number }}</td>
-                </tr>
-                {% endif %}
-            </table>
-        </div>
-    </div>
-    
-    <div class="row">
-        <div class="col-12">
-            <h6>الوصف</h6>
-            <div class="bg-light p-3 rounded">
-                {{ transaction.description }}
-            </div>
-        </div>
-    </div>
-    
-    <div class="row mt-3">
-        <div class="col-md-6">
-            <h6>معلومات الإنشاء</h6>
-            <small class="text-muted">
-                أنشأ بواسطة: {{ transaction.created_by.get_full_name }}<br>
-                بتاريخ: {{ transaction.created_at|date:"d F Y - H:i" }}
-            </small>
-        </div>
-        
-        <div class="col-md-6">
-            <h6>حالة العملية</h6>
-            {% if transaction.is_cancelled %}
-            <span class="badge bg-danger fs-6">ملغية</span>
-            {% if transaction.cancellation_reason %}
-            <div class="mt-2">
-                <small><strong>سبب الإلغاء:</strong> {{ transaction.cancellation_reason }}</small>
-            </div>
-            {% endif %}
-            {% elif transaction.is_approved %}
-            <span class="badge bg-success fs-6">معتمدة</span>
-            {% if transaction.approved_by %}
-            <div class="mt-2">
-                <small>اعتمدها: {{ transaction.approved_by.get_full_name }}</small><br>
-                <small>بتاريخ: {{ transaction.approved_at|date:"d F Y - H:i" }}</small>
-            </div>
-            {% endif %}
-            {% else %}
-            <span class="badge bg-warning fs-6">في انتظار الاعتماد</span>
-            {% endif %}
-        </div>
-    </div>
-</div> {% endcomment %}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 <!-- treasury_management/templates/treasury_management/transaction_detail_modal.html -->
 <div class="row">
     <div class="col-md-6">
@@ -153,18 +15,28 @@
                         <td><strong>نوع العملية:</strong></td>
                         <td>
                             {% if transaction.transaction_type == 'INCOME' %}
-                            <span class="badge bg-success">💰 إيراد</span>
+                                <span class="badge bg-success">💰 إيراد</span>
                             {% elif transaction.transaction_type == 'EXPENSE' %}
-                            <span class="badge bg-danger">💸 مصروف</span>
+                                <span class="badge bg-danger">💸 مصروف</span>
                             {% else %}
-                            <span class="badge bg-info">🔄 تحويل</span>
+                                <span class="badge bg-info">🔄 تحويل</span>
                             {% endif %}
                         </td>
+                    </tr>
+                    <tr>
+                        <td><strong>مصدر العملية:</strong></td>
+                        <td>{{ transaction.get_source_type_display|default:"غير محدد" }}</td>
                     </tr>
                     <tr>
                         <td><strong>الخزنة:</strong></td>
                         <td>{{ transaction.treasury.name }}</td>
                     </tr>
+                    {% if transaction.to_treasury %}
+                    <tr>
+                        <td><strong>الخزنة المحول إليها:</strong></td>
+                        <td>{{ transaction.to_treasury.name }}</td>
+                    </tr>
+                    {% endif %}
                     <tr>
                         <td><strong>الحساب:</strong></td>
                         <td>
@@ -175,8 +47,8 @@
                     <tr>
                         <td><strong>المبلغ:</strong></td>
                         <td>
-                            <span class="h5 {% if transaction.transaction_type == 'INCOME' %}text-success{% else %}text-danger{% endif %}">
-                                {% if transaction.transaction_type == 'EXPENSE' %}-{% endif %}
+                            <span class="h5 {% if transaction.transaction_type == 'INCOME' %}text-success{% elif transaction.transaction_type == 'EXPENSE' %}text-danger{% else %}text-info{% endif %}">
+                                {% if transaction.transaction_type == 'INCOME' %}+{% elif transaction.transaction_type == 'EXPENSE' %}-{% else %}↔{% endif %}
                                 {{ transaction.amount|floatformat:2 }} ج.م
                             </span>
                         </td>
@@ -195,7 +67,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="col-md-6">
         <div class="card border-info">
             <div class="card-header bg-info text-white">
@@ -205,7 +77,7 @@
                 <table class="table table-sm mb-0">
                     <tr>
                         <td><strong>تاريخ العملية:</strong></td>
-                        <td>{{ transaction.transaction_date|date:"l، d F Y" }}</td>
+                        <td>{{ transaction.transaction_date|date:"l، d F Y H:i" }}</td>
                     </tr>
                     <tr>
                         <td><strong>وقت الإنشاء:</strong></td>
@@ -219,32 +91,44 @@
                         <td><strong>الحالة:</strong></td>
                         <td>
                             {% if transaction.is_cancelled %}
-                            <span class="badge bg-danger">❌ ملغية</span>
+                                <span class="badge bg-danger">❌ ملغية</span>
                             {% elif transaction.is_approved %}
-                            <span class="badge bg-success">✅ معتمدة</span>
+                                <span class="badge bg-success">✅ معتمدة</span>
                             {% else %}
-                            <span class="badge bg-warning">⏳ معلقة</span>
+                                <span class="badge bg-warning">⏳ معلقة</span>
                             {% endif %}
                         </td>
                     </tr>
                     {% if transaction.is_approved %}
                     <tr>
                         <td><strong>معتمدة بواسطة:</strong></td>
-                        <td>{{ transaction.approved_by.get_full_name|default:transaction.approved_by.username }}</td>
+                        <td>
+                            {% if transaction.approved_by %}
+                                {{ transaction.approved_by.get_full_name|default:transaction.approved_by.username }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
                     </tr>
                     <tr>
                         <td><strong>تاريخ الاعتماد:</strong></td>
-                        <td>{{ transaction.approved_at|date:"d M Y H:i" }}</td>
+                        <td>{{ transaction.approved_at|date:"d M Y H:i"|default:"-" }}</td>
                     </tr>
                     {% endif %}
                     {% if transaction.is_cancelled %}
                     <tr>
                         <td><strong>ملغية بواسطة:</strong></td>
-                        <td>{{ transaction.cancelled_by.get_full_name|default:transaction.cancelled_by.username }}</td>
+                        <td>
+                            {% if transaction.cancelled_by %}
+                                {{ transaction.cancelled_by.get_full_name|default:transaction.cancelled_by.username }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
                     </tr>
                     <tr>
                         <td><strong>تاريخ الإلغاء:</strong></td>
-                        <td>{{ transaction.cancelled_at|date:"d M Y H:i" }}</td>
+                        <td>{{ transaction.cancelled_at|date:"d M Y H:i"|default:"-" }}</td>
                     </tr>
                     {% endif %}
                 </table>
@@ -265,6 +149,21 @@
         </div>
     </div>
 </div>
+
+{% if transaction.notes %}
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card border-secondary">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-sticky-note me-2"></i>ملاحظات</h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-0">{{ transaction.notes }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 {% if transaction.cancellation_reason %}
 <div class="row mt-3">

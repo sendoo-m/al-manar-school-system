@@ -1,0 +1,641 @@
+<!-- home/templates/home/users_list.html -->
+{% extends 'dashboard_base.html' %}
+{% load static %}
+
+{% block title %}إدارة المستخدمين{% endblock %}
+{% block page_title %}إدارة المستخدمين{% endblock %}
+{% block page_subtitle %}إدارة شاملة لحسابات المستخدمين والصلاحيات{% endblock %}
+
+{% block extra_css %}
+<style>
+    .user-card {
+        transition: all 0.3s ease;
+        border-radius: 15px;
+        overflow: hidden;
+        border: none;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+    }
+    
+    .user-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    }
+    
+    .user-avatar {
+        width: 55px;
+        height: 55px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 1.3rem;
+        margin-left: 15px;
+        border: 3px solid rgba(255,255,255,0.2);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .role-badge {
+        padding: 6px 14px;
+        border-radius: 25px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .role-SYSTEM_ADMIN { background: linear-gradient(135deg, #dc3545, #c82333); color: white; }
+    .role-SCHOOL_MANAGER { background: linear-gradient(135deg, #007bff, #0056b3); color: white; }
+    .role-ACCOUNTANT { background: linear-gradient(135deg, #28a745, #1e7e34); color: white; }
+    .role-STUDENT_AFFAIRS { background: linear-gradient(135deg, #17a2b8, #117a8b); color: white; }
+    .role-BOOKS_INVENTORY { background: linear-gradient(135deg, #ffc107, #e0a800); color: black; }
+    .role-UNIFORMS_INVENTORY { background: linear-gradient(135deg, #6f42c1, #5a32a3); color: white; }
+    .role-TEACHER { background: linear-gradient(135deg, #fd7e14, #e8590c); color: white; }
+    
+    .status-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-left: 8px;
+    }
+    
+    .status-active { background: #28a745; box-shadow: 0 0 10px rgba(40, 167, 69, 0.4); }
+    .status-inactive { background: #dc3545; }
+    
+    .filter-card {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-radius: 20px;
+        padding: 25px;
+        margin-bottom: 25px;
+        border: none;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+    }
+    
+    .stats-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        border: none;
+        box-shadow: 0 3px 15px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .stats-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px;
+        font-size: 1.5rem;
+        color: white;
+    }
+    
+    .user-info h6 {
+        color: #2c3e50;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+    
+    .user-meta {
+        color: #6c757d;
+        font-size: 0.85rem;
+    }
+    
+    .action-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        border: none;
+        color: white;
+    }
+    
+    .action-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    /* إضافة في extra_css */
+.stats-card {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+    border: none;
+    box-shadow: 0 3px 15px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.stats-card h3 {
+    color: #2c3e50 !important;  /* ✅ إضافة لون للأرقام */
+    font-weight: 700;
+    font-size: 2.2rem;
+    margin-bottom: 8px;
+}
+
+.stats-card p {
+    color: #6c757d !important;  /* ✅ إضافة لون للنص */
+    font-weight: 500;
+    margin-bottom: 0;
+}
+
+.stats-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 15px;
+    font-size: 1.5rem;
+    color: white;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+/* أدوار الخزينة الجديدة */
+.role-TREASURY_ADMIN { background: linear-gradient(135deg, #dc3545, #c82333); color: white; }
+.role-TREASURY_MANAGER { background: linear-gradient(135deg, #28a745, #1e7e34); color: white; }
+.role-TREASURY_ACCOUNTANT { background: linear-gradient(135deg, #17a2b8, #117a8b); color: white; }
+.role-TREASURY_CASHIER { background: linear-gradient(135deg, #ffc107, #e0a800); color: black; }
+.role-TREASURY_VIEWER { background: linear-gradient(135deg, #6c757d, #5a6268); color: white; }
+
+/* أدوار المخازن الجديدة */
+.role-INVENTORY_MANAGER { background: linear-gradient(135deg, #fd7e14, #e8590c); color: white; }
+
+/* تحديث الأدوار الموجودة */
+.role-BOOKS_INVENTORY { background: linear-gradient(135deg, #007bff, #0056b3); color: white; }
+.role-UNIFORMS_INVENTORY { background: linear-gradient(135deg, #6f42c1, #5a32a3); color: white; }
+
+</style>
+{% endblock %}
+{% block sidebar_nav %}
+    <!-- الرئيسية -->
+    <a href="{% url 'home:admin_dashboard' %}" class="nav-link active">
+        <i class="fas fa-tachometer-alt me-2"></i>الرئيسية
+    </a>
+    
+    <!-- قسم إدارة المستخدمين -->
+    <div class="nav-link text-white-50 mt-3">
+        <small><i class="fas fa-users me-1"></i> إدارة المستخدمين</small>
+    </div>
+    <a href="{% url 'home:users_list' %}" class="nav-link">
+    <i class="fas fa-users me-2"></i>إدارة المستخدمين
+    </a>
+    <a href="{% url 'home:add_user' %}" class="nav-link">
+        <i class="fas fa-user-plus me-2"></i>إضافة مستخدم جديد
+    </a>
+    <a href="{% url 'home:inventory_staff_list' %}" class="nav-link"> <!-- ✅ إضافة جديدة -->
+        <i class="fas fa-warehouse me-2"></i>موظفي المخازن
+    </a>
+    
+
+    <!-- قسم إدارة الطلاب -->
+    <div class="nav-link text-white-50 mt-3">
+        <small><i class="fas fa-user-graduate me-1"></i> إدارة الطلاب</small>
+    </div>
+    <a href="{% url 'students:student_list' %}" class="nav-link">
+        <i class="fas fa-list me-2"></i>قائمة الطلاب
+    </a>
+    <a href="{% url 'students:add_student' %}" class="nav-link">
+        <i class="fas fa-user-plus me-2"></i>إضافة طالب جديد
+    </a>
+
+    
+    <!-- قسم الشؤون المالية -->
+    <div class="nav-link text-white-50 mt-3">
+        <small><i class="fas fa-money-bill-wave me-1"></i> الشؤون المالية</small>
+    </div>
+    <a href="{% url 'treasury_management:dashboard' %}" class="nav-link">
+        <i class="fas fa-vault me-2"></i>إدارة الخزينة
+    </a>
+    <a href="{% url 'treasury_management:treasuries_list' %}" class="nav-link">
+        <i class="fas fa-coins me-2"></i>الخزائن
+    </a>
+    <a href="{% url 'treasury_management:accounts_list' %}" class="nav-link">
+        <i class="fas fa-list-alt me-2"></i>الحسابات المالية
+    </a>
+    <a href="{% url 'treasury_management:reports' %}" class="nav-link">
+        <i class="fas fa-chart-line me-2"></i>التقارير المالية
+    </a>
+    <a href="{% url 'payments:all_payments' %}" class="nav-link">
+        <i class="fas fa-credit-card me-2"></i>المدفوعات
+    </a>
+
+    
+    <!-- قسم المخزون -->
+    <div class="nav-link text-white-50 mt-3">
+        <small><i class="fas fa-boxes me-1"></i> إدارة المخزون</small>
+    </div>
+    <a href="{% url 'books_inventory:books_list' %}" class="nav-link">
+        <i class="fas fa-book me-2"></i>مخزون الكتب
+    </a>
+
+    
+    <!-- قسم الإعدادات -->
+    <div class="nav-link text-white-50 mt-3">
+        <small><i class="fas fa-cogs me-1"></i> الإعدادات</small>
+    </div>
+    <a href="{% url 'school_settings:comprehensive_settings' %}" class="nav-link">
+        <i class="fas fa-school me-2"></i>إعدادات المدرسة
+    </a>
+
+    
+    <!-- قسم التقارير -->
+    <div class="nav-link text-white-50 mt-3">
+        <small><i class="fas fa-chart-bar me-1"></i> التقارير</small>
+    </div>
+
+    <a href="{% url 'treasury_management:daily_summary' %}" class="nav-link">
+        <i class="fas fa-calendar-day me-2"></i>الملخص اليومي
+    </a>
+   
+
+{% endblock %}
+{% block dashboard_content %}
+<!-- إحصائيات سريعة -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stats-card">
+            <div class="stats-icon" style="background: linear-gradient(135deg, #007bff, #0056b3);">
+                <i class="fas fa-users"></i>
+            </div>
+            <h3 class="mb-1">{{ stats.total_users }}</h3>
+            <p class="text-muted mb-0">إجمالي المستخدمين</p>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stats-card">
+            <div class="stats-icon" style="background: linear-gradient(135deg, #28a745, #1e7e34);">
+                <i class="fas fa-user-check"></i>
+            </div>
+            <h3 class="mb-1">{{ stats.active_users }}</h3>
+            <p class="text-muted mb-0">المستخدمين النشطين</p>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stats-card">
+            <div class="stats-icon" style="background: linear-gradient(135deg, #dc3545, #c82333);">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            <h3 class="mb-1">{{ stats.admin_users }}</h3>
+            <p class="text-muted mb-0">مديري النظام</p>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stats-card">
+            <div class="stats-icon" style="background: linear-gradient(135deg, #17a2b8, #117a8b);">
+                <i class="fas fa-user-cog"></i>
+            </div>
+            <h3 class="mb-1">{{ stats.staff_users }}</h3>
+            <p class="text-muted mb-0">الموظفين</p>
+        </div>
+    </div>
+</div>
+<!-- أضف هذا التنبيه في بداية home/templates/home/users_list.html بعد الإحصائيات -->
+
+{% if stats.admin_users > 0 %}
+<div class="alert alert-info d-flex align-items-center mb-4">
+    <i class="fas fa-shield-alt fa-2x me-3 text-primary"></i>
+    <div>
+        <h6 class="mb-1">🔒 حماية مديري النظام</h6>
+        <p class="mb-0 text-muted">
+            يوجد {{ stats.admin_users }} مدير نظام في القائمة. 
+              يمكن تعديلهم من <a href="" class="text-primary fw-bold"> خلال المطور </a> .
+        </p>
+    </div>
+</div>
+{% endif %}
+
+<!-- فلاتر البحث -->
+<div class="filter-card">
+    <h5 class="mb-3">
+        <i class="fas fa-filter me-2 text-primary"></i>
+        فلاتر البحث والتصفية
+    </h5>
+    
+    <form method="GET" class="row align-items-end">
+        <div class="col-lg-4 col-md-6 mb-3">
+            <label class="form-label fw-bold">البحث</label>
+            <div class="input-group">
+                <span class="input-group-text">
+                    <i class="fas fa-search"></i>
+                </span>
+                <input type="text" class="form-control" name="search" 
+                       value="{{ search_query }}" 
+                       placeholder="ابحث باسم المستخدم، الاسم، أو البريد الإلكتروني...">
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <label class="form-label fw-bold">الدور الوظيفي</label>
+            <select class="form-select" name="role">
+                <option value="">جميع الأدوار</option>
+                {% for role_code, role_name in role_choices %}
+                <option value="{{ role_code }}" {% if role_filter == role_code %}selected{% endif %}>
+                    {{ role_name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <label class="form-label fw-bold">الحالة</label>
+            <select class="form-select" name="status">
+                <option value="">جميع الحالات</option>
+                <option value="active" {% if status_filter == 'active' %}selected{% endif %}>نشط</option>
+                <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>غير نشط</option>
+            </select>
+        </div>
+        
+        <div class="col-lg-2 col-md-6 mb-3">
+            <div class="btn-group w-100">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-filter me-1"></i>تطبيق
+                </button>
+                <a href="{% url 'home:users_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-refresh me-1"></i>إعادة تعيين
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Header with add button -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h5 class="mb-1">قائمة المستخدمين</h5>
+        <small class="text-muted">إجمالي {{ stats.total_users }} مستخدم</small>
+    </div>
+    <a href="{% url 'home:add_user' %}" class="btn btn-success btn-lg">
+        <i class="fas fa-user-plus me-2"></i>إضافة مستخدم جديد
+    </a>
+</div>
+
+<!-- قائمة المستخدمين -->
+{% if users %}
+<div class="row">
+    {% for user in users %}
+    <div class="col-xl-4 col-lg-6 col-md-6 mb-4">
+        <div class="card user-card h-100">
+            <div class="card-body">
+                <!-- Header with avatar and status -->
+                <div class="d-flex align-items-start mb-3">
+                    <div class="user-avatar">
+                        {% if user.first_name and user.last_name %}
+                            {{ user.first_name|first }}{{ user.last_name|first }}
+                        {% else %}
+                            {{ user.username|first|upper }}
+                        {% endif %}
+                    </div>
+                    <div class="flex-grow-1 user-info">
+                        <h6 class="mb-1">
+                            {{ user.get_full_name|default:user.username }}
+                            <span class="status-dot status-{% if user.is_active %}active{% else %}inactive{% endif %}" 
+                                  title="{% if user.is_active %}نشط{% else %}غير نشط{% endif %}"></span>
+                        </h6>
+                        <div class="user-meta">
+                            <div><i class="fas fa-at me-1"></i>{{ user.username }}</div>
+                            {% if user.email %}
+                            <div><i class="fas fa-envelope me-1"></i>{{ user.email }}</div>
+                            {% endif %}
+                            {% if user.national_id %}
+                            <div><i class="fas fa-id-card me-1"></i>{{ user.national_id }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Role Badge -->
+                <div class="mb-3">
+                    {% if user.system_role %}
+                    <span class="role-badge role-{{ user.system_role.role }}">
+                        {{ user.system_role.get_role_display }}
+                    </span>
+                    {% else %}
+                    <span class="role-badge bg-secondary text-white">غير محدد</span>
+                    {% endif %}
+                </div>
+                
+                <!-- Additional Info -->
+                <div class="row text-center mb-3">
+                    <div class="col-6">
+                        <small class="text-muted d-block">تاريخ التسجيل</small>
+                        <strong>{{ user.date_joined|date:"d M Y" }}</strong>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted d-block">آخر دخول</small>
+                        <strong>
+                            {% if user.last_login %}
+                                {{ user.last_login|date:"d M" }}
+                            {% else %}
+                                لم يسجل
+                            {% endif %}
+                        </strong>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+               <!-- في home/templates/home/users_list.html - تحديث أزرار العمليات -->
+
+<!-- استبدل أزرار العمليات في كارت المستخدم -->
+<div class="d-flex gap-2 justify-content-center">
+    <a href="{% url 'home:user_details' user.id %}" 
+       class="action-btn" style="background: linear-gradient(135deg, #17a2b8, #117a8b);"
+       title="عرض التفاصيل">
+        <i class="fas fa-eye"></i>
+    </a>
+    
+    {% if user.is_superuser or user.system_role.role == 'SYSTEM_ADMIN' %}
+        <!-- مدير النظام - زر محمي -->
+        <button class="action-btn" 
+                style="background: linear-gradient(135deg, #6c757d, #5a6268);"
+                title="محمي - لوحة الإدارة فقط"
+                disabled>
+            <i class="fas fa-lock"></i>
+        </button>
+        
+        <button class="action-btn" 
+                style="background: linear-gradient(135deg, #6c757d, #5a6268);"
+                title="محمي - لوحة الإدارة فقط"
+                disabled>
+            <i class="fas fa-shield-alt"></i>
+        </button>
+    {% else %}
+        <!-- مستخدم عادي - أزرار طبيعية -->
+        <a href="{% url 'home:edit_user' user.id %}" 
+           class="action-btn" style="background: linear-gradient(135deg, #ffc107, #e0a800);"
+           title="تعديل المستخدم">
+            <i class="fas fa-edit"></i>
+        </a>
+        
+        {% if user != request.user %}
+        <a href="{% url 'home:toggle_user_status' user.id %}" 
+           class="action-btn" 
+           style="background: linear-gradient(135deg, {% if user.is_active %}#dc3545, #c82333{% else %}#28a745, #1e7e34{% endif %});"
+           onclick="return confirm('هل أنت متأكد من {% if user.is_active %}إلغاء تفعيل{% else %}تفعيل{% endif %} هذا المستخدم؟')"
+           title="{% if user.is_active %}إلغاء التفعيل{% else %}تفعيل{% endif %}">
+            <i class="fas fa-{% if user.is_active %}user-times{% else %}user-check{% endif %}"></i>
+        </a>
+        {% endif %}
+    {% endif %}
+</div>
+
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination المُصحح -->
+{% if users.has_other_pages %}
+<nav aria-label="تنقل الصفحات" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if users.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ users.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                <i class="fas fa-chevron-right me-1"></i>السابق
+            </a>
+        </li>
+        {% endif %}
+        
+        <!-- عرض أول صفحة -->
+        {% if users.number|add:"-3" > 1 %}
+        <li class="page-item">
+            <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                1
+            </a>
+        </li>
+        {% if users.number|add:"-4" > 1 %}
+        <li class="page-item disabled">
+            <span class="page-link">...</span>
+        </li>
+        {% endif %}
+        {% endif %}
+        
+        <!-- عرض الصفحات المحيطة بالصفحة الحالية -->
+        {% for page_num in users.paginator.page_range %}
+            {% if page_num == users.number %}
+            <!-- الصفحة الحالية -->
+            <li class="page-item active">
+                <span class="page-link">{{ page_num }}</span>
+            </li>
+            {% elif page_num >= users.number|add:"-2" and page_num <= users.number|add:"2" %}
+            <!-- الصفحات المجاورة -->
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                    {{ page_num }}
+                </a>
+            </li>
+            {% endif %}
+        {% endfor %}
+        
+        <!-- عرض آخر صفحة -->
+        {% if users.number|add:"3" < users.paginator.num_pages %}
+        {% if users.number|add:"4" < users.paginator.num_pages %}
+        <li class="page-item disabled">
+            <span class="page-link">...</span>
+        </li>
+        {% endif %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ users.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                {{ users.paginator.num_pages }}
+            </a>
+        </li>
+        {% endif %}
+        
+        {% if users.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ users.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                التالي<i class="fas fa-chevron-left ms-1"></i>
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+
+{% else %}
+<!-- Empty State -->
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0">
+            <div class="card-body text-center py-5">
+                <div class="mb-4">
+                    <i class="fas fa-users fa-5x text-muted mb-3"></i>
+                    <h4 class="text-muted">لا توجد مستخدمين</h4>
+                    <p class="lead text-muted">لم يتم العثور على مستخدمين مطابقين لمعايير البحث</p>
+                </div>
+                
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="{% url 'home:add_user' %}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-user-plus me-2"></i>إضافة مستخدم جديد
+                    </a>
+                    {% if search_query or role_filter or status_filter %}
+                    <a href="{% url 'home:users_list' %}" class="btn btn-outline-secondary btn-lg">
+                        <i class="fas fa-refresh me-2"></i>مسح الفلاتر
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // تأثيرات الحركة للبطاقات
+    const cards = document.querySelectorAll('.user-card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(30px)';
+        
+        setTimeout(() => {
+            card.style.transition = 'all 0.6s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+    
+    // تحسين البحث التلقائي
+    const searchInput = document.querySelector('[name="search"]');
+    if (searchInput) {
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                this.form.submit();
+            }, 1000);
+        });
+    }
+    
+    console.log('✅ صفحة إدارة المستخدمين جاهزة');
+});
+</script>
+{% endblock %}

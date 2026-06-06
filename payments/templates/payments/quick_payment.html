@@ -1,28 +1,496 @@
-<!-- templates/payments/quick_payment.html -->
 {% extends 'payments/base.html' %}
+{% load humanize %}
 
 {% block title %}دفع سريع - مدرسة المنار{% endblock %}
 {% block page_title %}دفع سريع{% endblock %}
-{% block page_subtitle %}إضافة مدفوع جديد بسرعة{% endblock %}
-{% block page_icon %}<i class="fas fa-plus-circle me-3"></i>{% endblock %}
+{% block page_subtitle %}تسجيل دفعة طالب بسرعة وربطها بأقدم قسط مفتوح أو إنشاء قسط جديد تلقائيًا{% endblock %}
+{% block page_icon %}<i class="fas fa-bolt me-3"></i>{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'payments:payments_home' %}">لوحة المدفوعات</a></li>
+<li class="breadcrumb-item active">دفع سريع</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'payments:payments_home' %}" class="btn btn-outline-primary btn-custom">
+        <i class="fas fa-tachometer-alt me-1"></i>لوحة المدفوعات
+    </a>
+
+    <a href="{% url 'payments:all_payments' %}" class="btn btn-outline-secondary btn-custom">
+        <i class="fas fa-list me-1"></i>جميع المدفوعات
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .quick-payment-hero {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        border-radius: 22px;
+        padding: 32px;
+        margin-bottom: 25px;
+        box-shadow: 0 8px 24px rgba(40, 167, 69, 0.25);
+        text-align: center;
+    }
+
+    .quick-payment-card {
+        background: white;
+        border-radius: 18px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        overflow: hidden;
+    }
+
+    .quick-payment-card-header {
+        background: #f8f9fa;
+        padding: 20px 24px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .quick-payment-card-header h5 {
+        margin: 0;
+        font-weight: 900;
+    }
+
+    .quick-payment-card-body {
+        padding: 28px;
+    }
+
+    .helper-card {
+        background: white;
+        border-radius: 18px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        padding: 22px;
+        height: 100%;
+    }
+
+    .helper-item {
+        background: #f8f9fa;
+        border-radius: 14px;
+        padding: 14px;
+        margin-bottom: 12px;
+        border-right: 4px solid #28a745;
+    }
+
+    .amount-preview {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-radius: 16px;
+        padding: 18px;
+        text-align: center;
+        margin-top: 15px;
+    }
+
+    .amount-preview-value {
+        font-size: 2rem;
+        font-weight: 900;
+        color: #28a745;
+    }
+
+    .form-label {
+        font-weight: 800;
+        color: #2c3e50;
+    }
+
+    .quick-amount-btn {
+        border-radius: 12px;
+        font-weight: 800;
+    }
+
+    @media (max-width: 768px) {
+        .quick-payment-hero {
+            padding: 22px;
+        }
+
+        .quick-payment-card-body {
+            padding: 20px;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="content-card">
-    <div class="content-card-body">
-        <div class="alert alert-info">
-            <i class="fas fa-info-circle me-2"></i>
-            اختر طالباً أولاً للبدء في عملية الدفع السريع
+
+<div class="quick-payment-hero">
+    <i class="fas fa-bolt fa-3x mb-3"></i>
+    <h2 class="mb-2">تسجيل دفع سريع</h2>
+    <p class="mb-0">
+        اختر الطالب، نوع المصروف، والمبلغ المدفوع. النظام سيحاول ربط الدفعة بأقدم قسط مفتوح تلقائيًا.
+    </p>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="quick-payment-card">
+            <div class="quick-payment-card-header">
+                <h5>
+                    <i class="fas fa-hand-holding-usd me-2 text-success"></i>
+                    بيانات الدفع
+                </h5>
+            </div>
+
+            <div class="quick-payment-card-body">
+                <form method="post" id="quickPaymentForm" novalidate>
+    {% csrf_token %}
+
+    <input type="hidden" name="student_id" id="studentIdInput">
+
+    <div class="row">
+        <div class="col-md-12 mb-3">
+            <label class="form-label">
+                <i class="fas fa-user-graduate me-1 text-primary"></i>
+                البحث عن الطالب
+            </label>
+
+            <input type="text"
+                   class="form-control form-control-lg"
+                   id="studentSearchInput"
+                   placeholder="اكتب اسم الطالب أو الرقم القومي أو رقم الهاتف..."
+                   autocomplete="off">
+
+            <div id="studentSearchResults"
+                 class="list-group mt-2"
+                 style="display:none; max-height: 280px; overflow-y: auto;">
+            </div>
+
+            <div id="selectedStudentBox" class="alert alert-success mt-2" style="display:none;">
+                <i class="fas fa-check-circle me-1"></i>
+                تم اختيار الطالب:
+                <strong id="selectedStudentName"></strong>
+                <button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="clearSelectedStudent()">
+                    تغيير
+                </button>
+            </div>
         </div>
-        
-        <!-- نموذج الدفع السريع سيكون هنا -->
-        <div class="text-center py-5">
-            <i class="fas fa-plus-circle fa-4x text-primary mb-3"></i>
-            <h5>الدفع السريع</h5>
-            <p class="text-muted">قيد التطوير...</p>
-            <a href="{% url 'payments:student_search' %}" class="btn btn-primary">
-                ابدأ بالبحث عن طالب
-            </a>
+
+        <div class="col-md-6 mb-3">
+            <label class="form-label">
+                <i class="fas fa-file-invoice me-1 text-info"></i>
+                نوع المصروف
+            </label>
+
+            <select name="fee_type" class="form-control" required>
+                {% for value, label in fee_type_choices %}
+                <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label class="form-label">
+                <i class="fas fa-credit-card me-1 text-warning"></i>
+                طريقة الدفع
+            </label>
+
+            <select name="payment_method" class="form-control" required>
+                {% for value, label in payment_method_choices %}
+                <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-12 mb-3">
+            <label class="form-label">
+                <i class="fas fa-coins me-1 text-success"></i>
+                المبلغ المدفوع
+            </label>
+
+            <div class="input-group input-group-lg">
+                <input type="number"
+                       name="amount_paid"
+                       class="form-control"
+                       step="0.01"
+                       min="0.01"
+                       placeholder="0.00"
+                       required>
+                <span class="input-group-text">ج.م</span>
+            </div>
+
+            <div class="amount-preview">
+                <div class="small text-muted">المبلغ الحالي</div>
+                <div class="amount-preview-value" id="amountPreview">0.00</div>
+                <div class="small text-muted">جنيه مصري</div>
+            </div>
+        </div>
+
+        <div class="col-md-12 mb-3">
+            <label class="form-label">
+                <i class="fas fa-sticky-note me-1 text-secondary"></i>
+                ملاحظات
+            </label>
+
+            <textarea name="notes"
+                      class="form-control"
+                      rows="3"
+                      placeholder="ملاحظات اختيارية"></textarea>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-center gap-2 flex-wrap mt-4">
+        <button type="submit" class="btn btn-success btn-lg btn-custom">
+            <i class="fas fa-save me-2"></i>
+            تسجيل الدفع
+        </button>
+
+        <button type="button" class="btn btn-outline-secondary btn-lg btn-custom" onclick="clearForm()">
+            <i class="fas fa-eraser me-2"></i>
+            مسح
+        </button>
+
+        <a href="{% url 'payments:payments_home' %}" class="btn btn-outline-danger btn-lg btn-custom">
+            <i class="fas fa-times me-2"></i>
+            إلغاء
+        </a>
+    </div>
+</form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="helper-card mb-4">
+            <h5 class="mb-3">
+                <i class="fas fa-magic me-2 text-primary"></i>
+                مبالغ سريعة
+            </h5>
+
+            <div class="row g-2">
+                <div class="col-6">
+                    <button type="button" class="btn btn-outline-primary w-100 quick-amount-btn" onclick="setAmount(500)">500</button>
+                </div>
+                <div class="col-6">
+                    <button type="button" class="btn btn-outline-primary w-100 quick-amount-btn" onclick="setAmount(1000)">1000</button>
+                </div>
+                <div class="col-6">
+                    <button type="button" class="btn btn-outline-primary w-100 quick-amount-btn" onclick="setAmount(1500)">1500</button>
+                </div>
+                <div class="col-6">
+                    <button type="button" class="btn btn-outline-primary w-100 quick-amount-btn" onclick="setAmount(2000)">2000</button>
+                </div>
+                <div class="col-6">
+                    <button type="button" class="btn btn-outline-success w-100 quick-amount-btn" onclick="setAmount(3000)">3000</button>
+                </div>
+                <div class="col-6">
+                    <button type="button" class="btn btn-outline-success w-100 quick-amount-btn" onclick="setAmount(5000)">5000</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="helper-card">
+            <h5 class="mb-3">
+                <i class="fas fa-lightbulb me-2 text-warning"></i>
+                كيف يعمل الدفع السريع؟
+            </h5>
+
+            <div class="helper-item">
+                <strong>1. البحث عن قسط مفتوح</strong>
+                <small class="d-block text-muted">
+                    النظام يبحث عن أقدم قسط غير مدفوع لنفس الطالب ونوع المصروف.
+                </small>
+            </div>
+
+            <div class="helper-item">
+                <strong>2. تسجيل الدفعة</strong>
+                <small class="d-block text-muted">
+                    إذا وجد قسط مفتوح، يتم إضافة الدفعة عليه وتحديث حالته.
+                </small>
+            </div>
+
+            <div class="helper-item">
+                <strong>3. إنشاء قسط جديد</strong>
+                <small class="d-block text-muted">
+                    إذا لم يوجد قسط مفتوح، يتم إنشاء قسط جديد بنفس قيمة الدفعة.
+                </small>
+            </div>
+
+            <div class="helper-item mb-0">
+                <strong>4. طباعة الإيصال</strong>
+                <small class="d-block text-muted">
+                    بعد الحفظ يتم تحويلك مباشرة إلى صفحة الإيصال.
+                </small>
+            </div>
         </div>
     </div>
 </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const amountInput = document.querySelector('input[name="amount_paid"]');
+    const studentSearchInput = document.getElementById('studentSearchInput');
+
+    if (amountInput) {
+        amountInput.addEventListener('input', updateAmountPreview);
+        updateAmountPreview();
+    }
+
+    if (studentSearchInput) {
+        let searchTimer;
+
+        studentSearchInput.addEventListener('input', function() {
+            clearTimeout(searchTimer);
+
+            const query = this.value.trim();
+
+            if (query.length < 2) {
+                hideStudentResults();
+                return;
+            }
+
+            searchTimer = setTimeout(function() {
+                searchStudents(query);
+            }, 350);
+        });
+    }
+
+    const form = document.getElementById('quickPaymentForm');
+
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const studentId = document.getElementById('studentIdInput').value;
+            const amount = document.querySelector('input[name="amount_paid"]');
+
+            if (!studentId) {
+                e.preventDefault();
+                alert('يرجى اختيار الطالب من نتائج البحث');
+                return;
+            }
+
+            if (!amount || parseFloat(amount.value || 0) <= 0) {
+                e.preventDefault();
+                alert('يرجى إدخال مبلغ دفع أكبر من صفر');
+            }
+        });
+    }
+});
+
+function searchStudents(query) {
+    fetch(`/payments/api/student-search/?q=${encodeURIComponent(query)}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const resultsBox = document.getElementById('studentSearchResults');
+        resultsBox.innerHTML = '';
+
+        const students = data.students || data.results || [];
+
+        if (!students.length) {
+            resultsBox.style.display = 'block';
+            resultsBox.innerHTML = `
+                <div class="list-group-item text-muted">
+                    لا توجد نتائج مطابقة
+                </div>
+            `;
+            return;
+        }
+
+        students.forEach(student => {
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'list-group-item list-group-item-action';
+
+            const grade = student.grade_level || student.grade || student.grade_name || 'غير محدد';
+            const national = student.national_number || '';
+
+            item.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${escapeHtml(student.name || '')}</strong>
+                        <br>
+                        <small class="text-muted">
+                            ${escapeHtml(national)} - ${escapeHtml(grade)}
+                        </small>
+                    </div>
+                    <span class="badge bg-primary">اختيار</span>
+                </div>
+            `;
+
+            item.onclick = function() {
+                selectStudent(student.id, student.name);
+            };
+
+            resultsBox.appendChild(item);
+        });
+
+        resultsBox.style.display = 'block';
+    })
+    .catch(error => {
+        console.error(error);
+        hideStudentResults();
+    });
+}
+
+function selectStudent(studentId, studentName) {
+    document.getElementById('studentIdInput').value = studentId;
+    document.getElementById('selectedStudentName').textContent = studentName;
+    document.getElementById('selectedStudentBox').style.display = 'block';
+    document.getElementById('studentSearchInput').value = studentName;
+
+    hideStudentResults();
+}
+
+function clearSelectedStudent() {
+    document.getElementById('studentIdInput').value = '';
+    document.getElementById('selectedStudentName').textContent = '';
+    document.getElementById('selectedStudentBox').style.display = 'none';
+    document.getElementById('studentSearchInput').value = '';
+    document.getElementById('studentSearchInput').focus();
+}
+
+function hideStudentResults() {
+    const resultsBox = document.getElementById('studentSearchResults');
+
+    if (resultsBox) {
+        resultsBox.style.display = 'none';
+        resultsBox.innerHTML = '';
+    }
+}
+
+function setAmount(value) {
+    const amountInput = document.querySelector('input[name="amount_paid"]');
+
+    if (amountInput) {
+        amountInput.value = parseFloat(value).toFixed(2);
+        updateAmountPreview();
+        amountInput.focus();
+    }
+}
+
+function updateAmountPreview() {
+    const amountInput = document.querySelector('input[name="amount_paid"]');
+    const preview = document.getElementById('amountPreview');
+
+    if (!amountInput || !preview) {
+        return;
+    }
+
+    const value = parseFloat(amountInput.value || 0);
+    preview.textContent = value.toFixed(2);
+}
+
+function clearForm() {
+    const form = document.getElementById('quickPaymentForm');
+
+    if (form) {
+        form.reset();
+        clearSelectedStudent();
+        updateAmountPreview();
+    }
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+</script>
 {% endblock %}

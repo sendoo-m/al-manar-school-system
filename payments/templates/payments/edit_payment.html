@@ -1,0 +1,676 @@
+<!-- templates/payments/edit_payment.html -->
+{% extends 'payments/base.html' %}
+{% load humanize %}
+
+{% block title %}تعديل مدفوع - {{ student.name }}{% endblock %}
+{% block page_title %}تعديل مدفوع{% endblock %}
+{% block page_subtitle %}تعديل بيانات القسط والمدفوعات الخاصة بالطالب {{ student.name }}{% endblock %}
+{% block page_icon %}<i class="fas fa-edit me-3"></i>{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'payments:payments_home' %}">لوحة المدفوعات</a></li>
+<li class="breadcrumb-item"><a href="{% url 'payments:all_payments' %}">جميع المدفوعات</a></li>
+<li class="breadcrumb-item"><a href="{% url 'payments:pay_installment' student.pk %}">مدفوعات الطالب</a></li>
+<li class="breadcrumb-item active">تعديل مدفوع</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'payments:pay_installment' student.pk %}" class="btn btn-outline-primary btn-custom">
+        <i class="fas fa-arrow-right me-1"></i>رجوع لمدفوعات الطالب
+    </a>
+
+    {% if tuition.amount_paid > 0 %}
+    <a href="{% url 'payments:receipt' tuition.pk %}" target="_blank" class="btn btn-outline-success btn-custom">
+        <i class="fas fa-print me-1"></i>طباعة الإيصال
+    </a>
+    {% endif %}
+
+    <a href="{% url 'payments:all_payments' %}" class="btn btn-outline-secondary btn-custom">
+        <i class="fas fa-list me-1"></i>جميع المدفوعات
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .edit-hero {
+        background: linear-gradient(135deg, #ffc107, #fd7e14);
+        color: white;
+        border-radius: 22px;
+        padding: 28px;
+        margin-bottom: 25px;
+        box-shadow: 0 8px 24px rgba(255, 193, 7, 0.25);
+    }
+
+    .student-box {
+        background: white;
+        border-radius: 18px;
+        padding: 20px;
+        box-shadow: 0 5px 16px rgba(0,0,0,0.08);
+        margin-bottom: 24px;
+    }
+
+    .student-avatar {
+        width: 62px;
+        height: 62px;
+        min-width: 62px;
+        border-radius: 18px;
+        background: linear-gradient(135deg, #0d6efd, #0dcaf0);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.7rem;
+        font-weight: 900;
+    }
+
+    .edit-card {
+        background: white;
+        border-radius: 18px;
+        box-shadow: 0 5px 16px rgba(0,0,0,0.08);
+        overflow: hidden;
+        margin-bottom: 24px;
+    }
+
+    .edit-card-header {
+        background: #f8f9fa;
+        padding: 18px 22px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .edit-card-header h5 {
+        margin: 0;
+        font-weight: 900;
+    }
+
+    .edit-card-body {
+        padding: 24px;
+    }
+
+    .form-label {
+        font-weight: 800;
+        color: #2c3e50;
+    }
+
+    .summary-card {
+        background: #f8f9fa;
+        border-radius: 14px;
+        padding: 15px;
+        text-align: center;
+        border-top: 4px solid #0d6efd;
+    }
+
+    .summary-value {
+        font-size: 1.4rem;
+        font-weight: 900;
+        margin-bottom: 4px;
+    }
+
+    .summary-label {
+        color: #6c757d;
+        font-weight: 700;
+        font-size: 0.82rem;
+    }
+
+    .records-table thead th {
+        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+        color: white;
+        border: none;
+        text-align: center;
+        white-space: nowrap;
+        font-size: 0.84rem;
+    }
+
+    .records-table td {
+        vertical-align: middle;
+        text-align: center;
+        font-size: 0.88rem;
+    }
+
+    .warning-box {
+        background: #fff3cd;
+        border: 1px solid #ffecb5;
+        color: #664d03;
+        border-radius: 14px;
+        padding: 14px;
+        font-weight: 700;
+    }
+
+    .discount-preview {
+        background: linear-gradient(135deg, #f8f9fa, #eef7ff);
+        border: 1px solid #dbeafe;
+        border-radius: 14px;
+        padding: 14px;
+    }
+
+    .discount-preview-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 5px 0;
+        font-weight: 800;
+    }
+
+    .amount-help {
+        font-size: 0.82rem;
+        color: #6c757d;
+        margin-top: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="edit-hero">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div>
+            <h2 class="mb-2">
+                <i class="fas fa-edit me-2"></i>
+                تعديل مدفوع
+            </h2>
+            <p class="mb-0">
+                يمكنك تعديل بيانات القسط والخصم والمبلغ المدفوع. سيتم تحديث إجماليات الطالب تلقائيًا.
+            </p>
+        </div>
+
+        <div class="text-lg-end">
+            <div><strong>رقم القسط:</strong> #{{ tuition.installment_number }}</div>
+            <div><strong>الحالة:</strong> {{ tuition.get_payment_status_display }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="student-box">
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+        <div class="student-avatar">
+            {{ student.name.0|upper }}
+        </div>
+
+        <div class="flex-grow-1">
+            <h4 class="mb-1">{{ student.name }}</h4>
+
+            <div class="text-muted">
+                <i class="fas fa-id-card me-1"></i>
+                <span dir="ltr">{{ student.national_number|default:"-" }}</span>
+            </div>
+
+            <div class="mt-2">
+                {% if student.grade_level %}
+                <span class="badge bg-info">
+                    {% if student.grade_level.education_level %}
+                        {{ student.grade_level.education_level.name }} -
+                    {% endif %}
+                    {{ student.grade_level.name }}
+                </span>
+                {% else %}
+                <span class="badge bg-warning text-dark">بدون صف دراسي</span>
+                {% endif %}
+
+                {% if tuition.academic_year %}
+                <span class="badge bg-primary">{{ tuition.academic_year.name }}</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="text-lg-end">
+            <a href="{% url 'students:student_detail' student.pk %}" class="btn btn-outline-info btn-sm">
+                <i class="fas fa-user me-1"></i>ملف الطالب
+            </a>
+            <a href="{% url 'payments:pay_installment' student.pk %}" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-money-bill-wave me-1"></i>مدفوعات الطالب
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="edit-card">
+            <div class="edit-card-header">
+                <h5>
+                    <i class="fas fa-file-invoice-dollar me-2 text-warning"></i>
+                    بيانات القسط والمدفوع
+                </h5>
+            </div>
+
+            <div class="edit-card-body">
+                <form method="post" id="editPaymentForm" novalidate>
+                    {% csrf_token %}
+
+                    <input type="hidden"
+                           name="amount_tuition"
+                           id="editFinalAmountHiddenInput"
+                           value="{{ tuition.amount_tuition|floatformat:2 }}">
+
+                    <div class="warning-box mb-4">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        تنبيه: تعديل المبلغ أو الخصم أو المدفوع سيؤثر على إجماليات الطالب في تطبيق الطلاب والمدفوعات.
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">نوع المصروف</label>
+                            <select name="fee_type" class="form-control" required>
+                                {% for value, label in fee_type_choices %}
+                                <option value="{{ value }}" {% if tuition.fee_type == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">اسم المصروف</label>
+                            <input type="text"
+                                   name="fee_name"
+                                   class="form-control"
+                                   value="{{ tuition.fee_name }}"
+                                   placeholder="مثال: مصروفات الفصل الدراسي الأول">
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">رقم القسط</label>
+                            <input type="number"
+                                   name="installment_number"
+                                   class="form-control"
+                                   min="1"
+                                   value="{{ tuition.installment_number }}"
+                                   required>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">تاريخ الاستحقاق</label>
+                            <input type="date"
+                                   name="due_date"
+                                   class="form-control"
+                                   value="{% if tuition.due_date %}{{ tuition.due_date|date:'Y-m-d' }}{% endif %}">
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">تاريخ الدفع</label>
+                            <input type="datetime-local"
+                                   name="payment_date"
+                                   class="form-control"
+                                   value="{{ payment_date_value }}">
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">مبلغ القسط قبل الخصم</label>
+                            <div class="input-group">
+                                <input type="number"
+                                       name="original_amount"
+                                       id="editOriginalAmountInput"
+                                       class="form-control"
+                                       step="0.01"
+                                       min="0.01"
+                                       value="{{ original_amount_value|floatformat:2 }}"
+                                       required>
+                                <span class="input-group-text">ج.م</span>
+                            </div>
+                            <div class="amount-help">القيمة الأصلية قبل خصم أي مبلغ.</div>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">قيمة الخصم</label>
+                            <div class="input-group">
+                                <input type="number"
+                                       name="discount_amount"
+                                       id="editDiscountAmountInput"
+                                       class="form-control"
+                                       step="0.01"
+                                       min="0"
+                                       value="{{ tuition.discount_amount|floatformat:2 }}">
+                                <span class="input-group-text">ج.م</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">نسبة الخصم</label>
+                            <div class="input-group">
+                                <input type="number"
+                                       name="discount_percentage"
+                                       id="editDiscountPercentageInput"
+                                       class="form-control"
+                                       step="0.01"
+                                       min="0"
+                                       max="100"
+                                       value="0">
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <div class="amount-help">اختياري، يضاف إلى قيمة الخصم.</div>
+                        </div>
+
+                        <div class="col-md-12 mb-3">
+                            <div class="discount-preview">
+                                <div class="discount-preview-row">
+                                    <span>المبلغ قبل الخصم:</span>
+                                    <strong><span id="editPreviewOriginal">0.00</span> ج.م</strong>
+                                </div>
+
+                                <div class="discount-preview-row">
+                                    <span>إجمالي الخصم:</span>
+                                    <strong class="text-danger"><span id="editPreviewDiscount">0.00</span> ج.م</strong>
+                                </div>
+
+                                <hr class="my-2">
+
+                                <div class="discount-preview-row">
+                                    <span>المطلوب بعد الخصم:</span>
+                                    <strong class="text-success"><span id="editPreviewFinal">0.00</span> ج.م</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">المبلغ المدفوع</label>
+                            <div class="input-group">
+                                <input type="number"
+                                       name="amount_paid"
+                                       class="form-control"
+                                       step="0.01"
+                                       min="0"
+                                       value="{{ tuition.amount_paid|floatformat:2 }}"
+                                       required>
+                                <span class="input-group-text">ج.م</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">طريقة الدفع</label>
+                            <select name="payment_method" class="form-control" required>
+                                {% for value, label in payment_method_choices %}
+                                <option value="{{ value }}" {% if tuition.payment_method == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">رقم الإيصال</label>
+                            <input type="text"
+                                   name="receipt_number"
+                                   class="form-control"
+                                   value="{{ tuition.receipt_number }}"
+                                   placeholder="يترك فارغًا للتوليد التلقائي">
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">الحالة الحالية</label>
+                            <input type="text"
+                                   class="form-control"
+                                   value="{{ tuition.get_payment_status_display }}"
+                                   readonly>
+                        </div>
+
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">ملاحظات</label>
+                            <textarea name="notes"
+                                      class="form-control"
+                                      rows="4"
+                                      placeholder="ملاحظات اختيارية">{{ tuition.notes }}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-center gap-2 flex-wrap mt-4">
+                        <button type="submit" name="next" value="all" class="btn btn-primary btn-lg btn-custom">
+                            <i class="fas fa-save me-2"></i>
+                            حفظ والعودة للكل
+                        </button>
+
+                        <button type="submit" name="next" value="student" class="btn btn-success btn-lg btn-custom">
+                            <i class="fas fa-user-graduate me-2"></i>
+                            حفظ وفتح مدفوعات الطالب
+                        </button>
+
+                        {% if tuition.amount_paid > 0 %}
+                        <button type="submit" name="next" value="receipt" class="btn btn-warning btn-lg btn-custom">
+                            <i class="fas fa-print me-2"></i>
+                            حفظ وفتح الإيصال
+                        </button>
+                        {% endif %}
+
+                        <a href="{% url 'payments:all_payments' %}" class="btn btn-outline-secondary btn-lg btn-custom">
+                            <i class="fas fa-times me-2"></i>
+                            إلغاء
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="edit-card">
+            <div class="edit-card-header">
+                <h5>
+                    <i class="fas fa-chart-pie me-2 text-info"></i>
+                    ملخص القسط
+                </h5>
+            </div>
+
+            <div class="edit-card-body">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="summary-card">
+                            <div class="summary-value text-primary">{{ tuition.amount_tuition|floatformat:0 }}</div>
+                            <div class="summary-label">المطلوب الحالي</div>
+                        </div>
+                    </div>
+
+                    <div class="col-6">
+                        <div class="summary-card" style="border-top-color:#28a745;">
+                            <div class="summary-value text-success">{{ tuition.amount_paid|floatformat:0 }}</div>
+                            <div class="summary-label">المدفوع</div>
+                        </div>
+                    </div>
+
+                    <div class="col-6">
+                        <div class="summary-card" style="border-top-color:#dc3545;">
+                            <div class="summary-value text-danger">{{ tuition.remaining_amount|floatformat:0 }}</div>
+                            <div class="summary-label">المتبقي</div>
+                        </div>
+                    </div>
+
+                    <div class="col-6">
+                        <div class="summary-card" style="border-top-color:#ffc107;">
+                            <div class="summary-value text-warning">{{ tuition.discount_amount|floatformat:0 }}</div>
+                            <div class="summary-label">الخصم الحالي</div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <p class="mb-1"><strong>حالة الدفع:</strong> {{ tuition.get_payment_status_display }}</p>
+                <p class="mb-1"><strong>تاريخ الإنشاء:</strong> {{ tuition.created_date|date:"Y/m/d H:i" }}</p>
+                <p class="mb-0"><strong>آخر تحديث:</strong> {{ tuition.updated_date|date:"Y/m/d H:i" }}</p>
+            </div>
+        </div>
+
+        <div class="edit-card">
+            <div class="edit-card-header">
+                <h5>
+                    <i class="fas fa-history me-2 text-success"></i>
+                    سجلات الدفع
+                </h5>
+            </div>
+
+            <div class="edit-card-body p-0">
+                {% if payment_records %}
+                <div class="table-responsive">
+                    <table class="table records-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>المبلغ</th>
+                                <th>المحاسب</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in payment_records %}
+                            <tr>
+                                <td>
+                                    {{ record.payment_date|date:"Y/m/d" }}
+                                    <br>
+                                    <small>{{ record.payment_date|date:"H:i" }}</small>
+                                </td>
+                                <td>{{ record.amount_paid|floatformat:2 }}</td>
+                                <td>{{ record.payment_user|default:"-" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="p-4 text-center text-muted">
+                    <i class="fas fa-receipt fa-2x mb-2"></i>
+                    <p class="mb-0">لا توجد سجلات دفع</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if student_payments %}
+        <div class="edit-card">
+            <div class="edit-card-header">
+                <h5>
+                    <i class="fas fa-list me-2 text-primary"></i>
+                    أقساط أخرى للطالب
+                </h5>
+            </div>
+
+            <div class="edit-card-body">
+                {% for item in student_payments %}
+                <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+                    <div>
+                        <strong>{{ item.get_fee_type_display }}</strong>
+                        <br>
+                        <small class="text-muted">
+                            قسط #{{ item.installment_number }}
+                            {% if item.discount_amount > 0 %}
+                                - خصم {{ item.discount_amount|floatformat:2 }} ج.م
+                            {% endif %}
+                        </small>
+                    </div>
+                    <a href="{% url 'payments:edit_payment' item.id %}" class="btn btn-outline-warning btn-sm">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('editPaymentForm');
+
+    if (!form) {
+        return;
+    }
+
+    const originalInput = document.getElementById('editOriginalAmountInput');
+    const discountInput = document.getElementById('editDiscountAmountInput');
+    const percentageInput = document.getElementById('editDiscountPercentageInput');
+
+    [originalInput, discountInput, percentageInput].forEach(function(input) {
+        if (input) {
+            input.addEventListener('input', updateEditDiscountPreview);
+        }
+    });
+
+    updateEditDiscountPreview();
+
+    form.addEventListener('submit', function(e) {
+        updateEditDiscountPreview();
+
+        const finalAmountInput = document.getElementById('editFinalAmountHiddenInput');
+        const amountPaidInput = form.querySelector('input[name="amount_paid"]');
+
+        const originalAmount = parseFloat(originalInput ? originalInput.value || 0 : 0);
+        const finalAmount = parseFloat(finalAmountInput ? finalAmountInput.value || 0 : 0);
+        const amountPaid = parseFloat(amountPaidInput ? amountPaidInput.value || 0 : 0);
+
+        if (originalAmount <= 0) {
+            e.preventDefault();
+            alert('مبلغ القسط قبل الخصم يجب أن يكون أكبر من صفر');
+            return;
+        }
+
+        if (finalAmount <= 0) {
+            e.preventDefault();
+            alert('المطلوب بعد الخصم يجب أن يكون أكبر من صفر');
+            return;
+        }
+
+        if (amountPaid < 0) {
+            e.preventDefault();
+            alert('المبلغ المدفوع لا يمكن أن يكون أقل من صفر');
+            return;
+        }
+
+        if (amountPaid > finalAmount) {
+            e.preventDefault();
+            alert('المبلغ المدفوع لا يمكن أن يكون أكبر من المطلوب بعد الخصم');
+            return;
+        }
+
+        if (!confirm('هل أنت متأكد من حفظ تعديلات المدفوع؟')) {
+            e.preventDefault();
+        }
+    });
+});
+
+function updateEditDiscountPreview() {
+    const originalInput = document.getElementById('editOriginalAmountInput');
+    const discountInput = document.getElementById('editDiscountAmountInput');
+    const percentageInput = document.getElementById('editDiscountPercentageInput');
+    const finalHidden = document.getElementById('editFinalAmountHiddenInput');
+
+    const previewOriginal = document.getElementById('editPreviewOriginal');
+    const previewDiscount = document.getElementById('editPreviewDiscount');
+    const previewFinal = document.getElementById('editPreviewFinal');
+
+    if (!originalInput || !discountInput || !percentageInput || !finalHidden) {
+        return;
+    }
+
+    const original = parseFloat(originalInput.value || 0);
+    const fixedDiscount = parseFloat(discountInput.value || 0);
+    const percentage = parseFloat(percentageInput.value || 0);
+
+    let percentageDiscount = 0;
+
+    if (percentage > 0) {
+        percentageDiscount = original * percentage / 100;
+    }
+
+    let totalDiscount = fixedDiscount + percentageDiscount;
+
+    if (totalDiscount > original) {
+        totalDiscount = original;
+    }
+
+    const finalAmount = Math.max(0, original - totalDiscount);
+
+    finalHidden.value = finalAmount.toFixed(2);
+
+    if (previewOriginal) previewOriginal.textContent = original.toFixed(2);
+    if (previewDiscount) previewDiscount.textContent = totalDiscount.toFixed(2);
+    if (previewFinal) previewFinal.textContent = finalAmount.toFixed(2);
+
+    const paidInput = document.querySelector('#editPaymentForm input[name="amount_paid"]');
+
+    if (paidInput) {
+        paidInput.max = finalAmount.toFixed(2);
+    }
+}
+</script>
+{% endblock %}

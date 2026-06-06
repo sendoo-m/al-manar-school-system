@@ -1,4 +1,752 @@
 {% extends 'payments/base.html' %}
+{% load humanize %}
+
+{% block title %}جميع المدفوعات - مدرسة المنار{% endblock %}
+{% block page_title %}جميع المدفوعات{% endblock %}
+{% block page_subtitle %}عرض وإدارة جميع الأقساط والمدفوعات المسجلة في النظام - {{ user.get_full_name|default:user.username }}{% endblock %}
+{% block page_icon %}<i class="fas fa-list me-3"></i>{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'payments:payments_home' %}">الرئيسية</a></li>
+<li class="breadcrumb-item active">جميع المدفوعات</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    {% if permissions.can_add %}
+    <a href="{% url 'payments:quick_payment' %}" class="btn btn-success btn-custom">
+        <i class="fas fa-plus me-1"></i>دفع سريع
+    </a>
+    {% endif %}
+
+    <a href="{% url 'payments:payments_home' %}" class="btn btn-outline-primary btn-custom">
+        <i class="fas fa-tachometer-alt me-1"></i>لوحة المدفوعات
+    </a>
+
+    {% if permissions.can_reports %}
+    <a href="{% url 'payments:financial_reports' %}" class="btn btn-outline-info btn-custom">
+        <i class="fas fa-chart-line me-1"></i>التقارير المالية
+    </a>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .summary-card {
+        background: white;
+        border-radius: 16px;
+        padding: 22px;
+        box-shadow: 0 5px 16px rgba(0,0,0,0.08);
+        border-top: 5px solid;
+        height: 100%;
+        transition: all 0.25s ease;
+        text-align: center;
+    }
+
+    .summary-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+    }
+
+    .summary-card.primary { border-top-color: #007bff; }
+    .summary-card.success { border-top-color: #28a745; }
+    .summary-card.danger { border-top-color: #dc3545; }
+    .summary-card.info { border-top-color: #17a2b8; }
+
+    .summary-value {
+        font-size: 2rem;
+        font-weight: 900;
+        margin-bottom: 6px;
+    }
+
+    .summary-value.primary { color: #007bff; }
+    .summary-value.success { color: #28a745; }
+    .summary-value.danger { color: #dc3545; }
+    .summary-value.info { color: #17a2b8; }
+
+    .summary-label {
+        color: #6c757d;
+        font-weight: 800;
+    }
+
+    .search-filters {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .filter-badge {
+        display: inline-block;
+        padding: 5px 12px;
+        background: #007bff;
+        color: white;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        margin: 3px;
+        font-weight: 700;
+    }
+
+    .enhanced-card {
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 5px 16px rgba(0,0,0,0.08);
+        overflow: hidden;
+        background: white;
+    }
+
+    .payments-table thead th {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+        border: none;
+        padding: 15px 10px;
+        font-weight: 700;
+        font-size: 0.86rem;
+        text-align: center;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .payments-table tbody td {
+        padding: 13px 10px;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+        vertical-align: middle;
+        font-size: 0.9rem;
+        text-align: center;
+    }
+
+    .payments-table tbody tr:hover {
+        background: rgba(0,123,255,0.05);
+    }
+
+    .student-cell {
+        text-align: right !important;
+    }
+
+    .student-avatar-sm {
+        width: 34px;
+        height: 34px;
+        min-width: 34px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+    }
+
+    .amount-main {
+        font-weight: 900;
+        color: #28a745;
+        font-size: 1rem;
+    }
+
+    .amount-sub {
+        display: block;
+        color: #6c757d;
+        font-size: 0.75rem;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 10px;
+        font-size: 0.76rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 55px 20px;
+        color: #6c757d;
+    }
+
+    .page-link {
+        border-radius: 8px;
+        margin: 0 2px;
+    }
+
+    @media (max-width: 768px) {
+        .summary-value {
+            font-size: 1.6rem;
+        }
+
+        .search-filters {
+            padding: 16px;
+        }
+
+        .payments-table thead {
+            display: none;
+        }
+
+        .payments-table tbody tr {
+            display: block;
+            margin-bottom: 14px;
+            border: 1px solid #e9ecef;
+            border-radius: 14px;
+            overflow: hidden;
+        }
+
+        .payments-table tbody td {
+            display: block;
+            text-align: right !important;
+            border-bottom: 1px solid #f1f1f1;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- الملخص -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="summary-card info">
+            <div class="summary-value info">{{ filtered_count|default:0 }}</div>
+            <div class="summary-label">عدد النتائج</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="summary-card primary">
+            <div class="summary-value primary">
+                {{ total_required|default:0|floatformat:0 }}
+            </div>
+            <div class="summary-label">إجمالي المطلوب</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="summary-card success">
+            <div class="summary-value success">
+                {{ total_paid|default:0|floatformat:0 }}
+            </div>
+            <div class="summary-label">إجمالي المدفوع</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="summary-card danger">
+            <div class="summary-value danger">
+                {{ total_remaining|default:0|floatformat:0 }}
+            </div>
+            <div class="summary-label">إجمالي المتبقي</div>
+        </div>
+    </div>
+</div>
+
+<!-- الفلاتر المطبقة -->
+{% if search_query or selected_payment_status or selected_fee_type or selected_payment_method or date_from or date_to %}
+<div class="alert alert-info border-0 mb-3" style="border-radius: 15px;">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <i class="fas fa-filter me-2"></i>
+            <strong>الفلاتر المطبقة:</strong>
+
+            {% if search_query %}
+                <span class="filter-badge">البحث: {{ search_query }}</span>
+            {% endif %}
+
+            {% if selected_payment_status %}
+                <span class="filter-badge">الحالة: {{ selected_payment_status }}</span>
+            {% endif %}
+
+            {% if selected_fee_type %}
+                <span class="filter-badge">نوع المصروف: {{ selected_fee_type }}</span>
+            {% endif %}
+
+            {% if selected_payment_method %}
+                <span class="filter-badge">طريقة الدفع: {{ selected_payment_method }}</span>
+            {% endif %}
+
+            {% if date_from %}
+                <span class="filter-badge">من: {{ date_from }}</span>
+            {% endif %}
+
+            {% if date_to %}
+                <span class="filter-badge">إلى: {{ date_to }}</span>
+            {% endif %}
+        </div>
+
+        <a href="{% url 'payments:all_payments' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-times me-1"></i>مسح الفلاتر
+        </a>
+    </div>
+</div>
+{% endif %}
+
+<!-- فلاتر البحث -->
+<div class="search-filters">
+    <h5 class="mb-3">
+        <i class="fas fa-search me-2 text-primary"></i>
+        البحث والفلترة
+    </h5>
+
+    <form method="get" class="row g-3">
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label">البحث</label>
+            <input type="text"
+                   class="form-control"
+                   name="search"
+                   value="{{ search_query }}"
+                   placeholder="اسم الطالب، الرقم القومي، رقم الإيصال">
+        </div>
+
+        <div class="col-lg-2 col-md-6">
+            <label class="form-label">حالة الدفع</label>
+            <select class="form-select" name="payment_status">
+                <option value="">جميع الحالات</option>
+                {% for value, label in payment_status_choices %}
+                <option value="{{ value }}" {% if selected_payment_status == value %}selected{% endif %}>
+                    {{ label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-lg-2 col-md-6">
+            <label class="form-label">نوع المصروف</label>
+            <select class="form-select" name="fee_type">
+                <option value="">جميع الأنواع</option>
+                {% for value, label in fee_type_choices %}
+                <option value="{{ value }}" {% if selected_fee_type == value %}selected{% endif %}>
+                    {{ label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-lg-2 col-md-6">
+            <label class="form-label">طريقة الدفع</label>
+            <select class="form-select" name="payment_method">
+                <option value="">جميع الطرق</option>
+                {% for value, label in payment_method_choices %}
+                <option value="{{ value }}" {% if selected_payment_method == value %}selected{% endif %}>
+                    {{ label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label">من تاريخ</label>
+            <input type="date" class="form-control" name="date_from" value="{{ date_from }}">
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label">إلى تاريخ</label>
+            <input type="date" class="form-control" name="date_to" value="{{ date_to }}">
+        </div>
+
+        <div class="col-lg-9 col-md-12 d-flex align-items-end gap-2 flex-wrap">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search me-1"></i>تطبيق الفلاتر
+            </button>
+
+            <a href="{% url 'payments:all_payments' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-eraser me-1"></i>مسح الكل
+            </a>
+
+            <button type="button" class="btn btn-outline-info" onclick="window.print()">
+                <i class="fas fa-print me-1"></i>طباعة
+            </button>
+
+            {% if permissions.can_add %}
+            <a href="{% url 'payments:quick_payment' %}" class="btn btn-outline-success">
+                <i class="fas fa-plus me-1"></i>دفع سريع
+            </a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- جدول المدفوعات -->
+<div class="enhanced-card">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-table me-2 text-primary"></i>
+            نتائج البحث
+            {% if payments.paginator.count %}
+                <span class="badge bg-primary">{{ payments.paginator.count }}</span>
+            {% endif %}
+        </h5>
+
+        <small class="text-muted">
+            صفحة {{ payments.number }} من {{ payments.paginator.num_pages }}
+        </small>
+    </div>
+
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table payments-table mb-0" id="paymentsTable">
+                <thead>
+                    <tr>
+                        <th>الطالب</th>
+                        <th>المرحلة / الصف</th>
+                        <th>نوع المصروف</th>
+                        <th>القسط</th>
+                        <th>المطلوب</th>
+                        <th>المدفوع</th>
+                        <th>المتبقي</th>
+                        <th>تاريخ الدفع</th>
+                        <th>طريقة الدفع</th>
+                        <th>الحالة</th>
+                        <th>المحاسب</th>
+                        <th>إجراءات</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for payment in payments %}
+                    <tr data-payment-id="{{ payment.id }}">
+                        <td class="student-cell">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    <div class="student-avatar-sm">
+                                        {{ payment.student.name.0|upper }}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <strong>{{ payment.student.name }}</strong>
+                                    <br>
+                                    <small class="text-muted" dir="ltr">{{ payment.student.national_number }}</small>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td>
+                            {% if payment.student.grade_level %}
+                                <small>
+                                    {% if payment.student.grade_level.education_level %}
+                                        {{ payment.student.grade_level.education_level.name }} -
+                                    {% endif %}
+                                    {{ payment.student.grade_level.name }}
+                                </small>
+                            {% else %}
+                                <span class="text-muted">غير محدد</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <span class="badge bg-light text-dark">
+                                {{ payment.get_fee_type_display }}
+                            </span>
+                        </td>
+
+                        <td>
+                            <span class="badge bg-info">#{{ payment.installment_number }}</span>
+                        </td>
+
+                        <td>
+                            <span class="amount-main text-primary">{{ payment.amount_tuition|default:0|floatformat:2 }}</span>
+                            <span class="amount-sub">ج.م</span>
+                        </td>
+
+                        <td>
+                            <span class="amount-main">{{ payment.amount_paid|default:0|floatformat:2 }}</span>
+                            <span class="amount-sub">ج.م</span>
+                        </td>
+
+                        <td>
+                            {% if payment.remaining_amount > 0 %}
+                                <span class="amount-main text-danger">{{ payment.remaining_amount|floatformat:2 }}</span>
+                            {% else %}
+                                <span class="amount-main text-success">0.00</span>
+                            {% endif %}
+                            <span class="amount-sub">ج.م</span>
+                        </td>
+
+                        <td>
+                            {% if payment.payment_date %}
+                                <div>{{ payment.payment_date|date:"Y/m/d" }}</div>
+                                <small class="text-muted">{{ payment.payment_date|date:"H:i" }}</small>
+                            {% else %}
+                                <span class="text-muted">لم يتم الدفع</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if payment.payment_method == 'cash' %}
+                                <span class="status-badge" style="background: rgba(40,167,69,0.12); color:#198754;">
+                                    <i class="fas fa-money-bill-wave me-1"></i>نقدي
+                                </span>
+                            {% elif payment.payment_method == 'transfer' %}
+                                <span class="status-badge" style="background: rgba(13,110,253,0.12); color:#0d6efd;">
+                                    <i class="fas fa-university me-1"></i>تحويل
+                                </span>
+                            {% elif payment.payment_method == 'card' %}
+                                <span class="status-badge" style="background: rgba(13,202,240,0.12); color:#087990;">
+                                    <i class="fas fa-credit-card me-1"></i>بطاقة
+                                </span>
+                            {% elif payment.payment_method == 'check' %}
+                                <span class="status-badge" style="background: rgba(255,193,7,0.18); color:#856404;">
+                                    <i class="fas fa-money-check-alt me-1"></i>شيك
+                                </span>
+                            {% else %}
+                                <span class="status-badge" style="background: rgba(108,117,125,0.12); color:#6c757d;">
+                                    {{ payment.payment_method }}
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if payment.payment_status == 'PAID' %}
+                                <span class="status-badge" style="background: rgba(40,167,69,0.12); color:#198754;">مدفوع</span>
+                            {% elif payment.payment_status == 'PENDING' %}
+                                <span class="status-badge" style="background: rgba(255,193,7,0.18); color:#856404;">معلق</span>
+                            {% elif payment.payment_status == 'OVERDUE' %}
+                                <span class="status-badge" style="background: rgba(220,53,69,0.12); color:#dc3545;">متأخر</span>
+                            {% elif payment.payment_status == 'PARTIALLY_PAID' %}
+                                <span class="status-badge" style="background: rgba(13,202,240,0.12); color:#087990;">جزئي</span>
+                            {% elif payment.payment_status == 'CANCELLED' %}
+                                <span class="status-badge" style="background: rgba(108,117,125,0.12); color:#6c757d;">ملغي</span>
+                            {% else %}
+                                <span class="status-badge" style="background: rgba(108,117,125,0.12); color:#6c757d;">
+                                    {{ payment.payment_status }}
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <small class="text-primary fw-bold">
+                                {{ payment.payment_user|default:"غير محدد"|truncatechars:18 }}
+                            </small>
+                        </td>
+
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'payments:receipt' payment.pk %}"
+                                   class="btn btn-outline-success"
+                                   title="عرض وطباعة الإيصال"
+                                   target="_blank">
+                                    <i class="fas fa-print"></i>
+                                </a>
+
+                                <a href="{% url 'payments:pay_installment' payment.student.pk %}"
+                                   class="btn btn-outline-info"
+                                   title="مدفوعات الطالب">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+
+                                {% if permissions.can_edit %}
+                                <a href="{% url 'payments:edit_payment' payment.id %}"
+                                   class="btn btn-outline-warning"
+                                   title="تعديل">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% endif %}
+
+                                {% if permissions.can_delete %}
+                                <button class="btn btn-outline-danger"
+                                        onclick="confirmDeletePayment({{ payment.id }}, '{{ payment.student.name|escapejs }}')"
+                                        title="حذف">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="12">
+                            <div class="empty-state">
+                                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                                <h5>لا توجد مدفوعات</h5>
+                                <p>لا توجد مدفوعات تطابق معايير البحث المحددة.</p>
+
+                                <a href="{% url 'payments:all_payments' %}" class="btn btn-outline-primary">
+                                    <i class="fas fa-refresh me-1"></i>مسح الفلاتر
+                                </a>
+
+                                {% if permissions.can_add %}
+                                <a href="{% url 'payments:quick_payment' %}" class="btn btn-success">
+                                    <i class="fas fa-plus me-1"></i>تسجيل دفع جديد
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if payments.has_other_pages %}
+    <div class="card-footer bg-white">
+        <div class="row align-items-center g-3">
+            <div class="col-md-7">
+                <nav aria-label="تنقل صفحات المدفوعات">
+                    <ul class="pagination mb-0 flex-wrap">
+                        {% if payments.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}page=1">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        </li>
+
+                        <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}page={{ payments.previous_page_number }}">
+                                السابق
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% for num in payments.paginator.page_range %}
+                            {% if payments.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                            {% elif num > payments.number|add:'-3' and num < payments.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}page={{ num }}">
+                                    {{ num }}
+                                </a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if payments.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}page={{ payments.next_page_number }}">
+                                التالي
+                            </a>
+                        </li>
+
+                        <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}page={{ payments.paginator.num_pages }}">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+
+            <div class="col-md-5 text-md-end">
+                <small class="text-muted">
+                    عرض {{ payments.start_index }} إلى {{ payments.end_index }}
+                    من إجمالي {{ payments.paginator.count }} سجل
+                </small>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmDeletePayment(paymentId, studentName) {
+    if (!confirm(`هل أنت متأكد من حذف هذا المدفوع للطالب: ${studentName}؟\nهذا الإجراء لا يمكن التراجع عنه.`)) {
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', getCookie('csrftoken'));
+
+    fetch(`/payments/delete/${paymentId}/`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            showPaymentMessage('success', 'تم حذف المدفوع بنجاح');
+
+            const row = document.querySelector(`tr[data-payment-id="${paymentId}"]`);
+            if (row) {
+                row.style.opacity = '0.45';
+            }
+
+            setTimeout(() => window.location.reload(), 900);
+        } else {
+            showPaymentMessage('error', 'حدث خطأ في حذف المدفوع');
+        }
+    })
+    .catch(error => {
+        console.error('Delete error:', error);
+        showPaymentMessage('error', 'حدث خطأ في الاتصال');
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+
+    return cookieValue;
+}
+
+function showPaymentMessage(type, message) {
+    const existingAlerts = document.querySelectorAll('.alert.fixed-alert');
+    existingAlerts.forEach(alert => alert.remove());
+
+    const icons = {
+        success: 'fas fa-check-circle',
+        error: 'fas fa-exclamation-circle',
+        warning: 'fas fa-exclamation-triangle',
+        info: 'fas fa-info-circle'
+    };
+
+    const colors = {
+        success: 'success',
+        error: 'danger',
+        warning: 'warning',
+        info: 'info'
+    };
+
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${colors[type] || 'info'} alert-dismissible fade show fixed-alert`;
+    alertDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 320px;
+        max-width: 500px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        border-radius: 10px;
+        font-weight: 600;
+    `;
+
+    alertDiv.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="${icons[type] || icons.info} me-3" style="font-size: 1.2rem;"></i>
+            <div class="flex-grow-1">${message}</div>
+            <button type="button" class="btn-close ms-2" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+
+    document.body.appendChild(alertDiv);
+
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}
+
+{% comment %} {% extends 'payments/base.html' %}
 
 {% block title %}جميع المدفوعات - مدرسة المنار{% endblock %}
 {% block page_title %}جميع المدفوعات{% endblock %}
@@ -1186,4 +1934,4 @@ function showPaymentMessage(type, message) {
     }, 5000);
 }
 </script>
-{% endblock %}
+{% endblock %} {% endcomment %}

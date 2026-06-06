@@ -1,0 +1,427 @@
+{% extends 'students/base.html' %}
+
+{% block title %}معاينة استيراد الطلاب{% endblock %}
+{% block page_title %}معاينة استيراد الطلاب{% endblock %}
+{% block page_icon %}<i class="fas fa-search"></i>{% endblock %}
+{% block page_subtitle %}مراجعة البيانات قبل حفظها في النظام{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'students:home' %}">الرئيسية</a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:student_list' %}">قائمة الطلاب</a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:import_students_advanced' %}">استيراد البيانات</a></li>
+<li class="breadcrumb-item active">معاينة الاستيراد</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .preview-header {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 25px;
+        text-align: center;
+        box-shadow: 0 10px 25px rgba(23, 162, 184, 0.25);
+    }
+
+    .summary-card {
+        background: white;
+        border-radius: 16px;
+        padding: 22px;
+        margin-bottom: 20px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        border-top: 4px solid;
+        text-align: center;
+        min-height: 135px;
+        transition: all 0.25s ease;
+    }
+
+    .summary-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 22px rgba(0,0,0,0.12);
+    }
+
+    .summary-card.primary { border-top-color: #007bff; }
+    .summary-card.success { border-top-color: #28a745; }
+    .summary-card.warning { border-top-color: #ffc107; }
+    .summary-card.danger { border-top-color: #dc3545; }
+
+    .summary-value {
+        font-size: 2.2rem;
+        font-weight: 800;
+        margin-bottom: 5px;
+        line-height: 1.2;
+    }
+
+    .summary-value.primary { color: #007bff; }
+    .summary-value.success { color: #28a745; }
+    .summary-value.warning { color: #ffc107; }
+    .summary-value.danger { color: #dc3545; }
+
+    .summary-label {
+        color: #6c757d;
+        font-weight: 700;
+    }
+
+    .preview-section {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+
+    .section-title {
+        font-weight: 800;
+        color: #138496;
+        margin-bottom: 18px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #e9ecef;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .table-preview {
+        margin-bottom: 0;
+    }
+
+    .table-preview th {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+        white-space: nowrap;
+        vertical-align: middle;
+        text-align: center;
+    }
+
+    .table-preview td {
+        vertical-align: middle;
+        text-align: center;
+    }
+
+    .table-preview tbody tr:hover {
+        background: rgba(23, 162, 184, 0.06);
+    }
+
+    .error-box {
+        background: #fff5f5;
+        border: 1px solid #f5c2c7;
+        color: #842029;
+        border-radius: 12px;
+        padding: 15px;
+        max-height: 320px;
+        overflow-y: auto;
+    }
+
+    .warning-box {
+        background: #fff8e1;
+        border: 1px solid #ffecb5;
+        color: #664d03;
+        border-radius: 12px;
+        padding: 15px;
+        max-height: 320px;
+        overflow-y: auto;
+    }
+
+    .action-panel {
+        background: #f8f9fa;
+        border-radius: 16px;
+        padding: 22px;
+        text-align: center;
+        border: 1px solid #e9ecef;
+        margin-bottom: 25px;
+    }
+
+    .btn-confirm {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        border: none;
+        border-radius: 28px;
+        padding: 14px 38px;
+        font-weight: 800;
+        transition: all 0.25s ease;
+    }
+
+    .btn-confirm:hover {
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 18px rgba(40, 167, 69, 0.3);
+    }
+
+    .btn-cancel {
+        border-radius: 28px;
+        padding: 14px 30px;
+        font-weight: 700;
+    }
+
+    .preview-note {
+        border: none;
+        border-radius: 16px;
+        padding: 18px 20px;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    }
+
+    .row-number {
+        font-weight: 800;
+        color: #138496;
+    }
+
+    .national-number {
+        direction: ltr;
+        unicode-bidi: plaintext;
+        font-weight: 700;
+    }
+
+    .sticky-actions {
+        position: sticky;
+        bottom: 15px;
+        z-index: 5;
+    }
+
+    @media (max-width: 768px) {
+        .preview-header {
+            padding: 22px;
+        }
+
+        .preview-section {
+            padding: 18px;
+        }
+
+        .summary-value {
+            font-size: 1.8rem;
+        }
+
+        .action-panel form,
+        .action-panel a {
+            display: block !important;
+            margin: 8px 0 !important;
+            width: 100%;
+        }
+
+        .btn-confirm,
+        .btn-cancel {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="preview-header">
+    <i class="fas fa-search fa-3x mb-3"></i>
+    <h2>معاينة استيراد الطلاب</h2>
+    <p class="mb-0">راجع النتائج التالية قبل تنفيذ الحفظ النهائي</p>
+</div>
+
+<!-- ملخص النتائج -->
+<div class="row">
+    <div class="col-lg-3 col-md-6">
+        <div class="summary-card primary">
+            <div class="summary-value primary">{{ summary.processed_count|default:0 }}</div>
+            <div class="summary-label">إجمالي الصفوف المقروءة</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
+        <div class="summary-card success">
+            <div class="summary-value success">{{ summary.valid_count|default:0 }}</div>
+            <div class="summary-label">صفوف صالحة للحفظ</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
+        <div class="summary-card danger">
+            <div class="summary-value danger">{{ summary.error_count|default:0 }}</div>
+            <div class="summary-label">أخطاء تمنع الحفظ</div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
+        <div class="summary-card warning">
+            <div class="summary-value warning">{{ summary.warning_count|default:0 }}</div>
+            <div class="summary-label">تحذيرات</div>
+        </div>
+    </div>
+</div>
+
+<!-- ملاحظة حالة المعاينة -->
+{% if summary.valid_count > 0 and summary.error_count == 0 %}
+<div class="alert alert-success preview-note">
+    <i class="fas fa-check-circle me-2"></i>
+    كل الصفوف المقروءة صالحة للحفظ. يمكنك تأكيد الاستيراد الآن.
+</div>
+{% elif summary.valid_count > 0 and summary.error_count > 0 %}
+<div class="alert alert-warning preview-note">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    يوجد صفوف صالحة يمكن حفظها، وصفوف أخرى بها أخطاء لن يتم حفظها.
+</div>
+{% elif summary.valid_count == 0 %}
+<div class="alert alert-danger preview-note">
+    <i class="fas fa-times-circle me-2"></i>
+    لا توجد صفوف صالحة للحفظ. يرجى تعديل الملف وإعادة رفعه.
+</div>
+{% endif %}
+
+<!-- الأخطاء والتحذيرات -->
+{% if summary.errors or summary.warnings %}
+<div class="row">
+    {% if summary.errors %}
+    <div class="col-md-6">
+        <div class="preview-section">
+            <h5 class="section-title">
+                <i class="fas fa-times-circle text-danger"></i>
+                الأخطاء التي تمنع الحفظ
+            </h5>
+
+            <div class="error-box">
+                <ul class="mb-0">
+                    {% for error in summary.errors %}
+                    <li class="mb-1">{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if summary.warnings %}
+    <div class="col-md-6">
+        <div class="preview-section">
+            <h5 class="section-title">
+                <i class="fas fa-exclamation-triangle text-warning"></i>
+                التحذيرات
+            </h5>
+
+            <div class="warning-box">
+                <ul class="mb-0">
+                    {% for warning in summary.warnings %}
+                    <li class="mb-1">{{ warning }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <small class="text-muted d-block mt-2">
+                التحذيرات لا تمنع الحفظ، لكنها تعني أن بعض البيانات قد تُحفظ ناقصة مثل الصف الدراسي أو العام الدراسي.
+            </small>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- الصفوف الصالحة -->
+<div class="preview-section">
+    <h5 class="section-title">
+        <i class="fas fa-check-circle text-success"></i>
+        الطلاب الصالحون للحفظ
+    </h5>
+
+    {% if summary.valid_rows %}
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover table-preview">
+            <thead>
+                <tr>
+                    <th>رقم الصف</th>
+                    <th>اسم الطالب</th>
+                    <th>الرقم القومي</th>
+                    <th>الهاتف</th>
+                    <th>الصف الدراسي</th>
+                    <th>العام الدراسي</th>
+                    <th>ولي الأمر</th>
+                    <th>هاتف ولي الأمر</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for row in summary.valid_rows %}
+                <tr>
+                    <td class="row-number">{{ row.row_num }}</td>
+                    <td><strong>{{ row.name }}</strong></td>
+                    <td class="national-number">{{ row.national_number }}</td>
+                    <td>{{ row.phone_number|default:"-" }}</td>
+                    <td>
+                        {% if row.grade_level_name %}
+                            {{ row.grade_level_name }}
+                        {% else %}
+                            <span class="text-muted">غير محدد</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if row.academic_year_name %}
+                            {{ row.academic_year_name }}
+                        {% else %}
+                            <span class="text-muted">العام الحالي/غير محدد</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ row.parent_name|default:"-" }}</td>
+                    <td>{{ row.parent_phone|default:"-" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-danger mb-0">
+        <i class="fas fa-exclamation-circle me-2"></i>
+        لا توجد صفوف صالحة للحفظ. يرجى تعديل الملف وإعادة رفعه.
+    </div>
+    {% endif %}
+</div>
+
+<!-- أزرار التأكيد -->
+<div class="action-panel sticky-actions">
+    {% if summary.valid_count > 0 %}
+    <form method="post" action="{% url 'students:import_students_advanced' %}" class="d-inline confirm-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="confirm">
+
+        <button type="submit" class="btn btn-confirm confirm-btn">
+            <i class="fas fa-save me-2"></i>
+            تأكيد حفظ {{ summary.valid_count }} طالب
+        </button>
+    </form>
+    {% endif %}
+
+    <form method="post" action="{% url 'students:import_students_advanced' %}" class="d-inline cancel-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="cancel">
+
+        <button type="submit" class="btn btn-outline-danger btn-cancel me-2 cancel-btn">
+            <i class="fas fa-times me-2"></i>
+            إلغاء العملية
+        </button>
+    </form>
+
+    <a href="{% url 'students:import_students_advanced' %}" class="btn btn-outline-secondary btn-cancel me-2">
+        <i class="fas fa-upload me-2"></i>
+        رفع ملف آخر
+    </a>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmForm = document.querySelector('.confirm-form');
+    const confirmBtn = document.querySelector('.confirm-btn');
+    const cancelForm = document.querySelector('.cancel-form');
+    const cancelBtn = document.querySelector('.cancel-btn');
+
+    if (confirmForm && confirmBtn) {
+        confirmForm.addEventListener('submit', function() {
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>جاري حفظ الطلاب...';
+        });
+    }
+
+    if (cancelForm && cancelBtn) {
+        cancelForm.addEventListener('submit', function() {
+            cancelBtn.disabled = true;
+            cancelBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>جاري الإلغاء...';
+        });
+    }
+});
+</script>
+{% endblock %}

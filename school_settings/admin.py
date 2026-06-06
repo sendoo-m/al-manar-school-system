@@ -9,11 +9,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.forms import ModelForm, ValidationError
 from django.utils.translation import gettext_lazy as _
-from django.core.exceptions import ValidationError as DjangoValidationError
 from django.contrib.admin import SimpleListFilter
-from django.utils.safestring import mark_safe
-from django.urls import reverse
-from django.db.models import Q, Count
 import logging
 
 # إعداد السجل
@@ -21,45 +17,42 @@ logger = logging.getLogger(__name__)
 
 # دالة للحصول على عنوان IP
 def get_client_ip(request):
-    """الحصول على عنوان IP للمستخدم"""
-    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-    if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0]
-    else:
-        ip = request.META.get('REMOTE_ADDR')
-    return ip
+    """الحصول على عنوان IP للمستخدم بشكل آمن"""
+    try:
+        if not request:
+            return None
+
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            return x_forwarded_for.split(',')[0].strip()[:45]
+
+        remote_addr = request.META.get('REMOTE_ADDR')
+        return remote_addr[:45] if remote_addr else None
+    except Exception:
+        return None
+
 
 # دالة تسجيل تغييرات الإعدادات
 def log_settings_change(user, action, setting_type, obj=None, old_value='', new_value='', description='', request=None):
-    """تسجيل تغييرات الإعدادات"""
+    """تسجيل تغييرات الإعدادات بدون تنفيذ أي Query وقت تحميل Django"""
     try:
         from .models import SettingsLog
-        
-        object_id = obj.pk if obj else None
-        object_name = str(obj) if obj else ''
-        
-        ip_address = None
-        user_agent = ''
-        
-        if request:
-            ip_address = get_client_ip(request)
-            user_agent = request.META.get('HTTP_USER_AGENT', '')[:500]
-        
-        SettingsLog.objects.create(
+
+        return SettingsLog.log_action(
             user=user,
             action=action,
             setting_type=setting_type,
-            object_id=object_id,
-            object_name=object_name[:200] if object_name else '',
-            old_value=str(old_value)[:1000] if old_value else '',
-            new_value=str(new_value)[:1000] if new_value else '',
-            description=description[:500] if description else '',
-            ip_address=ip_address,
-            user_agent=user_agent
+            object_id=obj.pk if obj else None,
+            object_name=str(obj) if obj else '',
+            old_value=old_value,
+            new_value=new_value,
+            description=description,
+            request=request
         )
-        
+
     except Exception as e:
         logger.error(f"خطأ في تسجيل تغيير الإعدادات: {e}")
+        return None
 
 # استيراد النماذج الأساسية
 from .models import (
@@ -915,6 +908,100 @@ class SchoolFeesSettingsAdmin(admin.ModelAdmin):
             active_color, active_text
         )
     status_display.short_description = '⚡ الحالة'
+
+
+# =====================================================
+# إدارة إعدادات الخصومات
+# =====================================================
+
+@admin.register(DiscountSettings)
+class DiscountSettingsAdmin(admin.ModelAdmin):
+    """إدارة إعدادات الخصومات"""
+
+    list_display = (
+        'name',
+        'category',
+        'discount_type',
+        'discount_value_display',
+        'validity_display',
+        'is_active'
+    )
+
+    list_filter = (
+        'category',
+        'discount_type',
+        ActiveFilter,
+        'requires_approval',
+        'valid_from_date',
+        'valid_to_date'
+    )
+
+    search_fields = ('name', 'description')
+    filter_horizontal = ('applicable_to_grades',)
+    ordering = ('category', 'name')
+    list_per_page = 30
+
+    def discount_value_display(self, obj):
+        """عرض قيمة الخصم"""
+        if obj.discount_type == 'PERCENTAGE':
+            return format_html('<strong>{}%</strong>', obj.percentage_value or 0)
+        return format_html('<strong>{} ج.م</strong>', obj.fixed_amount or 0)
+    discount_value_display.short_description = '💸 قيمة الخصم'
+
+    def validity_display(self, obj):
+        """عرض مدة صلاحية الخصم"""
+        return format_html(
+            '<div style="font-size: 11px;">'
+            '<div>من: {}</div>'
+            '<div>إلى: {}</div>'
+            '</div>',
+            obj.valid_from_date.strftime('%Y-%m-%d') if obj.valid_from_date else '-',
+            obj.valid_to_date.strftime('%Y-%m-%d') if obj.valid_to_date else '-'
+        )
+    validity_display.short_description = '📅 الصلاحية'
+
+
+# =====================================================
+# إدارة أدوار المستخدمين
+# =====================================================
+
+@admin.register(SystemRole)
+class SystemRoleAdmin(admin.ModelAdmin):
+    """إدارة أدوار المستخدمين"""
+
+    list_display = (
+        'user_display',
+        'role',
+        'is_active',
+        'created_date'
+    )
+
+    list_filter = (
+        'role',
+        ActiveFilter,
+        'created_date'
+    )
+
+    search_fields = (
+        'user__username',
+        'user__first_name',
+        'user__last_name',
+        'user__email'
+    )
+
+    readonly_fields = ('created_date',)
+    ordering = ('user__username',)
+    list_per_page = 30
+
+    def user_display(self, obj):
+        """عرض بيانات المستخدم"""
+        return format_html(
+            '<div><strong>{}</strong><br><small>{}</small></div>',
+            obj.user.get_full_name() or obj.user.username,
+            obj.user.email or f'@{obj.user.username}'
+        )
+    user_display.short_description = '👤 المستخدم'
+
 
 # =====================================================
 # إدارة سجل التغييرات - جديد

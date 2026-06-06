@@ -1,0 +1,173 @@
+<!-- treasury_management/templates/treasury_management/expense_category_detail_modal.html -->
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <div class="card border-danger h-100">
+            <div class="card-header bg-danger text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-tag me-2"></i>
+                    معلومات التصنيف
+                </h6>
+            </div>
+
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr>
+                        <td><strong>الكود:</strong></td>
+                        <td>
+                            <span style="background: linear-gradient(135deg, #dc3545, #b02a37); color: white; padding: 0.25rem 0.5rem; border-radius: 6px; font-family: monospace; font-weight: bold;">
+                                {{ category.code }}
+                            </span>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>اسم التصنيف:</strong></td>
+                        <td>{{ category.name }}</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>الحساب المرتبط:</strong></td>
+                        <td>
+                            {% if category.account %}
+                                {{ category.account.code }} - {{ category.account.name }}
+                            {% else %}
+                                <span class="text-muted">غير محدد</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>الميزانية الشهرية:</strong></td>
+                        <td>
+                            {% if category.monthly_budget %}
+                                <span class="text-warning fw-bold">{{ category.monthly_budget|floatformat:2 }}</span>
+                            {% else %}
+                                <span class="text-muted">غير محددة</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>الوصف:</strong></td>
+                        <td>{{ category.description|default:"غير محدد" }}</td>
+                    </tr>
+
+                    <tr>
+                        <td><strong>الحالة:</strong></td>
+                        <td>
+                            {% if category.is_active %}
+                                <span class="badge bg-success">نشط</span>
+                            {% else %}
+                                <span class="badge bg-secondary">غير نشط</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-3">
+        <div class="card border-info h-100">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>
+                    إحصائيات الشهر الحالي
+                </h6>
+            </div>
+
+            <div class="card-body">
+                <div class="row text-center mb-3">
+                    <div class="col-4">
+                        <div class="h5 text-danger">{{ current_month_spent|default:0|floatformat:2 }}</div>
+                        <small class="text-muted">إنفاق الشهر</small>
+                    </div>
+
+                    <div class="col-4">
+                        <div class="h5 text-primary">{{ expenses_count|default:0 }}</div>
+                        <small class="text-muted">عدد المصروفات</small>
+                    </div>
+
+                    <div class="col-4">
+                        <div class="h5 {% if budget_percentage >= 100 %}text-danger{% elif budget_percentage >= 75 %}text-warning{% else %}text-success{% endif %}">
+                            {{ budget_percentage|default:0|floatformat:1 }}%
+                        </div>
+                        <small class="text-muted">استخدام الميزانية</small>
+                    </div>
+                </div>
+
+                {% if category.monthly_budget %}
+                <div class="progress mb-2" style="height: 10px;">
+                    <div class="progress-bar
+                        {% if budget_percentage >= 100 %}bg-danger
+                        {% elif budget_percentage >= 75 %}bg-warning
+                        {% else %}bg-success{% endif %}"
+                        style="width: {{ budget_percentage_clamped }}%;">
+                    </div>
+                </div>
+
+                <small class="text-muted">
+                    المتبقي:
+                    <strong>{{ remaining_budget|floatformat:2 }}</strong>
+                </small>
+                {% else %}
+                <div class="alert alert-light border mb-0">
+                    لا توجد ميزانية شهرية محددة لهذا التصنيف.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if recent_expenses %}
+<div class="row mt-2">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-history me-2"></i>
+                    آخر المصروفات على هذا التصنيف
+                </h6>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>الرقم</th>
+                            <th>التاريخ</th>
+                            <th>الوصف</th>
+                            <th>المبلغ</th>
+                            <th>الحالة</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for expense in recent_expenses %}
+                        <tr>
+                            <td><strong>{{ expense.expense_number }}</strong></td>
+                            <td>{{ expense.expense_date|date:"Y-m-d" }}</td>
+                            <td>{{ expense.description|truncatechars:45 }}</td>
+                            <td class="text-danger fw-bold">{{ expense.amount|floatformat:2 }}</td>
+                            <td>
+                                {% if expense.is_approved %}
+                                    <span class="badge bg-success">معتمد</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">معلق</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-light border mt-3 mb-0">
+    <i class="fas fa-info-circle me-1"></i>
+    لا توجد مصروفات مسجلة على هذا التصنيف حتى الآن.
+</div>
+{% endif %}

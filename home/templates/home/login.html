@@ -2,6 +2,699 @@
 
 {% block title %}تسجيل الدخول - مدرسة المنار{% endblock %}
 
+{% block extra_css %}
+<style>
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        min-height: 100vh;
+        overflow-x: hidden;
+    }
+
+    /* خلفية متحركة */
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><defs><radialGradient id="a" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="rgba(255,255,255,0.1)"/><stop offset="100%" stop-color="rgba(255,255,255,0)"/></radialGradient></defs>ircle cx="200" cy="200" r="100" fill="url(%(%23a)"/>ircle cx="800" cy="300" r="150" fill="url(%23a)a)"/>ircle cx="400" cy="600" r="120" fill="url(%23a)a)"/>ircle cx="700" cy="800" r="80" fill="urlrl(%23a)"/></svg>') no-repeat center center;
+        background-size: cover;
+        opacity: 0.1;
+        z-index: -1;
+        animation: floatBackground 20s ease-in-out infinite;
+    }
+
+    @keyframes floatBackground {
+        0%, 100% { transform: translateY(0px) rotate(0deg); }
+        50% { transform: translateY(-20px) rotate(1deg); }
+    }
+
+    .login-wrapper {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        position: relative;
+    }
+
+    .login-container {
+        max-width: 1000px;
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0;
+        border-radius: 25px;
+        overflow: hidden;
+        box-shadow: 
+            0 25px 50px rgba(0, 0, 0, 0.25),
+            0 0 0 1px rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        animation: slideInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(50px) scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    /* قسم الصورة */
+    .login-image-section {
+        background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 60px 40px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .login-image-section::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">ircle cx="50" cy="50" r="50" fill="rgbaba(255,255,255,0.1)"/></svg>') repeat;
+        animation: rotate 60s linear infinite;
+        z-index: 1;
+    }
+
+    @keyframes rotate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+/* في home/templates/home/login.html - داخل <style> */
+
+    .school-image {
+        width: 250px;
+        height: 250px;
+        border-radius: 50%;
+        object-fit: cover; /* ✅ مهم للشعارات */
+        object-position: center;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        padding: 20px; /* مساحة إضافية */
+        margin-bottom: 30px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        transition: all 0.3s ease;
+        z-index: 2;
+        position: relative;
+        animation: float 6s ease-in-out infinite;
+        background: white; /* ✅ خلفية بيضاء للشعارات الشفافة */
+        padding: 10px; /* ✅ مساحة حول الشعار */
+    }
+
+    .school-image:hover {
+        transform: scale(1.05) translateY(-5px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    /* إذا كان الشعار مربع بدلاً من دائري */
+    .school-image.square-logo {
+        border-radius: 20px; /* بدلاً من 50% */
+    }
+
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+    }
+
+
+    .welcome-text {
+        color: white;
+        z-index: 2;
+        position: relative;
+    }
+
+    .welcome-text h2 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 15px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .welcome-text p {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        line-height: 1.6;
+        margin-bottom: 20px;
+    }
+
+    .features-list {
+        list-style: none;
+        padding: 0;
+        margin-top: 20px;
+    }
+
+    .features-list li {
+        padding: 8px 0;
+        opacity: 0.8;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .features-list li i {
+        margin-left: 10px;
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    /* قسم النموذج */
+    .login-form-section {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        padding: 60px 50px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .form-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .form-header .logo-icon {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+
+    .form-header .logo-icon i {
+        color: white;
+        font-size: 2rem;
+    }
+
+    .form-header h3 {
+        color: #2d3748;
+        font-weight: 700;
+        margin-bottom: 10px;
+        font-size: 1.8rem;
+    }
+
+    .form-header p {
+        color: #718096;
+        margin-bottom: 0;
+    }
+
+    /* تصميم الحقول */
+    .form-group {
+        margin-bottom: 25px;
+        position: relative;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #4a5568;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+    }
+
+    .form-label i {
+        margin-left: 8px;
+        color: #667eea;
+    }
+
+    .form-control {
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 15px 20px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(10px);
+    }
+
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        background: white;
+        transform: translateY(-2px);
+    }
+
+    .input-group {
+        position: relative;
+    }
+
+    .input-group .btn {
+        border: 2px solid #e2e8f0;
+        border-right: none;
+        border-radius: 0 12px 12px 0;
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
+    }
+
+    .input-group .btn:hover {
+        background: #667eea;
+        color: white;
+        border-color: #667eea;
+    }
+
+    .btn-login {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border: none;
+        border-radius: 12px;
+        padding: 15px 30px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: white;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-login::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s;
+    }
+
+    .btn-login:hover::before {
+        left: 100%;
+    }
+
+    .btn-login:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-login:active {
+        transform: translateY(0);
+    }
+
+    /* رسائل التنبيه */
+    .alert {
+        border: none;
+        border-radius: 12px;
+        padding: 15px 20px;
+        margin-bottom: 25px;
+        backdrop-filter: blur(10px);
+    }
+
+    .alert-success {
+        background: rgba(72, 187, 120, 0.1);
+        color: #2f855a;
+        border-left: 4px solid #48bb78;
+    }
+
+    .alert-danger {
+        background: rgba(245, 101, 101, 0.1);
+        color: #c53030;
+        border-left: 4px solid #f56565;
+    }
+
+    .alert-info {
+        background: rgba(66, 153, 225, 0.1);
+        color: #2b6cb0;
+        border-left: 4px solid #4299e1;
+    }
+
+    /* Footer */
+    .login-footer {
+        text-align: center;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #e2e8f0;
+        color: #718096;
+        font-size: 0.9rem;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .login-container {
+            grid-template-columns: 1fr;
+            max-width: 400px;
+            margin: 20px;
+        }
+
+        .login-image-section {
+            padding: 40px 30px;
+        }
+
+        .school-image {
+            width: 150px;
+            height: 150px;
+        }
+
+        .welcome-text h2 {
+            font-size: 2rem;
+        }
+
+        .login-form-section {
+            padding: 40px 30px;
+        }
+
+        .form-header h3 {
+            font-size: 1.5rem;
+        }
+    }
+
+    /* تأثيرات إضافية */
+    .floating-elements {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        pointer-events: none;
+    }
+
+    .floating-elements::before,
+    .floating-elements::after {
+        content: '';
+        position: absolute;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        animation: float 8s ease-in-out infinite;
+    }
+
+    .floating-elements::before {
+        width: 100px;
+        height: 100px;
+        top: 20%;
+        right: 10%;
+        animation-delay: 0s;
+    }
+
+    .floating-elements::after {
+        width: 60px;
+        height: 60px;
+        bottom: 20%;
+        left: 10%;
+        animation-delay: 4s;
+    }
+
+    /* تحسينات إضافية */
+    .form-control.is-invalid {
+        border-color: #f56565;
+        animation: shake 0.5s ease-in-out;
+    }
+
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+    }
+
+    .loading-spinner {
+        display: none;
+        margin-left: 10px;
+    }
+
+    .btn-login.loading .loading-spinner {
+        display: inline-block;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block body_content %}
+<div class="login-wrapper">
+    <div class="login-container">
+        <!-- قسم الصورة والترحيب -->
+        <div class="login-image-section">
+            <div class="floating-elements"></div>
+            
+            <!-- صورة المدرسة (مؤقتة) -->
+            <img src="/media/img/logo.png" 
+                alt="مدرسة المنار" 
+            class="school-image">
+            
+            <div class="welcome-text">
+                <h2>مرحباً بك في</h2>
+                <h2>مدرسة المنار</h2>
+                <p>نظام إدارة متطور لخدمة التعليم وتطوير المستقبل</p>
+                
+                <ul class="features-list">
+                    <li><i class="fas fa-graduation-cap"></i> إدارة شاملة للطلاب</li>
+                    <li><i class="fas fa-chart-line"></i> تقارير تفصيلية ودقيقة</li>
+                    <li><i class="fas fa-users"></i> فريق تعليمي متميز</li>
+                    <li><i class="fas fa-shield-alt"></i> نظام آمن وموثوق</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- قسم النموذج -->
+        <div class="login-form-section">
+            <div class="form-header">
+                <div class="logo-icon">
+                    <i class="fas fa-school"></i>
+                </div>
+                <h3>تسجيل الدخول</h3>
+                <p>أدخل بياناتك للوصول إلى النظام</p>
+            </div>
+
+            <!-- رسائل التنبيه -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        <i class="fas fa-info-circle me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- نموذج تسجيل الدخول -->
+            <form method="post" class="needs-validation" novalidate id="loginForm">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="id_username" class="form-label">
+                        <i class="fas fa-user"></i>اسم المستخدم
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           id="id_username" 
+                           name="username" 
+                           required 
+                           placeholder="أدخل اسم المستخدم"
+                           value="{{ form.username.value|default:'' }}"
+                           autocomplete="username">
+                    <div class="invalid-feedback">
+                        يرجى إدخال اسم المستخدم
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="id_password" class="form-label">
+                        <i class="fas fa-lock"></i>كلمة المرور
+                    </label>
+                    <div class="input-group">
+                        <input type="password" 
+                               class="form-control" 
+                               id="id_password" 
+                               name="password" 
+                               required 
+                               placeholder="أدخل كلمة المرور"
+                               autocomplete="current-password">
+                        <button class="btn btn-outline-secondary" 
+                                type="button" 
+                                id="togglePassword"
+                                title="إظهار/إخفاء كلمة المرور">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="invalid-feedback">
+                        يرجى إدخال كلمة المرور
+                    </div>
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-login btn-lg" id="loginBtn">
+                        <i class="fas fa-sign-in-alt me-2"></i>
+                        <span class="btn-text">تسجيل الدخول</span>
+                        <div class="loading-spinner">
+                            <i class="fas fa-spinner"></i>
+                        </div>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Footer -->
+            <div class="login-footer">
+                <p>
+                    <i class="fas fa-copyright me-1"></i>
+                    2025 مدرسة المنار - جميع الحقوق محفوظة
+                </p>
+                <small>
+                    <i class="fas fa-code me-1"></i>
+                    التصميم والتطوير محمد جمال
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validation
+    (function() {
+        'use strict';
+        const forms = document.getElementsByClassName('needs-validation');
+        Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    
+                    // إضافة تأثير اهتزاز للحقول الخاطئة
+                    const invalidInputs = form.querySelectorAll(':invalid');
+                    invalidInputs.forEach(input => {
+                        input.classList.add('is-invalid');
+                        setTimeout(() => {
+                            input.classList.remove('is-invalid');
+                        }, 500);
+                    });
+                } else {
+                    // إظهار حالة التحميل
+                    const loginBtn = document.getElementById('loginBtn');
+                    const btnText = loginBtn.querySelector('.btn-text');
+                    
+                    loginBtn.classList.add('loading');
+                    loginBtn.disabled = true;
+                    btnText.textContent = 'جاري تسجيل الدخول...';
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    })();
+
+    // Toggle password visibility
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('id_password');
+    
+    togglePassword.addEventListener('click', function() {
+        const icon = this.querySelector('i');
+        
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+            this.title = 'إخفاء كلمة المرور';
+        } else {
+            passwordInput.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+            this.title = 'إظهار كلمة المرور';
+        }
+        
+        // تأثير بصري
+        this.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            this.style.transform = 'scale(1)';
+        }, 100);
+    });
+
+    // تحسين تجربة المستخدم
+    const inputs = document.querySelectorAll('.form-control');
+    inputs.forEach(input => {
+        // إضافة تأثيرات عند التركيز
+        input.addEventListener('focus', function() {
+            this.parentElement.style.transform = 'translateY(-2px)';
+        });
+        
+        input.addEventListener('blur', function() {
+            this.parentElement.style.transform = 'translateY(0)';
+        });
+        
+        // تنظيف رسائل الخطأ عند الكتابة
+        input.addEventListener('input', function() {
+            if (this.classList.contains('is-invalid')) {
+                this.classList.remove('is-invalid');
+            }
+        });
+    });
+
+    // تأثير تحميل الصفحة
+    const loginContainer = document.querySelector('.login-container');
+    loginContainer.style.opacity = '0';
+    loginContainer.style.transform = 'translateY(50px)';
+    
+    setTimeout(() => {
+        loginContainer.style.transition = 'all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+        loginContainer.style.opacity = '1';
+        loginContainer.style.transform = 'translateY(0)';
+    }, 100);
+
+    // معالجة الأخطاء
+    const form = document.getElementById('loginForm');
+    form.addEventListener('submit', function(e) {
+        const username = document.getElementById('id_username').value.trim();
+        const password = document.getElementById('id_password').value.trim();
+        
+        if (!username || !password) {
+            e.preventDefault();
+            
+            // إظهار رسالة تنبيه
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+            alertDiv.innerHTML = `
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                يرجى ملء جميع الحقول المطلوبة
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            const formHeader = document.querySelector('.form-header');
+            formHeader.after(alertDiv);
+            
+            // إزالة الرسالة بعد 5 ثواني
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+    });
+
+    console.log('🎨 صفحة تسجيل الدخول جاهزة مع التصميم الجديد!');
+});
+</script>
+{% endblock %}
+
+{% comment %} {% extends 'base.html' %}
+
+{% block title %}تسجيل الدخول - مدرسة المنار{% endblock %}
+
 {% block body_content %}
 <div class="d-flex align-items-center justify-content-center min-vh-100">
     <div class="login-container">
@@ -120,4 +813,4 @@ document.getElementById('togglePassword').addEventListener('click', function() {
     }
 });
 </script>
-{% endblock %}
+{% endblock %} {% endcomment %}

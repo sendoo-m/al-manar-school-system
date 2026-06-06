@@ -4,6 +4,212 @@
 
 {% block title %}قائمة المصروفات اليومية{% endblock %}
 
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'treasury_management:dashboard' %}">لوحة التحكم</a></li>
+<li class="breadcrumb-item active">المصروفات اليومية</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .expenses-page{background:linear-gradient(135deg,rgba(13,71,161,.03),rgba(220,53,69,.035));border-radius:20px;padding:25px;margin:-10px;min-height:calc(100vh - 200px)}
+    .hero-card{background:linear-gradient(135deg,#b02a37,#842029);color:#fff;border-radius:22px;padding:30px;margin-bottom:28px;position:relative;overflow:hidden;box-shadow:0 12px 35px rgba(132,32,41,.22)}
+    .hero-card:before{content:'';position:absolute;top:-60%;right:-50%;width:220%;height:220%;background:radial-gradient(circle,rgba(255,255,255,.12) 1px,transparent 1px);background-size:24px 24px;animation:drift 26s linear infinite}.hero-content{position:relative;z-index:2}.hero-title{display:flex;align-items:center;gap:16px;margin-bottom:12px}.hero-icon{width:64px;height:64px;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.28);border-radius:17px;display:flex;align-items:center;justify-content:center;font-size:1.9rem;backdrop-filter:blur(10px)}.hero-title h2{color:#fff;margin:0;font-weight:900;font-size:2rem}.hero-subtitle{color:rgba(255,255,255,.88);margin:0;font-weight:600}.hero-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}.hero-btn{border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.14);color:#fff;border-radius:13px;padding:11px 18px;text-decoration:none;font-weight:800;transition:all .3s ease;backdrop-filter:blur(10px);display:inline-flex;align-items:center;gap:7px}.hero-btn:hover{color:#fff;background:rgba(255,255,255,.25);transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.12)}.hero-btn.solid{background:#fff;color:#842029}.hero-btn.solid:hover{color:#842029;background:rgba(255,255,255,.94)}
+    .hero-metrics{margin-top:22px;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}.hero-metric{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:16px;padding:17px;backdrop-filter:blur(10px);text-align:center}.hero-metric-label{color:rgba(255,255,255,.82);font-weight:800;margin-bottom:6px;font-size:.88rem}.hero-metric-value{color:#fff;font-weight:900;font-size:1.45rem;font-family:'Courier New',monospace;line-height:1.2}
+    .summary-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px;margin-bottom:25px}.summary-box{background:#fff;border-radius:18px;padding:21px;box-shadow:0 8px 22px rgba(0,0,0,.08);border-top:5px solid var(--summary-color);transition:all .3s ease;text-align:center}.summary-box:hover{transform:translateY(-4px);box-shadow:0 14px 30px rgba(0,0,0,.12)}.summary-box.total{--summary-color:#dc3545}.summary-box.amount{--summary-color:#ff9800}.summary-box.approved{--summary-color:#198754}.summary-box.pending{--summary-color:#0dcaf0}.summary-icon{width:48px;height:48px;border-radius:14px;background:color-mix(in srgb,var(--summary-color) 14%,white);color:var(--summary-color);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:1.25rem}.summary-label{color:#6c757d;font-weight:800;font-size:.9rem;margin-bottom:5px}.summary-value{font-size:1.45rem;font-weight:900;color:var(--summary-color);font-family:'Courier New',monospace}
+    .filter-card,.table-card,.pagination-card{background:#fff;border:none;border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.08);overflow:hidden;margin-bottom:25px}.filter-card .card-body{padding:22px}.table-header{background:linear-gradient(135deg,#f8f9fa,#eef1f4);padding:18px 22px;border-bottom:1px solid #e9ecef;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.table-title{display:flex;align-items:center;gap:10px;font-weight:900;color:#2c3e50;margin:0;font-size:1.1rem}.table-title-icon{width:40px;height:40px;background:linear-gradient(135deg,#dc3545,#b02a37);color:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center}.results-info{background:linear-gradient(135deg,#dc3545,#b02a37);color:#fff;padding:14px 18px;border-radius:15px;margin-bottom:18px;font-weight:800;box-shadow:0 8px 20px rgba(220,53,69,.18)}
+    .table{margin-bottom:0}.table th{background:#f8f9fa;color:#2c3e50;font-weight:900;border-bottom:2px solid #e9ecef;padding:14px 12px;vertical-align:middle;white-space:nowrap}.table td{padding:13px 12px;vertical-align:middle;border-bottom:1px solid #f1f3f5}.table tbody tr:hover{background:rgba(220,53,69,.035)}.expense-number{font-family:monospace;font-weight:900;color:#fff;background:linear-gradient(135deg,#dc3545,#b02a37);padding:5px 9px;border-radius:8px;display:inline-block}.badge-type{padding:7px 11px;border-radius:12px;font-weight:900;font-size:.78rem;display:inline-block;white-space:nowrap;background:rgba(108,117,125,.12);color:#495057}.amount-expense{color:#dc3545;font-weight:900;font-family:'Courier New',monospace;white-space:nowrap}.description-cell{max-width:260px;white-space:normal}
+    .btn-soft{border:none;border-radius:12px;padding:10px 17px;font-weight:900;text-decoration:none;display:inline-flex;align-items:center;gap:7px;transition:all .3s ease}.btn-soft:hover{transform:translateY(-2px);text-decoration:none}.btn-red-soft{background:linear-gradient(135deg,#dc3545,#b02a37);color:#fff}.btn-red-soft:hover{color:#fff}.btn-primary-soft{background:linear-gradient(135deg,#1565c0,#0d47a1);color:#fff}.btn-primary-soft:hover{color:#fff}.empty-state{background:#fff;border-radius:20px;padding:55px 25px;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.08)}.empty-icon{width:90px;height:90px;border-radius:25px;background:linear-gradient(135deg,rgba(220,53,69,.08),rgba(132,32,41,.08));display:flex;align-items:center;justify-content:center;margin:0 auto 20px;color:#dc3545;font-size:3rem}.pagination .page-link{border:none;color:#6c757d;padding:.55rem .8rem;margin:0 2px;border-radius:10px;transition:all .3s ease;font-weight:800}.pagination .page-item.active .page-link{background:linear-gradient(135deg,#dc3545,#b02a37);border-color:transparent;color:#fff;box-shadow:0 4px 15px rgba(220,53,69,.35)}
+    @media print{.no-print,.sidebar,.navbar,.breadcrumb,.filter-card,.hero-actions,.btn,.pagination-card,.table-header .no-print{display:none!important}.expenses-page{background:#fff;padding:0;margin:0}.hero-card,.summary-box,.table-card{box-shadow:none;border:1px solid #ddd}.hero-card{background:#f8f9fa!important;color:#000!important}.hero-title h2,.hero-subtitle,.hero-metric-label,.hero-metric-value{color:#000!important}}
+    @media(max-width:768px){.expenses-page{padding:15px;margin:-5px}.hero-card{padding:22px}.hero-card .d-flex{flex-direction:column;align-items:flex-start!important;gap:18px}.hero-actions{justify-content:flex-start;width:100%}.hero-btn{width:100%;justify-content:center}.hero-title h2{font-size:1.55rem}}
+    @keyframes drift{0%{transform:rotate(0deg) translateX(0)}100%{transform:rotate(360deg) translateX(20px)}}.fade-in{animation:fadeInUp .75s ease-out}@keyframes fadeInUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="expenses-page">
+    <div class="hero-card fade-in">
+        <div class="hero-content">
+            <div class="d-flex justify-content-between align-items-start gap-3">
+                <div>
+                    <div class="hero-title">
+                        <div class="hero-icon"><i class="fas fa-receipt"></i></div>
+                        <div>
+                            <h2>المصروفات اليومية</h2>
+                            <p class="hero-subtitle">متابعة واعتماد المصروفات والنفقات اليومية وربطها بحركة الخزينة</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="hero-actions no-print">
+                    <a href="{% url 'treasury_management:add_expense' %}" class="hero-btn solid"><i class="fas fa-plus"></i>إضافة مصروف جديد</a>
+                    <a href="{% url 'treasury_management:dashboard' %}" class="hero-btn"><i class="fas fa-arrow-right"></i>لوحة التحكم</a>
+                    <button type="button" onclick="window.print()" class="hero-btn"><i class="fas fa-print"></i>طباعة</button>
+                </div>
+            </div>
+            <div class="hero-metrics">
+                <div class="hero-metric"><div class="hero-metric-label">إجمالي مبلغ النتائج</div><div class="hero-metric-value">{{ total_amount|default:0|floatformat:2 }}</div></div>
+                <div class="hero-metric"><div class="hero-metric-label">المعتمد</div><div class="hero-metric-value">{{ approved_amount|default:0|floatformat:2 }}</div></div>
+                <div class="hero-metric"><div class="hero-metric-label">المعلق</div><div class="hero-metric-value">{{ pending_amount|default:0|floatformat:2 }}</div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="summary-strip fade-in" style="animation-delay:.1s;">
+        <div class="summary-box total"><div class="summary-icon"><i class="fas fa-receipt"></i></div><div class="summary-label">عدد المصروفات</div><div class="summary-value">{{ expenses_count|default:0 }}</div></div>
+        <div class="summary-box amount"><div class="summary-icon"><i class="fas fa-money-bill-wave"></i></div><div class="summary-label">إجمالي المبلغ</div><div class="summary-value">{{ total_amount|default:0|floatformat:2 }}</div></div>
+        <div class="summary-box approved"><div class="summary-icon"><i class="fas fa-check-circle"></i></div><div class="summary-label">مصروفات معتمدة</div><div class="summary-value">{{ approved_count|default:0 }}</div></div>
+        <div class="summary-box pending"><div class="summary-icon"><i class="fas fa-hourglass-half"></i></div><div class="summary-label">مصروفات معلقة</div><div class="summary-value">{{ pending_count|default:0 }}</div></div>
+    </div>
+
+    <div class="filter-card fade-in no-print" style="animation-delay:.15s;">
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-end" id="filterForm">
+                <div class="col-lg-3 col-md-6"><label class="form-label fw-bold">البحث</label><input type="text" name="search" class="form-control" value="{{ filters.search }}" placeholder="الوصف / المورد / الفاتورة"></div>
+                <div class="col-lg-2 col-md-6"><label class="form-label fw-bold">التصنيف</label><select name="category" class="form-select"><option value="">جميع التصنيفات</option>{% for category in expense_categories %}<option value="{{ category.id }}" {% if filters.category == category.id|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>{% endfor %}</select></div>
+                <div class="col-lg-2 col-md-6"><label class="form-label fw-bold">نوع المصروف</label><select name="type" class="form-select"><option value="">جميع الأنواع</option>{% for type_code, type_name in expense_types %}<option value="{{ type_code }}" {% if filters.type == type_code %}selected{% endif %}>{{ type_name }}</option>{% endfor %}</select></div>
+                <div class="col-lg-2 col-md-6"><label class="form-label fw-bold">من تاريخ</label><input type="date" name="from_date" class="form-control" value="{{ filters.from_date }}"></div>
+                <div class="col-lg-2 col-md-6"><label class="form-label fw-bold">إلى تاريخ</label><input type="date" name="to_date" class="form-control" value="{{ filters.to_date }}"></div>
+                <div class="col-lg-1 col-md-6"><label class="form-label fw-bold">عدد</label><select name="per_page" class="form-select"><option value="10" {% if items_per_page == 10 %}selected{% endif %}>10</option><option value="25" {% if items_per_page == 25 %}selected{% endif %}>25</option><option value="50" {% if items_per_page == 50 %}selected{% endif %}>50</option><option value="100" {% if items_per_page == 100 %}selected{% endif %}>100</option></select></div>
+                <div class="col-lg-2 col-md-6"><label class="form-label fw-bold">الحالة</label><select name="approved" class="form-select"><option value="">جميع الحالات</option><option value="true" {% if filters.approved == 'true' %}selected{% endif %}>معتمدة</option><option value="false" {% if filters.approved == 'false' %}selected{% endif %}>معلقة</option></select></div>
+                <div class="col-lg-10 col-md-6"><div class="d-flex gap-2 flex-wrap"><button type="submit" class="btn-soft btn-primary-soft"><i class="fas fa-search"></i>بحث</button><a href="{% url 'treasury_management:expenses_list' %}" class="btn btn-outline-secondary fw-bold"><i class="fas fa-refresh me-1"></i>إعادة تعيين</a></div></div>
+            </form>
+        </div>
+    </div>
+
+    {% if expenses %}
+    <div class="results-info fade-in"><div class="row align-items-center"><div class="col-md-8"><i class="fas fa-info-circle me-2"></i>عرض {{ expenses.start_index }}-{{ expenses.end_index }} من {{ paginator.count }} مصروف{% if filters.search %} - بحث: <strong>{{ filters.search }}</strong>{% endif %}</div><div class="col-md-4 text-end">صفحة {{ expenses.number }} من {{ paginator.num_pages }}</div></div></div>
+
+    <div class="table-card fade-in">
+        <div class="table-header"><h5 class="table-title"><span class="table-title-icon"><i class="fas fa-table"></i></span>قائمة المصروفات</h5><div class="d-flex gap-2 flex-wrap no-print"><button type="button" class="btn btn-sm btn-outline-success fw-bold" onclick="exportData('excel')"><i class="fas fa-file-excel me-1"></i>Excel</button><button type="button" class="btn btn-sm btn-outline-danger fw-bold" onclick="exportData('pdf')"><i class="fas fa-file-pdf me-1"></i>PDF</button><button type="button" class="btn btn-sm btn-outline-info fw-bold" onclick="window.print()"><i class="fas fa-print me-1"></i>طباعة</button></div></div>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead><tr><th>رقم المصروف</th><th>التصنيف</th><th>النوع</th><th>الوصف</th><th class="text-center">المبلغ</th><th>المورد</th><th>التاريخ</th><th>الحالة</th><th class="text-center no-print">الإجراءات</th></tr></thead>
+                <tbody>
+                    {% for expense in expenses %}
+                    <tr>
+                        <td><span class="expense-number">{{ expense.expense_number }}</span>{% if expense.invoice_number %}<br><small class="text-muted">فاتورة: {{ expense.invoice_number }}</small>{% endif %}</td>
+                        <td><strong>{{ expense.category.name }}</strong>{% if expense.category.account %}<br><small class="text-muted">{{ expense.category.account.code }} - {{ expense.category.account.name }}</small>{% endif %}</td>
+                        <td><span class="badge-type">{{ expense.get_expense_type_display }}</span></td>
+                        <td class="description-cell">{{ expense.description|truncatechars:70 }}{% if expense.notes %}<br><small class="text-muted">{{ expense.notes|truncatechars:40 }}</small>{% endif %}</td>
+                        <td class="text-center amount-expense">{{ expense.amount|floatformat:2 }}</td>
+                        <td>{{ expense.vendor_name|default:"-" }}</td>
+                        <td>{{ expense.expense_date|date:"Y-m-d" }}<br><small class="text-muted">{{ expense.created_at|time:"H:i" }}</small></td>
+                        <td>{% if expense.is_approved %}<span class="badge bg-success">معتمد</span>{% if expense.approved_by %}<br><small class="text-muted">{{ expense.approved_by.get_full_name|default:expense.approved_by.username }}</small>{% endif %}{% else %}<span class="badge bg-warning text-dark">معلق</span>{% endif %}</td>
+                        <td class="text-center no-print">
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-info" onclick="showExpenseDetails({{ expense.id }})" title="تفاصيل المصروف">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                {% if not expense.is_approved %}
+                                <form method="POST" action="{% url 'treasury_management:approve_expense' expense.id %}" style="display:inline;" onsubmit="return confirm('هل تريد اعتماد هذا المصروف وتحديث رصيد الخزنة؟')">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-success" title="اعتماد"><i class="fas fa-check"></i></button>
+                                </form>
+                                {% endif %}
+                                {% if expense.transaction %}
+                                <a href="{% url 'treasury_management:transaction_detail' expense.transaction.id %}" class="btn btn-sm btn-outline-primary" title="عرض العملية المرتبطة">
+                                    <i class="fas fa-link"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-light"><tr><th colspan="4">إجمالي النتائج</th><th class="text-center amount-expense">{{ total_amount|floatformat:2 }}</th><th colspan="4"></th></tr></tfoot>
+            </table>
+        </div>
+    </div>
+
+    <div class="pagination-card p-3 fade-in no-print">
+        <div class="row align-items-center"><div class="col-md-4"><small class="text-muted fw-bold">عرض {{ expenses.start_index }}-{{ expenses.end_index }} من {{ paginator.count }} مصروف</small></div><div class="col-md-8">{% if paginator.num_pages > 1 %}<nav><ul class="pagination justify-content-end mb-0">{% if expenses.has_previous %}<li class="page-item"><a class="page-link" href="?{{ query_string_without_page }}&page=1">الأولى</a></li><li class="page-item"><a class="page-link" href="?{{ query_string_without_page }}&page={{ expenses.previous_page_number }}">السابقة</a></li>{% endif %}<li class="page-item active"><span class="page-link">{{ expenses.number }} من {{ paginator.num_pages }}</span></li>{% if expenses.has_next %}<li class="page-item"><a class="page-link" href="?{{ query_string_without_page }}&page={{ expenses.next_page_number }}">التالية</a></li><li class="page-item"><a class="page-link" href="?{{ query_string_without_page }}&page={{ paginator.num_pages }}">الأخيرة</a></li>{% endif %}</ul></nav>{% endif %}</div></div>
+    </div>
+    {% else %}
+    <div class="empty-state fade-in"><div class="empty-icon"><i class="fas fa-inbox"></i></div><h3 class="text-muted">لا توجد مصروفات</h3><p class="lead text-muted">لا توجد نتائج مطابقة للفلاتر الحالية أو لم يتم تسجيل مصروفات بعد.</p><div class="d-flex justify-content-center gap-2 flex-wrap no-print"><a href="{% url 'treasury_management:add_expense' %}" class="btn-soft btn-red-soft"><i class="fas fa-plus"></i>إضافة مصروف جديد</a><a href="{% url 'treasury_management:expenses_list' %}" class="btn-soft btn-primary-soft"><i class="fas fa-refresh"></i>إعادة تعيين الفلاتر</a></div></div>
+    {% endif %}
+
+    <!-- Modal تفاصيل المصروف: لازم يكون داخل block content -->
+    <div class="modal fade" id="expenseModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content" style="border: none; border-radius: 20px; overflow: hidden;">
+                <div class="modal-header text-white" style="background: linear-gradient(135deg, #dc3545, #b02a37);">
+                    <h5 class="modal-title">
+                        <i class="fas fa-receipt me-2"></i>
+                        تفاصيل المصروف اليومي
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body" id="expenseDetails">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-danger" role="status"></div>
+                        <div class="mt-2">جاري تحميل التفاصيل...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function exportData(format){const currentParams=new URLSearchParams(window.location.search);currentParams.set('export',format);window.location.href='?'+currentParams.toString();}
+function showExpenseDetails(expenseId){
+    const modalElement = document.getElementById('expenseModal');
+    const detailsContainer = document.getElementById('expenseDetails');
+
+    if (!modalElement || !detailsContainer) {
+        alert('لم يتم العثور على نافذة تفاصيل المصروف داخل القالب.');
+        return;
+    }
+
+    const modal = new bootstrap.Modal(modalElement);
+
+    detailsContainer.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-danger" role="status"></div>
+            <div class="mt-2">جاري تحميل التفاصيل...</div>
+        </div>
+    `;
+
+    modal.show();
+
+    fetch(`/treasury/expense-detail/${expenseId}/`, {
+        headers: {'X-Requested-With': 'XMLHttpRequest'}
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('HTTP ' + response.status);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            detailsContainer.innerHTML = data.html;
+        } else {
+            detailsContainer.innerHTML = `<div class="alert alert-danger text-center">خطأ في تحميل تفاصيل المصروف</div>`;
+        }
+    })
+    .catch(error => {
+        detailsContainer.innerHTML = `
+            <div class="alert alert-warning text-center">
+                تعذر تحميل التفاصيل. تأكد من إضافة مسار expense-detail ودالة expense_detail_ajax.
+                <br>
+                <small>${error.message}</small>
+            </div>
+        `;
+    });
+}
+document.addEventListener('DOMContentLoaded',function(){const elements=document.querySelectorAll('.hero-card,.summary-box,.filter-card,.table-card,.pagination-card,.empty-state,.results-info');elements.forEach((el,index)=>{el.style.opacity='0';el.style.transform='translateY(20px)';setTimeout(()=>{el.style.transition='all .45s ease';el.style.opacity='1';el.style.transform='translateY(0)';},index*55);});const filterForm=document.getElementById('filterForm');if(filterForm){filterForm.querySelectorAll('select').forEach(select=>{select.addEventListener('change',()=>filterForm.submit());});}});
+</script>
+{% endblock %}
+
+{% comment %} <!-- treasury_management/templates/treasury_management/expenses_list.html -->
+{% extends 'treasury_management/base.html' %}
+{% load static %}
+
+{% block title %}قائمة المصروفات اليومية{% endblock %}
+
 {% block content %}
 <!-- رأس الصفحة -->
 <div class="row mb-4">
@@ -246,4 +452,4 @@
     </nav>
 </div>
 {% endif %}
-{% endblock %}
+{% endblock %} {% endcomment %}
