@@ -244,6 +244,98 @@
     </div>
 </div>
 
+<!-- طلبات الخصومات المنتظرة -->
+{% if pending_discounts_summary.count > 0 %}
+<div class="content-panel" style="border-right: 6px solid #ffc107;">
+    <div class="content-panel-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h5>
+            <i class="fas fa-clipboard-check me-2 text-warning"></i>
+            طلبات خصومات تحتاج مراجعة
+        </h5>
+
+        <a href="{% url 'school_settings:discount_requests_list' %}" class="btn btn-warning btn-sm">
+            <i class="fas fa-eye me-1"></i>
+            مراجعة الطلبات
+        </a>
+    </div>
+
+    <div class="content-panel-body">
+        <div class="row mb-3">
+            <div class="col-md-6 mb-3">
+                <div class="alert alert-warning mb-0">
+                    <strong>عدد الطلبات المنتظرة:</strong>
+                    {{ pending_discounts_summary.count }}
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <div class="alert alert-danger mb-0">
+                    <strong>إجمالي قيمة الخصومات المطلوبة:</strong>
+                    {{ pending_discounts_summary.total_amount|floatformat:2 }} ج.م
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>الطالب</th>
+                        <th>الخصم</th>
+                        <th>القيمة</th>
+                        <th>مقدم الطلب</th>
+                        <th>تاريخ الطلب</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for item in pending_discount_requests %}
+                    <tr>
+                        <td>
+                            <strong>{{ item.student.name }}</strong>
+                            <br>
+                            <small class="text-muted">{{ item.student.national_number|default:"-" }}</small>
+                        </td>
+
+                        <td>
+                            {{ item.discount_setting.name }}
+                            <br>
+                            <small class="text-muted">{{ item.discount_setting.get_application_scope_display }}</small>
+                        </td>
+
+                        <td class="text-danger fw-bold">
+                            {{ item.applied_amount|floatformat:2 }} ج.م
+                        </td>
+
+                        <td>
+                            {% if item.created_by %}
+                                {{ item.created_by.get_full_name|default:item.created_by.username }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {{ item.created_date|date:"Y/m/d" }}
+                            <br>
+                            <small>{{ item.created_date|date:"H:i" }}</small>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-3">
+                            لا توجد طلبات خصومات منتظرة.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+
 <!-- مؤشرات اليوم والشهر -->
 <div class="row mb-4">
     <div class="col-lg-3 col-md-6 mb-3">

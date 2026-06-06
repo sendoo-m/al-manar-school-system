@@ -49,7 +49,8 @@ urlpatterns = [
     path('discounts/requests/', views.discount_requests_list, name='discount_requests_list'),
     path('discounts/requests/<int:discount_id>/approve/', views.approve_student_discount, name='approve_student_discount'),
     path('discounts/requests/<int:discount_id>/reject/', views.reject_student_discount, name='reject_student_discount'),
-
+    path('discounts/students-history/', views.student_discounts_history, name='student_discounts_history'),
+    
     # الإعدادات العامة للنظام
     path('system/', views.system_settings, name='system_settings'),
     path('update-system-settings/', views.update_system_settings, name='update_system_settings'),

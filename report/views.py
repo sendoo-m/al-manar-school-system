@@ -256,6 +256,38 @@ def reports_home(request):
         },
     ]
 
+        # ============================================================
+    # طلبات الخصومات المنتظرة
+    # ============================================================
+    pending_discount_requests = []
+    pending_discounts_summary = {
+        'count': 0,
+        'total_amount': Decimal('0.00'),
+    }
+
+    try:
+        from school_settings.models import StudentDiscount
+
+        pending_qs = StudentDiscount.objects.filter(
+            status='PENDING'
+        ).select_related(
+            'student',
+            'discount_setting',
+            'created_by'
+        ).order_by('-created_date')
+
+        pending_discounts_summary = {
+            'count': pending_qs.count(),
+            'total_amount': pending_qs.aggregate(
+                total=Sum('applied_amount')
+            )['total'] or Decimal('0.00'),
+        }
+
+        pending_discount_requests = pending_qs[:5]
+
+    except Exception as e:
+        print(f"تعذر تحميل طلبات الخصومات المنتظرة في مركز التقارير: {e}")
+
     context = {
         'today': today,
         'month_start': month_start,
@@ -276,6 +308,9 @@ def reports_home(request):
 
         'page_title': 'مركز التقارير',
         'title': 'مركز التقارير',
+
+        'pending_discount_requests': pending_discount_requests,
+        'pending_discounts_summary': pending_discounts_summary,
     }
 
     return render(request, 'report/reports_home.html', context)

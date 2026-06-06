@@ -4,6 +4,1043 @@
 
 {% block title %}التقرير الشهري - مدرسة المنار{% endblock %}
 {% block page_title %}التقرير الشهري للمدفوعات{% endblock %}
+{% block page_subtitle %}تقرير شامل عن المدفوعات والخصومات لشهر {{ report_month_name }} - {{ report_year }}{% endblock %}
+{% block page_icon %}<i class="fas fa-chart-bar me-3"></i>{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'payments:payments_home' %}">لوحة التحكم</a></li>
+<li class="breadcrumb-item"><a href="{% url 'payments:all_payments' %}">جميع المدفوعات</a></li>
+<li class="breadcrumb-item active">التقرير الشهري</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group me-3">
+    <a href="{% url 'payments:daily_report' %}" class="btn btn-outline-primary btn-custom">
+        <i class="fas fa-calendar-day me-1"></i>
+        التقرير اليومي
+    </a>
+
+    <a href="{% url 'payments:advanced_statistics' %}" class="btn btn-outline-info btn-custom">
+        <i class="fas fa-chart-pie me-1"></i>
+        إحصائيات متقدمة
+    </a>
+</div>
+
+<div class="btn-group">
+    <button class="btn btn-success btn-custom" onclick="printReport()">
+        <i class="fas fa-print me-1"></i>
+        طباعة
+    </button>
+
+    <button class="btn btn-outline-secondary btn-custom" onclick="exportReport()">
+        <i class="fas fa-file-export me-1"></i>
+        تصدير
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .monthly-hero {
+        background: linear-gradient(135deg, #0d6efd, #6610f2);
+        color: white;
+        border-radius: 22px;
+        padding: 28px;
+        margin-bottom: 24px;
+        box-shadow: 0 10px 28px rgba(13, 110, 253, 0.22);
+    }
+
+    .monthly-hero h3 {
+        font-weight: 900;
+        margin-bottom: 6px;
+    }
+
+    .content-card {
+        background: white;
+        border-radius: 18px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+        overflow: hidden;
+    }
+
+    .content-card-header {
+        background: #f8f9fa;
+        padding: 18px 22px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .content-card-header h5 {
+        margin: 0;
+        font-weight: 900;
+    }
+
+    .content-card-body {
+        padding: 22px;
+    }
+
+    .payment-stats-card {
+        background: white;
+        border-radius: 17px;
+        padding: 22px;
+        height: 100%;
+        box-shadow: 0 5px 16px rgba(0,0,0,0.08);
+        border-top: 5px solid #0d6efd;
+        transition: all 0.25s ease;
+    }
+
+    .payment-stats-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+    }
+
+    .payment-stats-card.success { border-top-color: #198754; }
+    .payment-stats-card.info { border-top-color: #0dcaf0; }
+    .payment-stats-card.warning { border-top-color: #ffc107; }
+    .payment-stats-card.primary { border-top-color: #0d6efd; }
+    .payment-stats-card.danger { border-top-color: #dc3545; }
+    .payment-stats-card.purple { border-top-color: #6f42c1; }
+
+    .payment-amount {
+        font-size: 1.65rem;
+        font-weight: 900;
+        color: #198754;
+        line-height: 1.2;
+    }
+
+    .currency-symbol {
+        font-size: 0.85rem;
+        color: #64748b;
+        font-weight: 800;
+    }
+
+    .payment-label {
+        font-size: 0.92rem;
+        color: #64748b;
+        margin: 7px 0;
+        font-weight: 900;
+    }
+
+    .payment-change {
+        font-size: 0.82rem;
+        color: #64748b;
+        font-weight: 700;
+    }
+
+    .target-box {
+        background: linear-gradient(135deg, rgba(13,110,253,0.10), rgba(102,16,242,0.08));
+        border: 1px solid rgba(13,110,253,0.18);
+        border-radius: 16px;
+        padding: 16px;
+    }
+
+    .target-progress {
+        height: 11px;
+        background: #e9ecef;
+        border-radius: 20px;
+        overflow: hidden;
+    }
+
+    .target-progress-fill {
+        height: 100%;
+        background: linear-gradient(135deg, #198754, #20c997);
+    }
+
+    .chart-wrapper {
+        position: relative;
+        min-height: 280px;
+    }
+
+    .chart-legend {
+        background: #f8fafc;
+        border-radius: 16px;
+        padding: 18px;
+        height: 100%;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+
+    .legend-color {
+        width: 18px;
+        height: 18px;
+        border-radius: 5px;
+        min-width: 18px;
+    }
+
+    .method-card,
+    .user-card,
+    .discount-card {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 16px;
+        height: 100%;
+        transition: 0.2s ease;
+    }
+
+    .method-card:hover,
+    .user-card:hover,
+    .discount-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+    }
+
+    .mini-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.35rem;
+        color: white;
+    }
+
+    .user-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #ffc107, #fd7e14);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        font-size: 1.15rem;
+    }
+
+    .monthly-table thead th {
+        background: linear-gradient(135deg, #0d6efd, #6610f2);
+        color: white;
+        border: none;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: middle;
+        font-size: 0.86rem;
+        padding: 12px 9px;
+    }
+
+    .monthly-table td {
+        text-align: center;
+        vertical-align: middle;
+        font-size: 0.88rem;
+        padding: 12px 9px;
+    }
+
+    .student-cell {
+        text-align: right !important;
+    }
+
+    .amount-main {
+        font-weight: 900;
+        font-size: 0.98rem;
+    }
+
+    .amount-sub {
+        display: block;
+        color: #64748b;
+        font-size: 0.74rem;
+        margin-top: 2px;
+    }
+
+    .discount-badge {
+        display: inline-block;
+        padding: 5px 9px;
+        border-radius: 999px;
+        font-size: 0.74rem;
+        font-weight: 900;
+        background: rgba(255,193,7,0.18);
+        color: #856404;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 55px 20px;
+        color: #64748b;
+    }
+
+    @media print {
+        .btn,
+        .page-actions,
+        .breadcrumb-nav,
+        .content-card form,
+        .no-print {
+            display: none !important;
+        }
+
+        .content-card,
+        .payment-stats-card {
+            border: 1px solid #ddd !important;
+            box-shadow: none !important;
+        }
+
+        .monthly-hero {
+            box-shadow: none !important;
+            padding: 16px !important;
+        }
+
+        .monthly-table td,
+        .monthly-table th {
+            font-size: 8px !important;
+            padding: 4px !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="monthly-hero">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h3>
+                <i class="fas fa-chart-bar me-2"></i>
+                التقرير الشهري للمدفوعات
+            </h3>
+            <p class="mb-0 opacity-75">
+                تقرير شهر {{ report_month_name }} {{ report_year }} يشمل المدفوعات والخصومات وطرق الدفع وأداء التحصيل.
+            </p>
+        </div>
+
+        <div class="text-lg-end">
+            <div><strong>الشهر:</strong> {{ report_month_name }}</div>
+            <div><strong>السنة:</strong> {{ report_year }}</div>
+            <div><strong>عدد العمليات:</strong> {{ monthly_stats.total_count|default:0 }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- اختيار الشهر والسنة -->
+<div class="content-card mb-4 no-print">
+    <div class="content-card-header">
+        <h5>
+            <i class="fas fa-calendar-alt me-2 text-primary"></i>
+            اختيار الفترة الزمنية
+        </h5>
+    </div>
+
+    <div class="content-card-body">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="month" class="form-label fw-bold">الشهر</label>
+                <select name="month" id="month" class="form-select">
+                    <option value="1" {% if report_month == '1' %}selected{% endif %}>يناير</option>
+                    <option value="2" {% if report_month == '2' %}selected{% endif %}>فبراير</option>
+                    <option value="3" {% if report_month == '3' %}selected{% endif %}>مارس</option>
+                    <option value="4" {% if report_month == '4' %}selected{% endif %}>أبريل</option>
+                    <option value="5" {% if report_month == '5' %}selected{% endif %}>مايو</option>
+                    <option value="6" {% if report_month == '6' %}selected{% endif %}>يونيو</option>
+                    <option value="7" {% if report_month == '7' %}selected{% endif %}>يوليو</option>
+                    <option value="8" {% if report_month == '8' %}selected{% endif %}>أغسطس</option>
+                    <option value="9" {% if report_month == '9' %}selected{% endif %}>سبتمبر</option>
+                    <option value="10" {% if report_month == '10' %}selected{% endif %}>أكتوبر</option>
+                    <option value="11" {% if report_month == '11' %}selected{% endif %}>نوفمبر</option>
+                    <option value="12" {% if report_month == '12' %}selected{% endif %}>ديسمبر</option>
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label for="year" class="form-label fw-bold">السنة</label>
+                <select name="year" id="year" class="form-select">
+                    {% for year in available_years %}
+                    <option value="{{ year }}" {% if year|stringformat:"s" == report_year %}selected{% endif %}>
+                        {{ year }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search me-1"></i>
+                    إنشاء التقرير
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if monthly_stats %}
+<!-- الإحصائيات الشهرية -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-lg-6 mb-4">
+        <div class="payment-stats-card success">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <div class="payment-amount">
+                        {{ monthly_stats.total_amount|floatformat:2 }}
+                        <span class="currency-symbol">ج.م</span>
+                    </div>
+                    <div class="payment-label">إجمالي المدفوعات</div>
+                    <div class="payment-change">
+                        <i class="fas fa-coins"></i>
+                        {{ monthly_stats.total_count|default:0 }} عملية دفع
+                    </div>
+                </div>
+                <div class="text-success opacity-75">
+                    <i class="fas fa-hand-holding-usd fa-3x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 mb-4">
+        <div class="payment-stats-card danger">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <div class="payment-amount text-danger">
+                        {{ monthly_stats.total_discounts|default:0|floatformat:2 }}
+                        <span class="currency-symbol">ج.م</span>
+                    </div>
+                    <div class="payment-label">إجمالي الخصومات</div>
+                    <div class="payment-change">
+                        <i class="fas fa-user-tag"></i>
+                        {{ monthly_stats.discounted_installments|default:0 }} قسط عليه خصم
+                    </div>
+                </div>
+                <div class="text-danger opacity-75">
+                    <i class="fas fa-tags fa-3x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 mb-4">
+        <div class="payment-stats-card info">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <div class="payment-amount text-info">
+                        {{ monthly_stats.avg_payment|floatformat:2 }}
+                        <span class="currency-symbol">ج.م</span>
+                    </div>
+                    <div class="payment-label">متوسط المدفوع</div>
+                    <div class="payment-change">
+                        <i class="fas fa-calculator"></i>
+                        للدفعة الواحدة
+                    </div>
+                </div>
+                <div class="text-info opacity-75">
+                    <i class="fas fa-calculator fa-3x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 mb-4">
+        <div class="payment-stats-card warning">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <div class="payment-amount text-warning">
+                        {{ monthly_stats.unique_students|default:0 }}
+                    </div>
+                    <div class="payment-label">طلاب دافعين</div>
+                    <div class="payment-change">
+                        <i class="fas fa-users"></i>
+                        طالب فريد
+                    </div>
+                </div>
+                <div class="text-warning opacity-75">
+                    <i class="fas fa-graduation-cap fa-3x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-xl-3 col-lg-6 mb-4">
+        <div class="payment-stats-card primary">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <div class="payment-amount text-primary">
+                        {{ monthly_stats.active_days|default:0 }}
+                    </div>
+                    <div class="payment-label">أيام نشطة</div>
+                    <div class="payment-change">
+                        <i class="fas fa-calendar-check"></i>
+                        يوم عمل
+                    </div>
+                </div>
+                <div class="text-primary opacity-75">
+                    <i class="fas fa-calendar-day fa-3x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 mb-4">
+        <div class="payment-stats-card purple">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <div class="payment-amount" style="color:#6f42c1;">
+                        {{ monthly_stats.max_payment|default:0|floatformat:2 }}
+                        <span class="currency-symbol">ج.م</span>
+                    </div>
+                    <div class="payment-label">أكبر دفعة</div>
+                    <div class="payment-change">
+                        <i class="fas fa-arrow-up"></i>
+                        خلال الشهر
+                    </div>
+                </div>
+                <div class="opacity-75" style="color:#6f42c1;">
+                    <i class="fas fa-arrow-trend-up fa-3x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-6 col-lg-12 mb-4">
+        <div class="payment-stats-card">
+            <div class="target-box">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <strong>هدف الشهر</strong>
+                    <strong>{{ monthly_target|floatformat:2 }} ج.م</strong>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <small class="text-muted">نسبة التحقيق</small>
+                    <small class="fw-bold">{{ monthly_target_percentage|floatformat:1 }}%</small>
+                </div>
+
+                <div class="target-progress">
+                    <div class="target-progress-fill" style="width: {{ monthly_target_percentage|floatformat:0 }}%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- رسم بياني للمدفوعات اليومية -->
+{% if daily_data %}
+<div class="content-card mb-4">
+    <div class="content-card-header">
+        <h5>
+            <i class="fas fa-chart-line me-2 text-info"></i>
+            المدفوعات اليومية خلال الشهر
+        </h5>
+    </div>
+
+    <div class="content-card-body">
+        <div class="row g-3">
+            <div class="col-md-8">
+                <div class="chart-wrapper">
+                    <canvas id="dailyChart"></canvas>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="chart-legend">
+                    <h6 class="mb-3 fw-bold">ملخص الرسم البياني</h6>
+
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #0d6efd;"></div>
+                        <div>
+                            <strong>أعلى يوم:</strong>
+                            <br>
+                            {% if daily_data.highest_day %}
+                                {{ daily_data.highest_day.date|date:"d/m/Y" }} -
+                                {{ daily_data.highest_day.amount|floatformat:2 }} ج.م
+                            {% else %}
+                                لا توجد بيانات
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #198754;"></div>
+                        <div>
+                            <strong>متوسط يومي:</strong>
+                            <br>
+                            {{ daily_data.daily_average|floatformat:2 }} ج.م
+                        </div>
+                    </div>
+
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #dc3545;"></div>
+                        <div>
+                            <strong>خصومات الشهر:</strong>
+                            <br>
+                            {{ monthly_stats.total_discounts|default:0|floatformat:2 }} ج.م
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- طرق الدفع -->
+{% if payment_methods %}
+<div class="content-card mb-4">
+    <div class="content-card-header">
+        <h5>
+            <i class="fas fa-credit-card me-2 text-success"></i>
+            توزيع طرق الدفع
+        </h5>
+    </div>
+
+    <div class="content-card-body">
+        <div class="row">
+            {% for method in payment_methods %}
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="method-card">
+                    <div class="d-flex align-items-center gap-3">
+                        <div>
+                            {% if method.payment_method == 'cash' %}
+                                <div class="mini-icon bg-success"><i class="fas fa-money-bill-wave"></i></div>
+                            {% elif method.payment_method == 'transfer' %}
+                                <div class="mini-icon bg-primary"><i class="fas fa-university"></i></div>
+                            {% elif method.payment_method == 'card' %}
+                                <div class="mini-icon bg-info"><i class="fas fa-credit-card"></i></div>
+                            {% elif method.payment_method == 'check' %}
+                                <div class="mini-icon bg-warning"><i class="fas fa-money-check"></i></div>
+                            {% else %}
+                                <div class="mini-icon bg-secondary"><i class="fas fa-receipt"></i></div>
+                            {% endif %}
+                        </div>
+
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1 fw-bold">
+                                {% if method.payment_method == 'cash' %}نقدي
+                                {% elif method.payment_method == 'transfer' %}تحويل بنكي
+                                {% elif method.payment_method == 'card' %}بطاقة ائتمان
+                                {% elif method.payment_method == 'check' %}شيك
+                                {% else %}{{ method.payment_method }}{% endif %}
+                            </h6>
+
+                            <div class="text-muted small">{{ method.count }} عملية</div>
+
+                            <div class="fw-bold text-success">
+                                {{ method.amount|floatformat:2 }} ج.م
+                            </div>
+
+                            <small class="text-muted">
+                                متوسط: {{ method.avg_amount|floatformat:2 }} ج.م
+                            </small>
+
+                            <div class="progress mt-2" style="height: 5px;">
+                                <div class="progress-bar bg-success"
+                                     style="width: {% widthratio method.amount monthly_stats.total_amount 100 %}%">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ملخص الخصومات -->
+{% if top_discounts or manual_discount_summary.count > 0 %}
+<div class="content-card mb-4">
+    <div class="content-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h5>
+            <i class="fas fa-user-tag me-2 text-warning"></i>
+            ملخص الخصومات خلال الشهر
+        </h5>
+
+        <span class="badge bg-warning text-dark">
+            {{ monthly_stats.discounted_installments|default:0 }} قسط عليه خصم
+        </span>
+    </div>
+
+    <div class="content-card-body">
+        <div class="row mb-3">
+            {% for item in top_discounts %}
+            <div class="col-lg-4 col-md-6 mb-3">
+                <div class="discount-card">
+                    <div class="d-flex justify-content-between align-items-start gap-2">
+                        <div>
+                            <h6 class="fw-bold mb-1">
+                                {{ item.applied_discount__discount_setting__name|default:"-" }}
+                            </h6>
+
+                            <small class="text-muted">
+                                {% if item.applied_discount__discount_setting__application_scope == 'PER_INSTALLMENT' %}
+                                    على كل قسط
+                                {% elif item.applied_discount__discount_setting__application_scope == 'TOTAL_FEES' %}
+                                    على إجمالي مصروفات الطالب
+                                {% elif item.applied_discount__discount_setting__application_scope == 'FEE_TYPE_TOTAL' %}
+                                    على إجمالي نوع مصروف معين
+                                {% else %}
+                                    غير محدد
+                                {% endif %}
+                            </small>
+                        </div>
+
+                        <span class="discount-badge">{{ item.count }} قسط</span>
+                    </div>
+
+                    <div class="mt-3 text-danger fw-bold">
+                        {{ item.amount|floatformat:2 }} ج.م
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            {% if manual_discount_summary.count > 0 %}
+            <div class="col-lg-4 col-md-6 mb-3">
+                <div class="discount-card">
+                    <div class="d-flex justify-content-between align-items-start gap-2">
+                        <div>
+                            <h6 class="fw-bold mb-1">خصومات يدوية</h6>
+                            <small class="text-muted">على القسط الحالي</small>
+                        </div>
+
+                        <span class="discount-badge">{{ manual_discount_summary.count }} قسط</span>
+                    </div>
+
+                    <div class="mt-3 text-danger fw-bold">
+                        {{ manual_discount_summary.amount|floatformat:2 }} ج.م
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="table-responsive">
+            <table class="table monthly-table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>نوع الخصم</th>
+                        <th>نطاق التطبيق</th>
+                        <th>عدد الأقساط</th>
+                        <th>إجمالي الخصم</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for item in top_discounts %}
+                    <tr>
+                        <td>{{ item.applied_discount__discount_setting__name|default:"-" }}</td>
+
+                        <td>
+                            {% if item.applied_discount__discount_setting__application_scope == 'PER_INSTALLMENT' %}
+                                على كل قسط
+                            {% elif item.applied_discount__discount_setting__application_scope == 'TOTAL_FEES' %}
+                                على إجمالي مصروفات الطالب
+                            {% elif item.applied_discount__discount_setting__application_scope == 'FEE_TYPE_TOTAL' %}
+                                على إجمالي نوع مصروف معين
+                            {% else %}
+                                غير محدد
+                            {% endif %}
+                        </td>
+
+                        <td>{{ item.count }}</td>
+
+                        <td class="text-danger fw-bold">
+                            {{ item.amount|floatformat:2 }} ج.م
+                        </td>
+                    </tr>
+                    {% endfor %}
+
+                    {% if manual_discount_summary.count > 0 %}
+                    <tr>
+                        <td>خصومات يدوية</td>
+                        <td>على القسط الحالي</td>
+                        <td>{{ manual_discount_summary.count }}</td>
+                        <td class="text-danger fw-bold">
+                            {{ manual_discount_summary.amount|floatformat:2 }} ج.م
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- أفضل الموظفين -->
+{% if top_users %}
+<div class="content-card mb-4">
+    <div class="content-card-header">
+        <h5>
+            <i class="fas fa-trophy me-2 text-warning"></i>
+            أفضل الموظفين حسب المدفوعات المسجلة
+        </h5>
+    </div>
+
+    <div class="content-card-body">
+        <div class="row">
+            {% for user in top_users %}
+            <div class="col-lg-4 col-md-6 mb-3">
+                <div class="user-card">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="user-avatar">
+                            {{ user.payment_user.0|default:"-"|upper }}
+                        </div>
+
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1 fw-bold">{{ user.payment_user|default:"غير محدد" }}</h6>
+                            <div class="text-success fw-bold">{{ user.amount|floatformat:2 }} ج.م</div>
+                            <small class="text-muted">
+                                {{ user.count }} عملية -
+                                متوسط {{ user.avg_amount|floatformat:2 }} ج.م
+                            </small>
+                        </div>
+
+                        <div class="text-warning">
+                            {% if forloop.counter == 1 %}
+                                <i class="fas fa-trophy fa-2x"></i>
+                            {% elif forloop.counter == 2 %}
+                                <i class="fas fa-medal fa-2x"></i>
+                            {% else %}
+                                <i class="fas fa-award fa-2x"></i>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- تفاصيل المدفوعات -->
+{% if payments %}
+<div class="content-card">
+    <div class="content-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h5>
+            <i class="fas fa-list me-2 text-primary"></i>
+            تفاصيل مدفوعات الشهر
+        </h5>
+
+        <span class="badge bg-primary">{{ payments.count }} مدفوع</span>
+    </div>
+
+    <div class="content-card-body p-0">
+        <div class="table-responsive">
+            <table class="table monthly-table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>الطالب</th>
+                        <th>نوع المصروف</th>
+                        <th>القسط</th>
+                        <th>الخصم</th>
+                        <th>المطلوب بعد الخصم</th>
+                        <th>المدفوع</th>
+                        <th>طريقة الدفع</th>
+                        <th>المحاسب</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for payment in payments %}
+                    <tr>
+                        <td>
+                            <strong>{{ payment.payment_date|date:"d M" }}</strong>
+                            <br>
+                            <small class="text-muted">{{ payment.payment_date|date:"H:i" }}</small>
+                        </td>
+
+                        <td class="student-cell">
+                            <strong>{{ payment.student.name }}</strong>
+                            <br>
+                            <small class="text-muted">{{ payment.student.national_number|default:"-" }}</small>
+                            <br>
+                            <small class="text-muted">
+                                {% if payment.student.grade_level %}
+                                    {{ payment.student.grade_level.name }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </small>
+                        </td>
+
+                        <td>
+                            {{ payment.get_fee_type_display }}
+                            {% if payment.fee_name %}
+                                <span class="amount-sub">{{ payment.fee_name }}</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <span class="badge bg-info">#{{ payment.installment_number }}</span>
+                        </td>
+
+                        <td>
+                            {% if payment.discount_amount > 0 %}
+                                <span class="amount-main text-danger">{{ payment.discount_amount|floatformat:2 }}</span>
+                                <span class="amount-sub">ج.م</span>
+                                <span class="amount-sub">
+                                    {% if payment.applied_discount %}
+                                        {{ payment.applied_discount.discount_setting.name }}
+                                    {% else %}
+                                        خصم يدوي
+                                    {% endif %}
+                                </span>
+                                {% if payment.applied_discount %}
+                                <span class="amount-sub">
+                                    {{ payment.applied_discount.discount_setting.get_application_scope_display }}
+                                </span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">0.00</span>
+                                <span class="amount-sub">ج.م</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <span class="amount-main text-primary">{{ payment.amount_tuition|floatformat:2 }}</span>
+                            <span class="amount-sub">ج.م</span>
+                        </td>
+
+                        <td>
+                            <span class="amount-main text-success">{{ payment.amount_paid|floatformat:2 }}</span>
+                            <span class="amount-sub">ج.م</span>
+                        </td>
+
+                        <td>
+                            {% if payment.payment_method == 'cash' %}
+                                <span class="badge bg-success">نقدي</span>
+                            {% elif payment.payment_method == 'transfer' %}
+                                <span class="badge bg-primary">تحويل</span>
+                            {% elif payment.payment_method == 'card' %}
+                                <span class="badge bg-info">بطاقة</span>
+                            {% elif payment.payment_method == 'check' %}
+                                <span class="badge bg-warning text-dark">شيك</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ payment.payment_method }}</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <small>{{ payment.payment_user|default:"غير محدد" }}</small>
+                        </td>
+
+                        <td>
+                            <a href="{% url 'payments:receipt' payment.pk %}"
+                               class="btn btn-outline-success btn-sm"
+                               title="طباعة إيصال"
+                               target="_blank">
+                                <i class="fas fa-print"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+                <tfoot>
+                    <tr class="table-light fw-bold">
+                        <td colspan="4">الإجمالي</td>
+                        <td class="text-danger">{{ monthly_stats.total_discounts|floatformat:2 }} ج.م</td>
+                        <td>-</td>
+                        <td class="text-success">{{ monthly_stats.total_amount|floatformat:2 }} ج.م</td>
+                        <td colspan="3"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="content-card">
+    <div class="content-card-body text-center py-5">
+        <i class="fas fa-calendar-times fa-4x text-muted mb-3"></i>
+        <h5>لا توجد مدفوعات في هذا الشهر</h5>
+        <p class="text-muted">جرب اختيار شهر آخر أو تحقق من البيانات</p>
+
+        <a href="{% url 'payments:all_payments' %}" class="btn btn-outline-primary">
+            <i class="fas fa-list me-2"></i>
+            عرض جميع المدفوعات
+        </a>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+{% if daily_data %}
+document.addEventListener('DOMContentLoaded', function() {
+    const chartCanvas = document.getElementById('dailyChart');
+
+    if (!chartCanvas) {
+        return;
+    }
+
+    const ctx = chartCanvas.getContext('2d');
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ daily_data.labels|safe }},
+            datasets: [{
+                label: 'المدفوعات اليومية',
+                data: {{ daily_data.values|safe }},
+                borderColor: '#0d6efd',
+                backgroundColor: 'rgba(13, 110, 253, 0.10)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.35,
+                pointRadius: 4,
+                pointHoverRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.parsed.y + ' ج.م';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value + ' ج.م';
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+{% endif %}
+
+function printReport() {
+    window.print();
+}
+
+function exportReport() {
+    const month = document.getElementById('month').value;
+    const year = document.getElementById('year').value;
+
+    window.open(`/payments/export/monthly-pdf/?month=${month}&year=${year}`, '_blank');
+}
+</script>
+{% endblock %}
+
+{% comment %} <!-- templates/payments/monthly_report.html -->
+{% extends 'payments/base.html' %}
+{% load humanize %}
+
+{% block title %}التقرير الشهري - مدرسة المنار{% endblock %}
+{% block page_title %}التقرير الشهري للمدفوعات{% endblock %}
 {% block page_subtitle %}تقرير شامل عن المدفوعات لشهر {{ report_month|default:"الحالي" }} - {{ report_year|default:"2025" }}{% endblock %}
 {% block page_icon %}<i class="fas fa-chart-bar me-3"></i>{% endblock %}
 
@@ -606,4 +1643,4 @@ function showPaymentMessage(type, message) {
     }, 15000);
 }
 </script>
-{% endblock %}
+{% endblock %} {% endcomment %}

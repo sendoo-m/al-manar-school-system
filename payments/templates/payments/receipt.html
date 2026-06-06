@@ -274,6 +274,60 @@
             unicode-bidi: plaintext;
         }
 
+        .amount-discount {
+            background: #fff7ed;
+            border-right: 5px solid #f97316;
+            border-radius: 12px;
+            padding-right: 12px;
+        }
+
+        .amount-before-discount {
+            color: #6b7280;
+            text-decoration: line-through;
+        }
+
+        .discount-details-box {
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            border-right: 5px solid #f97316;
+            border-radius: 16px;
+            padding: 14px 16px;
+            margin: 14px 0 18px;
+        }
+
+        .discount-details-box h6 {
+            font-weight: 900;
+            color: #9a3412;
+            margin-bottom: 10px;
+        }
+
+        .discount-mini-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 16px;
+        }
+
+        .discount-mini-item {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            border-bottom: 1px dashed #fed7aa;
+            padding: 5px 0;
+            font-size: 0.88rem;
+            font-weight: 800;
+        }
+
+        .discount-mini-item span:first-child {
+            color: #9a3412;
+            white-space: nowrap;
+        }
+
+        .discount-mini-item span:last-child {
+            color: #111827;
+            text-align: left;
+            font-weight: 900;
+        }
+
         .amount-total {
             background: linear-gradient(135deg, #198754, #20c997);
             color: white;
@@ -561,6 +615,30 @@
             border-width: 2px !important;
         }
 
+        .discount-details-box {
+            padding: 5px 7px !important;
+            margin: 5px 0 6px !important;
+            border-radius: 8px !important;
+            max-height: 52px !important;
+            overflow: hidden !important;
+        }
+
+        .discount-details-box h6 {
+            font-size: 8px !important;
+            margin-bottom: 2px !important;
+        }
+
+        .discount-mini-grid {
+            grid-template-columns: 1fr 1fr !important;
+            gap: 1px 8px !important;
+        }
+
+        .discount-mini-item {
+            font-size: 7.5px !important;
+            padding: 1px 0 !important;
+            line-height: 1.12 !important;
+        }
+
         .amount-panel-title {
             font-size: 11px !important;
             margin-bottom: 5px !important;
@@ -817,6 +895,17 @@
                 </div>
 
                 <div class="info-row">
+                    <span class="info-label">الخصم</span>
+                    <span class="info-value">
+                        {% if tuition.discount_amount > 0 %}
+                            {{ discount_name|default:"خصم يدوي" }}
+                        {% else %}
+                            لا يوجد
+                        {% endif %}
+                    </span>
+                </div>
+
+                <div class="info-row">
                     <span class="info-label">رقم القسط</span>
                     <span class="info-value">#{{ tuition.installment_number }}</span>
                 </div>
@@ -891,17 +980,51 @@
                 تفاصيل المبالغ المالية
             </div>
 
-            <div class="amount-row">
-                <span class="amount-label">مبلغ القسط المطلوب</span>
-                <span class="amount-value">{{ tuition.amount_tuition|floatformat:2 }} ج.م</span>
-            </div>
-
             {% if tuition.discount_amount > 0 %}
             <div class="amount-row">
-                <span class="amount-label">قيمة الخصم</span>
-                <span class="amount-value">{{ tuition.discount_amount|floatformat:2 }} ج.م</span>
+                <span class="amount-label">مبلغ القسط قبل الخصم</span>
+                <span class="amount-value amount-before-discount">{{ amount_before_discount|floatformat:2 }} ج.م</span>
+            </div>
+
+            <div class="amount-row amount-discount">
+                <span class="amount-label">قيمة الخصم المطبق</span>
+                <span class="amount-value text-danger">{{ tuition.discount_amount|floatformat:2 }} ج.م</span>
+            </div>
+
+            <div class="discount-details-box">
+                <h6>
+                    <i class="fas fa-user-tag me-1"></i>
+                    بيانات الخصم
+                </h6>
+
+                <div class="discount-mini-grid">
+                    <div class="discount-mini-item">
+                        <span>اسم الخصم</span>
+                        <span>{{ discount_name|default:"خصم يدوي" }}</span>
+                    </div>
+
+                    <div class="discount-mini-item">
+                        <span>نطاق التطبيق</span>
+                        <span>{{ discount_scope|default:"خصم يدوي على القسط" }}</span>
+                    </div>
+
+                    <div class="discount-mini-item">
+                        <span>الحالة</span>
+                        <span>{{ discount_status|default:"مطبق" }}</span>
+                    </div>
+
+                    <div class="discount-mini-item">
+                        <span>بعد الخصم</span>
+                        <span>{{ tuition.amount_tuition|floatformat:2 }} ج.م</span>
+                    </div>
+                </div>
             </div>
             {% endif %}
+
+            <div class="amount-row">
+                <span class="amount-label">مبلغ القسط المطلوب بعد الخصم</span>
+                <span class="amount-value">{{ tuition.amount_tuition|floatformat:2 }} ج.م</span>
+            </div>
 
             <div class="amount-row">
                 <span class="amount-label">إجمالي المدفوع على القسط</span>
@@ -1048,6 +1171,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 </body>
 </html>
+
 {% comment %} <!-- templates/payments/receipt.html -->
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">

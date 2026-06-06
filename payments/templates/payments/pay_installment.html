@@ -14,18 +14,26 @@
 {% endblock %}
 
 {% block page_actions %}
-<div class="btn-group">
+<div class="btn-group flex-wrap gap-1">
     <a href="{% url 'students:student_detail' student.pk %}" class="btn btn-outline-info btn-custom">
-        <i class="fas fa-user me-1"></i>ملف الطالب
+        <i class="fas fa-user me-1"></i>
+        ملف الطالب
+    </a>
+
+    <a href="{% url 'payments:request_student_discount' student.pk %}" class="btn btn-outline-success btn-custom">
+        <i class="fas fa-user-tag me-1"></i>
+        طلب خصم
     </a>
 
     <a href="{% url 'payments:all_payments' %}" class="btn btn-outline-secondary btn-custom">
-        <i class="fas fa-list me-1"></i>جميع المدفوعات
+        <i class="fas fa-list me-1"></i>
+        جميع المدفوعات
     </a>
 
     {% if permissions.can_reports %}
     <button type="button" onclick="window.print()" class="btn btn-outline-primary btn-custom">
-        <i class="fas fa-print me-1"></i>طباعة
+        <i class="fas fa-print me-1"></i>
+        طباعة
     </button>
     {% endif %}
 </div>
@@ -33,81 +41,100 @@
 
 {% block extra_css %}
 <style>
+    :root {
+        --payments-primary: #0d6efd;
+        --payments-info: #0dcaf0;
+        --payments-success: #198754;
+        --payments-warning: #ffc107;
+        --payments-danger: #dc3545;
+        --payments-muted: #64748b;
+        --payments-soft: #f8fafc;
+        --payments-border: #e5e7eb;
+        --payments-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    }
+
     .student-hero {
-        background: linear-gradient(135deg, #007bff, #0056b3);
+        background: linear-gradient(135deg, #0d6efd, #084298);
         color: white;
-        border-radius: 20px;
-        padding: 28px;
+        border-radius: 24px;
+        padding: 30px;
         margin-bottom: 25px;
-        box-shadow: 0 8px 22px rgba(0, 123, 255, 0.24);
+        box-shadow: 0 10px 28px rgba(13, 110, 253, 0.25);
     }
 
     .student-avatar-lg {
-        width: 72px;
-        height: 72px;
-        min-width: 72px;
-        border-radius: 20px;
+        width: 76px;
+        height: 76px;
+        min-width: 76px;
+        border-radius: 22px;
         background: rgba(255,255,255,0.18);
+        border: 1px solid rgba(255,255,255,0.25);
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 2rem;
         font-weight: 900;
-        border: 1px solid rgba(255,255,255,0.25);
+    }
+
+    .hero-label {
+        color: rgba(255,255,255,0.75);
+        font-size: 0.85rem;
+        font-weight: 700;
+    }
+
+    .hero-value {
+        color: white;
+        font-weight: 900;
     }
 
     .summary-card {
         background: white;
-        border-radius: 16px;
+        border-radius: 18px;
         padding: 20px;
         height: 100%;
-        box-shadow: 0 5px 16px rgba(0,0,0,0.08);
-        border-top: 5px solid;
+        box-shadow: var(--payments-shadow);
+        border-top: 5px solid var(--payments-primary);
         text-align: center;
-        transition: all 0.25s ease;
+        transition: 0.25s ease;
     }
 
     .summary-card:hover {
         transform: translateY(-4px);
-        box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
     }
 
-    .summary-card.primary { border-top-color: #007bff; }
-    .summary-card.success { border-top-color: #28a745; }
-    .summary-card.warning { border-top-color: #ffc107; }
-    .summary-card.danger { border-top-color: #dc3545; }
-    .summary-card.info { border-top-color: #17a2b8; }
+    .summary-card.primary { border-top-color: var(--payments-primary); }
+    .summary-card.success { border-top-color: var(--payments-success); }
+    .summary-card.warning { border-top-color: var(--payments-warning); }
+    .summary-card.danger { border-top-color: var(--payments-danger); }
+    .summary-card.info { border-top-color: var(--payments-info); }
+    .summary-card.dark { border-top-color: #212529; }
 
     .summary-value {
-        font-size: 1.85rem;
+        font-size: 1.75rem;
         font-weight: 900;
-        margin-bottom: 5px;
+        margin-bottom: 4px;
     }
 
-    .summary-value.primary { color: #007bff; }
-    .summary-value.success { color: #28a745; }
-    .summary-value.warning { color: #ffc107; }
-    .summary-value.danger { color: #dc3545; }
-    .summary-value.info { color: #17a2b8; }
-
     .summary-label {
-        color: #6c757d;
+        color: var(--payments-muted);
         font-weight: 800;
-        font-size: 0.92rem;
+        font-size: 0.9rem;
     }
 
     .content-panel {
         background: white;
-        border-radius: 16px;
-        box-shadow: 0 5px 16px rgba(0,0,0,0.08);
+        border-radius: 18px;
+        box-shadow: var(--payments-shadow);
         margin-bottom: 25px;
         overflow: hidden;
+        border: 1px solid rgba(226, 232, 240, 0.9);
     }
 
     .content-panel-header {
-        background: #f8f9fa;
+        background: var(--payments-soft);
         padding: 18px 22px;
-        border-bottom: 1px solid #e9ecef;
+        border-bottom: 1px solid var(--payments-border);
     }
 
     .content-panel-header h5,
@@ -120,37 +147,88 @@
         padding: 22px;
     }
 
-    .installments-table thead th {
-        background: linear-gradient(135deg, #17a2b8, #138496);
+    .form-section-title {
+        font-weight: 900;
+        color: #1e293b;
+        margin-bottom: 16px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #f1f5f9;
+    }
+
+    .form-control,
+    .form-select {
+        border-radius: 12px;
+        border: 2px solid #e9ecef;
+        padding: 10px 12px;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: var(--payments-primary);
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.12);
+    }
+
+    .installments-table thead th,
+    .records-table thead th,
+    .pending-table thead th {
         color: white;
         border: none;
-        padding: 14px 10px;
+        padding: 13px 10px;
         vertical-align: middle;
         text-align: center;
         white-space: nowrap;
         font-size: 0.86rem;
     }
 
-    .installments-table tbody td {
+    .installments-table thead th {
+        background: linear-gradient(135deg, #0dcaf0, #0a95ad);
+    }
+
+    .records-table thead th {
+        background: linear-gradient(135deg, #198754, #20c997);
+    }
+
+    .pending-table thead th {
+        background: linear-gradient(135deg, #ffc107, #fd7e14);
+    }
+
+    .installments-table tbody td,
+    .records-table tbody td,
+    .pending-table tbody td {
         padding: 13px 10px;
         vertical-align: middle;
         text-align: center;
-        border-color: #edf0f2;
+        border-color: #edf2f7;
         font-size: 0.9rem;
     }
 
-    .installments-table tbody tr:hover {
-        background: rgba(23, 162, 184, 0.05);
+    .student-warning-panel {
+        border-right: 6px solid var(--payments-warning);
+    }
+
+    .warning-summary-box {
+        background: rgba(255, 193, 7, 0.14);
+        border: 1px solid rgba(255, 193, 7, 0.35);
+        color: #856404;
+        border-radius: 14px;
+        padding: 14px;
+        font-weight: 800;
     }
 
     .status-badge {
         display: inline-block;
         padding: 6px 10px;
-        border-radius: 10px;
+        border-radius: 12px;
         font-size: 0.78rem;
         font-weight: 900;
         white-space: nowrap;
     }
+
+    .status-paid { background: rgba(25,135,84,0.14); color: #198754; }
+    .status-partial { background: rgba(255,193,7,0.18); color: #856404; }
+    .status-overdue { background: rgba(220,53,69,0.12); color: #dc3545; }
+    .status-pending { background: rgba(13,202,240,0.14); color: #087990; }
+    .status-cancelled { background: rgba(108,117,125,0.14); color: #6c757d; }
 
     .amount-main {
         font-weight: 900;
@@ -159,58 +237,61 @@
 
     .amount-sub {
         display: block;
-        color: #6c757d;
+        color: var(--payments-muted);
         font-size: 0.75rem;
+        margin-top: 2px;
     }
 
     .progress-wrap {
         background: #e9ecef;
-        height: 10px;
-        border-radius: 20px;
+        height: 12px;
+        border-radius: 30px;
         overflow: hidden;
     }
 
     .progress-fill {
-        background: linear-gradient(135deg, #28a745, #20c997);
+        background: linear-gradient(135deg, #198754, #20c997);
         height: 100%;
         transition: width 0.8s ease;
     }
 
-    .form-section-title {
-        font-weight: 900;
-        color: #2c3e50;
-        margin-bottom: 16px;
-        padding-bottom: 10px;
-        border-bottom: 2px solid #f1f3f5;
-    }
-
-    .empty-state {
-        text-align: center;
-        padding: 45px 15px;
-        color: #6c757d;
-    }
-
-    .record-item {
-        background: #f8f9fa;
-        border-radius: 12px;
-        padding: 14px;
-        margin-bottom: 10px;
-        border-right: 4px solid #28a745;
-    }
-
     .discount-preview {
-        background: linear-gradient(135deg, #f8f9fa, #eef7ff);
+        background: linear-gradient(135deg, #f8fafc, #eef7ff);
         border: 1px solid #dbeafe;
-        border-radius: 14px;
-        padding: 14px;
+        border-radius: 16px;
+        padding: 16px;
     }
 
     .discount-preview-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 5px 0;
+        gap: 10px;
+        padding: 7px 0;
         font-weight: 800;
+    }
+
+    .record-item {
+        background: var(--payments-soft);
+        border-radius: 14px;
+        padding: 14px;
+        margin-bottom: 10px;
+        border-right: 4px solid var(--payments-success);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 45px 15px;
+        color: var(--payments-muted);
+    }
+
+    .quick-actions-panel {
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: var(--payments-shadow);
+        padding: 16px;
+        margin-bottom: 25px;
+        border: 1px solid rgba(226, 232, 240, 0.9);
     }
 
     @media (max-width: 768px) {
@@ -218,20 +299,24 @@
             padding: 20px;
         }
 
-        .student-hero .d-flex {
+        .student-hero .hero-main-row {
             flex-direction: column;
             align-items: flex-start !important;
         }
 
         .summary-value {
-            font-size: 1.5rem;
+            font-size: 1.45rem;
         }
 
-        .installments-table thead {
+        .installments-table thead,
+        .records-table thead,
+        .pending-table thead {
             display: none;
         }
 
-        .installments-table tbody tr {
+        .installments-table tbody tr,
+        .records-table tbody tr,
+        .pending-table tbody tr {
             display: block;
             margin-bottom: 14px;
             border: 1px solid #e9ecef;
@@ -239,7 +324,9 @@
             overflow: hidden;
         }
 
-        .installments-table tbody td {
+        .installments-table tbody td,
+        .records-table tbody td,
+        .pending-table tbody td {
             display: block;
             text-align: right !important;
             border-bottom: 1px solid #f1f1f1;
@@ -248,6 +335,7 @@
 
     @media print {
         .page-actions,
+        .quick-actions-panel,
         .content-panel form,
         .btn,
         .modal {
@@ -267,7 +355,7 @@
 
 <!-- بيانات الطالب -->
 <div class="student-hero">
-    <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
+    <div class="hero-main-row d-flex align-items-center justify-content-between gap-3 flex-wrap">
         <div class="d-flex align-items-center gap-3">
             <div class="student-avatar-lg">
                 {{ student.name.0|upper }}
@@ -275,12 +363,13 @@
 
             <div>
                 <h3 class="mb-1">{{ student.name }}</h3>
+
                 <div class="opacity-75">
                     <i class="fas fa-id-card me-1"></i>
-                    <span dir="ltr">{{ student.national_number }}</span>
+                    <span dir="ltr">{{ student.national_number|default:"غير محدد" }}</span>
                 </div>
 
-                <div class="mt-2">
+                <div class="mt-2 d-flex gap-2 flex-wrap">
                     {% if student.grade_level %}
                         <span class="badge bg-light text-dark">
                             {% if student.grade_level.education_level %}
@@ -300,52 +389,169 @@
         </div>
 
         <div class="text-lg-end">
-            <div class="mb-1">
-                <i class="fas fa-phone me-1"></i>
-                <span dir="ltr">{{ student.phone_number|default:"غير محدد" }}</span>
+            <div class="mb-2">
+                <div class="hero-label">رقم الهاتف</div>
+                <div class="hero-value" dir="ltr">{{ student.phone_number|default:"غير محدد" }}</div>
             </div>
 
-            <div>
-                <i class="fas fa-user-tie me-1"></i>
-                {{ student.parent_name|default:"ولي الأمر غير محدد" }}
+            <div class="mb-2">
+                <div class="hero-label">ولي الأمر</div>
+                <div class="hero-value">{{ student.parent_name|default:"غير محدد" }}</div>
             </div>
 
             {% if student.parent_phone %}
             <div>
-                <i class="fas fa-mobile-alt me-1"></i>
-                <span dir="ltr">{{ student.parent_phone }}</span>
+                <div class="hero-label">هاتف ولي الأمر</div>
+                <div class="hero-value" dir="ltr">{{ student.parent_phone }}</div>
             </div>
             {% endif %}
         </div>
     </div>
 </div>
 
+<!-- إجراءات سريعة -->
+<div class="quick-actions-panel">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <strong>
+            <i class="fas fa-bolt me-2 text-warning"></i>
+            إجراءات سريعة
+        </strong>
+
+        <div class="btn-group flex-wrap gap-1">
+            <a href="{% url 'payments:request_student_discount' student.pk %}" class="btn btn-outline-success btn-sm">
+                <i class="fas fa-user-tag me-1"></i>
+                طلب خصم
+            </a>
+
+            <a href="{% url 'students:student_detail' student.pk %}" class="btn btn-outline-info btn-sm">
+                <i class="fas fa-user me-1"></i>
+                ملف الطالب
+            </a>
+
+            {% if permissions.can_reports %}
+            <button type="button" onclick="window.print()" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-print me-1"></i>
+                طباعة
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- طلبات خصم منتظرة -->
+{% if pending_discount_requests_count > 0 %}
+<div class="content-panel student-warning-panel">
+    <div class="content-panel-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h5>
+            <i class="fas fa-clock me-2 text-warning"></i>
+            طلبات خصم في انتظار موافقة الإدارة
+        </h5>
+
+        <span class="badge bg-warning text-dark">
+            {{ pending_discount_requests_count }} طلب
+        </span>
+    </div>
+
+    <div class="content-panel-body">
+        <div class="warning-summary-box mb-3">
+            <i class="fas fa-info-circle me-1"></i>
+            يوجد طلب خصم لهذا الطالب لم تتم الموافقة عليه بعد. لن يظهر الخصم ضمن الخصومات المعتمدة إلا بعد موافقة الإدارة.
+        </div>
+
+        <div class="table-responsive">
+            <table class="table pending-table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>الخصم</th>
+                        <th>نطاق التطبيق</th>
+                        <th>المبلغ الأصلي</th>
+                        <th>قيمة الخصم</th>
+                        <th>بعد الخصم</th>
+                        <th>مقدم الطلب</th>
+                        <th>تاريخ الطلب</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for item in pending_discount_requests %}
+                    <tr>
+                        <td>
+                            <strong>{{ item.discount_setting.name }}</strong>
+                            <span class="amount-sub">{{ item.discount_setting.get_category_display }}</span>
+                        </td>
+
+                        <td>
+                            <span class="badge bg-info">
+                                {{ item.get_application_scope_display }}
+                            </span>
+                        </td>
+
+                        <td>{{ item.original_amount|floatformat:2 }} ج.م</td>
+
+                        <td class="text-danger fw-bold">
+                            {{ item.applied_amount|floatformat:2 }} ج.م
+                        </td>
+
+                        <td class="text-success fw-bold">
+                            {{ item.final_amount|floatformat:2 }} ج.م
+                        </td>
+
+                        <td>
+                            {% if item.created_by %}
+                                {{ item.created_by.get_full_name|default:item.created_by.username }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {{ item.created_date|date:"Y/m/d" }}
+                            <span class="amount-sub">{{ item.created_date|date:"H:i" }}</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if user_role == 'SYSTEM_ADMIN' or user_role == 'SCHOOL_MANAGER' %}
+        <div class="text-center mt-3">
+            <a href="{% url 'school_settings:discount_requests_list' %}" class="btn btn-warning btn-custom">
+                <i class="fas fa-clipboard-check me-1"></i>
+                مراجعة طلبات الخصومات
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
 <!-- الملخص المالي -->
 <div class="row mb-4">
     <div class="col-lg-3 col-md-6 mb-3">
         <div class="summary-card primary">
-            <div class="summary-value primary">{{ summary.total_required|default:0|floatformat:0 }}</div>
+            <div class="summary-value text-primary">{{ summary.total_required|default:0|floatformat:0 }}</div>
             <div class="summary-label">إجمالي المطلوب</div>
         </div>
     </div>
 
     <div class="col-lg-3 col-md-6 mb-3">
         <div class="summary-card success">
-            <div class="summary-value success">{{ summary.total_paid|default:0|floatformat:0 }}</div>
+            <div class="summary-value text-success">{{ summary.total_paid|default:0|floatformat:0 }}</div>
             <div class="summary-label">إجمالي المدفوع</div>
         </div>
     </div>
 
     <div class="col-lg-3 col-md-6 mb-3">
         <div class="summary-card danger">
-            <div class="summary-value danger">{{ summary.total_remaining|default:0|floatformat:0 }}</div>
+            <div class="summary-value text-danger">{{ summary.total_remaining|default:0|floatformat:0 }}</div>
             <div class="summary-label">إجمالي المتبقي</div>
         </div>
     </div>
 
     <div class="col-lg-3 col-md-6 mb-3">
         <div class="summary-card info">
-            <div class="summary-value info">{{ summary.collection_percentage|default:0|floatformat:1 }}%</div>
+            <div class="summary-value text-info">{{ summary.collection_percentage|default:0|floatformat:1 }}%</div>
             <div class="summary-label">نسبة التحصيل</div>
         </div>
     </div>
@@ -355,52 +561,55 @@
 <div class="row mb-4">
     <div class="col-lg-2 col-md-4 col-6 mb-3">
         <div class="summary-card info">
-            <div class="summary-value info">{{ summary.installments_count|default:0 }}</div>
+            <div class="summary-value text-info">{{ summary.installments_count|default:0 }}</div>
             <div class="summary-label">عدد الأقساط</div>
         </div>
     </div>
 
     <div class="col-lg-2 col-md-4 col-6 mb-3">
         <div class="summary-card success">
-            <div class="summary-value success">{{ summary.paid_count|default:0 }}</div>
+            <div class="summary-value text-success">{{ summary.paid_count|default:0 }}</div>
             <div class="summary-label">مدفوع</div>
         </div>
     </div>
 
     <div class="col-lg-2 col-md-4 col-6 mb-3">
         <div class="summary-card warning">
-            <div class="summary-value warning">{{ summary.partial_count|default:0 }}</div>
+            <div class="summary-value text-warning">{{ summary.partial_count|default:0 }}</div>
             <div class="summary-label">جزئي</div>
         </div>
     </div>
 
     <div class="col-lg-2 col-md-4 col-6 mb-3">
         <div class="summary-card primary">
-            <div class="summary-value primary">{{ summary.pending_count|default:0 }}</div>
+            <div class="summary-value text-primary">{{ summary.pending_count|default:0 }}</div>
             <div class="summary-label">معلق</div>
         </div>
     </div>
 
     <div class="col-lg-2 col-md-4 col-6 mb-3">
         <div class="summary-card danger">
-            <div class="summary-value danger">{{ summary.overdue_count|default:0 }}</div>
+            <div class="summary-value text-danger">{{ summary.overdue_count|default:0 }}</div>
             <div class="summary-label">متأخر</div>
         </div>
     </div>
 
     <div class="col-lg-2 col-md-4 col-6 mb-3">
         <div class="summary-card warning">
-            <div class="summary-value warning">{{ summary.total_discounts|default:0|floatformat:0 }}</div>
+            <div class="summary-value text-warning">{{ summary.total_discounts|default:0|floatformat:0 }}</div>
             <div class="summary-label">خصومات</div>
         </div>
     </div>
 </div>
 
-<!-- شريط نسبة التحصيل -->
+<!-- مؤشر التحصيل -->
 <div class="content-panel">
     <div class="content-panel-body">
         <div class="d-flex justify-content-between align-items-center mb-2">
-            <strong>مؤشر التحصيل</strong>
+            <strong>
+                <i class="fas fa-chart-line me-1 text-success"></i>
+                مؤشر التحصيل
+            </strong>
             <strong>{{ summary.collection_percentage|default:0|floatformat:1 }}%</strong>
         </div>
 
@@ -410,17 +619,8 @@
     </div>
 </div>
 
-
-
-<a href="{% url 'payments:request_student_discount' student.pk %}" class="btn btn-outline-success btn-custom">
-    <i class="fas fa-user-tag me-1"></i>
-    طلب خصم
-</a>
-
-
-
 <div class="row">
-    <!-- إنشاء قسط جديد -->
+    <!-- إنشاء قسط وسجل مختصر -->
     <div class="col-lg-5">
         {% if permissions.can_add %}
         <div class="content-panel">
@@ -452,7 +652,7 @@
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">نوع المصروف</label>
+                            <label class="form-label fw-bold">نوع المصروف</label>
                             {{ form.fee_type }}
                             {% for error in form.fee_type.errors %}
                                 <div class="text-danger small">{{ error }}</div>
@@ -460,7 +660,7 @@
                         </div>
 
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">اسم المصروف</label>
+                            <label class="form-label fw-bold">اسم المصروف</label>
                             {{ form.fee_name }}
                             {% for error in form.fee_name.errors %}
                                 <div class="text-danger small">{{ error }}</div>
@@ -468,7 +668,7 @@
                         </div>
 
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">رقم القسط</label>
+                            <label class="form-label fw-bold">رقم القسط</label>
                             {{ form.installment_number }}
                             {% for error in form.installment_number.errors %}
                                 <div class="text-danger small">{{ error }}</div>
@@ -476,7 +676,7 @@
                         </div>
 
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">تاريخ الاستحقاق</label>
+                            <label class="form-label fw-bold">تاريخ الاستحقاق</label>
                             {{ form.due_date }}
                             {% for error in form.due_date.errors %}
                                 <div class="text-danger small">{{ error }}</div>
@@ -484,7 +684,7 @@
                         </div>
 
                         <div class="col-md-12 mb-3">
-                            <label class="form-label">مبلغ القسط قبل الخصم</label>
+                            <label class="form-label fw-bold">مبلغ القسط قبل الخصم</label>
                             <div class="input-group">
                                 <input type="number"
                                        name="original_amount"
@@ -498,12 +698,17 @@
                             </div>
                             <small class="text-muted">اكتب هنا قيمة القسط الأصلية قبل أي خصم.</small>
                         </div>
+                    </div>
 
+                    <div class="form-section-title mt-3">
+                        <i class="fas fa-tags me-1"></i>
+                        الخصومات
+                    </div>
+
+                    <div class="row">
                         <div class="col-md-12 mb-3">
-                            <label class="form-label">خصم معتمد للطالب</label>
-                            <select name="applied_discount"
-                                    id="appliedDiscountSelect"
-                                    class="form-select">
+                            <label class="form-label fw-bold">خصم معتمد للطالب</label>
+                            <select name="applied_discount" id="appliedDiscountSelect" class="form-select">
                                 <option value=""
                                         data-scope=""
                                         data-name=""
@@ -519,10 +724,8 @@
                                         data-scope-label="{{ student_discount.discount_setting.get_application_scope_display|escape }}"
                                         data-discount-label="{{ student_discount.applied_amount|floatformat:2 }} ج.م">
                                     {{ student_discount.discount_setting.name }}
-                                    -
-                                    {{ student_discount.discount_setting.get_application_scope_display }}
-                                    -
-                                    خصم مسجل: {{ student_discount.applied_amount|floatformat:2 }} ج.م
+                                    - {{ student_discount.discount_setting.get_application_scope_display }}
+                                    - خصم مسجل: {{ student_discount.applied_amount|floatformat:2 }} ج.م
                                 </option>
                                 {% endfor %}
                             </select>
@@ -540,7 +743,7 @@
                         </div>
 
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">قيمة الخصم اليدوي</label>
+                            <label class="form-label fw-bold">قيمة الخصم اليدوي</label>
                             <div class="input-group">
                                 <input type="number"
                                        name="discount_amount"
@@ -554,7 +757,7 @@
                         </div>
 
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">نسبة الخصم اليدوي</label>
+                            <label class="form-label fw-bold">نسبة الخصم اليدوي</label>
                             <div class="input-group">
                                 <input type="number"
                                        name="discount_percentage"
@@ -602,9 +805,16 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
 
+                    <div class="form-section-title mt-3">
+                        <i class="fas fa-hand-holding-usd me-1"></i>
+                        بيانات الدفع
+                    </div>
+
+                    <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">المبلغ المدفوع الآن</label>
+                            <label class="form-label fw-bold">المبلغ المدفوع الآن</label>
                             <div class="input-group">
                                 {{ form.amount_paid }}
                                 <span class="input-group-text">ج.م</span>
@@ -615,7 +825,7 @@
                         </div>
 
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">طريقة الدفع</label>
+                            <label class="form-label fw-bold">طريقة الدفع</label>
                             <select name="payment_method" class="form-control" required>
                                 {% for value, label in payment_method_choices %}
                                 <option value="{{ value }}"
@@ -623,8 +833,7 @@
                                         selected
                                     {% elif not payment_settings and value == 'cash' %}
                                         selected
-                                    {% endif %}
-                                >
+                                    {% endif %}>
                                     {{ label }}
                                 </option>
                                 {% endfor %}
@@ -635,7 +844,7 @@
                         </div>
 
                         <div class="col-md-12 mb-3">
-                            <label class="form-label">ملاحظات</label>
+                            <label class="form-label fw-bold">ملاحظات</label>
                             {{ form.notes }}
                             {% for error in form.notes.errors %}
                                 <div class="text-danger small">{{ error }}</div>
@@ -658,7 +867,7 @@
         </div>
         {% endif %}
 
-        <!-- سجل الدفع -->
+        <!-- سجل دفع مختصر -->
         <div class="content-panel">
             <div class="content-panel-header">
                 <h6>
@@ -673,16 +882,14 @@
                     <div class="d-flex justify-content-between align-items-center gap-2">
                         <div>
                             <strong>{{ record.amount_paid|floatformat:2 }} ج.م</strong>
-                            <br>
-                            <small class="text-muted">
+                            <span class="amount-sub">
                                 {{ record.tuition.get_fee_type_display }} - قسط #{{ record.tuition.installment_number }}
-                            </small>
+                            </span>
                         </div>
 
                         <div class="text-end">
                             <small class="text-muted">{{ record.payment_date|date:"Y/m/d H:i" }}</small>
-                            <br>
-                            <small class="text-primary">{{ record.payment_user|default:"-" }}</small>
+                            <span class="amount-sub text-primary">{{ record.payment_user|default:"-" }}</span>
                         </div>
                     </div>
                 </div>
@@ -696,7 +903,7 @@
         </div>
     </div>
 
-    <!-- الأقساط -->
+    <!-- الأقساط والسجل الكامل -->
     <div class="col-lg-7">
         <div class="content-panel">
             <div class="content-panel-header d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -732,7 +939,7 @@
                                 <td>
                                     <strong>{{ installment.get_fee_type_display }}</strong>
                                     {% if installment.fee_name %}
-                                        <br><small class="text-muted">{{ installment.fee_name }}</small>
+                                        <span class="amount-sub">{{ installment.fee_name }}</span>
                                     {% endif %}
                                 </td>
 
@@ -743,18 +950,15 @@
                                 <td>
                                     {% if installment.discount_amount > 0 %}
                                         <span class="amount-main text-warning">{{ installment.discount_amount|floatformat:2 }}</span>
+                                        <span class="amount-sub">ج.م</span>
                                         {% if installment.applied_discount %}
-                                            <span class="amount-sub">
-                                                {{ installment.applied_discount.discount_setting.name }}
-                                            </span>
-                                            <span class="amount-sub">
-                                                {{ installment.applied_discount.discount_setting.get_application_scope_display }}
-                                            </span>
+                                            <span class="amount-sub">{{ installment.applied_discount.discount_setting.name }}</span>
+                                            <span class="amount-sub">{{ installment.applied_discount.discount_setting.get_application_scope_display }}</span>
                                         {% endif %}
                                     {% else %}
                                         <span class="text-muted">0.00</span>
+                                        <span class="amount-sub">ج.م</span>
                                     {% endif %}
-                                    <span class="amount-sub">ج.م</span>
                                 </td>
 
                                 <td>
@@ -786,15 +990,15 @@
 
                                 <td>
                                     {% if installment.payment_status == 'PAID' %}
-                                        <span class="status-badge" style="background: rgba(40,167,69,0.12); color:#198754;">مدفوع</span>
+                                        <span class="status-badge status-paid">مدفوع</span>
                                     {% elif installment.payment_status == 'PARTIALLY_PAID' %}
-                                        <span class="status-badge" style="background: rgba(255,193,7,0.18); color:#856404;">جزئي</span>
+                                        <span class="status-badge status-partial">جزئي</span>
                                     {% elif installment.payment_status == 'OVERDUE' %}
-                                        <span class="status-badge" style="background: rgba(220,53,69,0.12); color:#dc3545;">متأخر</span>
+                                        <span class="status-badge status-overdue">متأخر</span>
                                     {% elif installment.payment_status == 'PENDING' %}
-                                        <span class="status-badge" style="background: rgba(13,202,240,0.12); color:#087990;">معلق</span>
+                                        <span class="status-badge status-pending">معلق</span>
                                     {% elif installment.payment_status == 'CANCELLED' %}
-                                        <span class="status-badge" style="background: rgba(108,117,125,0.12); color:#6c757d;">ملغي</span>
+                                        <span class="status-badge status-cancelled">ملغي</span>
                                     {% endif %}
                                 </td>
 
@@ -851,7 +1055,7 @@
             </div>
         </div>
 
-        <!-- كل سجلات الدفع -->
+        <!-- سجل المدفوعات الكامل -->
         {% if payment_records %}
         <div class="content-panel">
             <div class="content-panel-header">
@@ -863,7 +1067,7 @@
 
             <div class="content-panel-body p-0">
                 <div class="table-responsive">
-                    <table class="table installments-table mb-0">
+                    <table class="table records-table mb-0">
                         <thead>
                             <tr>
                                 <th>التاريخ</th>
@@ -880,14 +1084,12 @@
                             <tr>
                                 <td>
                                     {{ record.payment_date|date:"Y/m/d" }}
-                                    <br>
-                                    <small class="text-muted">{{ record.payment_date|date:"H:i" }}</small>
+                                    <span class="amount-sub">{{ record.payment_date|date:"H:i" }}</span>
                                 </td>
 
                                 <td>
                                     {{ record.tuition.get_fee_type_display }}
-                                    <br>
-                                    <small class="text-muted">قسط #{{ record.tuition.installment_number }}</small>
+                                    <span class="amount-sub">قسط #{{ record.tuition.installment_number }}</span>
                                 </td>
 
                                 <td>
@@ -895,7 +1097,6 @@
                                 </td>
 
                                 <td>{{ record.get_payment_method_display }}</td>
-
                                 <td>{{ record.payment_user|default:"-" }}</td>
 
                                 <td>
@@ -937,7 +1138,7 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">المبلغ المدفوع</label>
+                        <label class="form-label fw-bold">المبلغ المدفوع</label>
                         <div class="input-group">
                             {{ payment_form.amount_paid }}
                             <span class="input-group-text">ج.م</span>
@@ -945,12 +1146,12 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">طريقة الدفع</label>
+                        <label class="form-label fw-bold">طريقة الدفع</label>
                         {{ payment_form.payment_method }}
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">ملاحظات</label>
+                        <label class="form-label fw-bold">ملاحظات</label>
                         {{ payment_form.notes }}
                     </div>
 
@@ -990,6 +1191,7 @@ function openPaymentModal(tuitionId, remainingAmount, feeType, installmentNumber
     document.getElementById('modal_remaining_amount').textContent = selectedRemainingAmount.toFixed(2);
 
     const amountInput = document.querySelector('#recordPaymentModal input[name="amount_paid"]');
+
     if (amountInput) {
         amountInput.value = selectedRemainingAmount.toFixed(2);
         amountInput.max = selectedRemainingAmount.toFixed(2);
@@ -1008,75 +1210,89 @@ function fillRemainingAmount() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    setupRecordPaymentForm();
+    setupCreateInstallmentForm();
+    updateDiscountPreview();
+});
+
+function setupRecordPaymentForm() {
     const recordPaymentForm = document.getElementById('recordPaymentForm');
 
-    if (recordPaymentForm) {
-        recordPaymentForm.addEventListener('submit', function(e) {
-            const amountInput = recordPaymentForm.querySelector('input[name="amount_paid"]');
-            const amount = parseFloat(amountInput.value || 0);
-
-            if (amount <= 0) {
-                e.preventDefault();
-                alert('يجب إدخال مبلغ أكبر من صفر');
-                return;
-            }
-
-            if (amount > selectedRemainingAmount) {
-                e.preventDefault();
-                alert('المبلغ المدفوع لا يمكن أن يتجاوز المتبقي');
-            }
-        });
+    if (!recordPaymentForm) {
+        return;
     }
 
+    recordPaymentForm.addEventListener('submit', function(e) {
+        const amountInput = recordPaymentForm.querySelector('input[name="amount_paid"]');
+        const amount = parseFloat(amountInput ? amountInput.value || 0 : 0);
+
+        if (amount <= 0) {
+            e.preventDefault();
+            alert('يجب إدخال مبلغ أكبر من صفر');
+            return;
+        }
+
+        if (amount > selectedRemainingAmount) {
+            e.preventDefault();
+            alert('المبلغ المدفوع لا يمكن أن يتجاوز المتبقي');
+        }
+    });
+}
+
+function setupCreateInstallmentForm() {
     const createForm = document.getElementById('createInstallmentForm');
     const originalAmountInput = document.getElementById('originalAmountInput');
     const discountAmountInput = document.getElementById('discountAmountInput');
     const discountPercentageInput = document.getElementById('discountPercentageInput');
-    const finalAmountHiddenInput = document.getElementById('finalAmountHiddenInput');
     const appliedDiscountSelect = document.getElementById('appliedDiscountSelect');
 
     [originalAmountInput, discountAmountInput, discountPercentageInput, appliedDiscountSelect].forEach(function(input) {
-        if (input) {
-            input.addEventListener('input', updateDiscountPreview);
+        if (!input) {
+            return;
         }
+
+        input.addEventListener('input', updateDiscountPreview);
+        input.addEventListener('change', updateDiscountPreview);
     });
 
-    updateDiscountPreview();
-
-    if (createForm) {
-        createForm.addEventListener('submit', function(e) {
-            updateDiscountPreview();
-
-            const original = parseFloat(originalAmountInput ? originalAmountInput.value || 0 : 0);
-            const finalAmount = parseFloat(finalAmountHiddenInput ? finalAmountHiddenInput.value || 0 : 0);
-            const paidInput = createForm.querySelector('input[name="amount_paid"]');
-            const paid = parseFloat(paidInput ? paidInput.value || 0 : 0);
-
-            if (original <= 0) {
-                e.preventDefault();
-                alert('يجب إدخال مبلغ القسط قبل الخصم');
-                return;
-            }
-
-            if (finalAmount <= 0) {
-                e.preventDefault();
-                alert('المبلغ المطلوب بعد الخصم يجب أن يكون أكبر من صفر');
-                return;
-            }
-
-            if (paid < 0) {
-                e.preventDefault();
-                alert('المبلغ المدفوع لا يمكن أن يكون أقل من صفر');
-                return;
-            }
-
-            if (paid > finalAmount) {
-                e.preventDefault();
-                alert('المبلغ المدفوع لا يمكن أن يتجاوز المطلوب بعد الخصم');
-            }
-        });
+    if (!createForm) {
+        return;
     }
-});
+
+    createForm.addEventListener('submit', function(e) {
+        updateDiscountPreview();
+
+        const finalAmountHiddenInput = document.getElementById('finalAmountHiddenInput');
+        const original = parseFloat(originalAmountInput ? originalAmountInput.value || 0 : 0);
+        const finalAmount = parseFloat(finalAmountHiddenInput ? finalAmountHiddenInput.value || 0 : 0);
+        const paidInput = createForm.querySelector('input[name="amount_paid"]');
+        const paid = parseFloat(paidInput ? paidInput.value || 0 : 0);
+        const hasApprovedDiscount = appliedDiscountSelect && appliedDiscountSelect.value;
+
+        if (original <= 0) {
+            e.preventDefault();
+            alert('يجب إدخال مبلغ القسط قبل الخصم');
+            return;
+        }
+
+        if (!hasApprovedDiscount && finalAmount <= 0) {
+            e.preventDefault();
+            alert('المبلغ المطلوب بعد الخصم يجب أن يكون أكبر من صفر');
+            return;
+        }
+
+        if (paid < 0) {
+            e.preventDefault();
+            alert('المبلغ المدفوع لا يمكن أن يكون أقل من صفر');
+            return;
+        }
+
+        if (!hasApprovedDiscount && paid > finalAmount) {
+            e.preventDefault();
+            alert('المبلغ المدفوع لا يمكن أن يتجاوز المطلوب بعد الخصم');
+        }
+    });
+}
 
 function updateDiscountPreview() {
     const originalInput = document.getElementById('originalAmountInput');
@@ -1112,7 +1328,7 @@ function updateDiscountPreview() {
 
     if (selectedApprovedDiscount && selectedOption) {
         // عند اختيار خصم معتمد، الحساب النهائي يتم في السيرفر حسب application_scope.
-        // هنا نعرض فقط بيانات الخصم ونمنع الخصم اليدوي لتجنب الخلط.
+        // هنا نعرض بيانات الخصم فقط ونمنع الخصم اليدوي لتجنب الخلط.
         discountInput.value = '0';
         percentageInput.value = '0';
         discountInput.disabled = true;
@@ -1153,27 +1369,21 @@ function updateDiscountPreview() {
 
     finalHiddenInput.value = finalAmount.toFixed(2);
 
-    if (previewOriginal) previewOriginal.textContent = original.toFixed(2);
+    if (previewOriginal) {
+        previewOriginal.textContent = original.toFixed(2);
+    }
 
     if (previewDiscount) {
-        if (selectedApprovedDiscount) {
-            previewDiscount.textContent = 'سيحسب عند الحفظ';
-        } else {
-            previewDiscount.textContent = totalDiscount.toFixed(2);
-        }
+        previewDiscount.textContent = selectedApprovedDiscount ? 'سيحسب عند الحفظ' : totalDiscount.toFixed(2);
     }
 
     if (previewFinal) {
-        if (selectedApprovedDiscount) {
-            previewFinal.textContent = 'سيحسب عند الحفظ';
-        } else {
-            previewFinal.textContent = finalAmount.toFixed(2);
-        }
+        previewFinal.textContent = selectedApprovedDiscount ? 'سيحسب عند الحفظ' : finalAmount.toFixed(2);
     }
 
     const paidInput = document.querySelector('#createInstallmentForm input[name="amount_paid"]');
 
-    if (paidInput) {
+    if (paidInput && !selectedApprovedDiscount) {
         paidInput.max = finalAmount.toFixed(2);
     }
 }

@@ -5936,3 +5936,112 @@ def reject_student_discount(request, discount_id):
         print(f"خطأ في رفض الخصم: {e}")
         messages.error(request, f'حدث خطأ أثناء رفض الخصم: {str(e)}')
         return redirect('school_settings:discount_requests_list')
+    
+
+@login_required
+@settings_admin_required
+def student_discounts_history(request):
+    """سجل كل خصومات الطلاب"""
+    try:
+        context = get_base_context(request)
+
+        search_query = request.GET.get('search', '').strip()
+        status_filter = request.GET.get('status', '').strip()
+        discount_filter = request.GET.get('discount_setting', '').strip()
+        academic_year_filter = request.GET.get('academic_year', '').strip()
+
+        discounts_qs = StudentDiscount.objects.select_related(
+            'student',
+            'student__grade_level',
+            'student__grade_level__education_level',
+            'discount_setting',
+            'academic_year',
+            'created_by',
+            'approved_by',
+        ).order_by('-created_date')
+
+        # بحث
+        if search_query:
+            discounts_qs = discounts_qs.filter(
+                Q(student__name__icontains=search_query) |
+                Q(student__national_number__icontains=search_query) |
+                Q(discount_setting__name__icontains=search_query) |
+                Q(application_reason__icontains=search_query) |
+                Q(admin_notes__icontains=search_query)
+            )
+
+        # فلترة الحالة
+        if status_filter:
+            discounts_qs = discounts_qs.filter(status=status_filter)
+
+        # فلترة نوع الخصم
+        if discount_filter:
+            try:
+                discounts_qs = discounts_qs.filter(discount_setting_id=int(discount_filter))
+            except ValueError:
+                pass
+
+        # فلترة العام الدراسي
+        if academic_year_filter:
+            try:
+                discounts_qs = discounts_qs.filter(academic_year_id=int(academic_year_filter))
+            except ValueError:
+                pass
+
+        # الإحصائيات العامة حسب الفلتر الحالي
+        totals = discounts_qs.aggregate(
+            total_original=Sum('original_amount'),
+            total_discount=Sum('applied_amount'),
+            total_final=Sum('final_amount'),
+            total_count=Count('id'),
+        )
+
+        summary = {
+            'total_count': totals['total_count'] or 0,
+            'total_original': totals['total_original'] or Decimal('0.00'),
+            'total_discount': totals['total_discount'] or Decimal('0.00'),
+            'total_final': totals['total_final'] or Decimal('0.00'),
+
+            'pending_count': discounts_qs.filter(status='PENDING').count(),
+            'approved_count': discounts_qs.filter(status='APPROVED').count(),
+            'rejected_count': discounts_qs.filter(status='REJECTED').count(),
+            'expired_count': discounts_qs.filter(status='EXPIRED').count(),
+        }
+
+        # بيانات الفلاتر
+        discount_settings = DiscountSettings.objects.all().order_by('category', 'name')
+
+        try:
+            academic_years = AcademicYear.objects.all().order_by('-start_date', '-id')
+        except Exception:
+            academic_years = AcademicYear.objects.all().order_by('-id')
+
+        paginator = Paginator(discounts_qs, 25)
+        page_number = request.GET.get('page')
+        discounts_page = paginator.get_page(page_number)
+
+        context.update({
+            'student_discounts': discounts_page,
+            'summary': summary,
+
+            'discount_settings': discount_settings,
+            'academic_years': academic_years,
+            'status_choices': StudentDiscount.STATUS_CHOICES,
+
+            'search_query': search_query,
+            'status_filter': status_filter,
+            'discount_filter': discount_filter,
+            'academic_year_filter': academic_year_filter,
+
+            'page_title': 'سجل خصومات الطلاب',
+        })
+
+        return render(request, 'school_settings/student_discounts_history.html', context)
+
+    except Exception as e:
+        print(f"خطأ في سجل خصومات الطلاب: {e}")
+        import traceback
+        traceback.print_exc()
+
+        messages.error(request, f'حدث خطأ في تحميل سجل خصومات الطلاب: {str(e)}')
+        return redirect('school_settings:discounts_list')

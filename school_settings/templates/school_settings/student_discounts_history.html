@@ -1,0 +1,471 @@
+{% extends 'school_settings/base.html' %}
+{% load humanize %}
+
+{% block title %}سجل خصومات الطلاب - {{ system_settings.school_name }}{% endblock %}
+{% block header_title %}سجل خصومات الطلاب{% endblock %}
+{% block header_icon %}<i class="fas fa-history"></i>{% endblock %}
+{% block page_description %}متابعة كل الخصومات المطبقة أو المطلوبة للطلاب{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item">
+    <a href="{% url 'school_settings:discounts_list' %}">الخصومات</a>
+</li>
+<li class="breadcrumb-item active">سجل خصومات الطلاب</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'school_settings:discounts_list' %}" class="btn btn-outline-secondary btn-custom">
+        <i class="fas fa-arrow-right me-2"></i>
+        العودة للخصومات
+    </a>
+
+    <a href="{% url 'school_settings:discount_requests_list' %}" class="btn btn-warning btn-custom">
+        <i class="fas fa-clipboard-check me-2"></i>
+        طلبات الخصومات
+    </a>
+
+    <a href="{% url 'school_settings:apply_discount_to_student' %}" class="btn btn-success btn-custom">
+        <i class="fas fa-user-tag me-2"></i>
+        تطبيق خصم
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .history-hero {
+        background: linear-gradient(135deg, #6f42c1, #0d6efd);
+        color: white;
+        border-radius: 22px;
+        padding: 30px;
+        margin-bottom: 25px;
+        box-shadow: 0 10px 28px rgba(111, 66, 193, 0.25);
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 18px;
+        padding: 20px;
+        height: 100%;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+        border-top: 5px solid #6f42c1;
+        text-align: center;
+    }
+
+    .stat-card.success { border-top-color: #198754; }
+    .stat-card.warning { border-top-color: #ffc107; }
+    .stat-card.danger { border-top-color: #dc3545; }
+    .stat-card.info { border-top-color: #0dcaf0; }
+    .stat-card.dark { border-top-color: #212529; }
+
+    .stat-value {
+        font-size: 1.7rem;
+        font-weight: 900;
+        margin-bottom: 5px;
+    }
+
+    .stat-label {
+        color: #64748b;
+        font-weight: 800;
+        font-size: 0.9rem;
+    }
+
+    .filter-card,
+    .content-panel {
+        background: white;
+        border-radius: 18px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+        overflow: hidden;
+    }
+
+    .filter-card {
+        padding: 22px;
+    }
+
+    .content-panel-header {
+        background: #f8f9fa;
+        padding: 18px 22px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .content-panel-header h5 {
+        margin: 0;
+        font-weight: 900;
+    }
+
+    .history-table thead th {
+        background: linear-gradient(135deg, #6f42c1, #0d6efd);
+        color: white;
+        border: none;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    .history-table td {
+        text-align: center;
+        vertical-align: middle;
+        font-size: 0.9rem;
+    }
+
+    .student-cell {
+        text-align: right !important;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 12px;
+        font-size: 0.78rem;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .status-pending {
+        background: rgba(255,193,7,0.18);
+        color: #856404;
+    }
+
+    .status-approved {
+        background: rgba(25,135,84,0.14);
+        color: #198754;
+    }
+
+    .status-rejected {
+        background: rgba(220,53,69,0.12);
+        color: #dc3545;
+    }
+
+    .status-expired {
+        background: rgba(108,117,125,0.14);
+        color: #6c757d;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 55px 20px;
+        color: #64748b;
+    }
+
+    .pagination .page-link {
+        border-radius: 10px;
+        margin: 0 3px;
+        font-weight: 800;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="history-hero">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h3 class="mb-2">
+                <i class="fas fa-history me-2"></i>
+                سجل خصومات الطلاب
+            </h3>
+            <p class="mb-0 opacity-75">
+                متابعة كل خصومات الطلاب بجميع حالاتها: المنتظرة، المعتمدة، المرفوضة، والمنتهية.
+            </p>
+        </div>
+
+        <div class="text-lg-end">
+            <div><strong>إجمالي السجلات:</strong> {{ summary.total_count }}</div>
+            <div><strong>إجمالي الخصومات:</strong> {{ summary.total_discount|floatformat:2 }} ج.م</div>
+        </div>
+    </div>
+</div>
+
+<!-- الملخص -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-lg-6 mb-3">
+        <div class="stat-card info">
+            <div class="stat-value text-info">{{ summary.total_count }}</div>
+            <div class="stat-label">إجمالي الخصومات</div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 mb-3">
+        <div class="stat-card warning">
+            <div class="stat-value text-warning">{{ summary.pending_count }}</div>
+            <div class="stat-label">في الانتظار</div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 mb-3">
+        <div class="stat-card success">
+            <div class="stat-value text-success">{{ summary.approved_count }}</div>
+            <div class="stat-label">معتمدة</div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 mb-3">
+        <div class="stat-card danger">
+            <div class="stat-value text-danger">{{ summary.rejected_count }}</div>
+            <div class="stat-label">مرفوضة</div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="stat-card dark">
+            <div class="stat-value text-dark">{{ summary.total_original|floatformat:2 }}</div>
+            <div class="stat-label">إجمالي قبل الخصم</div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="stat-card danger">
+            <div class="stat-value text-danger">{{ summary.total_discount|floatformat:2 }}</div>
+            <div class="stat-label">إجمالي الخصم</div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="stat-card success">
+            <div class="stat-value text-success">{{ summary.total_final|floatformat:2 }}</div>
+            <div class="stat-label">إجمالي بعد الخصم</div>
+        </div>
+    </div>
+</div>
+
+<!-- الفلاتر -->
+<div class="filter-card">
+    <form method="get" class="row g-3 align-items-end">
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label fw-bold">بحث</label>
+            <input type="text"
+                   name="search"
+                   class="form-control"
+                   value="{{ search_query }}"
+                   placeholder="اسم الطالب، الرقم القومي، اسم الخصم">
+        </div>
+
+        <div class="col-lg-2 col-md-6">
+            <label class="form-label fw-bold">الحالة</label>
+            <select name="status" class="form-control">
+                <option value="">كل الحالات</option>
+                {% for value, label in status_choices %}
+                <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>
+                    {{ label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label fw-bold">نوع الخصم</label>
+            <select name="discount_setting" class="form-control">
+                <option value="">كل الخصومات</option>
+                {% for discount in discount_settings %}
+                <option value="{{ discount.id }}" {% if discount_filter == discount.id|stringformat:"s" %}selected{% endif %}>
+                    {{ discount.name }} - {{ discount.get_category_display }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-lg-2 col-md-6">
+            <label class="form-label fw-bold">العام الدراسي</label>
+            <select name="academic_year" class="form-control">
+                <option value="">كل الأعوام</option>
+                {% for year in academic_years %}
+                <option value="{{ year.id }}" {% if academic_year_filter == year.id|stringformat:"s" %}selected{% endif %}>
+                    {{ year.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-lg-2 col-md-12">
+            <button type="submit" class="btn btn-primary w-100">
+                <i class="fas fa-search me-1"></i>
+                بحث
+            </button>
+        </div>
+
+        <div class="col-12 text-center">
+            <a href="{% url 'school_settings:student_discounts_history' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-eraser me-1"></i>
+                مسح الفلاتر
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- الجدول -->
+<div class="content-panel">
+    <div class="content-panel-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h5>
+            <i class="fas fa-list me-2 text-primary"></i>
+            نتائج سجل الخصومات
+        </h5>
+
+        <span class="badge bg-primary">{{ summary.total_count }} سجل</span>
+    </div>
+
+    {% if student_discounts %}
+    <div class="table-responsive">
+        <table class="table history-table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>الطالب</th>
+                    <th>الخصم</th>
+                    <th>النطاق</th>
+                    <th>الأصلي</th>
+                    <th>الخصم</th>
+                    <th>بعد الخصم</th>
+                    <th>الحالة</th>
+                    <th>مقدم الطلب</th>
+                    <th>المعتمد بواسطة</th>
+                    <th>تاريخ الطلب</th>
+                    <th>ملاحظات</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for item in student_discounts %}
+                <tr>
+                    <td class="student-cell">
+                        <strong>{{ item.student.name }}</strong>
+                        <br>
+                        <small class="text-muted">{{ item.student.national_number|default:"-" }}</small>
+                        <br>
+                        <small>
+                            {% if item.student.grade_level %}
+                                {{ item.student.grade_level.name }}
+                            {% else %}
+                                غير محدد
+                            {% endif %}
+                        </small>
+                    </td>
+
+                    <td>
+                        <strong>{{ item.discount_setting.name }}</strong>
+                        <br>
+                        <small class="text-muted">{{ item.discount_setting.get_category_display }}</small>
+                    </td>
+
+                    <td>
+                        <span class="badge bg-info">
+                            {{ item.get_application_scope_display }}
+                        </span>
+                    </td>
+
+                    <td>{{ item.original_amount|floatformat:2 }}</td>
+
+                    <td class="text-danger fw-bold">
+                        {{ item.applied_amount|floatformat:2 }}
+                    </td>
+
+                    <td class="text-success fw-bold">
+                        {{ item.final_amount|floatformat:2 }}
+                    </td>
+
+                    <td>
+                        {% if item.status == 'PENDING' %}
+                            <span class="status-badge status-pending">في الانتظار</span>
+                        {% elif item.status == 'APPROVED' %}
+                            <span class="status-badge status-approved">معتمد</span>
+                        {% elif item.status == 'REJECTED' %}
+                            <span class="status-badge status-rejected">مرفوض</span>
+                        {% elif item.status == 'EXPIRED' %}
+                            <span class="status-badge status-expired">منتهي</span>
+                        {% else %}
+                            <span class="status-badge status-expired">{{ item.status }}</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if item.created_by %}
+                            {{ item.created_by.get_full_name|default:item.created_by.username }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if item.approved_by %}
+                            {{ item.approved_by.get_full_name|default:item.approved_by.username }}
+                            <br>
+                            <small class="text-muted">
+                                {{ item.approval_date|date:"Y/m/d H:i" }}
+                            </small>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {{ item.created_date|date:"Y/m/d" }}
+                        <br>
+                        <small>{{ item.created_date|date:"H:i" }}</small>
+                    </td>
+
+                    <td>
+                        <small>
+                            {% if item.admin_notes %}
+                                {{ item.admin_notes|truncatechars:80 }}
+                            {% elif item.application_reason %}
+                                {{ item.application_reason|truncatechars:80 }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </small>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-history fa-4x text-muted mb-3"></i>
+        <h5>لا توجد خصومات</h5>
+        <p>لا توجد خصومات مطابقة للفلاتر الحالية.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Pagination -->
+{% if student_discounts.has_other_pages %}
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if student_discounts.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ student_discounts.previous_page_number }}&search={{ search_query }}&status={{ status_filter }}&discount_setting={{ discount_filter }}&academic_year={{ academic_year_filter }}">
+                السابق
+            </a>
+        </li>
+        {% endif %}
+
+        {% for num in student_discounts.paginator.page_range %}
+            {% if student_discounts.number == num %}
+            <li class="page-item active">
+                <span class="page-link">{{ num }}</span>
+            </li>
+            {% elif num > student_discounts.number|add:'-3' and num < student_discounts.number|add:'3' %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ num }}&search={{ search_query }}&status={{ status_filter }}&discount_setting={{ discount_filter }}&academic_year={{ academic_year_filter }}">
+                    {{ num }}
+                </a>
+            </li>
+            {% endif %}
+        {% endfor %}
+
+        {% if student_discounts.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ student_discounts.next_page_number }}&search={{ search_query }}&status={{ status_filter }}&discount_setting={{ discount_filter }}&academic_year={{ academic_year_filter }}">
+                التالي
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% endblock %}

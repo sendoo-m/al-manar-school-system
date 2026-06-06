@@ -31,18 +31,23 @@ urlpatterns = [
     path('print-receipts/', views.print_receipts, name='print_receipts'),
     path('print-receipt/<int:payment_id>/', views.print_receipt, name='print_receipt'),
 
+
     # ===================================
     # 📊 التقارير المالية
     # ===================================
     path('reports/', views.financial_reports, name='financial_reports'),
+
+    # Alias إضافي لنفس صفحة التقارير المالية
+    path('reports/financial/', views.financial_reports, name='financial_reports_alias'),
+
     path('reports/daily/', views.daily_report, name='daily_report'),
     path('reports/monthly/', views.monthly_report, name='monthly_report'),
     path('reports/advanced/', views.advanced_statistics, name='advanced_statistics'),
+
     path('export/daily-pdf/', views.export_daily_report_pdf, name='export_daily_report_pdf'),
     path('print-daily-report/', views.print_daily_report, name='print_daily_report'),
     path('export/monthly-pdf/', views.export_monthly_report_pdf, name='export_monthly_report_pdf'),
     path('print-monthly-report/', views.print_monthly_report, name='print_monthly_report'),
-    
     # ===================================
     # 🎯 الإدارة المتقدمة
     # ===================================

@@ -3,6 +3,118 @@
 
 {% block title %}الأقساط المتأخرة - مدرسة المنار{% endblock %}
 {% block page_title %}الأقساط المتأخرة{% endblock %}
+{% block page_subtitle %}متابعة الطلاب الذين لديهم أقساط مستحقة أو غير مكتملة السداد مع توضيح الخصومات{% endblock %}
+{% block page_icon %}<i class="fas fa-exclamation-triangle me-3"></i>{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'payments:payments_home' %}">لوحة المدفوعات</a></li>
+<li class="breadcrumb-item"><a href="{% url 'payments:financial_reports' %}">التقارير المالية</a></li>
+<li class="breadcrumb-item active">الأقساط المتأخرة</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'payments:financial_reports' %}" class="btn btn-outline-primary btn-custom">
+        <i class="fas fa-chart-line me-1"></i>التقارير المالية
+    </a>
+    <a href="{% url 'payments:all_payments' %}?payment_status=OVERDUE" class="btn btn-outline-danger btn-custom">
+        <i class="fas fa-list me-1"></i>عرض في كل المدفوعات
+    </a>
+    <button type="button" class="btn btn-success btn-custom" onclick="window.print()">
+        <i class="fas fa-print me-1"></i>طباعة
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .overdue-hero {background:linear-gradient(135deg,#dc3545,#b02a37);color:white;border-radius:22px;padding:28px;margin-bottom:25px;box-shadow:0 8px 24px rgba(220,53,69,.25)}
+    .summary-card{background:white;border-radius:18px;padding:22px;height:100%;box-shadow:0 5px 16px rgba(0,0,0,.08);border-top:5px solid #dc3545;text-align:center;transition:.22s ease}.summary-card:hover{transform:translateY(-3px);box-shadow:0 10px 22px rgba(0,0,0,.12)}
+    .summary-card.success{border-top-color:#198754}.summary-card.warning{border-top-color:#ffc107}.summary-card.info{border-top-color:#0dcaf0}.summary-card.dark{border-top-color:#212529}.summary-card.purple{border-top-color:#6f42c1}
+    .summary-value{font-size:1.65rem;font-weight:900;margin-bottom:5px}.summary-label{color:#64748b;font-weight:800}.summary-sub{display:block;color:#64748b;font-size:.76rem;margin-top:4px;font-weight:700}
+    .content-panel{background:white;border-radius:18px;box-shadow:0 5px 16px rgba(0,0,0,.08);margin-bottom:25px;overflow:hidden}.content-panel-header{background:#f8f9fa;padding:18px 22px;border-bottom:1px solid #e9ecef}.content-panel-header h5{margin:0;font-weight:900}.content-panel-body{padding:22px}
+    .filter-box{background:#f8f9fa;border-radius:16px;padding:20px;border:1px solid #e9ecef;margin-bottom:24px}.overdue-table thead th{background:linear-gradient(135deg,#dc3545,#b02a37);color:white;border:none;text-align:center;white-space:nowrap;vertical-align:middle;font-size:.86rem}.overdue-table td{vertical-align:middle;text-align:center;font-size:.88rem}.student-cell{text-align:right!important;min-width:210px}
+    .delay-badge{display:inline-block;padding:6px 10px;border-radius:12px;font-weight:900;font-size:.78rem;background:#f8d7da;color:#842029;white-space:nowrap}.grade-card{background:#f8f9fa;border-radius:14px;padding:15px;border-right:5px solid #dc3545;height:100%}.discount-chip{display:inline-block;padding:4px 9px;border-radius:999px;background:rgba(255,193,7,.18);color:#856404;font-size:.74rem;font-weight:900;margin-top:3px}.amount-before{color:#6c757d;text-decoration:line-through;font-size:.8rem;display:block}.empty-state{text-align:center;padding:50px 20px;color:#64748b}
+    @media print{.page-actions,.breadcrumb,.breadcrumb-nav,.filter-box,.btn,.overdue-hero{display:none!important}.content-panel,.summary-card{box-shadow:none!important;border:1px solid #ddd!important}.overdue-table th,.overdue-table td{font-size:8px!important;padding:4px!important}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="overdue-hero">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div><h2 class="mb-2"><i class="fas fa-exclamation-triangle me-2"></i>الأقساط المتأخرة</h2><p class="mb-0">متابعة الأقساط التي تجاوزت تاريخ الاستحقاق ولم يتم سدادها بالكامل حتى {{ today|date:"Y/m/d" }}</p></div>
+        <div class="text-lg-end"><div><strong>عدد الأقساط:</strong> {{ total_count }}</div><div><strong>إجمالي المتأخر:</strong> {{ total_remaining|floatformat:2 }} ج.م</div><div><strong>إجمالي الخصومات:</strong> {{ total_discounts|floatformat:2 }} ج.م</div></div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-xl-2 col-lg-4 col-md-6 mb-3"><div class="summary-card info"><div class="summary-value text-info">{{ total_count }}</div><div class="summary-label">عدد الأقساط</div><span class="summary-sub">المتأخرة وغير المسددة</span></div></div>
+    <div class="col-xl-2 col-lg-4 col-md-6 mb-3"><div class="summary-card dark"><div class="summary-value text-dark">{{ total_before_discount|floatformat:2 }}</div><div class="summary-label">قبل الخصم</div><span class="summary-sub">المطلوب + الخصومات</span></div></div>
+    <div class="col-xl-2 col-lg-4 col-md-6 mb-3"><div class="summary-card warning"><div class="summary-value text-warning">{{ total_discounts|floatformat:2 }}</div><div class="summary-label">الخصومات</div><span class="summary-sub">{{ discounted_count }} قسط عليه خصم</span></div></div>
+    <div class="col-xl-2 col-lg-4 col-md-6 mb-3"><div class="summary-card purple"><div class="summary-value" style="color:#6f42c1;">{{ total_required|floatformat:2 }}</div><div class="summary-label">المطلوب بعد الخصم</div><span class="summary-sub">ج.م</span></div></div>
+    <div class="col-xl-2 col-lg-4 col-md-6 mb-3"><div class="summary-card success"><div class="summary-value text-success">{{ total_paid|floatformat:2 }}</div><div class="summary-label">المدفوع</div><span class="summary-sub">ج.م</span></div></div>
+    <div class="col-xl-2 col-lg-4 col-md-6 mb-3"><div class="summary-card"><div class="summary-value text-danger">{{ total_remaining|floatformat:2 }}</div><div class="summary-label">المتبقي المتأخر</div><span class="summary-sub">المتبقي الحقيقي</span></div></div>
+</div>
+
+<div class="filter-box">
+    <form method="get" class="row g-3">
+        <div class="col-lg-3 col-md-6"><label class="form-label fw-bold">البحث</label><input type="text" name="search" class="form-control" value="{{ search_query }}" placeholder="اسم الطالب، الرقم القومي، الهاتف، ولي الأمر"></div>
+        <div class="col-lg-2 col-md-6"><label class="form-label fw-bold">الصف</label><select name="grade_level" class="form-control"><option value="">كل الصفوف</option>{% for grade in grade_levels %}<option value="{{ grade.id }}" {% if selected_grade == grade.id|stringformat:"s" %}selected{% endif %}>{% if grade.education_level %}{{ grade.education_level.name }} - {% endif %}{{ grade.name }}</option>{% endfor %}</select></div>
+        <div class="col-lg-2 col-md-6"><label class="form-label fw-bold">الحالة</label><select name="status" class="form-control"><option value="">كل الحالات</option><option value="PENDING" {% if selected_status == 'PENDING' %}selected{% endif %}>معلق</option><option value="PARTIALLY_PAID" {% if selected_status == 'PARTIALLY_PAID' %}selected{% endif %}>جزئي</option><option value="OVERDUE" {% if selected_status == 'OVERDUE' %}selected{% endif %}>متأخر</option></select></div>
+        <div class="col-lg-2 col-md-6"><label class="form-label fw-bold">الخصم</label><select name="discount_filter" class="form-control"><option value="">كل الأقساط</option><option value="with_discount" {% if selected_discount_filter == 'with_discount' %}selected{% endif %}>عليها خصم</option><option value="without_discount" {% if selected_discount_filter == 'without_discount' %}selected{% endif %}>بدون خصم</option><option value="approved_discount" {% if selected_discount_filter == 'approved_discount' %}selected{% endif %}>خصم معتمد</option><option value="manual_discount" {% if selected_discount_filter == 'manual_discount' %}selected{% endif %}>خصم يدوي</option></select></div>
+        <div class="col-lg-3 col-md-6"><label class="form-label fw-bold">الترتيب</label><select name="sort" class="form-control"><option value="due_date" {% if selected_sort == 'due_date' %}selected{% endif %}>الأقرب للاستحقاق</option><option value="oldest" {% if selected_sort == 'oldest' %}selected{% endif %}>الأقدم</option><option value="amount_desc" {% if selected_sort == 'amount_desc' %}selected{% endif %}>الأكبر مبلغًا</option><option value="discount_desc" {% if selected_sort == 'discount_desc' %}selected{% endif %}>الأكبر خصمًا</option><option value="student" {% if selected_sort == 'student' %}selected{% endif %}>اسم الطالب</option></select></div>
+        <div class="col-12 d-flex justify-content-center gap-2 flex-wrap"><button type="submit" class="btn btn-danger"><i class="fas fa-search me-1"></i>تطبيق الفلاتر</button><a href="{% url 'payments:overdue_payments' %}" class="btn btn-outline-secondary"><i class="fas fa-eraser me-1"></i>مسح الفلاتر</a></div>
+    </form>
+</div>
+
+{% if grade_summary %}
+<div class="content-panel"><div class="content-panel-header"><h5><i class="fas fa-school me-2 text-danger"></i>توزيع المتأخرات حسب الصف</h5></div><div class="content-panel-body"><div class="row">
+    {% for grade in grade_summary %}<div class="col-lg-3 col-md-6 mb-3"><div class="grade-card"><strong>{{ grade.grade_name }}</strong><br><small class="text-muted">{{ grade.count }} قسط</small>{% if grade.discount_amount > 0 %}<div class="text-warning fw-bold mt-2">خصومات: {{ grade.discount_amount|floatformat:2 }} ج.م</div>{% endif %}<div class="text-danger fw-bold mt-2">متبقي: {{ grade.amount|floatformat:2 }} ج.م</div></div></div>{% endfor %}
+</div></div></div>
+{% endif %}
+
+<div class="content-panel">
+    <div class="content-panel-header d-flex justify-content-between align-items-center flex-wrap gap-2"><h5><i class="fas fa-list me-2 text-danger"></i>قائمة الأقساط المتأخرة</h5><span class="badge bg-danger">{{ total_count }} قسط</span></div>
+    <div class="content-panel-body p-0"><div class="table-responsive"><table class="table overdue-table table-hover mb-0">
+        <thead><tr><th>الطالب</th><th>الصف</th><th>نوع المصروف</th><th>القسط</th><th>الاستحقاق</th><th>التأخير</th><th>قبل الخصم</th><th>الخصم</th><th>المطلوب</th><th>المدفوع</th><th>المتبقي</th><th>الحالة</th><th>إجراء</th></tr></thead>
+        <tbody>
+            {% for row in overdue_items %}{% with tuition=row.tuition student=row.student %}
+            <tr>
+                <td class="student-cell"><strong>{{ student.name }}</strong><br><small class="text-muted">{{ student.national_number|default:"-" }}</small>{% if student.parent_phone %}<br><small class="text-muted">ولي الأمر: {{ student.parent_phone }}</small>{% endif %}</td>
+                <td>{% if student.grade_level %}{% if student.grade_level.education_level %}<small>{{ student.grade_level.education_level.name }}</small><br>{% endif %}<strong>{{ student.grade_level.name }}</strong>{% else %}غير محدد{% endif %}</td>
+                <td>{{ tuition.get_fee_type_display }}{% if tuition.fee_name %}<br><small class="text-muted">{{ tuition.fee_name }}</small>{% endif %}</td>
+                <td><span class="badge bg-primary">#{{ tuition.installment_number }}</span></td>
+                <td>{% if tuition.due_date %}{{ tuition.due_date|date:"Y/m/d" }}{% else %}-{% endif %}</td>
+                <td><span class="delay-badge">{{ row.delay_days }} يوم</span></td>
+                <td><span class="amount-before">{{ row.amount_before_discount|floatformat:2 }}</span><small>ج.م</small></td>
+                <td>{% if tuition.discount_amount > 0 %}<strong class="text-danger">{{ tuition.discount_amount|floatformat:2 }} ج.م</strong><br>{% if tuition.applied_discount %}<span class="discount-chip">{{ tuition.applied_discount.discount_setting.name }}</span><br><small class="text-info">{{ tuition.applied_discount.discount_setting.get_application_scope_display }}</small>{% else %}<span class="discount-chip">خصم يدوي</span>{% endif %}{% else %}<span class="text-muted">لا يوجد</span>{% endif %}</td>
+                <td class="text-primary fw-bold">{{ tuition.amount_tuition|floatformat:2 }}</td>
+                <td class="text-success fw-bold">{{ tuition.amount_paid|floatformat:2 }}</td>
+                <td class="text-danger fw-bold">{{ row.remaining|floatformat:2 }}</td>
+                <td>{% if tuition.payment_status == 'PARTIALLY_PAID' %}<span class="badge bg-warning text-dark">جزئي</span>{% elif tuition.payment_status == 'OVERDUE' %}<span class="badge bg-danger">متأخر</span>{% else %}<span class="badge bg-secondary">{{ tuition.get_payment_status_display }}</span>{% endif %}</td>
+                <td><div class="btn-group btn-group-sm"><a href="{% url 'payments:pay_installment' student.pk %}" class="btn btn-outline-success" title="تسجيل دفعة"><i class="fas fa-hand-holding-usd"></i></a><a href="{% url 'students:student_detail' student.pk %}" class="btn btn-outline-info" title="ملف الطالب"><i class="fas fa-user"></i></a>{% if permissions.can_edit %}<a href="{% url 'payments:edit_payment' tuition.id %}" class="btn btn-outline-warning" title="تعديل"><i class="fas fa-edit"></i></a>{% endif %}</div></td>
+            </tr>
+            {% endwith %}{% empty %}
+            <tr><td colspan="13"><div class="empty-state"><i class="fas fa-check-circle fa-3x text-success mb-3"></i><h5>لا توجد أقساط متأخرة</h5><p>كل الأقساط المستحقة مسددة أو لا توجد بيانات مطابقة للفلاتر.</p></div></td></tr>
+            {% endfor %}
+        </tbody>
+        {% if overdue_items %}<tfoot><tr class="table-light fw-bold"><td colspan="6">الإجمالي حسب الفلاتر</td><td>{{ total_before_discount|floatformat:2 }} ج.م</td><td class="text-danger">{{ total_discounts|floatformat:2 }} ج.م</td><td class="text-primary">{{ total_required|floatformat:2 }} ج.م</td><td class="text-success">{{ total_paid|floatformat:2 }} ج.م</td><td class="text-danger">{{ total_remaining|floatformat:2 }} ج.م</td><td colspan="2"></td></tr></tfoot>{% endif %}
+    </table></div>
+    {% if overdue_items.has_other_pages %}<div class="p-3 border-top"><nav><ul class="pagination justify-content-center mb-0 flex-wrap">
+        {% if overdue_items.has_previous %}<li class="page-item"><a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}page={{ overdue_items.previous_page_number }}">السابق</a></li>{% endif %}
+        {% for num in overdue_items.paginator.page_range %}{% if num == overdue_items.number %}<li class="page-item active"><span class="page-link">{{ num }}</span></li>{% elif num > overdue_items.number|add:'-3' and num < overdue_items.number|add:'3' %}<li class="page-item"><a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}page={{ num }}">{{ num }}</a></li>{% endif %}{% endfor %}
+        {% if overdue_items.has_next %}<li class="page-item"><a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}page={{ overdue_items.next_page_number }}">التالي</a></li>{% endif %}
+    </ul></nav></div>{% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% comment %} {% extends 'payments/base.html' %}
+{% load humanize %}
+
+{% block title %}الأقساط المتأخرة - مدرسة المنار{% endblock %}
+{% block page_title %}الأقساط المتأخرة{% endblock %}
 {% block page_subtitle %}متابعة الطلاب الذين لديهم أقساط مستحقة أو غير مكتملة السداد{% endblock %}
 {% block page_icon %}<i class="fas fa-exclamation-triangle me-3"></i>{% endblock %}
 
@@ -443,4 +555,4 @@
     </div>
 </div>
 
-{% endblock %}
+{% endblock %} {% endcomment %}
