@@ -58,7 +58,6 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
 
     'LYS_schoolapp.middleware.AdminEnglishSiteArabicMiddleware',
-
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -88,6 +87,8 @@ TEMPLATES = [
 
                 # صلاحيات الخزينة في القوالب
                 'treasury_management.context_processors.treasury_permissions',
+                # صلاحيات الطلاب في القوالب
+                'students.context_processors.students_permissions',
             ],
         },
     },

@@ -3,6 +3,1615 @@
 {% block title %}إضافة طالب جديد - نظام إدارة الطلاب{% endblock %}
 {% block page_title %}إضافة طالب جديد{% endblock %}
 {% block page_icon %}<i class="fas fa-user-plus"></i>{% endblock %}
+{% block page_subtitle %}إضافة بيانات طالب جديد مع دعم الوافدين، جواز السفر، طلاب الدمج، والولاية التعليمية{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'students:home' %}">الرئيسية</a></li>
+<li class="breadcrumb-item"><a href="{% url 'students:student_list' %}">قائمة الطلاب</a></li>
+<li class="breadcrumb-item active">إضافة طالب جديد</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        overflow-x: hidden !important;
+    }
+
+    .form-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 20px;
+        padding: 30px 20px;
+        margin-bottom: 25px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .form-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+        animation: float 20s linear infinite;
+    }
+
+    @keyframes float {
+        0% { transform: translateX(-50px) translateY(-50px); }
+        100% { transform: translateX(50px) translateY(50px); }
+    }
+
+    .form-header-content {
+        position: relative;
+        z-index: 2;
+        text-align: center;
+    }
+
+    .form-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px;
+        font-size: 2rem;
+        backdrop-filter: blur(10px);
+        border: 3px solid rgba(255,255,255,0.3);
+    }
+
+    .form-container {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+    }
+
+    .form-section {
+        margin-bottom: 25px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 15px;
+        border-right: 4px solid #667eea;
+        transition: all 0.3s ease;
+    }
+
+    .form-section:hover {
+        background: rgba(102, 126, 234, 0.03);
+        transform: translateX(-3px);
+    }
+
+    .section-title {
+        color: #667eea;
+        font-weight: 800;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        font-size: 1rem;
+    }
+
+    .section-icon {
+        width: 35px;
+        height: 35px;
+        border-radius: 8px;
+        background: #667eea;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 10px;
+        font-size: 1rem;
+    }
+
+    .section-icon.warning {
+        background: #ffc107;
+        color: #000;
+    }
+
+    .section-icon.academic {
+        background: #2196f3;
+    }
+
+    .section-icon.integration {
+        background: #fd7e14;
+    }
+
+    .section-icon.guardian {
+        background: #6f42c1;
+    }
+
+    .section-icon.transfer {
+        background: #dc3545;
+    }
+
+    .form-control-custom,
+    .form-select-custom {
+        border-radius: 12px;
+        border: 2px solid #e9ecef;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+        background: white;
+        font-size: 0.95rem;
+        font-weight: 600;
+    }
+
+    .form-control-custom:focus,
+    .form-select-custom:focus,
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+        background: white;
+    }
+
+    .preview-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        border: 2px solid #e9ecef;
+        transition: all 0.3s ease;
+        position: sticky;
+        top: 20px;
+    }
+
+    .preview-card.active {
+        border-color: #667eea;
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+    }
+
+    .preview-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .preview-avatar {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 15px;
+        font-size: 1.2rem;
+        font-weight: 800;
+    }
+
+    .preview-value {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05));
+        border-radius: 12px;
+        padding: 15px;
+        text-align: center;
+        border: 2px solid rgba(102, 126, 234, 0.2);
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #667eea;
+        margin-bottom: 15px;
+    }
+
+    .preview-section {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+
+    .preview-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 9px;
+        border-radius: 999px;
+        background: #eef2ff;
+        color: #4f46e5;
+        font-size: 0.76rem;
+        font-weight: 800;
+        margin: 2px;
+    }
+
+    .extracted-data-alert {
+        background: linear-gradient(135deg, #d4edda, #c3e6cb);
+        border: 2px solid #28a745;
+        border-radius: 15px;
+        padding: 20px;
+        margin-top: 15px;
+        display: none;
+    }
+
+    .alert-heading {
+        color: #155724;
+        font-weight: 700;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+    }
+
+    .extracted-value {
+        background: rgba(255, 255, 255, 0.7);
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(40, 167, 69, 0.3);
+        text-align: center;
+        font-weight: 700;
+        color: #155724;
+    }
+
+    .help-text {
+        background: #e3f2fd;
+        border: 1px solid #bbdefb;
+        border-radius: 10px;
+        padding: 12px;
+        margin-top: 10px;
+    }
+
+    .help-text.warning {
+        background: #fff3cd;
+        border-color: #ffe69c;
+    }
+
+    .help-text .help-icon {
+        color: #667eea;
+        margin-left: 8px;
+    }
+
+    .btn-save {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        border: none;
+        border-radius: 12px;
+        padding: 12px 30px;
+        color: white;
+        font-weight: 700;
+        transition: all 0.3s ease;
+    }
+
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+        color: white;
+    }
+
+    .btn-custom {
+        padding: 12px 30px;
+        border-radius: 12px;
+        font-weight: 700;
+        border: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .btn-warning.btn-custom {
+        background: linear-gradient(135deg, #ffc107, #e0a800);
+        color: #212529;
+    }
+
+    .btn-secondary.btn-custom {
+        background: linear-gradient(135deg, #6c757d, #5a6268);
+        color: white;
+    }
+
+    .required-asterisk {
+        color: #dc3545;
+        margin-left: 3px;
+    }
+
+    .optional-note {
+        color: #6c757d;
+        font-size: 0.78rem;
+        font-weight: 700;
+    }
+
+    .progress-indicator {
+        position: sticky;
+        top: 80px;
+        background: white;
+        padding: 15px;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+        z-index: 100;
+    }
+
+    .progress {
+        height: 8px;
+        border-radius: 4px;
+        background: #e9ecef;
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        transition: width 0.3s ease;
+    }
+
+    .loading-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(255, 255, 255, 0.9);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+
+    .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid #e3f2fd;
+        border-top: 5px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: auto;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .field-error {
+        color: #dc3545;
+        font-size: 0.85rem;
+        margin-top: 6px;
+        font-weight: 600;
+    }
+
+    .conditional-section {
+        display: none;
+        margin-top: 15px;
+        padding: 15px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.75);
+        border: 1px dashed #ced4da;
+    }
+
+    .conditional-section.show {
+        display: block;
+    }
+
+    @media (max-width: 768px) {
+        .form-header {
+            padding: 20px 15px;
+        }
+
+        .form-container {
+            padding: 20px;
+        }
+
+        .preview-card {
+            margin-top: 20px;
+            position: static;
+        }
+
+        .btn-group {
+            flex-direction: column;
+            gap: 10px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="form-header">
+    <div class="form-header-content">
+        <div class="form-icon">
+            <i class="fas fa-user-plus"></i>
+        </div>
+        <h4 class="mb-2">إضافة طالب جديد للنظام</h4>
+        <p class="mb-0 opacity-90">الاسم فقط إجباري، وباقي البيانات اختيارية ويمكن استكمالها لاحقًا</p>
+    </div>
+</div>
+
+<div class="progress-indicator">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <small class="text-muted">تقدم إكمال النموذج</small>
+        <small class="text-muted" id="progressText">0%</small>
+    </div>
+    <div class="progress">
+        <div class="progress-bar" id="formProgress" style="width: 0%"></div>
+    </div>
+</div>
+
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="text-center">
+        <div class="loading-spinner mb-3"></div>
+        <h5>جاري حفظ بيانات الطالب...</h5>
+        <p class="text-muted">يرجى الانتظار</p>
+    </div>
+</div>
+
+{% if form.non_field_errors %}
+<div class="alert alert-danger">
+    {% for error in form.non_field_errors %}
+        <div>{{ error }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="form-container">
+            <form method="post" id="addStudentForm" novalidate>
+                {% csrf_token %}
+
+                <!-- البيانات الأساسية -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <div class="section-icon">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <span>البيانات الأساسية</span>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.name.id_for_label }}" class="form-label fw-bold">
+                                <i class="fas fa-user me-2"></i>اسم الطالب <span class="required-asterisk">*</span>
+                            </label>
+                            <input type="text"
+                                   class="form-control form-control-custom {% if form.name.errors %}is-invalid{% endif %}"
+                                   id="{{ form.name.id_for_label }}"
+                                   name="{{ form.name.html_name }}"
+                                   value="{{ form.name.value|default:'' }}"
+                                   required
+                                   placeholder="أدخل الاسم الرباعي للطالب">
+                            {% for error in form.name.errors %}
+                                <div class="field-error">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="{{ form.student_type.id_for_label }}" class="form-label fw-bold">
+                                <i class="fas fa-user-tag me-2"></i>نوع الطالب
+                                <span class="optional-note">(اختياري)</span>
+                            </label>
+                            <select class="form-select form-select-custom {% if form.student_type.errors %}is-invalid{% endif %}"
+                                    id="{{ form.student_type.id_for_label }}"
+                                    name="{{ form.student_type.html_name }}">
+                                {% for value, label in form.student_type.field.choices %}
+                                    <option value="{{ value }}" {% if form.student_type.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            {% for error in form.student_type.errors %}
+                                <div class="field-error">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="{{ form.national_number.id_for_label }}" class="form-label fw-bold">
+                                <i class="fas fa-id-card me-2"></i>الرقم القومي
+                                <span class="optional-note">(اختياري)</span>
+                            </label>
+                            <input type="text"
+                                   class="form-control form-control-custom {% if form.national_number.errors %}is-invalid{% endif %}"
+                                   id="{{ form.national_number.id_for_label }}"
+                                   name="{{ form.national_number.html_name }}"
+                                   value="{{ form.national_number.value|default:'' }}"
+                                   maxlength="14"
+                                   placeholder="14 رقماً للطلاب المصريين">
+                            {% for error in form.national_number.errors %}
+                                <div class="field-error">{{ error }}</div>
+                            {% endfor %}
+
+                            <div class="help-text">
+                                <i class="fas fa-magic help-icon"></i>
+                                <small>لو تم إدخال رقم قومي صحيح سيتم استخراج العمر والجنس وتاريخ الميلاد تلقائيًا.</small>
+                            </div>
+
+                            <div class="extracted-data-alert" id="extractedDataAlert">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-magic me-2"></i>تم استخراج البيانات التالية بنجاح!
+                                </h6>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <small class="text-muted d-block mb-2">تاريخ الميلاد</small>
+                                        <div class="extracted-value">
+                                            <i class="fas fa-calendar me-2"></i>
+                                            <span id="extractedBirthDate"></span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <small class="text-muted d-block mb-2">العمر</small>
+                                        <div class="extracted-value">
+                                            <i class="fas fa-clock me-2"></i>
+                                            <span id="extractedAge"></span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <small class="text-muted d-block mb-2">الجنس</small>
+                                        <div class="extracted-value">
+                                            <i class="fas fa-venus-mars me-2"></i>
+                                            <span id="extractedGender"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="{{ form.passport_number.id_for_label }}" class="form-label fw-bold">
+                                <i class="fas fa-passport me-2"></i>رقم جواز السفر
+                                <span class="optional-note">(للوافدين)</span>
+                            </label>
+                            <input type="text"
+                                   class="form-control form-control-custom {% if form.passport_number.errors %}is-invalid{% endif %}"
+                                   id="{{ form.passport_number.id_for_label }}"
+                                   name="{{ form.passport_number.html_name }}"
+                                   value="{{ form.passport_number.value|default:'' }}"
+                                   placeholder="رقم جواز السفر">
+                            {% for error in form.passport_number.errors %}
+                                <div class="field-error">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="{{ form.nationality.id_for_label }}" class="form-label fw-bold">
+                                <i class="fas fa-globe me-2"></i>الجنسية
+                            </label>
+                            <input type="text"
+                                   class="form-control form-control-custom {% if form.nationality.errors %}is-invalid{% endif %}"
+                                   id="{{ form.nationality.id_for_label }}"
+                                   name="{{ form.nationality.html_name }}"
+                                   value="{{ form.nationality.value|default:'' }}"
+                                   placeholder="مثال: مصري / سوري / سوداني">
+                            {% for error in form.nationality.errors %}
+                                <div class="field-error">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="{{ form.religion.id_for_label }}" class="form-label fw-bold">
+                                <i class="fas fa-pray me-2"></i>الديانة
+                            </label>
+                            <select class="form-select form-select-custom {% if form.religion.errors %}is-invalid{% endif %}"
+                                    id="{{ form.religion.id_for_label }}"
+                                    name="{{ form.religion.html_name }}">
+                                {% for value, label in form.religion.field.choices %}
+                                    <option value="{{ value }}" {% if form.religion.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            {% for error in form.religion.errors %}
+                                <div class="field-error">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="{{ form.phone_number.id_for_label }}" class="form-label fw-bold">
+                                <i class="fas fa-phone me-2"></i>رقم الهاتف
+                            </label>
+                            <input type="text"
+                                   class="form-control form-control-custom {% if form.phone_number.errors %}is-invalid{% endif %}"
+                                   id="{{ form.phone_number.id_for_label }}"
+                                   name="{{ form.phone_number.html_name }}"
+                                   value="{{ form.phone_number.value|default:'' }}"
+                                   placeholder="رقم هاتف الطالب">
+                            {% for error in form.phone_number.errors %}
+                                <div class="field-error">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="col-12">
+                            <label for="{{ form.address.id_for_label }}" class="form-label fw-bold">
+                                <i class="fas fa-map-marker-alt me-2"></i>العنوان
+                            </label>
+                            <textarea class="form-control form-control-custom {% if form.address.errors %}is-invalid{% endif %}"
+                                      id="{{ form.address.id_for_label }}"
+                                      name="{{ form.address.html_name }}"
+                                      rows="2"
+                                      placeholder="عنوان إقامة الطالب">{{ form.address.value|default:'' }}</textarea>
+                            {% for error in form.address.errors %}
+                                <div class="field-error">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- البيانات الأكاديمية -->
+                <div class="form-section" style="background: linear-gradient(135deg, #e3f2fd, #bbdefb); border-right-color: #2196f3;">
+                    <div class="section-title" style="color: #2196f3;">
+                        <div class="section-icon academic">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <span>البيانات الأكاديمية</span>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="education_level" class="form-label fw-bold">
+                                <i class="fas fa-layer-group me-2"></i>المرحلة التعليمية
+                            </label>
+                            <select class="form-select form-select-custom" id="education_level" name="education_level">
+                                <option value="">اختر المرحلة التعليمية</option>
+                                {% for level in education_levels %}
+                                    <option value="{{ level.id }}"
+                                            data-min-age="{{ level.min_age|default:0 }}"
+                                            data-max-age="{{ level.max_age|default:100 }}">
+                                        {{ level.name }}
+                                        {% if level.min_age or level.max_age %}
+                                            ({{ level.min_age }}-{{ level.max_age }} سنة)
+                                        {% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="{{ form.grade_level.id_for_label }}" class="form-label fw-bold">
+                                <i class="fas fa-chalkboard me-2"></i>الصف الدراسي
+                            </label>
+                            <select class="form-select form-select-custom {% if form.grade_level.errors %}is-invalid{% endif %}"
+                                    id="{{ form.grade_level.id_for_label }}"
+                                    name="{{ form.grade_level.html_name }}">
+                                <option value="">اختر الصف الدراسي</option>
+                                {% for grade in form.grade_level.field.queryset %}
+                                    <option value="{{ grade.id }}"
+                                            data-level="{{ grade.education_level_id }}"
+                                            {% if form.grade_level.value|stringformat:"s" == grade.id|stringformat:"s" %}selected{% endif %}>
+                                        {% if grade.education_level %}{{ grade.education_level.name }} - {% endif %}{{ grade.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            {% for error in form.grade_level.errors %}
+                                <div class="field-error">{{ error }}</div>
+                            {% endfor %}
+
+                            <div class="alert alert-info mt-3" id="ageCompatibilityAlert" style="display: none;">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <span>المرحلة التعليمية متوافقة مع عمر الطالب المستخرج</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="{{ form.academic_year.id_for_label }}" class="form-label fw-bold">
+                                <i class="fas fa-calendar-alt me-2"></i>العام الدراسي
+                            </label>
+                            <select class="form-select form-select-custom {% if form.academic_year.errors %}is-invalid{% endif %}"
+                                    id="{{ form.academic_year.id_for_label }}"
+                                    name="{{ form.academic_year.html_name }}">
+                                <option value="">اختر العام الدراسي</option>
+                                {% for year in form.academic_year.field.queryset %}
+                                    <option value="{{ year.id }}" {% if form.academic_year.value|stringformat:"s" == year.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ year.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            {% for error in form.academic_year.errors %}
+                                <div class="field-error">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="{{ form.enrollment_status.id_for_label }}" class="form-label fw-bold">
+                                <i class="fas fa-clipboard-check me-2"></i>حالة القيد
+                            </label>
+                            <select class="form-select form-select-custom {% if form.enrollment_status.errors %}is-invalid{% endif %}"
+                                    id="{{ form.enrollment_status.id_for_label }}"
+                                    name="{{ form.enrollment_status.html_name }}">
+                                {% for value, label in form.enrollment_status.field.choices %}
+                                    <option value="{{ value }}" {% if form.enrollment_status.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            {% for error in form.enrollment_status.errors %}
+                                <div class="field-error">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-info-circle me-2"></i>ملاحظة
+                            </label>
+                            <div class="help-text warning mb-0">
+                                <small>كل البيانات الأكاديمية اختيارية ويمكن استكمالها لاحقًا.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- بيانات التحويل -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <div class="section-icon transfer">
+                            <i class="fas fa-exchange-alt"></i>
+                        </div>
+                        <span>بيانات التحويل</span>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.transferred_from_school.id_for_label }}" class="form-label fw-bold">
+                                <i class="fas fa-school me-2"></i>محول من مدرسة
+                            </label>
+                            <input type="text"
+                                   class="form-control form-control-custom {% if form.transferred_from_school.errors %}is-invalid{% endif %}"
+                                   id="{{ form.transferred_from_school.id_for_label }}"
+                                   name="{{ form.transferred_from_school.html_name }}"
+                                   value="{{ form.transferred_from_school.value|default:'' }}"
+                                   placeholder="اسم المدرسة القادم منها">
+                            {% for error in form.transferred_from_school.errors %}
+                                <div class="field-error">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="{{ form.transferred_to_school.id_for_label }}" class="form-label fw-bold">
+                                <i class="fas fa-share-square me-2"></i>محول إلى مدرسة
+                            </label>
+                            <input type="text"
+                                   class="form-control form-control-custom {% if form.transferred_to_school.errors %}is-invalid{% endif %}"
+                                   id="{{ form.transferred_to_school.id_for_label }}"
+                                   name="{{ form.transferred_to_school.html_name }}"
+                                   value="{{ form.transferred_to_school.value|default:'' }}"
+                                   placeholder="اسم المدرسة المحول إليها إن وجد">
+                            {% for error in form.transferred_to_school.errors %}
+                                <div class="field-error">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- بيانات الدمج -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <div class="section-icon integration">
+                            <i class="fas fa-universal-access"></i>
+                        </div>
+                        <span>طلاب الدمج وذوي الهمم</span>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       id="{{ form.is_integration_student.id_for_label }}"
+                                       name="{{ form.is_integration_student.html_name }}"
+                                       {% if form.is_integration_student.value %}checked{% endif %}>
+                                <label class="form-check-label fw-bold" for="{{ form.is_integration_student.id_for_label }}">
+                                    طالب دمج / من ذوي الهمم
+                                </label>
+                            </div>
+                            {% for error in form.is_integration_student.errors %}
+                                <div class="field-error">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="conditional-section" id="integrationDetails">
+                            <div class="row g-3">
+                                <div class="col-md-12">
+                                    <label for="{{ form.disability_type.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-notes-medical me-2"></i>نوع الإعاقة
+                                    </label>
+                                    <input type="text"
+                                           class="form-control form-control-custom {% if form.disability_type.errors %}is-invalid{% endif %}"
+                                           id="{{ form.disability_type.id_for_label }}"
+                                           name="{{ form.disability_type.html_name }}"
+                                           value="{{ form.disability_type.value|default:'' }}"
+                                           placeholder="مثال: إعاقة سمعية / بصرية / حركية / صعوبات تعلم">
+                                    {% for error in form.disability_type.errors %}
+                                        <div class="field-error">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input"
+                                               type="checkbox"
+                                               id="{{ form.exempt_from_arabic.id_for_label }}"
+                                               name="{{ form.exempt_from_arabic.html_name }}"
+                                               {% if form.exempt_from_arabic.value %}checked{% endif %}>
+                                        <label class="form-check-label fw-bold" for="{{ form.exempt_from_arabic.id_for_label }}">
+                                            إعفاء من العربي
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input"
+                                               type="checkbox"
+                                               id="{{ form.exempt_from_english.id_for_label }}"
+                                               name="{{ form.exempt_from_english.html_name }}"
+                                               {% if form.exempt_from_english.value %}checked{% endif %}>
+                                        <label class="form-check-label fw-bold" for="{{ form.exempt_from_english.id_for_label }}">
+                                            إعفاء من الإنجليزي
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input"
+                                               type="checkbox"
+                                               id="{{ form.exempt_from_french.id_for_label }}"
+                                               name="{{ form.exempt_from_french.html_name }}"
+                                               {% if form.exempt_from_french.value %}checked{% endif %}>
+                                        <label class="form-check-label fw-bold" for="{{ form.exempt_from_french.id_for_label }}">
+                                            إعفاء من الفرنسي
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <label for="{{ form.other_subject_exemptions.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-book-open me-2"></i>إعفاءات أخرى من مواد
+                                    </label>
+                                    <textarea class="form-control form-control-custom {% if form.other_subject_exemptions.errors %}is-invalid{% endif %}"
+                                              id="{{ form.other_subject_exemptions.id_for_label }}"
+                                              name="{{ form.other_subject_exemptions.html_name }}"
+                                              rows="2"
+                                              placeholder="اكتب أي مواد أخرى معفى منها الطالب">{{ form.other_subject_exemptions.value|default:'' }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- بيانات ولي الأمر والولاية -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <div class="section-icon warning">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <span>بيانات ولي الأمر والولاية التعليمية</span>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="{{ form.parent_name.id_for_label }}" class="form-label fw-bold">
+                                <i class="fas fa-user-tie me-2"></i>اسم ولي الأمر
+                            </label>
+                            <input type="text"
+                                   class="form-control form-control-custom {% if form.parent_name.errors %}is-invalid{% endif %}"
+                                   id="{{ form.parent_name.id_for_label }}"
+                                   name="{{ form.parent_name.html_name }}"
+                                   value="{{ form.parent_name.value|default:'' }}"
+                                   placeholder="اسم ولي الأمر">
+                            {% for error in form.parent_name.errors %}
+                                <div class="field-error">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="{{ form.parent_phone.id_for_label }}" class="form-label fw-bold">
+                                <i class="fas fa-mobile-alt me-2"></i>هاتف ولي الأمر
+                            </label>
+                            <input type="text"
+                                   class="form-control form-control-custom {% if form.parent_phone.errors %}is-invalid{% endif %}"
+                                   id="{{ form.parent_phone.id_for_label }}"
+                                   name="{{ form.parent_phone.html_name }}"
+                                   value="{{ form.parent_phone.value|default:'' }}"
+                                   placeholder="رقم هاتف للتواصل">
+                            {% for error in form.parent_phone.errors %}
+                                <div class="field-error">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="{{ form.parent_email.id_for_label }}" class="form-label fw-bold">
+                                <i class="fas fa-envelope me-2"></i>بريد ولي الأمر
+                            </label>
+                            <input type="email"
+                                   class="form-control form-control-custom {% if form.parent_email.errors %}is-invalid{% endif %}"
+                                   id="{{ form.parent_email.id_for_label }}"
+                                   name="{{ form.parent_email.html_name }}"
+                                   value="{{ form.parent_email.value|default:'' }}"
+                                   placeholder="البريد الإلكتروني">
+                            {% for error in form.parent_email.errors %}
+                                <div class="field-error">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="{{ form.father_job.id_for_label }}" class="form-label fw-bold">
+                                <i class="fas fa-briefcase me-2"></i>وظيفة الأب
+                            </label>
+                            <input type="text"
+                                   class="form-control form-control-custom {% if form.father_job.errors %}is-invalid{% endif %}"
+                                   id="{{ form.father_job.id_for_label }}"
+                                   name="{{ form.father_job.html_name }}"
+                                   value="{{ form.father_job.value|default:'' }}"
+                                   placeholder="وظيفة الأب">
+                            {% for error in form.father_job.errors %}
+                                <div class="field-error">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="{{ form.educational_guardian.id_for_label }}" class="form-label fw-bold">
+                                <i class="fas fa-user-shield me-2"></i>صاحب الولاية التعليمية
+                            </label>
+                            <select class="form-select form-select-custom {% if form.educational_guardian.errors %}is-invalid{% endif %}"
+                                    id="{{ form.educational_guardian.id_for_label }}"
+                                    name="{{ form.educational_guardian.html_name }}">
+                                {% for value, label in form.educational_guardian.field.choices %}
+                                    <option value="{{ value }}" {% if form.educational_guardian.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            {% for error in form.educational_guardian.errors %}
+                                <div class="field-error">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-info-circle me-2"></i>تنبيه
+                            </label>
+                            <div class="help-text warning mb-0">
+                                <small>لو الولاية لشخص آخر، اكتب بياناته بالأسفل.</small>
+                            </div>
+                        </div>
+
+                        <div class="conditional-section" id="guardianOtherDetails">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="{{ form.educational_guardian_name.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-user me-2"></i>اسم صاحب الولاية التعليمية
+                                    </label>
+                                    <input type="text"
+                                           class="form-control form-control-custom {% if form.educational_guardian_name.errors %}is-invalid{% endif %}"
+                                           id="{{ form.educational_guardian_name.id_for_label }}"
+                                           name="{{ form.educational_guardian_name.html_name }}"
+                                           value="{{ form.educational_guardian_name.value|default:'' }}"
+                                           placeholder="يستخدم إذا كانت الولاية لشخص آخر">
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="{{ form.educational_guardian_phone.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-phone me-2"></i>هاتف صاحب الولاية التعليمية
+                                    </label>
+                                    <input type="text"
+                                           class="form-control form-control-custom {% if form.educational_guardian_phone.errors %}is-invalid{% endif %}"
+                                           id="{{ form.educational_guardian_phone.id_for_label }}"
+                                           name="{{ form.educational_guardian_phone.html_name }}"
+                                           value="{{ form.educational_guardian_phone.value|default:'' }}"
+                                           placeholder="رقم الهاتف">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- أبناء العاملين -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <div class="section-icon guardian">
+                            <i class="fas fa-school"></i>
+                        </div>
+                        <span>أبناء العاملين</span>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       id="{{ form.is_staff_child.id_for_label }}"
+                                       name="{{ form.is_staff_child.html_name }}"
+                                       {% if form.is_staff_child.value %}checked{% endif %}>
+                                <label class="form-check-label fw-bold" for="{{ form.is_staff_child.id_for_label }}">
+                                    الطالب من أبناء العاملين
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="conditional-section" id="staffChildDetails">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="{{ form.staff_parent_name.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-id-badge me-2"></i>اسم الموظف
+                                    </label>
+                                    <input type="text"
+                                           class="form-control form-control-custom {% if form.staff_parent_name.errors %}is-invalid{% endif %}"
+                                           id="{{ form.staff_parent_name.id_for_label }}"
+                                           name="{{ form.staff_parent_name.html_name }}"
+                                           value="{{ form.staff_parent_name.value|default:'' }}"
+                                           placeholder="اسم الموظف داخل المدرسة">
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="{{ form.staff_parent_job.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-briefcase me-2"></i>وظيفة الموظف داخل المدرسة
+                                    </label>
+                                    <input type="text"
+                                           class="form-control form-control-custom {% if form.staff_parent_job.errors %}is-invalid{% endif %}"
+                                           id="{{ form.staff_parent_job.id_for_label }}"
+                                           name="{{ form.staff_parent_job.html_name }}"
+                                           value="{{ form.staff_parent_job.value|default:'' }}"
+                                           placeholder="مثال: مدرس / إداري / عامل">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- أزرار الإجراءات -->
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <a href="{% url 'students:student_list' %}" class="btn btn-secondary btn-custom">
+                        <i class="fas fa-times me-2"></i>إلغاء والعودة
+                    </a>
+
+                    <div class="btn-group">
+                        <button type="reset" class="btn btn-warning btn-custom">
+                            <i class="fas fa-undo me-2"></i>إعادة تعيين
+                        </button>
+
+                        <button type="submit" class="btn btn-save">
+                            <i class="fas fa-save me-2"></i>حفظ الطالب
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- معاينة -->
+    <div class="col-lg-4">
+        <div class="preview-card" id="previewCard">
+            <h6 class="text-primary mb-3">
+                <i class="fas fa-eye me-2"></i>معاينة بيانات الطالب
+            </h6>
+
+            <div class="preview-header">
+                <div class="preview-avatar" id="previewAvatar">ط</div>
+                <div>
+                    <h6 class="mb-1" id="previewName">طالب جديد</h6>
+                    <small class="text-muted" id="previewGrade">الصف الدراسي</small>
+                </div>
+            </div>
+
+            <div class="preview-value" id="previewInfo">
+                معلومات الطالب ستظهر هنا
+            </div>
+
+            <div class="preview-section">
+                <h6 style="color: #667eea;">بيانات الطالب</h6>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>نوع الطالب:</span>
+                    <span id="previewStudentType">طالب عادي</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>الرقم القومي:</span>
+                    <span id="previewNational">غير محدد</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>جواز السفر:</span>
+                    <span id="previewPassport">غير محدد</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>الجنسية:</span>
+                    <span id="previewNationality">غير محدد</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>العمر:</span>
+                    <span id="previewAge">غير محدد</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>الجنس:</span>
+                    <span id="previewGender">غير محدد</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>المرحلة التعليمية:</span>
+                    <span id="previewEducationLevel">غير محدد</span>
+                </div>
+            </div>
+
+            <div class="preview-section">
+                <h6 style="color: #ffc107;">بيانات ولي الأمر</h6>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>الاسم:</span>
+                    <span id="previewParentName">غير محدد</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>الهاتف:</span>
+                    <span id="previewParentPhone">غير محدد</span>
+                </div>
+            </div>
+
+            <div class="preview-section">
+                <h6 style="color: #198754;">تصنيفات</h6>
+                <div id="previewFlags">
+                    <span class="preview-chip"><i class="fas fa-user"></i> طالب عادي</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-info mt-3 border-0" style="background: rgba(102, 126, 234, 0.1); border-right: 4px solid #667eea !important;">
+            <h6 style="color: #667eea;">
+                <i class="fas fa-lightbulb me-2"></i>نصائح مفيدة
+            </h6>
+            <ul class="mb-0 small">
+                <li>الاسم فقط إجباري.</li>
+                <li>الرقم القومي اختياري ويفضل للطلاب المصريين.</li>
+                <li>رقم جواز السفر يستخدم للوافدين.</li>
+                <li>كل بيانات الدمج والولاية والتحويل اختيارية.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let extractedAge = 0;
+let allGradeOptions = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    const gradeSelect = document.getElementById('id_grade_level');
+
+    if (gradeSelect) {
+        allGradeOptions = Array.from(gradeSelect.options).map(option => ({
+            value: option.value,
+            text: option.text,
+            level: option.dataset.level || '',
+            selected: option.selected
+        }));
+    }
+
+    bindEvents();
+    updateConditionalSections();
+    updateFormProgress();
+    updatePreview();
+
+    const nationalInput = document.getElementById('id_national_number');
+    if (nationalInput && nationalInput.value.trim().length === 14) {
+        extractDataFromNationalId(nationalInput.value.trim());
+    }
+
+    const selectedGrade = gradeSelect ? gradeSelect.value : '';
+    if (selectedGrade) {
+        const selectedOption = gradeSelect.options[gradeSelect.selectedIndex];
+        const levelId = selectedOption ? selectedOption.dataset.level : '';
+        if (levelId) {
+            const educationLevel = document.getElementById('education_level');
+            if (educationLevel) {
+                educationLevel.value = levelId;
+            }
+            filterGradesByLevel(levelId, selectedGrade);
+        }
+    }
+});
+
+function bindEvents() {
+    document.querySelectorAll('input, select, textarea').forEach(input => {
+        input.addEventListener('input', function() {
+            updateConditionalSections();
+            updateFormProgress();
+            updatePreview();
+        });
+
+        input.addEventListener('change', function() {
+            updateConditionalSections();
+            updateFormProgress();
+            updatePreview();
+        });
+    });
+
+    const nationalInput = document.getElementById('id_national_number');
+    if (nationalInput) {
+        nationalInput.addEventListener('input', function() {
+            const nationalId = this.value.trim();
+
+            if (nationalId.length === 14) {
+                extractDataFromNationalId(nationalId);
+            } else {
+                hideExtractedData();
+            }
+
+            updatePreview();
+        });
+    }
+
+    const educationSelect = document.getElementById('education_level');
+    if (educationSelect) {
+        educationSelect.addEventListener('change', function() {
+            filterGradesByLevel(this.value);
+
+            if (extractedAge > 0) {
+                checkAgeCompatibility();
+            } else {
+                hideAgeCompatibilityAlert();
+            }
+
+            updatePreview();
+        });
+    }
+
+    const form = document.getElementById('addStudentForm');
+    if (form) {
+        form.addEventListener('submit', function() {
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            if (loadingOverlay) {
+                loadingOverlay.style.display = 'flex';
+            }
+
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>جاري الحفظ...';
+            }
+        });
+    }
+
+    const resetBtn = document.querySelector('button[type="reset"]');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', function() {
+            setTimeout(() => {
+                hideExtractedData();
+                resetGrades();
+                updateConditionalSections();
+                updateFormProgress();
+                updatePreview();
+            }, 100);
+        });
+    }
+}
+
+function updateConditionalSections() {
+    toggleSection('id_is_integration_student', 'integrationDetails');
+    toggleSection('id_is_staff_child', 'staffChildDetails');
+
+    const guardian = getValue('id_educational_guardian');
+    const guardianDetails = document.getElementById('guardianOtherDetails');
+
+    if (guardianDetails) {
+        if (guardian === 'OTHER' || getValue('id_educational_guardian_name') || getValue('id_educational_guardian_phone')) {
+            guardianDetails.classList.add('show');
+        } else {
+            guardianDetails.classList.remove('show');
+        }
+    }
+}
+
+function toggleSection(checkboxId, sectionId) {
+    const checkbox = document.getElementById(checkboxId);
+    const section = document.getElementById(sectionId);
+
+    if (!checkbox || !section) {
+        return;
+    }
+
+    if (checkbox.checked) {
+        section.classList.add('show');
+    } else {
+        section.classList.remove('show');
+    }
+}
+
+function updateFormProgress() {
+    const requiredInputs = document.querySelectorAll('#addStudentForm input[required], #addStudentForm select[required], #addStudentForm textarea[required]');
+    const allInputs = document.querySelectorAll('#addStudentForm input, #addStudentForm select, #addStudentForm textarea');
+
+    let filledRequired = 0;
+    let filledTotal = 0;
+
+    requiredInputs.forEach(input => {
+        if ((input.value || '').trim() !== '') filledRequired++;
+    });
+
+    allInputs.forEach(input => {
+        if (input.type === 'checkbox') {
+            if (input.checked) filledTotal++;
+        } else if ((input.value || '').trim() !== '') {
+            filledTotal++;
+        }
+    });
+
+    const requiredProgress = requiredInputs.length ? (filledRequired / requiredInputs.length) * 60 : 60;
+    const totalProgress = allInputs.length ? (filledTotal / allInputs.length) * 40 : 0;
+    const progress = Math.min(100, Math.round(requiredProgress + totalProgress));
+
+    const progressBar = document.getElementById('formProgress');
+    const progressText = document.getElementById('progressText');
+
+    if (progressBar) {
+        progressBar.style.width = progress + '%';
+        progressBar.className = progress < 30 ? 'progress-bar bg-danger' :
+                                progress < 70 ? 'progress-bar bg-warning' :
+                                'progress-bar bg-success';
+    }
+
+    if (progressText) {
+        progressText.textContent = progress + '%';
+    }
+}
+
+function updatePreview() {
+    const name = getValue('id_name') || 'طالب جديد';
+    const nationalNumber = getValue('id_national_number') || 'غير محدد';
+    const passportNumber = getValue('id_passport_number') || 'غير محدد';
+    const nationality = getValue('id_nationality') || 'غير محدد';
+    const parentName = getValue('id_parent_name') || 'غير محدد';
+    const parentPhone = getValue('id_parent_phone') || 'غير محدد';
+
+    setText('previewName', name);
+    setText('previewAvatar', name.charAt(0) || 'ط');
+    setText('previewNational', nationalNumber);
+    setText('previewPassport', passportNumber);
+    setText('previewNationality', nationality);
+    setText('previewParentName', parentName);
+    setText('previewParentPhone', parentPhone);
+
+    const studentTypeSelect = document.getElementById('id_student_type');
+    const studentTypeText = studentTypeSelect && studentTypeSelect.selectedIndex >= 0
+        ? studentTypeSelect.options[studentTypeSelect.selectedIndex].text
+        : 'طالب عادي';
+
+    setText('previewStudentType', studentTypeText);
+
+    const educationSelect = document.getElementById('education_level');
+    const gradeSelect = document.getElementById('id_grade_level');
+
+    const educationText = educationSelect && educationSelect.selectedIndex > 0
+        ? educationSelect.options[educationSelect.selectedIndex].text
+        : 'غير محدد';
+
+    const gradeText = gradeSelect && gradeSelect.selectedIndex > 0
+        ? gradeSelect.options[gradeSelect.selectedIndex].text
+        : 'غير محدد';
+
+    setText('previewEducationLevel', educationText);
+    setText('previewGrade', gradeText);
+
+    updatePreviewFlags(studentTypeText);
+
+    const previewCard = document.getElementById('previewCard');
+    if (previewCard) {
+        if (name !== 'طالب جديد' || nationalNumber !== 'غير محدد' || passportNumber !== 'غير محدد') {
+            previewCard.classList.add('active');
+        } else {
+            previewCard.classList.remove('active');
+        }
+    }
+}
+
+function updatePreviewFlags(studentTypeText) {
+    const flags = document.getElementById('previewFlags');
+
+    if (!flags) return;
+
+    let html = `<span class="preview-chip"><i class="fas fa-user"></i> ${studentTypeText || 'طالب عادي'}</span>`;
+
+    const integration = document.getElementById('id_is_integration_student');
+    const staffChild = document.getElementById('id_is_staff_child');
+    const enrollment = document.getElementById('id_enrollment_status');
+
+    if (integration && integration.checked) {
+        html += `<span class="preview-chip"><i class="fas fa-universal-access"></i> طالب دمج</span>`;
+    }
+
+    if (staffChild && staffChild.checked) {
+        html += `<span class="preview-chip"><i class="fas fa-school"></i> ابن عامل</span>`;
+    }
+
+    if (enrollment && enrollment.selectedIndex >= 0) {
+        const text = enrollment.options[enrollment.selectedIndex].text;
+        if (text) {
+            html += `<span class="preview-chip"><i class="fas fa-clipboard-check"></i> ${text}</span>`;
+        }
+    }
+
+    flags.innerHTML = html;
+}
+
+function extractDataFromNationalId(nationalId) {
+    if (!/^\d{14}$/.test(nationalId)) {
+        hideExtractedData();
+        return;
+    }
+
+    try {
+        const centuryIndicator = parseInt(nationalId[0]);
+        const yearPart = nationalId.substring(1, 3);
+        const month = nationalId.substring(3, 5);
+        const day = nationalId.substring(5, 7);
+
+        let fullYear;
+
+        if (centuryIndicator === 2) {
+            fullYear = '19' + yearPart;
+        } else if (centuryIndicator === 3) {
+            fullYear = '20' + yearPart;
+        } else {
+            hideExtractedData();
+            return;
+        }
+
+        const birthDate = new Date(fullYear, month - 1, day);
+
+        if (
+            birthDate.getFullYear() == fullYear &&
+            birthDate.getMonth() == (month - 1) &&
+            birthDate.getDate() == day
+        ) {
+            const formattedDate = `${day}/${month}/${fullYear}`;
+            setText('extractedBirthDate', formattedDate);
+
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+
+            extractedAge = age;
+            setText('extractedAge', age + ' سنة');
+            setText('previewAge', age + ' سنة');
+
+            const genderDigit = parseInt(nationalId[12]);
+            const gender = (genderDigit % 2 === 0) ? 'أنثى' : 'ذكر';
+
+            setText('extractedGender', gender);
+            setText('previewGender', gender);
+
+            showExtractedData();
+            suggestEducationLevel(age);
+        } else {
+            hideExtractedData();
+        }
+
+    } catch (error) {
+        console.error('خطأ في استخراج البيانات:', error);
+        hideExtractedData();
+    }
+}
+
+function showExtractedData() {
+    const alert = document.getElementById('extractedDataAlert');
+    if (alert) {
+        alert.style.display = 'block';
+    }
+}
+
+function hideExtractedData() {
+    const alert = document.getElementById('extractedDataAlert');
+    if (alert) {
+        alert.style.display = 'none';
+    }
+
+    extractedAge = 0;
+    setText('previewAge', 'غير محدد');
+    setText('previewGender', 'غير محدد');
+    hideAgeCompatibilityAlert();
+}
+
+function suggestEducationLevel(age) {
+    const educationSelect = document.getElementById('education_level');
+    if (!educationSelect) return;
+
+    for (let i = 1; i < educationSelect.options.length; i++) {
+        const option = educationSelect.options[i];
+        const minAge = parseInt(option.dataset.minAge || 0);
+        const maxAge = parseInt(option.dataset.maxAge || 100);
+
+        if (age >= minAge && age <= maxAge) {
+            educationSelect.value = option.value;
+            filterGradesByLevel(option.value);
+            showAgeCompatibilityAlert();
+            updatePreview();
+            break;
+        }
+    }
+}
+
+function checkAgeCompatibility() {
+    const educationSelect = document.getElementById('education_level');
+    if (!educationSelect || !educationSelect.value) return;
+
+    const selectedOption = educationSelect.options[educationSelect.selectedIndex];
+    const minAge = parseInt(selectedOption.dataset.minAge || 0);
+    const maxAge = parseInt(selectedOption.dataset.maxAge || 100);
+
+    if (extractedAge >= minAge && extractedAge <= maxAge) {
+        showAgeCompatibilityAlert();
+    } else {
+        hideAgeCompatibilityAlert();
+    }
+}
+
+function showAgeCompatibilityAlert() {
+    const alert = document.getElementById('ageCompatibilityAlert');
+    if (alert) {
+        alert.style.display = 'block';
+    }
+}
+
+function hideAgeCompatibilityAlert() {
+    const alert = document.getElementById('ageCompatibilityAlert');
+    if (alert) {
+        alert.style.display = 'none';
+    }
+}
+
+function filterGradesByLevel(levelId, selectedValue = '') {
+    const gradeSelect = document.getElementById('id_grade_level');
+    if (!gradeSelect) return;
+
+    gradeSelect.innerHTML = '<option value="">اختر الصف الدراسي</option>';
+
+    if (!levelId) {
+        allGradeOptions.forEach(item => {
+            if (item.value) {
+                addGradeOption(gradeSelect, item, selectedValue);
+            }
+        });
+        return;
+    }
+
+    allGradeOptions.forEach(item => {
+        if (item.value && item.level === String(levelId)) {
+            addGradeOption(gradeSelect, item, selectedValue);
+        }
+    });
+
+    if (gradeSelect.options.length === 1) {
+        gradeSelect.innerHTML = '<option value="">لا توجد صفوف متاحة لهذه المرحلة</option>';
+    }
+}
+
+function addGradeOption(select, item, selectedValue = '') {
+    const option = document.createElement('option');
+    option.value = item.value;
+    option.textContent = item.text;
+    option.dataset.level = item.level;
+
+    if (selectedValue && String(selectedValue) === String(item.value)) {
+        option.selected = true;
+    }
+
+    select.appendChild(option);
+}
+
+function resetGrades() {
+    const gradeSelect = document.getElementById('id_grade_level');
+    if (!gradeSelect) return;
+
+    gradeSelect.innerHTML = '<option value="">اختر الصف الدراسي</option>';
+    allGradeOptions.forEach(item => {
+        if (item.value) {
+            addGradeOption(gradeSelect, item);
+        }
+    });
+}
+
+function getValue(id) {
+    const el = document.getElementById(id);
+    return el ? (el.value || '').trim() : '';
+}
+
+function setText(id, text) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.textContent = text;
+    }
+}
+</script>
+{% endblock %}
+
+{% comment %} {% extends 'students/base.html' %}
+
+{% block title %}إضافة طالب جديد - نظام إدارة الطلاب{% endblock %}
+{% block page_title %}إضافة طالب جديد{% endblock %}
+{% block page_icon %}<i class="fas fa-user-plus"></i>{% endblock %}
 {% block page_subtitle %}إضافة بيانات طالب جديد للنظام مع استخراج البيانات من الرقم القومي{% endblock %}
 
 {% block breadcrumb %}
@@ -1075,1269 +2684,5 @@ function setText(id, text) {
         el.textContent = text;
     }
 }
-</script>
-{% endblock %}
-
-{% comment %} {% extends 'students/base.html' %}
-
-{% block title %}إضافة طالب جديد - نظام إدارة الطلاب{% endblock %}
-{% block page_title %}إضافة طالب جديد{% endblock %}
-{% block page_icon %}<i class="fas fa-user-plus"></i>{% endblock %}
-{% block page_subtitle %}إضافة بيانات طالب جديد للنظام مع استخراج البيانات من الرقم القومي{% endblock %}
-
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'students:home' %}">الرئيسية</a></li>
-<li class="breadcrumb-item"><a href="{% url 'students:student_list' %}">قائمة الطلاب</a></li>
-<li class="breadcrumb-item active">إضافة طالب جديد</li>
-{% endblock %}
-
-{% block extra_css %}
-<style>
-    /* إصلاح مشكلة العرض والحركة */
-    body {
-        overflow-x: hidden !important;
-        width: 100% !important;
-        max-width: 100vw !important;
-    }
-    
-    .container-fluid,
-    .row,
-    .col-lg-8,
-    .col-lg-4,
-    .col-md-6,
-    .col-md-4,
-    .col-md-3 {
-        max-width: 100% !important;
-        overflow-x: hidden !important;
-        box-sizing: border-box !important;
-    }
-    
-    .form-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* ألوان زرقاء للطلاب */
-        color: white;
-        border-radius: 20px;
-        padding: 30px 20px;
-        margin-bottom: 25px;
-        position: relative;
-        overflow: hidden;
-        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
-    }
-
-    .form-header::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -50%;
-        width: 200%;
-        height: 200%;
-        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
-        animation: float 20s linear infinite;
-    }
-
-    @keyframes float {
-        0% { transform: translateX(-50px) translateY(-50px); }
-        100% { transform: translateX(50px) translateY(50px); }
-    }
-
-    .form-header-content {
-        position: relative;
-        z-index: 2;
-        text-align: center;
-    }
-
-    .form-icon {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        background: rgba(255,255,255,0.2);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 15px;
-        font-size: 2rem;
-        backdrop-filter: blur(10px);
-        border: 3px solid rgba(255,255,255,0.3);
-    }
-
-    .form-container {
-        background: white;
-        border-radius: 20px;
-        padding: 30px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-        margin-bottom: 25px;
-        width: 100%;
-        max-width: 100%;
-        box-sizing: border-box;
-    }
-
-    .form-section {
-        margin-bottom: 25px;
-        padding: 20px;
-        background: #f8f9fa;
-        border-radius: 15px;
-        border-right: 4px solid #667eea; /* لون أزرق */
-        transition: all 0.3s ease;
-    }
-
-    .form-section:hover {
-        background: rgba(102, 126, 234, 0.03);
-        transform: translateX(-3px);
-    }
-
-    .section-title {
-        color: #667eea; /* لون أزرق */
-        font-weight: 700;
-        margin-bottom: 15px;
-        display: flex;
-        align-items: center;
-        font-size: 1rem;
-    }
-
-    .section-icon {
-        width: 35px;
-        height: 35px;
-        border-radius: 8px;
-        background: #667eea; /* لون أزرق */
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-left: 10px;
-        font-size: 1rem;
-    }
-
-    .section-icon.success {
-        background: #28a745;
-    }
-
-    .section-icon.info {
-        background: #17a2b8;
-    }
-
-    .section-icon.warning {
-        background: #ffc107;
-        color: #000;
-    }
-
-    .section-icon.academic {
-        background: #2196f3;
-    }
-
-    .form-control-custom,
-    .form-select-custom {
-        border-radius: 12px;
-        border: 2px solid #e9ecef;
-        padding: 12px 15px;
-        transition: all 0.3s ease;
-        background: white;
-        font-size: 0.95rem;
-        position: relative;
-    }
-
-    .form-control-custom:focus,
-    .form-select-custom:focus,
-    .form-control:focus,
-    .form-select:focus {
-        border-color: #667eea; /* لون أزرق */
-        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
-        background: white;
-        transform: translateY(-1px);
-    }
-
-    .form-control:valid {
-        border-color: #28a745;
-        background: #f8fff8;
-    }
-
-    .form-control:invalid:not(:placeholder-shown) {
-        border-color: #dc3545;
-        background: #fff8f8;
-    }
-
-    .preview-card {
-        background: white;
-        border-radius: 15px;
-        padding: 20px;
-        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
-        border: 2px solid #e9ecef;
-        transition: all 0.3s ease;
-        position: sticky;
-        top: 20px;
-    }
-
-    .preview-card.active {
-        border-color: #667eea; /* لون أزرق */
-        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
-    }
-
-    .preview-header {
-        display: flex;
-        align-items: center;
-        margin-bottom: 15px;
-    }
-
-    .preview-avatar {
-        width: 50px;
-        height: 50px;
-        background: linear-gradient(135deg, #667eea, #764ba2); /* ألوان زرقاء */
-        color: white;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-left: 15px;
-        font-size: 1.2rem;
-        font-weight: 800;
-    }
-
-    .preview-value {
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05));
-        border-radius: 12px;
-        padding: 15px;
-        text-align: center;
-        border: 2px solid rgba(102, 126, 234, 0.2);
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: #667eea;
-        margin-bottom: 15px;
-    }
-
-    /* تحسين البيانات المستخرجة */
-    .extracted-data-alert {
-        background: linear-gradient(135deg, #d4edda, #c3e6cb);
-        border: 2px solid #28a745;
-        border-radius: 15px;
-        padding: 20px;
-        margin-top: 15px;
-        animation: slideInUp 0.5s ease, pulse 2s infinite;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .extracted-data-alert::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
-        animation: shine 3s infinite;
-        pointer-events: none;
-    }
-
-    @keyframes shine {
-        0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-        50% { transform: translateX(100%) translateY(100%) rotate(45deg); }
-        100% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-    }
-
-    @keyframes pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.02); }
-    }
-
-    .alert-heading {
-        color: #155724;
-        font-weight: 700;
-        margin-bottom: 15px;
-        display: flex;
-        align-items: center;
-    }
-
-    .extracted-value {
-        background: rgba(255, 255, 255, 0.7);
-        padding: 8px 12px;
-        border-radius: 8px;
-        border: 1px solid rgba(40, 167, 69, 0.3);
-        text-align: center;
-        font-weight: 700;
-        color: #155724;
-        position: relative;
-    }
-
-    .help-text {
-        background: #e3f2fd; /* لون فاتح مناسب للثيم الأزرق */
-        border: 1px solid #bbdefb;
-        border-radius: 10px;
-        padding: 15px;
-        margin-top: 15px;
-    }
-
-    .help-text .help-icon {
-        color: #667eea; /* لون أزرق */
-        margin-left: 8px;
-    }
-
-    .btn-save {
-        background: linear-gradient(135deg, #28a745, #20c997); /* ألوان خضراء للحفظ */
-        border: none;
-        border-radius: 12px;
-        padding: 12px 30px;
-        color: white;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .btn-save::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-        transition: left 0.5s;
-    }
-
-    .btn-save:hover::before {
-        left: 100%;
-    }
-
-    .btn-save:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
-        color: white;
-        background: linear-gradient(135deg, #20c997, #28a745);
-    }
-
-    .btn-custom {
-        padding: 12px 30px;
-        border-radius: 12px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        border: none;
-        position: relative;
-        overflow: hidden;
-        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-
-    .btn-custom::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-        transition: left 0.5s;
-    }
-
-    .btn-custom:hover::before {
-        left: 100%;
-    }
-
-    .btn-custom:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-    }
-
-    .btn-warning.btn-custom {
-        background: linear-gradient(135deg, #ffc107, #e0a800);
-        color: #212529;
-    }
-
-    .btn-secondary.btn-custom {
-        background: linear-gradient(135deg, #6c757d, #5a6268);
-        color: white;
-    }
-
-    .required-asterisk {
-        color: #dc3545;
-        margin-left: 3px;
-    }
-
-    .input-group-icon {
-        position: absolute;
-        right: 15px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #6c757d;
-        transition: all 0.3s ease;
-        pointer-events: none;
-        z-index: 5;
-    }
-
-    .form-control:focus ~ .input-group-icon {
-        color: #667eea;
-        transform: translateY(-50%) scale(1.1);
-    }
-
-    /* أنيميشن الدخول */
-    .slide-in {
-        opacity: 0;
-        transform: translateY(30px);
-        animation: slideInUp 0.6s ease forwards;
-    }
-
-    .slide-in:nth-child(1) { animation-delay: 0.1s; }
-    .slide-in:nth-child(2) { animation-delay: 0.2s; }
-    .slide-in:nth-child(3) { animation-delay: 0.3s; }
-    .slide-in:nth-child(4) { animation-delay: 0.4s; }
-
-    @keyframes slideInUp {
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    /* تحسين شريط التقدم */
-    .progress-indicator {
-        position: sticky;
-        top: 80px;
-        background: white;
-        padding: 15px;
-        border-radius: 15px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-        margin-bottom: 20px;
-        z-index: 100;
-    }
-
-    .progress {
-        height: 8px;
-        border-radius: 4px;
-        background: #e9ecef;
-        overflow: hidden;
-    }
-
-    .progress-bar {
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        transition: width 0.3s ease;
-    }
-
-    /* تحسينات responsive */
-    @media (max-width: 768px) {
-        .form-header {
-            padding: 20px 15px;
-            margin-bottom: 20px;
-        }
-        
-        .form-icon {
-            width: 60px;
-            height: 60px;
-            font-size: 1.5rem;
-        }
-        
-        .form-container {
-            padding: 20px;
-        }
-        
-        .form-section {
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .section-icon {
-            width: 30px;
-            height: 30px;
-            font-size: 0.9rem;
-        }
-        
-        .preview-card {
-            margin-top: 20px;
-            position: static;
-        }
-        
-        .btn-custom {
-            padding: 10px 20px;
-            font-size: 0.9rem;
-        }
-        
-        .btn-group {
-            flex-direction: column;
-            gap: 10px;
-        }
-    }
-
-    /* إصلاح مشاكل الـ overflow النهائية */
-    * {
-        box-sizing: border-box;
-    }
-    
-    .row {
-        margin-right: 0 !important;
-        margin-left: 0 !important;
-    }
-    
-    [class*="col-"] {
-        padding-right: 12px !important;
-        padding-left: 12px !important;
-    }
-
-    .page-footer {
-        margin-top: 15px;
-        margin-bottom: 10px;
-    }
-
-    /* تأثير Loading */
-    .loading-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(255, 255, 255, 0.9);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-    }
-
-    .loading-spinner {
-        width: 50px;
-        height: 50px;
-        border: 5px solid #e3f2fd;
-        border-top: 5px solid #667eea;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-</style>
-{% endblock %}
-
-{% block content %}
-<!-- Form Header -->
-<div class="form-header">
-    <div class="form-header-content">
-        <div class="form-icon">
-            <i class="fas fa-user-plus"></i>
-        </div>
-        <h4 class="mb-2">إضافة طالب جديد للنظام</h4>
-        <p class="mb-0 opacity-90">أدخل بيانات الطالب مع الاستفادة من استخراج البيانات التلقائي من الرقم القومي</p>
-    </div>
-</div>
-
-<!-- شريط التقدم -->
-<div class="progress-indicator">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-        <small class="text-muted">تقدم إكمال النموذج</small>
-        <small class="text-muted" id="progressText">0%</small>
-    </div>
-    <div class="progress">
-        <div class="progress-bar" id="formProgress" style="width: 0%"></div>
-    </div>
-</div>
-
-<!-- Loading Overlay -->
-<div class="loading-overlay" id="loadingOverlay">
-    <div class="text-center">
-        <div class="loading-spinner mb-3"></div>
-        <h5>جاري حفظ بيانات الطالب...</h5>
-        <p class="text-muted">يرجى الانتظار</p>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-lg-8">
-        <div class="form-container">
-            <form method="post" id="addStudentForm">
-                {% csrf_token %}
-                
-                <!-- البيانات الأساسية -->
-                <div class="form-section slide-in">
-                    <div class="section-title">
-                        <div class="section-icon">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <span>البيانات الأساسية</span>
-                    </div>
-                    
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <div class="position-relative">
-                                <label for="id_name" class="form-label fw-bold">
-                                    <i class="fas fa-user me-2"></i>اسم الطالب <span class="required-asterisk">*</span>
-                                </label>
-                                <input type="text" class="form-control form-control-custom" id="id_name" name="name" required
-                                       placeholder="أدخل الاسم الرباعي للطالب">
-                                <i class="fas fa-user input-group-icon"></i>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="position-relative">
-                                <label for="id_national_number" class="form-label fw-bold">
-                                    <i class="fas fa-id-card me-2"></i>الرقم القومي <span class="required-asterisk">*</span>
-                                </label>
-                                <input type="text" class="form-control form-control-custom" id="id_national_number" name="national_number" 
-                                       maxlength="14" required placeholder="14 رقماً">
-                                <i class="fas fa-id-card input-group-icon"></i>
-                                <div class="help-text">
-                                    <i class="fas fa-magic help-icon"></i>
-                                    <small>سيتم استخراج العمر والجنس وتاريخ الميلاد تلقائياً</small>
-                                </div>
-                                
-                                <!-- عرض البيانات المستخرجة -->
-                                <div class="extracted-data-alert" id="extractedDataAlert" style="display: none;">
-                                    <h6 class="alert-heading">
-                                        <i class="fas fa-magic me-2"></i>تم استخراج البيانات التالية بنجاح!
-                                    </h6>
-                                    <div class="row g-3">
-                                        <div class="col-md-4">
-                                            <small class="text-muted d-block mb-2">تاريخ الميلاد</small>
-                                            <div class="extracted-value">
-                                                <i class="fas fa-calendar me-2"></i>
-                                                <span id="extractedBirthDate"></span>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <small class="text-muted d-block mb-2">العمر</small>
-                                            <div class="extracted-value">
-                                                <i class="fas fa-clock me-2"></i>
-                                                <span id="extractedAge"></span>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <small class="text-muted d-block mb-2">الجنس</small>
-                                            <div class="extracted-value">
-                                                <i class="fas fa-venus-mars me-2"></i>
-                                                <span id="extractedGender"></span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="position-relative">
-                                <label for="id_phone_number" class="form-label fw-bold">
-                                    <i class="fas fa-phone me-2"></i>رقم الهاتف
-                                </label>
-                                <input type="text" class="form-control form-control-custom" id="id_phone_number" name="phone_number"
-                                       placeholder="رقم هاتف الطالب">
-                                <i class="fas fa-phone input-group-icon"></i>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="position-relative">
-                                <label for="id_address" class="form-label fw-bold">
-                                    <i class="fas fa-map-marker-alt me-2"></i>العنوان
-                                </label>
-                                <input type="text" class="form-control form-control-custom" id="id_address" name="address"
-                                       placeholder="عنوان إقامة الطالب">
-                                <i class="fas fa-map-marker-alt input-group-icon"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- البيانات الأكاديمية -->
-                <div class="form-section slide-in" style="background: linear-gradient(135deg, #e3f2fd, #bbdefb); border-right-color: #2196f3;">
-                    <div class="section-title" style="color: #2196f3;">
-                        <div class="section-icon academic">
-                            <i class="fas fa-graduation-cap"></i>
-                        </div>
-                        <span>البيانات الأكاديمية</span>
-                    </div>
-                    
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <div class="position-relative">
-                                <label for="education_level" class="form-label fw-bold">
-                                    <i class="fas fa-layer-group me-2"></i>المرحلة التعليمية <span class="required-asterisk">*</span>
-                                </label>
-                                <select class="form-select form-select-custom" id="education_level" name="education_level" required>
-                                    <option value="">اختر المرحلة التعليمية</option>
-                                    {% for level in education_levels %}
-                                        <option value="{{ level.id }}" data-min-age="{{ level.min_age }}" data-max-age="{{ level.max_age }}">
-                                            {{ level.name }} ({{ level.min_age }}-{{ level.max_age }} سنة)
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                                <i class="fas fa-layer-group input-group-icon"></i>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="position-relative">
-                                <label for="grade_level" class="form-label fw-bold">
-                                    <i class="fas fa-chalkboard me-2"></i>الصف الدراسي <span class="required-asterisk">*</span>
-                                </label>
-                                <select class="form-select form-select-custom" id="grade_level" name="grade_level" required>
-                                    <option value="">اختر المرحلة التعليمية أولاً</option>
-                                </select>
-                                <i class="fas fa-chalkboard input-group-icon"></i>
-                                
-                                <!-- رسالة التوافق مع العمر -->
-                                <div class="alert alert-info mt-3" id="ageCompatibilityAlert" style="display: none;">
-                                    <div class="d-flex align-items-center">
-                                        <i class="fas fa-check-circle text-success me-2"></i>
-                                        <span>المرحلة التعليمية متوافقة مع عمر الطالب المستخرج</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- بيانات ولي الأمر -->
-                <div class="form-section slide-in">
-                    <div class="section-title">
-                        <div class="section-icon warning">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <span>بيانات ولي الأمر</span>
-                    </div>
-                    
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <div class="position-relative">
-                                <label for="id_parent_name" class="form-label fw-bold">
-                                    <i class="fas fa-user-tie me-2"></i>اسم ولي الأمر
-                                </label>
-                                <input type="text" class="form-control form-control-custom" id="id_parent_name" name="parent_name"
-                                       placeholder="اسم والد أو والدة الطالب">
-                                <i class="fas fa-user-tie input-group-icon"></i>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-4">
-                            <div class="position-relative">
-                                <label for="id_parent_phone" class="form-label fw-bold">
-                                    <i class="fas fa-mobile-alt me-2"></i>هاتف ولي الأمر
-                                </label>
-                                <input type="text" class="form-control form-control-custom" id="id_parent_phone" name="parent_phone"
-                                       placeholder="رقم هاتف للتواصل">
-                                <i class="fas fa-mobile-alt input-group-icon"></i>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-4">
-                            <div class="position-relative">
-                                <label for="id_parent_email" class="form-label fw-bold">
-                                    <i class="fas fa-envelope me-2"></i>بريد ولي الأمر
-                                </label>
-                                <input type="email" class="form-control form-control-custom" id="id_parent_email" name="parent_email"
-                                       placeholder="البريد الإلكتروني">
-                                <i class="fas fa-envelope input-group-icon"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- أزرار الإجراءات -->
-                <div class="d-flex justify-content-between align-items-center">
-                    <a href="{% url 'students:student_list' %}" 
-                       class="btn btn-secondary btn-custom">
-                        <i class="fas fa-times me-2"></i>إلغاء والعودة
-                    </a>
-                    <div class="btn-group">
-                        <button type="reset" class="btn btn-warning btn-custom">
-                            <i class="fas fa-undo me-2"></i>إعادة تعيين
-                        </button>
-                        <button type="submit" class="btn btn-save">
-                            <i class="fas fa-save me-2"></i>حفظ الطالب
-                        </button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-    
-    <!-- معاينة -->
-    <div class="col-lg-4">
-        <div class="preview-card" id="previewCard">
-            <h6 class="text-primary mb-3">
-                <i class="fas fa-eye me-2"></i>معاينة بيانات الطالب
-            </h6>
-            
-            <div class="preview-header">
-                <div class="preview-avatar" id="previewAvatar">ط</div>
-                <div>
-                    <h6 class="mb-1" id="previewName">طالب جديد</h6>
-                    <small class="text-muted" id="previewGrade">الصف الدراسي</small>
-                </div>
-            </div>
-            
-            <div class="preview-value" id="previewInfo">
-                معلومات الطالب ستظهر هنا
-            </div>
-            
-            <!-- تفاصيل الطالب -->
-            <div class="preview-section">
-                <h6 style="color: #667eea;">بيانات الطالب</h6>
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span>الرقم القومي:</span>
-                    <span id="previewNational">غير محدد</span>
-                </div>
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span>العمر:</span>
-                    <span id="previewAge">غير محدد</span>
-                </div>
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span>الجنس:</span>
-                    <span id="previewGender">غير محدد</span>
-                </div>
-                <div class="d-flex justify-content-between align-items-center">
-                    <span>المرحلة التعليمية:</span>
-                    <span id="previewEducationLevel">غير محدد</span>
-                </div>
-            </div>
-            
-            <!-- بيانات ولي الأمر -->
-            <div class="preview-section">
-                <h6 style="color: #ffc107;">بيانات ولي الأمر</h6>
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span>الاسم:</span>
-                    <span id="previewParentName">غير محدد</span>
-                </div>
-                <div class="d-flex justify-content-between align-items-center">
-                    <span>الهاتف:</span>
-                    <span id="previewParentPhone">غير محدد</span>
-                </div>
-            </div>
-        </div>
-        
-        <!-- نصائح مفيدة -->
-        <div class="alert alert-info mt-3 border-0" style="background: rgba(102, 126, 234, 0.1); border-right: 4px solid #667eea !important;">
-            <h6 style="color: #667eea;">
-                <i class="fas fa-lightbulb me-2"></i>نصائح مفيدة
-            </h6>
-            <ul class="mb-0 small">
-                <li>تأكد من صحة الرقم القومي (14 رقماً)</li>
-                <li>سيتم استخراج البيانات تلقائياً</li>
-                <li>اختر المرحلة والصف المناسبين</li>
-                <li>بيانات ولي الأمر اختيارية</li>
-            </ul>
-        </div>
-        
-        <!-- إرشادات الرقم القومي -->
-        <div class="alert alert-light mt-3 border">
-            <h6 class="text-dark mb-2">
-                <i class="fas fa-info-circle me-2"></i>إرشادات الرقم القومي
-            </h6>
-            <div class="small">
-                <div class="mb-2">
-                    <strong>يبدأ بـ 2:</strong> مواليد القرن العشرين (1900-1999)
-                </div>
-                <div class="mb-2">
-                    <strong>يبدأ بـ 3:</strong> مواليد القرن الحادي والعشرين (2000+)
-                </div>
-                <div class="mb-2">
-                    <strong>الرقم الأخير زوجي:</strong> أنثى
-                </div>
-                <div>
-                    <strong>الرقم الأخير فردي:</strong> ذكر
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="page-footer"></div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-// متغيرات عامة
-let extractedAge = 0;
-
-// حساب تقدم النموذج
-function updateFormProgress() {
-    const requiredInputs = document.querySelectorAll('input[required], select[required]');
-    const allInputs = document.querySelectorAll('input, select');
-    
-    let filledRequired = 0;
-    let filledTotal = 0;
-    
-    requiredInputs.forEach(input => {
-        if (input.value.trim() !== '') filledRequired++;
-    });
-    
-    allInputs.forEach(input => {
-        if (input.value.trim() !== '') filledTotal++;
-    });
-    
-    const requiredProgress = (filledRequired / requiredInputs.length) * 70;
-    const totalProgress = (filledTotal / allInputs.length) * 30;
-    const progress = Math.round(requiredProgress + totalProgress);
-    
-    document.getElementById('formProgress').style.width = progress + '%';
-    document.getElementById('progressText').textContent = progress + '%';
-    
-    // تغيير لون شريط التقدم
-    const progressBar = document.getElementById('formProgress');
-    progressBar.className = progress < 30 ? 'progress-bar bg-danger' : 
-                          progress < 70 ? 'progress-bar bg-warning' : 
-                          'progress-bar bg-success';
-}
-
-// تحديث المعاينة
-function updatePreview() {
-    // تحديث الاسم
-    const name = document.getElementById('id_name').value.trim() || 'طالب جديد';
-    document.getElementById('previewName').textContent = name;
-    document.getElementById('previewAvatar').textContent = name.charAt(0) || 'ط';
-    
-    // تحديث الرقم القومي
-    const nationalNumber = document.getElementById('id_national_number').value.trim() || 'غير محدد';
-    document.getElementById('previewNational').textContent = nationalNumber;
-    
-    // تحديث المرحلة والصف
-    const educationSelect = document.getElementById('education_level');
-    const gradeSelect = document.getElementById('grade_level');
-    
-    const educationText = educationSelect.selectedIndex > 0 ? 
-        educationSelect.options[educationSelect.selectedIndex].text : 'غير محدد';
-    const gradeText = gradeSelect.selectedIndex > 0 ? 
-        gradeSelect.options[gradeSelect.selectedIndex].text : 'غير محدد';
-    
-    document.getElementById('previewEducationLevel').textContent = educationText;
-    document.getElementById('previewGrade').textContent = gradeText;
-    
-    // تحديث بيانات ولي الأمر
-    document.getElementById('previewParentName').textContent = 
-        document.getElementById('id_parent_name').value.trim() || 'غير محدد';
-    document.getElementById('previewParentPhone').textContent = 
-        document.getElementById('id_parent_phone').value.trim() || 'غير محدد';
-    
-    // تفعيل المعاينة
-    const previewCard = document.getElementById('previewCard');
-    if (name !== 'طالب جديد' || nationalNumber !== 'غير محدد') {
-        previewCard.classList.add('active');
-    } else {
-        previewCard.classList.remove('active');
-    }
-}
-
-// ربط الأحداث بالحقول
-document.addEventListener('DOMContentLoaded', function() {
-    // ربط تحديث التقدم والمعاينة
-    const inputs = document.querySelectorAll('input, select');
-    inputs.forEach(input => {
-        input.addEventListener('input', () => {
-            updateFormProgress();
-            updatePreview();
-        });
-        input.addEventListener('change', () => {
-            updateFormProgress();
-            updatePreview();
-        });
-    });
-    
-    // تحديث أولي
-    updateFormProgress();
-    updatePreview();
-});
-
-// استخراج البيانات من الرقم القومي
-document.getElementById('id_national_number').addEventListener('input', function() {
-    const nationalId = this.value.trim();
-    if (nationalId.length === 14) {
-        extractDataFromNationalId(nationalId);
-    } else {
-        hideExtractedData();
-    }
-    updatePreview();
-});
-
-function extractDataFromNationalId(nationalId) {
-    if (!/^\d{14}$/.test(nationalId)) {
-        hideExtractedData();
-        return;
-    }
-    
-    try {
-        const centuryIndicator = parseInt(nationalId[0]);
-        const yearPart = nationalId.substring(1, 3);
-        const month = nationalId.substring(3, 5);
-        const day = nationalId.substring(5, 7);
-        
-        let fullYear;
-        if (centuryIndicator === 2) {
-            fullYear = '19' + yearPart;
-        } else if (centuryIndicator === 3) {
-            fullYear = '20' + yearPart;
-        } else {
-            hideExtractedData();
-            return;
-        }
-        
-        const birthDate = new Date(fullYear, month - 1, day);
-        
-        if (birthDate.getFullYear() == fullYear && 
-            birthDate.getMonth() == (month - 1) && 
-            birthDate.getDate() == day) {
-            
-            const formattedDate = `${day}/${month}/${fullYear}`;
-            document.getElementById('extractedBirthDate').textContent = formattedDate;
-            
-            const today = new Date();
-            let age = today.getFullYear() - birthDate.getFullYear();
-            const monthDiff = today.getMonth() - birthDate.getMonth();
-            
-            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-                age--;
-            }
-            
-            extractedAge = age;
-            document.getElementById('extractedAge').textContent = age + ' سنة';
-            document.getElementById('previewAge').textContent = age + ' سنة';
-            
-            const genderDigit = parseInt(nationalId[12]);
-            const gender = (genderDigit % 2 === 0) ? 'أنثى' : 'ذكر';
-            document.getElementById('extractedGender').textContent = gender;
-            document.getElementById('previewGender').textContent = gender;
-            
-            // إظهار البيانات
-            showExtractedData();
-            
-            // اقتراح المرحلة حسب العمر
-            suggestEducationLevel(age);
-        } else {
-            hideExtractedData();
-        }
-        
-    } catch (error) {
-        console.error('خطأ في استخراج البيانات:', error);
-        hideExtractedData();
-    }
-}
-
-function showExtractedData() {
-    const alert = document.getElementById('extractedDataAlert');
-    alert.style.display = 'block';
-    alert.style.opacity = '0';
-    alert.style.transform = 'translateY(20px)';
-    
-    setTimeout(() => {
-        alert.style.transition = 'all 0.3s ease';
-        alert.style.opacity = '1';
-        alert.style.transform = 'translateY(0)';
-    }, 100);
-}
-
-function hideExtractedData() {
-    const alert = document.getElementById('extractedDataAlert');
-    alert.style.display = 'none';
-    extractedAge = 0;
-    
-    // إعادة تعيين قيم المعاينة
-    document.getElementById('previewAge').textContent = 'غير محدد';
-    document.getElementById('previewGender').textContent = 'غير محدد';
-    hideAgeCompatibilityAlert();
-}
-
-function suggestEducationLevel(age) {
-    const educationLevelSelect = document.getElementById('education_level');
-    const options = educationLevelSelect.options;
-    
-    for (let i = 1; i < options.length; i++) { // بداية من 1 لتخطي الخيار الفارغ
-        const option = options[i];
-        const minAge = parseInt(option.dataset.minAge || 0);
-        const maxAge = parseInt(option.dataset.maxAge || 100);
-        
-        if (age >= minAge && age <= maxAge) {
-            educationLevelSelect.value = option.value;
-            educationLevelSelect.style.borderColor = '#28a745';
-            educationLevelSelect.style.background = '#f8fff8';
-            
-            // تحميل الصفوف
-            loadGradesByLevel(option.value);
-            showAgeCompatibilityAlert();
-            updatePreview();
-            break;
-        }
-    }
-}
-
-function showAgeCompatibilityAlert() {
-    const alert = document.getElementById('ageCompatibilityAlert');
-    if (alert) {
-        alert.style.display = 'block';
-    }
-}
-
-function hideAgeCompatibilityAlert() {
-    const alert = document.getElementById('ageCompatibilityAlert');
-    if (alert) {
-        alert.style.display = 'none';
-    }
-}
-
-// تحميل الصفوف حسب المرحلة
-document.getElementById('education_level').addEventListener('change', function() {
-    const levelId = this.value;
-    if (levelId) {
-        loadGradesByLevel(levelId);
-        
-        // فحص التوافق مع العمر
-        if (extractedAge > 0) {
-            const selectedOption = this.options[this.selectedIndex];
-            const minAge = parseInt(selectedOption.dataset.minAge || 0);
-            const maxAge = parseInt(selectedOption.dataset.maxAge || 100);
-            
-            if (extractedAge >= minAge && extractedAge <= maxAge) {
-                showAgeCompatibilityAlert();
-                this.style.borderColor = '#28a745';
-                this.style.background = '#f8fff8';
-            } else {
-                hideAgeCompatibilityAlert();
-                this.style.borderColor = '#ffc107';
-                this.style.background = '#fff8f0';
-            }
-        }
-    } else {
-        clearGrades();
-        hideAgeCompatibilityAlert();
-        this.style.borderColor = '#e9ecef';
-        this.style.background = 'white';
-    }
-    updatePreview();
-});
-
-function loadGradesByLevel(levelId) {
-    const gradeSelect = document.getElementById('grade_level');
-    gradeSelect.innerHTML = '<option value="">جاري التحميل...</option>';
-    gradeSelect.disabled = true;
-    
-    // إصلاح URL - استخدام URL الصحيح
-    fetch(`/students/get-grades-by-level/${levelId}/`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            gradeSelect.disabled = false;
-            if (data.success && data.grades) {
-                gradeSelect.innerHTML = '<option value="">اختر الصف الدراسي</option>';
-                data.grades.forEach(grade => {
-                    const option = document.createElement('option');
-                    option.value = grade.id;
-                    option.textContent = grade.name;
-                    gradeSelect.appendChild(option);
-                });
-                
-                // تأثير بصري للنجاح
-                gradeSelect.style.borderColor = '#28a745';
-                gradeSelect.style.background = '#f8fff8';
-                
-                console.log('تم تحميل الصفوف بنجاح:', data.grades);
-            } else {
-                gradeSelect.innerHTML = '<option value="">لا توجد صفوف متاحة</option>';
-                gradeSelect.style.borderColor = '#ffc107';
-                gradeSelect.style.background = '#fff8f0';
-                console.warn('لا توجد صفوف:', data);
-            }
-        })
-        .catch(error => {
-            console.error('خطأ في تحميل الصفوف:', error);
-            gradeSelect.disabled = false;
-            gradeSelect.innerHTML = '<option value="">خطأ في تحميل الصفوف</option>';
-            gradeSelect.style.borderColor = '#dc3545';
-            gradeSelect.style.background = '#fff5f5';
-            
-            // جرب URL بديل
-            console.log('جاري المحاولة مع URL بديل...');
-            loadGradesAlternative(levelId);
-        });
-}
-
-// URL بديل للصفوف
-function loadGradesAlternative(levelId) {
-    const gradeSelect = document.getElementById('grade_level');
-    
-    // جرب URLs مختلفة
-    const alternativeUrls = [
-        `/students/api/grades/${levelId}/`,
-        `/api/grades-by-level/${levelId}/`,
-        `/grades/${levelId}/`
-    ];
-    
-    alternativeUrls.forEach((url, index) => {
-        setTimeout(() => {
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success && data.grades) {
-                        gradeSelect.innerHTML = '<option value="">اختر الصف الدراسي</option>';
-                        data.grades.forEach(grade => {
-                            const option = document.createElement('option');
-                            option.value = grade.id;
-                            option.textContent = grade.name;
-                            gradeSelect.appendChild(option);
-                        });
-                        gradeSelect.style.borderColor = '#28a745';
-                        gradeSelect.style.background = '#f8fff8';
-                        console.log(`نجح URL البديل ${index + 1}:`, url);
-                    }
-                })
-                .catch(error => {
-                    console.error(`فشل URL البديل ${index + 1}:`, url, error);
-                });
-        }, index * 1000);
-    });
-}
-
-function clearGrades() {
-    const gradeSelect = document.getElementById('grade_level');
-    gradeSelect.innerHTML = '<option value="">اختر المرحلة التعليمية أولاً</option>';
-    gradeSelect.style.borderColor = '#e9ecef';
-    gradeSelect.style.background = 'white';
-    gradeSelect.disabled = false;
-}
-
-// إرسال النموذج
-document.getElementById('addStudentForm').addEventListener('submit', function(e) {
-    console.log('تم إرسال النموذج');
-    
-    // إظهار Loading
-    const loadingOverlay = document.getElementById('loadingOverlay');
-    if (loadingOverlay) {
-        loadingOverlay.style.display = 'flex';
-    }
-    
-    // تعطيل الزر
-    const submitBtn = this.querySelector('button[type="submit"]');
-    if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>جاري الحفظ...';
-    }
-});
-
-// إعادة تعيين النموذج
-const resetBtn = document.querySelector('button[type="reset"]');
-if (resetBtn) {
-    resetBtn.addEventListener('click', function() {
-        setTimeout(() => {
-            hideExtractedData();
-            clearGrades();
-            updateFormProgress();
-            updatePreview();
-            
-            // إعادة تعيين الألوان
-            document.querySelectorAll('.form-control, .form-select').forEach(element => {
-                element.style.borderColor = '#e9ecef';
-                element.style.background = 'white';
-            });
-            
-            console.log('تم إعادة تعيين النموذج');
-        }, 100);
-    });
-}
-
-// Debug: طباعة معلومات عند تحميل الصفحة
-console.log('تم تحميل صفحة إضافة طالب');
-console.log('العناصر المتاحة:', {
-    nameInput: !!document.getElementById('id_name'),
-    nationalInput: !!document.getElementById('id_national_number'),
-    educationSelect: !!document.getElementById('education_level'),
-    gradeSelect: !!document.getElementById('grade_level'),
-    extractedAlert: !!document.getElementById('extractedDataAlert'),
-    previewCard: !!document.getElementById('previewCard')
-});
 </script>
 {% endblock %} {% endcomment %}

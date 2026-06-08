@@ -1,470 +1,477 @@
+# students/services/import_preview_service.py
 import csv
 import io
-from datetime import datetime, date
+from datetime import datetime
+from decimal import Decimal, InvalidOperation
 
 import openpyxl
-from django.core.exceptions import ValidationError
 from django.db import transaction
 
 from students.models import Student, validate_egyptian_national_id
-from school_settings.models import AcademicYear as SettingsAcademicYear, GradeLevel
+from school_settings.models import AcademicYear, GradeLevel
 
 
 class StudentImportPreviewService:
-    """
-    خدمة معاينة استيراد الطلاب قبل الحفظ.
-    تقرأ CSV / Excel وتفحص البيانات وتجهز:
-    - valid_rows
-    - errors
-    - warnings
+    """خدمة معاينة واستيراد الطلاب بعد توسيع ملف الطالب"""
 
-    لا تحفظ أي بيانات إلا عند استدعاء confirm_import.
-    """
+    REQUIRED_HEADERS = ['الاسم']
 
-    REQUIRED_FIELDS = [
-        'name',
-        'national_number',
-    ]
+    HEADER_ALIASES = {
+        'name': ['الاسم', 'اسم الطالب', 'الاسم*', 'اسم الطالب*'],
+        'student_type': ['نوع الطالب', 'تصنيف الطالب'],
+        'national_number': ['الرقم القومي', 'رقم قومي'],
+        'passport_number': ['رقم جواز السفر', 'جواز السفر', 'رقم الجواز'],
+        'nationality': ['الجنسية'],
+        'religion': ['الديانة', 'الدين'],
+        'age': ['العمر'],
+        'gender': ['النوع', 'الجنس', 'النوع (M/F)'],
+        'date_of_birth': ['تاريخ الميلاد', 'تاريخ الميلاد (YYYY-MM-DD)'],
+        'phone_number': ['رقم الهاتف', 'هاتف الطالب', 'تليفون الطالب'],
+        'address': ['العنوان'],
 
-    ARABIC_FIELD_MAP = {
-        'الاسم*': 'name',
-        'الاسم': 'name',
-        'اسم الطالب': 'name',
-        'name': 'name',
+        'academic_year': ['العام الدراسي'],
+        'grade_level': ['الصف الدراسي', 'الصف'],
+        'enrollment_status': ['حالة القيد'],
+        'transferred_from_school': ['محول من مدرسة', 'المدرسة المحول منها'],
+        'transferred_to_school': ['محول إلى مدرسة', 'المدرسة المحول إليها'],
 
-        'الرقم القومي*': 'national_number',
-        'الرقم القومي': 'national_number',
-        'national_number': 'national_number',
+        'is_integration_student': ['طالب دمج', 'طالب دمج / من ذوي الهمم', 'ذوي الهمم'],
+        'disability_type': ['نوع الإعاقة', 'نوع الاعاقة'],
+        'exempt_from_arabic': ['إعفاء من العربي', 'إعفاء من اللغة العربية'],
+        'exempt_from_english': ['إعفاء من الإنجليزي', 'إعفاء من اللغة الإنجليزية'],
+        'exempt_from_french': ['إعفاء من الفرنسي', 'إعفاء من اللغة الفرنسية'],
+        'other_subject_exemptions': ['إعفاءات أخرى', 'إعفاءات أخرى من مواد'],
 
-        'رقم الهاتف': 'phone_number',
-        'phone_number': 'phone_number',
+        'is_staff_child': ['من أبناء العاملين', 'ابن عامل', 'أبناء العاملين'],
+        'staff_parent_name': ['اسم الموظف', 'اسم الموظف من العاملين'],
+        'staff_parent_job': ['وظيفة الموظف', 'وظيفة الموظف داخل المدرسة'],
 
-        'العنوان': 'address',
-        'address': 'address',
-
-        'الصف الدراسي': 'grade_level',
-        'الصف': 'grade_level',
-        'grade_level': 'grade_level',
-        'grade_level_id': 'grade_level_id',
-        'معرف الصف': 'grade_level_id',
-
-        'العام الدراسي': 'academic_year',
-        'academic_year': 'academic_year',
-
-        'اسم ولي الأمر': 'parent_name',
-        'parent_name': 'parent_name',
-
-        'هاتف ولي الأمر': 'parent_phone',
-        'parent_phone': 'parent_phone',
-
-        'بريد ولي الأمر': 'parent_email',
-        'parent_email': 'parent_email',
-
-        'تاريخ الميلاد': 'date_of_birth',
-        'تاريخ الميلاد (YYYY-MM-DD)': 'date_of_birth',
-        'date_of_birth': 'date_of_birth',
-
-        'النوع': 'gender',
-        'النوع (M/F)': 'gender',
-        'gender': 'gender',
+        'parent_name': ['اسم ولي الأمر', 'ولي الأمر'],
+        'parent_phone': ['هاتف ولي الأمر', 'رقم ولي الأمر'],
+        'parent_email': ['بريد ولي الأمر', 'إيميل ولي الأمر', 'ايميل ولي الأمر'],
+        'father_job': ['وظيفة الأب'],
+        'educational_guardian': ['صاحب الولاية التعليمية', 'الولاية التعليمية'],
+        'educational_guardian_name': ['اسم صاحب الولاية التعليمية'],
+        'educational_guardian_phone': ['هاتف صاحب الولاية التعليمية'],
     }
 
-    def __init__(self):
-        self.valid_rows = []
-        self.errors = []
-        self.warnings = []
-        self.processed_count = 0
+    TRUE_VALUES = {'1', 'true', 'yes', 'y', 'نعم', 'صح', 'صحيح', 'موجود', '✓'}
+    FALSE_VALUES = {'0', 'false', 'no', 'n', 'لا', 'خطأ', 'غير موجود', 'x'}
+
+    STUDENT_TYPE_MAP = {
+        'طالب عادي': 'REGULAR',
+        'عادي': 'REGULAR',
+        'regular': 'REGULAR',
+        'REGULAR': 'REGULAR',
+        'وافد': 'EXPATRIATE',
+        'اجنبي': 'EXPATRIATE',
+        'أجنبي': 'EXPATRIATE',
+        'expatriate': 'EXPATRIATE',
+        'EXPATRIATE': 'EXPATRIATE',
+    }
+
+    GENDER_MAP = {
+        'ذكر': 'M',
+        'male': 'M',
+        'm': 'M',
+        'M': 'M',
+        'أنثى': 'F',
+        'انثى': 'F',
+        'female': 'F',
+        'f': 'F',
+        'F': 'F',
+    }
+
+    RELIGION_MAP = {
+        'مسلم': 'MUSLIM',
+        'مسيحي': 'CHRISTIAN',
+        'مسيحى': 'CHRISTIAN',
+        'أخرى': 'OTHER',
+        'اخرى': 'OTHER',
+        'other': 'OTHER',
+        'MUSLIM': 'MUSLIM',
+        'CHRISTIAN': 'CHRISTIAN',
+        'OTHER': 'OTHER',
+    }
+
+    ENROLLMENT_STATUS_MAP = {
+        'مستجد': 'NEW',
+        'ناجح ومنقول': 'PROMOTED',
+        'منقول': 'PROMOTED',
+        'محول': 'TRANSFERRED',
+        'باق للإعادة': 'REPEATER',
+        'باق للاعادة': 'REPEATER',
+        'NEW': 'NEW',
+        'PROMOTED': 'PROMOTED',
+        'TRANSFERRED': 'TRANSFERRED',
+        'REPEATER': 'REPEATER',
+    }
+
+    EDUCATIONAL_GUARDIAN_MAP = {
+        'الأب': 'FATHER',
+        'الاب': 'FATHER',
+        'اب': 'FATHER',
+        'أب': 'FATHER',
+        'father': 'FATHER',
+        'FATHER': 'FATHER',
+        'الأم': 'MOTHER',
+        'الام': 'MOTHER',
+        'ام': 'MOTHER',
+        'أم': 'MOTHER',
+        'mother': 'MOTHER',
+        'MOTHER': 'MOTHER',
+        'آخر': 'OTHER',
+        'اخر': 'OTHER',
+        'other': 'OTHER',
+        'OTHER': 'OTHER',
+    }
 
     def preview_file(self, file_obj):
-        """
-        قراءة الملف وتجهيز نتيجة المعاينة.
-        """
-        self.valid_rows = []
-        self.errors = []
-        self.warnings = []
-        self.processed_count = 0
+        rows = self.read_file(file_obj)
 
-        file_name = file_obj.name.lower()
-
-        if file_name.endswith('.csv'):
-            rows = self._read_csv(file_obj)
-        elif file_name.endswith(('.xlsx', '.xls')):
-            rows = self._read_excel(file_obj)
-        else:
-            raise ValidationError('صيغة الملف غير مدعومة. الصيغ المدعومة: CSV, Excel')
-
-        if not rows:
-            raise ValidationError('الملف لا يحتوي على بيانات طلاب')
-
-        existing_national_numbers = set(
-            Student.objects.values_list('national_number', flat=True)
-        )
-
-        file_national_numbers = set()
-
-        for row_num, raw_row in rows:
-            self.processed_count += 1
-            normalized_row = self._normalize_row(raw_row)
-
-            result = self._validate_row(
-                row=normalized_row,
-                row_num=row_num,
-                existing_national_numbers=existing_national_numbers,
-                file_national_numbers=file_national_numbers,
-            )
-
-            if result['is_valid']:
-                file_national_numbers.add(result['data']['national_number'])
-                self.valid_rows.append(result['data'])
-            else:
-                self.errors.extend(result['errors'])
-
-            self.warnings.extend(result['warnings'])
-
-        return self.get_summary()
-
-    def get_summary(self):
-        return {
-            'processed_count': self.processed_count,
-            'valid_count': len(self.valid_rows),
-            'error_count': len(self.errors),
-            'warning_count': len(self.warnings),
-            'valid_rows': self.valid_rows,
-            'errors': self.errors,
-            'warnings': self.warnings,
+        summary = {
+            'processed_count': 0,
+            'valid_count': 0,
+            'error_count': 0,
+            'warning_count': 0,
+            'valid_rows': [],
+            'preview_rows': [],
+            'errors': [],
+            'warnings': [],
         }
 
-    def _read_csv(self, file_obj):
-        """
-        قراءة CSV مع دعم UTF-8 BOM.
-        """
+        seen_national_numbers = set()
+        seen_passports = set()
+
+        for index, raw_row in enumerate(rows, start=2):
+            if not any(str(value or '').strip() for value in raw_row.values()):
+                continue
+
+            summary['processed_count'] += 1
+            normalized = self.normalize_row(raw_row)
+            row_errors = []
+            row_warnings = []
+
+            name = normalized.get('name', '').strip()
+            national_number = normalized.get('national_number', '').strip()
+            passport_number = normalized.get('passport_number', '').strip()
+
+            if not name:
+                row_errors.append('اسم الطالب مطلوب')
+
+            if national_number:
+                is_valid, message = validate_egyptian_national_id(national_number)
+                if not is_valid:
+                    row_errors.append(f'الرقم القومي غير صحيح: {message}')
+
+                if Student.objects.filter(national_number=national_number).exists():
+                    row_errors.append('الرقم القومي موجود بالفعل لطالب آخر')
+
+                if national_number in seen_national_numbers:
+                    row_errors.append('الرقم القومي مكرر داخل نفس الملف')
+
+                seen_national_numbers.add(national_number)
+
+            if passport_number:
+                if Student.objects.filter(passport_number=passport_number).exists():
+                    row_errors.append('رقم جواز السفر موجود بالفعل لطالب آخر')
+
+                if passport_number in seen_passports:
+                    row_errors.append('رقم جواز السفر مكرر داخل نفس الملف')
+
+                seen_passports.add(passport_number)
+
+            if not national_number and not passport_number:
+                row_warnings.append('لا يوجد رقم قومي أو جواز سفر، سيتم إنشاء الطالب بالاسم فقط')
+
+            grade_name = normalized.get('grade_level', '').strip()
+            if grade_name and not self.find_grade(grade_name):
+                row_warnings.append(f'لم يتم العثور على الصف الدراسي: {grade_name}')
+
+            academic_year_name = normalized.get('academic_year', '').strip()
+            if academic_year_name and not self.find_academic_year(academic_year_name):
+                row_warnings.append(f'لم يتم العثور على العام الدراسي: {academic_year_name}')
+
+            preview_row = {
+                'row_number': index,
+                'data': normalized,
+                'errors': row_errors,
+                'warnings': row_warnings,
+                'is_valid': not row_errors,
+            }
+
+            summary['preview_rows'].append(preview_row)
+
+            if row_errors:
+                summary['error_count'] += 1
+                summary['errors'].append(f'صف {index}: ' + ' - '.join(row_errors))
+            else:
+                summary['valid_count'] += 1
+                summary['valid_rows'].append(normalized)
+
+            if row_warnings:
+                summary['warning_count'] += len(row_warnings)
+                for warning in row_warnings:
+                    summary['warnings'].append(f'صف {index}: {warning}')
+
+        return summary
+
+    def confirm_import(self, valid_rows):
+        result = {
+            'created_count': 0,
+            'errors': [],
+        }
+
+        with transaction.atomic():
+            for index, row in enumerate(valid_rows, start=1):
+                try:
+                    student = self.build_student(row)
+                    student.save()
+                    result['created_count'] += 1
+                except Exception as exc:
+                    result['errors'].append(f'صف صالح رقم {index}: {str(exc)}')
+
+        return result
+
+    def read_file(self, file_obj):
+        file_name = (getattr(file_obj, 'name', '') or '').lower()
+
+        if file_name.endswith('.csv'):
+            return self.read_csv(file_obj)
+
+        if file_name.endswith('.xlsx'):
+            return self.read_excel(file_obj)
+
+        raise ValueError('صيغة الملف غير مدعومة. الصيغ المدعومة: CSV أو XLSX')
+
+    def read_csv(self, file_obj):
+        raw = file_obj.read()
+
         try:
-            decoded_file = file_obj.read().decode('utf-8-sig')
+            text = raw.decode('utf-8-sig')
         except UnicodeDecodeError:
-            file_obj.seek(0)
-            decoded_file = file_obj.read().decode('cp1256')
+            text = raw.decode('cp1256')
 
-        io_string = io.StringIO(decoded_file)
-        reader = csv.DictReader(io_string)
+        reader = csv.DictReader(io.StringIO(text))
+        return [dict(row) for row in reader]
 
-        if not reader.fieldnames:
-            raise ValidationError('ملف CSV لا يحتوي على صف عناوين الأعمدة')
-
-        rows = []
-
-        for index, row in enumerate(reader, start=2):
-            if self._row_has_data(row):
-                rows.append((index, row))
-
-        return rows
-
-    def _read_excel(self, file_obj):
-        """
-        قراءة Excel من أول Sheet.
-        """
+    def read_excel(self, file_obj):
         workbook = openpyxl.load_workbook(file_obj, data_only=True)
         worksheet = workbook.active
 
-        rows = list(worksheet.iter_rows(values_only=True))
+        headers = []
+        for cell in worksheet[1]:
+            headers.append(str(cell.value or '').strip())
 
-        if not rows:
-            raise ValidationError('الملف فارغ')
+        rows = []
 
-        headers = [
-            str(cell).strip() if cell is not None else ''
-            for cell in rows[0]
-        ]
-
-        if not any(headers):
-            raise ValidationError('ملف Excel لا يحتوي على صف عناوين الأعمدة')
-
-        data_rows = []
-
-        for index, row in enumerate(rows[1:], start=2):
+        for row in worksheet.iter_rows(min_row=2, values_only=True):
             row_data = {}
 
-            for col_index, value in enumerate(row):
-                if col_index < len(headers):
-                    header = headers[col_index]
-                    if header:
-                        row_data[header] = value
+            for index, header in enumerate(headers):
+                if not header:
+                    continue
 
-            if self._row_has_data(row_data):
-                data_rows.append((index, row_data))
+                row_data[header] = row[index] if index < len(row) else ''
 
-        return data_rows
+            rows.append(row_data)
 
-    def _row_has_data(self, row):
-        """
-        التحقق من أن الصف ليس فارغاً.
-        """
-        if not row:
-            return False
+        return rows
 
-        return any(
-            value not in [None, '']
-            for value in row.values()
-        )
-
-    def _normalize_row(self, raw_row):
-        """
-        تحويل أسماء الأعمدة العربية أو الإنجليزية إلى أسماء موحدة.
-        """
+    def normalize_row(self, raw_row):
         normalized = {}
 
-        for key, value in raw_row.items():
-            clean_key = str(key).strip()
-            mapped_key = self.ARABIC_FIELD_MAP.get(clean_key)
+        for internal_name, aliases in self.HEADER_ALIASES.items():
+            normalized[internal_name] = self.get_value(raw_row, aliases)
 
-            if mapped_key:
-                normalized[mapped_key] = self._clean_value(value)
+        normalized['name'] = normalized.get('name', '').strip()
+        normalized['student_type'] = self.map_choice(
+            normalized.get('student_type'),
+            self.STUDENT_TYPE_MAP,
+            default='REGULAR'
+        )
+        normalized['gender'] = self.map_choice(
+            normalized.get('gender'),
+            self.GENDER_MAP,
+            default=''
+        )
+        normalized['religion'] = self.map_choice(
+            normalized.get('religion'),
+            self.RELIGION_MAP,
+            default=''
+        )
+        normalized['enrollment_status'] = self.map_choice(
+            normalized.get('enrollment_status'),
+            self.ENROLLMENT_STATUS_MAP,
+            default='NEW'
+        )
+        normalized['educational_guardian'] = self.map_choice(
+            normalized.get('educational_guardian'),
+            self.EDUCATIONAL_GUARDIAN_MAP,
+            default='FATHER'
+        )
+
+        for field in [
+            'is_integration_student',
+            'exempt_from_arabic',
+            'exempt_from_english',
+            'exempt_from_french',
+            'is_staff_child',
+        ]:
+            normalized[field] = self.to_bool(normalized.get(field))
+
+        normalized['age'] = self.to_int(normalized.get('age'))
+        normalized['date_of_birth'] = self.to_date_string(normalized.get('date_of_birth'))
 
         return normalized
 
-    def _clean_value(self, value):
-        """
-        تنظيف القيم القادمة من CSV أو Excel.
-        """
-        if value is None:
-            return ''
+    def build_student(self, row):
+        grade = self.find_grade(row.get('grade_level', ''))
+        academic_year = self.find_academic_year(row.get('academic_year', ''))
 
-        if isinstance(value, datetime):
-            return value.date().isoformat()
+        if not academic_year:
+            try:
+                academic_year = AcademicYear.get_current_year()
+            except Exception:
+                academic_year = None
 
-        if isinstance(value, date):
-            return value.isoformat()
+        student = Student(
+            name=row.get('name', '').strip(),
+            student_type=row.get('student_type') or 'REGULAR',
+            national_number=row.get('national_number') or None,
+            passport_number=row.get('passport_number') or None,
+            nationality=row.get('nationality') or '',
+            religion=row.get('religion') or '',
+            age=row.get('age') or None,
+            gender=row.get('gender') or '',
+            date_of_birth=self.parse_date_object(row.get('date_of_birth')),
+            phone_number=row.get('phone_number') or '',
+            address=row.get('address') or '',
 
-        if isinstance(value, float):
-            if value.is_integer():
-                return str(int(value))
-            return str(value).strip()
+            academic_year=academic_year,
+            grade_level=grade,
+            enrollment_status=row.get('enrollment_status') or 'NEW',
+            transferred_from_school=row.get('transferred_from_school') or '',
+            transferred_to_school=row.get('transferred_to_school') or '',
 
-        return str(value).strip()
+            is_integration_student=bool(row.get('is_integration_student')),
+            disability_type=row.get('disability_type') or '',
+            exempt_from_arabic=bool(row.get('exempt_from_arabic')),
+            exempt_from_english=bool(row.get('exempt_from_english')),
+            exempt_from_french=bool(row.get('exempt_from_french')),
+            other_subject_exemptions=row.get('other_subject_exemptions') or '',
 
-    def _validate_row(self, row, row_num, existing_national_numbers, file_national_numbers):
-        errors = []
-        warnings = []
+            is_staff_child=bool(row.get('is_staff_child')),
+            staff_parent_name=row.get('staff_parent_name') or '',
+            staff_parent_job=row.get('staff_parent_job') or '',
 
-        name = row.get('name', '').strip()
-        national_number = row.get('national_number', '').strip()
-
-        if not name:
-            errors.append(f'صف {row_num}: اسم الطالب مطلوب')
-
-        if not national_number:
-            errors.append(f'صف {row_num}: الرقم القومي مطلوب')
-        else:
-            is_valid, message = validate_egyptian_national_id(national_number)
-
-            if not is_valid:
-                errors.append(f'صف {row_num}: {message}')
-
-            if national_number in existing_national_numbers:
-                errors.append(f'صف {row_num}: الرقم القومي {national_number} موجود مسبقاً في النظام')
-
-            if national_number in file_national_numbers:
-                errors.append(f'صف {row_num}: الرقم القومي {national_number} مكرر داخل الملف')
-
-        grade_level = self._get_grade_level(
-            grade_name=row.get('grade_level', ''),
-            grade_level_id=row.get('grade_level_id', ''),
+            parent_name=row.get('parent_name') or '',
+            parent_phone=row.get('parent_phone') or '',
+            parent_email=row.get('parent_email') or '',
+            father_job=row.get('father_job') or '',
+            educational_guardian=row.get('educational_guardian') or 'FATHER',
+            educational_guardian_name=row.get('educational_guardian_name') or '',
+            educational_guardian_phone=row.get('educational_guardian_phone') or '',
         )
 
-        if (row.get('grade_level') or row.get('grade_level_id')) and not grade_level:
-            warnings.append(
-                f'صف {row_num}: لم يتم العثور على الصف الدراسي "{row.get("grade_level") or row.get("grade_level_id")}"'
-            )
+        return student
 
-        academic_year = self._get_academic_year(row.get('academic_year', ''))
+    def get_value(self, raw_row, aliases):
+        for alias in aliases:
+            if alias in raw_row:
+                return self.clean_cell(raw_row.get(alias))
 
-        if row.get('academic_year') and not academic_year:
-            warnings.append(f'صف {row_num}: لم يتم العثور على العام الدراسي "{row.get("academic_year")}"')
-
-        gender = self._normalize_gender(row.get('gender', ''))
-        date_of_birth = self._parse_date(row.get('date_of_birth', ''))
-
-        if row.get('date_of_birth') and not date_of_birth:
-            warnings.append(f'صف {row_num}: صيغة تاريخ الميلاد غير صحيحة، سيتم تجاهلها')
-
-        data = {
-            'row_num': row_num,
-            'name': name,
-            'national_number': national_number,
-            'phone_number': row.get('phone_number', ''),
-            'address': row.get('address', ''),
-            'parent_name': row.get('parent_name', ''),
-            'parent_phone': row.get('parent_phone', ''),
-            'parent_email': row.get('parent_email', ''),
-            'grade_level_id': grade_level.id if grade_level else None,
-            'grade_level_name': grade_level.name if grade_level else '',
-            'academic_year_id': academic_year.id if academic_year else None,
-            'academic_year_name': academic_year.name if academic_year else '',
-            'gender': gender,
-            'date_of_birth': date_of_birth.isoformat() if date_of_birth else '',
+        # دعم لو فيه مسافات أو اختلاف بسيط في اسم العمود
+        normalized_keys = {
+            str(key or '').strip(): value
+            for key, value in raw_row.items()
         }
 
-        return {
-            'is_valid': len(errors) == 0,
-            'errors': errors,
-            'warnings': warnings,
-            'data': data,
-        }
-
-    def _get_grade_level(self, grade_name='', grade_level_id=''):
-        """
-        الحصول على الصف الدراسي بالـ ID أو الاسم.
-        """
-        grade_level_id = str(grade_level_id or '').strip()
-        grade_name = str(grade_name or '').strip()
-
-        if grade_level_id:
-            grade = GradeLevel.objects.filter(
-                id=grade_level_id,
-                is_active=True
-            ).select_related('education_level').first()
-
-            if grade:
-                return grade
-
-        if not grade_name:
-            return None
-
-        grade = GradeLevel.objects.filter(
-            name__iexact=grade_name,
-            is_active=True
-        ).select_related('education_level').first()
-
-        if grade:
-            return grade
-
-        return GradeLevel.objects.filter(
-            name__icontains=grade_name,
-            is_active=True
-        ).select_related('education_level').first()
-
-    def _get_academic_year(self, year_name):
-        """
-        الحصول على العام الدراسي بالاسم أو العام الحالي إذا لم يُرسل.
-        """
-        year_name = str(year_name or '').strip()
-
-        if not year_name:
-            try:
-                return SettingsAcademicYear.get_current_year()
-            except Exception:
-                return None
-
-        academic_year = SettingsAcademicYear.objects.filter(
-            name__iexact=year_name,
-            is_active=True
-        ).first()
-
-        if academic_year:
-            return academic_year
-
-        return SettingsAcademicYear.objects.filter(
-            name__icontains=year_name,
-            is_active=True
-        ).first()
-
-    def _normalize_gender(self, gender):
-        """
-        توحيد قيمة النوع.
-        """
-        gender = str(gender or '').strip().upper()
-
-        if gender in ['M', 'MALE', 'ذكر']:
-            return 'M'
-
-        if gender in ['F', 'FEMALE', 'أنثى', 'انثى']:
-            return 'F'
+        for alias in aliases:
+            if alias in normalized_keys:
+                return self.clean_cell(normalized_keys.get(alias))
 
         return ''
 
-    def _parse_date(self, value):
-        """
-        تحويل النص إلى تاريخ.
-        """
-        if isinstance(value, datetime):
-            return value.date()
+    def clean_cell(self, value):
+        if value is None:
+            return ''
 
-        if isinstance(value, date):
-            return value
+        if isinstance(value, float) and value.is_integer():
+            return str(int(value))
 
-        value = str(value or '').strip()
+        return str(value).strip()
+
+    def map_choice(self, value, mapping, default=''):
+        value = self.clean_cell(value)
+
+        if not value:
+            return default
+
+        return mapping.get(value, mapping.get(value.lower(), default))
+
+    def to_bool(self, value):
+        value = self.clean_cell(value).lower()
+
+        if value in self.TRUE_VALUES:
+            return True
+
+        if value in self.FALSE_VALUES:
+            return False
+
+        return False
+
+    def to_int(self, value):
+        value = self.clean_cell(value)
 
         if not value:
             return None
 
-        formats = [
-            '%Y-%m-%d',
-            '%d/%m/%Y',
-            '%d-%m-%Y',
-            '%Y/%m/%d',
-        ]
+        try:
+            return int(float(value))
+        except (ValueError, TypeError):
+            return None
 
-        for date_format in formats:
+    def to_date_string(self, value):
+        date_obj = self.parse_date_object(value)
+
+        if date_obj:
+            return date_obj.strftime('%Y-%m-%d')
+
+        return ''
+
+    def parse_date_object(self, value):
+        if not value:
+            return None
+
+        if hasattr(value, 'date'):
             try:
-                return datetime.strptime(value, date_format).date()
+                return value.date()
+            except Exception:
+                pass
+
+        value = self.clean_cell(value)
+
+        for fmt in ['%Y-%m-%d', '%d/%m/%Y', '%d-%m-%Y', '%Y/%m/%d']:
+            try:
+                return datetime.strptime(value, fmt).date()
             except ValueError:
                 continue
 
         return None
 
-    @transaction.atomic
-    def confirm_import(self, valid_rows):
-        """
-        حفظ الصفوف الصحيحة فقط بعد تأكيد المستخدم.
-        """
-        created_students = []
-        errors = []
+    def find_grade(self, grade_name):
+        grade_name = self.clean_cell(grade_name)
 
-        for row in valid_rows:
-            try:
-                national_number = row.get('national_number', '').strip()
+        if not grade_name:
+            return None
 
-                if Student.objects.filter(national_number=national_number).exists():
-                    errors.append(f'صف {row.get("row_num")}: الرقم القومي موجود مسبقاً وتم تخطيه')
-                    continue
+        return GradeLevel.objects.filter(name__iexact=grade_name).first() or GradeLevel.objects.filter(name__icontains=grade_name).first()
 
-                grade_level = None
-                if row.get('grade_level_id'):
-                    grade_level = GradeLevel.objects.filter(
-                        id=row['grade_level_id'],
-                        is_active=True
-                    ).first()
+    def find_academic_year(self, academic_year_name):
+        academic_year_name = self.clean_cell(academic_year_name)
 
-                academic_year = None
-                if row.get('academic_year_id'):
-                    academic_year = SettingsAcademicYear.objects.filter(
-                        id=row['academic_year_id'],
-                        is_active=True
-                    ).first()
+        if not academic_year_name:
+            return None
 
-                date_of_birth = self._parse_date(row.get('date_of_birth'))
-
-                student = Student.objects.create(
-                    name=row['name'],
-                    national_number=national_number,
-                    phone_number=row.get('phone_number', ''),
-                    address=row.get('address', ''),
-                    parent_name=row.get('parent_name', ''),
-                    parent_phone=row.get('parent_phone', ''),
-                    parent_email=row.get('parent_email', ''),
-                    grade_level=grade_level,
-                    academic_year=academic_year,
-                    gender=row.get('gender', ''),
-                    date_of_birth=date_of_birth,
-                    is_active=True,
-                )
-
-                created_students.append(student)
-
-            except Exception as e:
-                errors.append(f'صف {row.get("row_num")}: خطأ أثناء الحفظ - {str(e)}')
-
-        return {
-            'created_count': len(created_students),
-            'errors': errors,
-            'created_students': created_students,
-        }
+        return AcademicYear.objects.filter(name__iexact=academic_year_name).first() or AcademicYear.objects.filter(name__icontains=academic_year_name).first()

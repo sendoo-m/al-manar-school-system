@@ -1,5 +1,375 @@
 {% extends 'base.html' %}
 
+{% block title %}أرشفة الطالب - {{ student.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .archive-header {
+        background: linear-gradient(135deg, #0d6efd 0%, #198754 100%);
+        color: white;
+        border-radius: 18px;
+        padding: 32px;
+        margin-bottom: 30px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 28px rgba(13, 110, 253, 0.18);
+    }
+
+    .archive-header::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+        opacity: 0.22;
+    }
+
+    .archive-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 6px 22px rgba(0,0,0,0.08);
+        border: 1px solid #e5e7eb;
+        overflow: hidden;
+        margin-bottom: 24px;
+    }
+
+    .archive-card-header {
+        background: #f8fafc;
+        padding: 20px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .archive-card-body {
+        padding: 28px;
+    }
+
+    .student-info {
+        background: #f8f9fa;
+        border-radius: 14px;
+        padding: 20px;
+        margin: 20px 0;
+        border-right: 5px solid #0d6efd;
+    }
+
+    .warning-box {
+        background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+        border: 2px solid #ffc107;
+        border-radius: 14px;
+        padding: 20px;
+        margin: 20px 0;
+    }
+
+    .safe-box {
+        background: linear-gradient(135deg, #d1e7dd, #badbcc);
+        border: 2px solid #198754;
+        border-radius: 14px;
+        padding: 20px;
+        margin: 20px 0;
+    }
+
+    .tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: #eef2ff;
+        color: #3730a3;
+        font-weight: 800;
+        font-size: 0.82rem;
+        margin: 3px;
+    }
+
+    .btn-archive {
+        background: linear-gradient(135deg, #0d6efd, #198754);
+        border: none;
+        border-radius: 25px;
+        padding: 12px 30px;
+        font-weight: 800;
+        color: white;
+        transition: all 0.3s ease;
+    }
+
+    .btn-archive:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(13, 110, 253, 0.28);
+        color: white;
+    }
+
+    .btn-cancel {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        border: none;
+        border-radius: 25px;
+        padding: 12px 30px;
+        font-weight: 800;
+        color: white;
+        transition: all 0.3s ease;
+    }
+
+    .btn-cancel:hover {
+        transform: translateY(-2px);
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="archive-header">
+        <div class="position-relative" style="z-index: 2;">
+            <i class="fas fa-archive fa-4x mb-3"></i>
+            <h2 class="mb-2">أرشفة الطالب</h2>
+            <p class="mb-0 fs-5">سيتم نقل الطالب إلى الأرشيف مع الاحتفاظ ببياناته</p>
+        </div>
+    </div>
+
+    <div class="archive-card">
+        <div class="archive-card-header">
+            <h4 class="mb-0 text-primary">
+                <i class="fas fa-user-graduate me-2"></i>
+                بيانات الطالب المراد أرشفته
+            </h4>
+        </div>
+
+        <div class="archive-card-body">
+            <div class="student-info">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5 class="text-primary mb-3">
+                            <i class="fas fa-user me-2"></i>{{ student.name }}
+                        </h5>
+
+                        <div class="mb-2">
+                            <strong><i class="fas fa-id-card me-2 text-muted"></i>الرقم القومي:</strong>
+                            {{ student.national_number|default:"غير محدد" }}
+                        </div>
+
+                        <div class="mb-2">
+                            <strong><i class="fas fa-passport me-2 text-muted"></i>جواز السفر:</strong>
+                            {{ student.passport_number|default:"غير محدد" }}
+                        </div>
+
+                        <div class="mb-2">
+                            <strong><i class="fas fa-globe me-2 text-muted"></i>الجنسية:</strong>
+                            {{ student.nationality|default:"غير محدد" }}
+                        </div>
+
+                        <div class="mb-2">
+                            <strong><i class="fas fa-pray me-2 text-muted"></i>الديانة:</strong>
+                            {% if student.religion %}{{ student.get_religion_display }}{% else %}غير محدد{% endif %}
+                        </div>
+
+                        <div class="mb-2">
+                            <strong><i class="fas fa-calendar me-2 text-muted"></i>العمر:</strong>
+                            {{ student.age|default:"غير محدد" }}
+                        </div>
+
+                        <div class="mb-2">
+                            <strong><i class="fas fa-venus-mars me-2 text-muted"></i>الجنس:</strong>
+                            {% if student.gender == 'M' %}ذكر{% elif student.gender == 'F' %}أنثى{% else %}غير محدد{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="mb-2">
+                            <strong><i class="fas fa-layer-group me-2 text-muted"></i>المرحلة:</strong>
+                            {{ student.education_level_name|default:"غير محدد" }}
+                        </div>
+
+                        <div class="mb-2">
+                            <strong><i class="fas fa-chalkboard me-2 text-muted"></i>الصف:</strong>
+                            {{ student.grade_name|default:"غير محدد" }}
+                        </div>
+
+                        <div class="mb-2">
+                            <strong><i class="fas fa-clipboard-check me-2 text-muted"></i>حالة القيد:</strong>
+                            {{ student.get_enrollment_status_display|default:"غير محدد" }}
+                        </div>
+
+                        {% if student.transferred_from_school %}
+                        <div class="mb-2">
+                            <strong><i class="fas fa-school me-2 text-muted"></i>محول من:</strong>
+                            {{ student.transferred_from_school }}
+                        </div>
+                        {% endif %}
+
+                        {% if student.transferred_to_school %}
+                        <div class="mb-2">
+                            <strong><i class="fas fa-share-square me-2 text-muted"></i>محول إلى:</strong>
+                            {{ student.transferred_to_school }}
+                        </div>
+                        {% endif %}
+
+                        {% if student.phone_number %}
+                        <div class="mb-2">
+                            <strong><i class="fas fa-phone me-2 text-muted"></i>الهاتف:</strong>
+                            {{ student.phone_number }}
+                        </div>
+                        {% endif %}
+
+                        {% if student.parent_name %}
+                        <div class="mb-2">
+                            <strong><i class="fas fa-user-friends me-2 text-muted"></i>ولي الأمر:</strong>
+                            {{ student.parent_name }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <hr>
+
+                <div>
+                    <span class="tag">
+                        <i class="fas fa-user-tag"></i>
+                        {{ student.get_student_type_display|default:"طالب عادي" }}
+                    </span>
+
+                    {% if student.is_integration_student %}
+                    <span class="tag">
+                        <i class="fas fa-universal-access"></i>
+                        طالب دمج
+                    </span>
+                    {% endif %}
+
+                    {% if student.is_staff_child %}
+                    <span class="tag">
+                        <i class="fas fa-school"></i>
+                        ابن عامل
+                    </span>
+                    {% endif %}
+
+                    {% if student.disability_type %}
+                    <span class="tag">
+                        <i class="fas fa-notes-medical"></i>
+                        {{ student.disability_type }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if student.total_payments or student.total_owed %}
+            <div class="warning-box">
+                <h6 class="text-warning mb-3">
+                    <i class="fas fa-money-bill-wave me-2"></i>
+                    الحالة المالية للطالب
+                </h6>
+
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        <h5 class="text-success">{{ student.total_payments|default:0 }} ج.م</h5>
+                        <small class="text-muted">إجمالي المدفوعات</small>
+                    </div>
+
+                    <div class="col-md-4 text-center">
+                        <h5 class="text-danger">{{ student.total_owed|default:0 }} ج.م</h5>
+                        <small class="text-muted">إجمالي المستحقات</small>
+                    </div>
+
+                    <div class="col-md-4 text-center">
+                        <span class="badge bg-{{ student.get_status_color }} fs-6">
+                            {{ student.get_financial_status }}
+                        </span>
+                        <br>
+                        <small class="text-muted">الحالة المالية</small>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="safe-box">
+                <h6 class="text-success mb-3">
+                    <i class="fas fa-shield-alt me-2"></i>
+                    ماذا سيحدث عند الأرشفة؟
+                </h6>
+
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        سيتم نقل بيانات الطالب إلى أرشيف الطلاب.
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        سيتم حفظ بيانات الوافدين، جواز السفر، الدمج، الولاية التعليمية، وأبناء العاملين.
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        لن يظهر الطالب في قائمة الطلاب النشطين بعد الأرشفة.
+                    </li>
+                    <li class="mb-0">
+                        <i class="fas fa-info-circle text-primary me-2"></i>
+                        هذه العملية أرشفة وليست حذفاً نهائياً من السجلات التاريخية.
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="archive-card">
+        <div class="archive-card-body text-center">
+            <h5 class="text-primary mb-4">
+                هل أنت متأكد من رغبتك في أرشفة هذا الطالب؟
+            </h5>
+
+            <form method="post" id="archiveForm">
+                {% csrf_token %}
+
+                <div class="mb-4">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="confirmArchive" required>
+                        <label class="form-check-label" for="confirmArchive">
+                            أؤكد أنني أريد أرشفة هذا الطالب ونقله إلى الأرشيف
+                        </label>
+                    </div>
+                </div>
+
+                <div class="btn-group flex-wrap gap-2">
+                    <button type="submit" class="btn btn-archive" id="archiveBtn" disabled>
+                        <i class="fas fa-archive me-2"></i>تأكيد الأرشفة
+                    </button>
+
+                    <a href="{% url 'students:edit_student' student.pk %}" class="btn btn-cancel">
+                        <i class="fas fa-edit me-2"></i>تعديل بدلاً من الأرشفة
+                    </a>
+
+                    <a href="{% url 'students:student_detail' student.pk %}" class="btn btn-cancel">
+                        <i class="fas fa-arrow-right me-2"></i>إلغاء والعودة
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const confirmArchive = document.getElementById('confirmArchive');
+const archiveBtn = document.getElementById('archiveBtn');
+const archiveForm = document.getElementById('archiveForm');
+
+if (confirmArchive && archiveBtn) {
+    confirmArchive.addEventListener('change', function() {
+        archiveBtn.disabled = !this.checked;
+    });
+}
+
+if (archiveForm) {
+    archiveForm.addEventListener('submit', function(e) {
+        if (!confirmArchive.checked) {
+            e.preventDefault();
+            alert('يجب تأكيد الأرشفة أولاً');
+            return;
+        }
+
+        archiveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>جاري الأرشفة...';
+        archiveBtn.disabled = true;
+    });
+}
+</script>
+{% endblock %}
+
+{% comment %} {% extends 'base.html' %}
+
 {% block title %}حذف الطالب - {{ student.name }}{% endblock %}
 
 {% block extra_css %}
@@ -390,4 +760,4 @@ function transferStudent() {
     }
 }
 </script>
-{% endblock %}
+{% endblock %} {% endcomment %}

@@ -20,6 +20,9 @@ from openpyxl.styles import Font, PatternFill, Alignment
 from .decorators import (
     students_basic_access,
     students_add_only,
+    students_edit_access,
+    students_archive_access,
+    students_import_export_access,
     students_full_access,
     students_reports_access,
     students_sensitive_operation,
@@ -52,6 +55,13 @@ try:
 except ImportError:
     UPGRADE_AVAILABLE = False
     StudentUpgradeManager = None
+
+from docx import Document
+from docx.shared import Pt, Cm
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.section import WD_SECTION
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
 
 # ===================================
 # 🔧 الدوال المساعدة
@@ -258,12 +268,20 @@ def student_affairs_home(request):
     # صلاحيات المستخدم للقالب
     permissions = {
         'can_add': user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER', 'STUDENT_AFFAIRS'],
-        'can_edit': user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER', 'ADMIN'],
-        'can_delete': user_role == 'SYSTEM_ADMIN',
-        'can_reports': user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER', 'ADMIN'],
-        'can_export': user_role == 'SYSTEM_ADMIN',
-        'can_import': user_role == 'SYSTEM_ADMIN',
+        'can_edit': user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER', 'STUDENT_AFFAIRS'],
+        'can_delete': user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER', 'STUDENT_AFFAIRS'],
+        'can_archive': user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER', 'STUDENT_AFFAIRS'],
+
+        'can_import': user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER', 'STUDENT_AFFAIRS'],
+        'can_export': user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER', 'STUDENT_AFFAIRS'],
+
+        'can_reports': user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER'],
+        'can_upgrade': user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER'],
+        'can_financial_sync': user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER'],
+
         'is_student_affairs_only': user_role == 'STUDENT_AFFAIRS',
+        'is_manager': user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER'],
+        'is_system_admin': user_role == 'SYSTEM_ADMIN',
     }
 
     context = {
@@ -510,9 +528,9 @@ def sync_students_financial_data(request):
 
 
 @never_cache
-@students_full_access
+@students_edit_access
 def edit_student(request, pk):
-    """تعديل بيانات الطالب - للمدير والإدارة فقط"""
+    """تعديل بيانات الطالب - متاح للمدير وموظف شئون الطلاب"""
     student = get_object_or_404(Student, pk=pk)
     user_role = get_user_role(request.user)
     system_settings, current_academic_year = get_system_data()
@@ -546,43 +564,90 @@ def edit_student(request, pk):
     return render(request, 'students/edit_student_form.html', context)
 
 @never_cache
-@students_sensitive_operation
+@students_archive_access
 def confirm_delete_student(request, student_id):
-    """حذف الطالب - للمدير العام فقط"""
-    student = get_object_or_404(Student, id=student_id)
-    
+    """أرشفة الطالب بدلاً من الحذف النهائي"""
+    student = get_object_or_404(
+        Student.objects.select_related(
+            'grade_level__education_level',
+            'academic_year',
+        ),
+        id=student_id
+    )
+
+    user_role = get_user_role(request.user)
+
     if request.method == 'POST':
         try:
-            # نقل إلى الأرشيف قبل الحذف
             ArchiveStudent.objects.create(
+                # البيانات الأساسية
                 archive_name=student.name,
-                archive_national_number=student.national_number,
+                archive_national_number=student.national_number or '',
+                archive_passport_number=getattr(student, 'passport_number', '') or '',
+                archive_student_type=student.get_student_type_display() if hasattr(student, 'get_student_type_display') else '',
+                archive_nationality=getattr(student, 'nationality', '') or '',
+                archive_religion=student.get_religion_display() if hasattr(student, 'get_religion_display') and student.religion else '',
+
                 archive_age=student.age or 0,
-                archive_gender=student.gender,
+                archive_gender=student.gender or '',
                 archive_date_of_birth=student.date_of_birth,
+
+                # البيانات الأكاديمية
                 archive_academic_year=str(student.academic_year) if student.academic_year else "غير محدد",
-                archive_grade_level=student.grade_name,
-                archive_education_level=student.education_level_name,
-                archive_total_payments=student.total_payments,
-                archive_total_fees=student.total_fees,
-                archive_total_owed=student.total_owed,
-                archived_reason='حذف من النظام'
+                archive_grade_level=student.grade_name if hasattr(student, 'grade_name') else "غير محدد",
+                archive_education_level=student.education_level_name if hasattr(student, 'education_level_name') else "غير محدد",
+                archive_enrollment_status=student.get_enrollment_status_display() if hasattr(student, 'get_enrollment_status_display') else '',
+                archive_transferred_from_school=getattr(student, 'transferred_from_school', '') or '',
+                archive_transferred_to_school=getattr(student, 'transferred_to_school', '') or '',
+
+                # بيانات الدمج
+                archive_is_integration_student=getattr(student, 'is_integration_student', False),
+                archive_disability_type=getattr(student, 'disability_type', '') or '',
+                archive_subject_exemptions=student.get_subject_exemptions_display() if hasattr(student, 'get_subject_exemptions_display') else '',
+
+                # البيانات المالية
+                archive_total_payments=student.total_payments or Decimal('0.00'),
+                archive_total_fees=student.total_fees or Decimal('0.00'),
+                archive_total_owed=student.total_owed or Decimal('0.00'),
+
+                # ولي الأمر والولاية التعليمية
+                archive_parent_name=student.parent_name or '',
+                archive_parent_phone=student.parent_phone or '',
+                archive_father_job=getattr(student, 'father_job', '') or '',
+                archive_educational_guardian=student.get_educational_guardian_display() if hasattr(student, 'get_educational_guardian_display') else '',
+                archive_educational_guardian_name=getattr(student, 'educational_guardian_name', '') or '',
+
+                # أبناء العاملين
+                archive_is_staff_child=getattr(student, 'is_staff_child', False),
+                archive_staff_parent_name=getattr(student, 'staff_parent_name', '') or '',
+                archive_staff_parent_job=getattr(student, 'staff_parent_job', '') or '',
+
+                # بيانات الأرشفة
+                archived_reason='أرشفة من شاشة شئون الطلاب',
+                archived_by=request.user if request.user.is_authenticated else None,
             )
-            
+
             student_name = student.name
             student.delete()
-            messages.success(request, f'تم حذف الطالب {student_name} ونقله للأرشيف بنجاح!')
+
+            messages.success(
+                request,
+                f'تم أرشفة الطالب {student_name} بنجاح ونقله إلى أرشيف الطلاب.'
+            )
             return redirect('students:student_list')
-            
+
         except Exception as e:
-            messages.error(request, f'حدث خطأ في الحذف: {str(e)}')
-    
+            messages.error(request, f'حدث خطأ أثناء أرشفة الطالب: {str(e)}')
+
     context = {
         'student': student,
-        'title': f'حذف الطالب - {student.name}',
-        'warning_message': 'هذا الإجراء لا يمكن التراجع عنه! سيتم نقل الطالب للأرشيف.',
+        'user_role': user_role,
+        'title': f'أرشفة الطالب - {student.name}',
+        'warning_message': 'سيتم نقل الطالب إلى الأرشيف مع الاحتفاظ ببياناته الأساسية والجديدة.',
     }
+
     return render(request, 'students/confirm_delete_student.html', context)
+
 
 # ===================================
 # 🔍 البحث والتصفح
@@ -615,9 +680,12 @@ def search_student(request):
         'education_levels': education_levels,
         'grade_levels': grade_levels,
         'title': 'البحث المتقدم عن الطلاب',
-        'can_add_student': user_role in ['SYSTEM_ADMIN', 'ADMIN', 'STUDENT_AFFAIRS'],
-        'can_edit_student': user_role in ['SYSTEM_ADMIN', 'ADMIN'],
-        'can_delete_student': user_role == 'SYSTEM_ADMIN',
+        
+        'can_add_student': user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER', 'STUDENT_AFFAIRS'],
+        'can_edit_student': user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER', 'STUDENT_AFFAIRS'],
+        'can_delete_student': user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER', 'STUDENT_AFFAIRS'],
+        'can_archive_student': user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER', 'STUDENT_AFFAIRS'],
+
     }
 
     return render(request, 'students/search_student.html', context)
@@ -1417,7 +1485,7 @@ def student_dashboard(request):
 # ===================================
 
 @never_cache
-@students_sensitive_operation
+@students_import_export_access
 def export_students(request):
     """تصدير بيانات الطلاب - للمدير العام فقط"""
     export_format = (
@@ -1489,7 +1557,7 @@ def upgrade_students(request):
 
 
 @never_cache
-@students_sensitive_operation
+@students_import_export_access
 def export_students_advanced(request):
     """
     تحويل التصدير المتقدم إلى صفحة التصدير الموحدة
@@ -1497,58 +1565,174 @@ def export_students_advanced(request):
     """
     return redirect('students:export_students')
 
+
+# استبدل دالة download_import_template في students/views.py بهذه النسخة
+
 @never_cache
-@students_sensitive_operation
+@students_import_export_access
 def download_import_template(request):
-    """تحميل قالب استيراد الطلاب CSV أو Excel"""
+    """تحميل قالب استيراد الطلاب CSV أو Excel متوافق مع الحقول الجديدة"""
     template_format = request.GET.get('format', 'excel').lower()
 
     headers = [
         'الاسم',
+        'نوع الطالب',
         'الرقم القومي',
+        'رقم جواز السفر',
+        'الجنسية',
+        'الديانة',
+        'العمر',
+        'النوع',
+        'تاريخ الميلاد',
         'رقم الهاتف',
         'العنوان',
-        'الصف الدراسي',
+
         'العام الدراسي',
+        'الصف الدراسي',
+        'حالة القيد',
+        'محول من مدرسة',
+        'محول إلى مدرسة',
+
+        'طالب دمج',
+        'نوع الإعاقة',
+        'إعفاء من العربي',
+        'إعفاء من الإنجليزي',
+        'إعفاء من الفرنسي',
+        'إعفاءات أخرى',
+
+        'من أبناء العاملين',
+        'اسم الموظف',
+        'وظيفة الموظف داخل المدرسة',
+
         'اسم ولي الأمر',
         'هاتف ولي الأمر',
         'بريد ولي الأمر',
-        'النوع',
-        'تاريخ الميلاد',
+        'وظيفة الأب',
+        'صاحب الولاية التعليمية',
+        'اسم صاحب الولاية التعليمية',
+        'هاتف صاحب الولاية التعليمية',
     ]
 
     sample_rows = [
         [
             'أحمد محمد علي',
+            'طالب عادي',
             '30001011234567',
+            '',
+            'مصري',
+            'مسلم',
+            '',
+            'ذكر',
+            '',
             '01000000000',
             'القاهرة',
-            'الأول الابتدائي',
+
             '',
+            'الأول الابتدائي',
+            'مستجد',
+            '',
+            '',
+
+            'لا',
+            '',
+            'لا',
+            'لا',
+            'لا',
+            '',
+
+            'لا',
+            '',
+            '',
+
             'محمد علي',
             '01111111111',
             'parent@example.com',
-            'ذكر',
-            '2000-01-01',
+            'محاسب',
+            'الأب',
+            '',
+            '',
         ],
         [
-            'فاطمة أحمد محمد',
-            '30102021234567',
-            '01000000001',
-            'الجيزة',
-            'الثاني الابتدائي',
+            'يوسف جون سميث',
+            'وافد',
             '',
-            'أحمد محمد',
-            '01111111112',
-            'parent2@example.com',
+            'A12345678',
+            'أمريكي',
+            'مسيحي',
+            '8',
+            'ذكر',
+            '2018-05-10',
+            '01000000002',
+            'الإسماعيلية',
+
+            '',
+            'الثاني الابتدائي',
+            'محول',
+            'مدرسة دولية سابقة',
+            '',
+
+            'لا',
+            '',
+            'لا',
+            'لا',
+            'لا',
+            '',
+
+            'لا',
+            '',
+            '',
+
+            'John Smith',
+            '01111111113',
+            'john@example.com',
+            'مهندس',
+            'الأب',
+            '',
+            '',
+        ],
+        [
+            'مريم أحمد حسن',
+            'طالب عادي',
+            '30303031234567',
+            '',
+            'مصري',
+            'مسلم',
+            '',
             'أنثى',
-            '2001-02-02',
+            '',
+            '01000000003',
+            'القاهرة',
+
+            '',
+            'الثالث الابتدائي',
+            'ناجح ومنقول',
+            '',
+            '',
+
+            'نعم',
+            'صعوبات تعلم',
+            'لا',
+            'لا',
+            'نعم',
+            'إعفاء من الفرنسي',
+
+            'نعم',
+            'أحمد حسن',
+            'مدرس لغة عربية',
+
+            'أحمد حسن',
+            '01111111114',
+            '',
+            'مدرس',
+            'الأم',
+            '',
+            '',
         ],
     ]
 
     if template_format == 'csv':
         response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
-        response['Content-Disposition'] = 'attachment; filename="student_import_template.csv"'
+        response['Content-Disposition'] = 'attachment; filename="student_import_template_extended.csv"'
         response.write('\ufeff')
 
         writer = csv.writer(response)
@@ -1563,8 +1747,8 @@ def download_import_template(request):
     worksheet.sheet_view.rightToLeft = True
 
     header_fill = PatternFill(
-        start_color='4472C4',
-        end_color='4472C4',
+        start_color='1F4E79',
+        end_color='1F4E79',
         fill_type='solid'
     )
     header_font = Font(
@@ -1573,7 +1757,8 @@ def download_import_template(request):
     )
     center_alignment = Alignment(
         horizontal='center',
-        vertical='center'
+        vertical='center',
+        wrap_text=True
     )
 
     for col_num, header in enumerate(headers, 1):
@@ -1589,16 +1774,22 @@ def download_import_template(request):
 
     instructions = [
         'تعليمات الاستيراد:',
-        '1. الاسم والرقم القومي حقول مطلوبة.',
-        '2. الرقم القومي يجب أن يكون 14 رقم وغير مكرر.',
-        '3. الصف الدراسي يمكن كتابته بالاسم مثل: الأول الابتدائي.',
-        '4. العام الدراسي يمكن تركه فارغاً وسيتم استخدام العام الحالي إن وجد.',
+        '1. الاسم هو الحقل الإجباري الوحيد.',
+        '2. الرقم القومي اختياري، وإذا تم إدخاله يجب أن يكون 14 رقم وغير مكرر.',
+        '3. رقم جواز السفر اختياري ويستخدم غالباً للوافدين، ويجب ألا يكون مكرراً إذا تم إدخاله.',
+        '4. نوع الطالب يقبل: طالب عادي / وافد.',
         '5. النوع يقبل: ذكر / أنثى / M / F.',
-        '6. تاريخ الميلاد اختياري ويفضل بصيغة YYYY-MM-DD.',
-        '7. لا تغير أسماء الأعمدة في الصف الأول.',
+        '6. حالة القيد تقبل: مستجد / ناجح ومنقول / محول / باق للإعادة.',
+        '7. صاحب الولاية التعليمية يقبل: الأب / الأم / آخر.',
+        '8. حقول نعم/لا تقبل: نعم / لا / 1 / 0.',
+        '9. الصف الدراسي يمكن كتابته بالاسم مثل: الأول الابتدائي.',
+        '10. العام الدراسي يمكن تركه فارغاً وسيتم استخدام العام الحالي إن وجد.',
+        '11. تاريخ الميلاد اختياري ويفضل بصيغة YYYY-MM-DD.',
+        '12. لا تغير أسماء الأعمدة في الصف الأول.',
     ]
 
-    start_row = 5
+    start_row = len(sample_rows) + 4
+
     for index, instruction in enumerate(instructions):
         cell = worksheet.cell(row=start_row + index, column=1, value=instruction)
 
@@ -1606,6 +1797,11 @@ def download_import_template(request):
             cell.font = Font(bold=True, color='D32F2F')
         else:
             cell.font = Font(color='666666')
+
+        cell.alignment = Alignment(horizontal='right', vertical='center')
+
+    worksheet.freeze_panes = 'A2'
+    worksheet.auto_filter.ref = f'A1:{worksheet.cell(row=1, column=len(headers)).coordinate}'
 
     for column_cells in worksheet.columns:
         max_length = 0
@@ -1619,7 +1815,7 @@ def download_import_template(request):
             except Exception:
                 pass
 
-        worksheet.column_dimensions[column_letter].width = min(max_length + 4, 45)
+        worksheet.column_dimensions[column_letter].width = min(max_length + 4, 35)
 
     output = io.BytesIO()
     workbook.save(output)
@@ -1629,12 +1825,13 @@ def download_import_template(request):
         output.read(),
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
-    response['Content-Disposition'] = 'attachment; filename="student_import_template.xlsx"'
+    response['Content-Disposition'] = 'attachment; filename="student_import_template_extended.xlsx"'
 
     return response
 
+
 @never_cache
-@students_sensitive_operation
+@students_import_export_access
 def import_students_advanced(request):
     """استيراد متقدم للطلاب بنظام المعاينة قبل الحفظ"""
 
@@ -1879,3 +2076,248 @@ def user_guide(request):
         'title': 'دليل استخدام نظام إدارة الطلاب',
     }
     return render(request, 'students/user_guide.html', context)
+
+# ============================================================
+# 📄 خطاب إفادة قيد طالب Word
+# ============================================================
+
+def set_paragraph_rtl(paragraph):
+    """ضبط اتجاه الفقرة من اليمين لليسار"""
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+
+    p_pr = paragraph._p.get_or_add_pPr()
+    bidi = OxmlElement('w:bidi')
+    bidi.set(qn('w:val'), '1')
+    p_pr.append(bidi)
+
+
+def set_run_font(run, font_name='Arial', size=14, bold=False):
+    """ضبط خط عربي داخل ملف Word"""
+    run.font.name = font_name
+    run.font.size = Pt(size)
+    run.bold = bold
+
+    r_pr = run._element.get_or_add_rPr()
+    r_fonts = r_pr.rFonts
+    if r_fonts is None:
+        r_fonts = OxmlElement('w:rFonts')
+        r_pr.append(r_fonts)
+
+    r_fonts.set(qn('w:ascii'), font_name)
+    r_fonts.set(qn('w:hAnsi'), font_name)
+    r_fonts.set(qn('w:cs'), font_name)
+
+
+def add_rtl_paragraph(document, text='', size=14, bold=False, alignment='right', space_after=6):
+    """إضافة فقرة عربية من اليمين لليسار"""
+    paragraph = document.add_paragraph()
+
+    if alignment == 'center':
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    elif alignment == 'left':
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    else:
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+
+    p_pr = paragraph._p.get_or_add_pPr()
+    bidi = OxmlElement('w:bidi')
+    bidi.set(qn('w:val'), '1')
+    p_pr.append(bidi)
+
+    paragraph.paragraph_format.space_after = Pt(space_after)
+
+    run = paragraph.add_run(text)
+    set_run_font(run, size=size, bold=bold)
+
+    return paragraph
+
+
+def add_student_info_row(table, label, value):
+    """إضافة صف بيانات داخل جدول الخطاب"""
+    row = table.add_row()
+    row.cells[0].text = str(value or 'غير محدد')
+    row.cells[1].text = str(label)
+
+    for cell in row.cells:
+        for paragraph in cell.paragraphs:
+            set_paragraph_rtl(paragraph)
+
+            for run in paragraph.runs:
+                set_run_font(run, size=12)
+
+    # تمييز خانة العنوان
+    for paragraph in row.cells[1].paragraphs:
+        for run in paragraph.runs:
+            run.bold = True
+
+
+@never_cache
+@students_basic_access
+def student_enrollment_statement_word(request, pk):
+    """
+    تصدير خطاب إفادة قيد طالب بصيغة Word
+    """
+    student = get_object_or_404(
+        Student.objects.select_related(
+            'grade_level__education_level',
+            'academic_year',
+        ),
+        pk=pk
+    )
+
+    system_settings, current_academic_year = get_system_data()
+
+    school_name = 'مدرسة المنار الخاصة للغات'
+    if system_settings and getattr(system_settings, 'school_name', None):
+        school_name = system_settings.school_name
+
+    document = Document()
+
+    # إعداد الصفحة
+    section = document.sections[0]
+    section.top_margin = Cm(2)
+    section.bottom_margin = Cm(2)
+    section.left_margin = Cm(2)
+    section.right_margin = Cm(2)
+
+    # الهيدر
+    add_rtl_paragraph(
+        document,
+        school_name,
+        size=18,
+        bold=True,
+        alignment='center',
+        space_after=2
+    )
+
+    add_rtl_paragraph(
+        document,
+        'إدارة شؤون الطلاب',
+        size=13,
+        bold=True,
+        alignment='center',
+        space_after=14
+    )
+
+    add_rtl_paragraph(
+        document,
+        'خطاب إفادة قيد طالب',
+        size=20,
+        bold=True,
+        alignment='center',
+        space_after=20
+    )
+
+    # التاريخ
+    today = timezone.now().date()
+    add_rtl_paragraph(
+        document,
+        f'تحريرًا في: {today.strftime("%Y/%m/%d")}',
+        size=12,
+        bold=False,
+        alignment='left',
+        space_after=18
+    )
+
+    # نص الخطاب
+    add_rtl_paragraph(
+        document,
+        'تشهد إدارة المدرسة بأن الطالب / الطالبة الموضح بياناته أدناه مقيد بالمدرسة خلال العام الدراسي الحالي، وذلك طبقًا للبيانات المسجلة بسجلات شؤون الطلاب.',
+        size=14,
+        bold=False,
+        alignment='right',
+        space_after=14
+    )
+
+    # جدول البيانات
+    table = document.add_table(rows=0, cols=2)
+    table.style = 'Table Grid'
+
+    identity_value = student.national_number or ''
+    if not identity_value and getattr(student, 'passport_number', None):
+        identity_value = f'جواز سفر: {student.passport_number}'
+
+    grade_name = student.grade_level.name if student.grade_level else 'غير محدد'
+    education_level_name = (
+        student.grade_level.education_level.name
+        if student.grade_level and student.grade_level.education_level
+        else 'غير محدد'
+    )
+
+    academic_year_name = (
+        student.academic_year.name
+        if student.academic_year
+        else current_academic_year.name if current_academic_year else 'غير محدد'
+    )
+
+    gender_display = (
+        'ذكر' if student.gender == 'M'
+        else 'أنثى' if student.gender == 'F'
+        else 'غير محدد'
+    )
+
+    add_student_info_row(table, 'اسم الطالب', student.name)
+    add_student_info_row(table, 'هوية الطالب', identity_value)
+    add_student_info_row(table, 'الجنسية', getattr(student, 'nationality', '') or 'غير محدد')
+    add_student_info_row(table, 'الديانة', student.get_religion_display() if getattr(student, 'religion', '') else 'غير محدد')
+    add_student_info_row(table, 'النوع', gender_display)
+    add_student_info_row(table, 'تاريخ الميلاد', student.date_of_birth.strftime('%Y/%m/%d') if student.date_of_birth else 'غير محدد')
+    add_student_info_row(table, 'المرحلة التعليمية', education_level_name)
+    add_student_info_row(table, 'الصف الدراسي', grade_name)
+    add_student_info_row(table, 'العام الدراسي', academic_year_name)
+    add_student_info_row(table, 'حالة القيد', student.get_enrollment_status_display() if hasattr(student, 'get_enrollment_status_display') else 'غير محدد')
+    add_student_info_row(table, 'اسم ولي الأمر', student.parent_name or 'غير محدد')
+
+    document.add_paragraph()
+
+    # صيغة التأكيد
+    add_rtl_paragraph(
+        document,
+        'وقد أعطيت هذه الإفادة بناءً على طلب ولي الأمر لتقديمها إلى من يهمه الأمر، دون أدنى مسؤولية على المدرسة بخلاف ما ورد بسجلاتها الرسمية.',
+        size=14,
+        bold=False,
+        alignment='right',
+        space_after=20
+    )
+
+    # توقيعات
+    sign_table = document.add_table(rows=1, cols=3)
+    sign_table.style = 'Table Grid'
+
+    sign_table.cell(0, 0).text = 'ختم المدرسة'
+    sign_table.cell(0, 1).text = 'مسؤول شؤون الطلاب'
+    sign_table.cell(0, 2).text = 'مدير المدرسة'
+
+    for row in sign_table.rows:
+        for cell in row.cells:
+            for paragraph in cell.paragraphs:
+                paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                set_paragraph_rtl(paragraph)
+                for run in paragraph.runs:
+                    set_run_font(run, size=12, bold=True)
+
+    document.add_paragraph()
+    add_rtl_paragraph(
+        document,
+        'يعتمد،',
+        size=13,
+        bold=True,
+        alignment='left',
+        space_after=4
+    )
+
+    # اسم الملف
+    safe_student_name = ''.join(
+        ch for ch in student.name
+        if ch.isalnum() or ch in [' ', '_', '-']
+    ).strip().replace(' ', '_')
+
+    filename = f'enrollment_statement_{safe_student_name}_{student.pk}.docx'
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    )
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    document.save(response)
+    return response

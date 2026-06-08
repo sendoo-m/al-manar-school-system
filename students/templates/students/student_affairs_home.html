@@ -260,6 +260,550 @@
 </div>
 {% endif %}
 
+<!-- تنبيه صلاحيات موظف شئون الطلاب -->
+{% if permissions.is_student_affairs_only %}
+<div class="alert alert-success">
+    <i class="fas fa-check-circle me-2"></i>
+    تم تفعيل صلاحيات إضافة وتعديل وأرشفة الطلاب، مع السماح باستيراد وتصدير ملفات الطلاب من حساب شؤون الطلاب.
+</div>
+{% endif %}
+
+<!-- إجراءات سريعة -->
+<div class="content-card mb-4">
+    <div class="content-card-header">
+        <h5><i class="fas fa-bolt me-2 text-warning"></i>الإجراءات السريعة</h5>
+    </div>
+
+    <div class="content-card-body">
+        <div class="row">
+            {% if permissions.can_add %}
+            <div class="col-lg-4 col-md-6 mb-3">
+                <div class="d-grid">
+                    <a href="{% url 'students:add_student' %}" class="btn btn-outline-success quick-action">
+                        <i class="fas fa-user-plus fa-2x mb-2 d-block"></i>
+                        <strong>إضافة طالب جديد</strong>
+                        <br><small class="text-muted">تسجيل طالب في النظام</small>
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="col-lg-4 col-md-6 mb-3">
+                <div class="d-grid">
+                    <a href="{% url 'students:student_list' %}" class="btn btn-outline-primary quick-action">
+                        <i class="fas fa-list fa-2x mb-2 d-block"></i>
+                        <strong>عرض جميع الطلاب</strong>
+                        <br><small class="text-muted">تصفح قائمة الطلاب</small>
+                    </a>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6 mb-3">
+                <div class="d-grid">
+                    <a href="{% url 'students:search_student' %}" class="btn btn-outline-info quick-action">
+                        <i class="fas fa-search fa-2x mb-2 d-block"></i>
+                        <strong>البحث المتقدم</strong>
+                        <br><small class="text-muted">البحث في قاعدة البيانات</small>
+                    </a>
+                </div>
+            </div>
+
+            {% if permissions.can_reports %}
+            <div class="col-lg-4 col-md-6 mb-3">
+                <div class="d-grid">
+                    <a href="{% url 'students:all_reports' %}" class="btn btn-outline-warning quick-action">
+                        <i class="fas fa-chart-line fa-2x mb-2 d-block"></i>
+                        <strong>التقارير الشاملة</strong>
+                        <br><small class="text-muted">إحصائيات وتقارير</small>
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if permissions.can_export %}
+            <div class="col-lg-4 col-md-6 mb-3">
+                <div class="d-grid">
+                    <a href="{% url 'students:export_students' %}" class="btn btn-outline-secondary quick-action">
+                        <i class="fas fa-download fa-2x mb-2 d-block"></i>
+                        <strong>تصدير الطلاب</strong>
+                        <br><small class="text-muted">CSV / Excel / JSON</small>
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if permissions.can_import %}
+            <div class="col-lg-4 col-md-6 mb-3">
+                <div class="d-grid">
+                    <a href="{% url 'students:import_students_advanced' %}" class="btn btn-outline-success quick-action">
+                        <i class="fas fa-upload fa-2x mb-2 d-block"></i>
+                        <strong>استيراد الطلاب</strong>
+                        <br><small class="text-muted">استيراد مع معاينة</small>
+                    </a>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6 mb-3">
+                <div class="d-grid">
+                    <a href="{% url 'students:download_import_template' %}?format=excel" class="btn btn-outline-info quick-action">
+                        <i class="fas fa-file-excel fa-2x mb-2 d-block"></i>
+                        <strong>تحميل قالب الاستيراد</strong>
+                        <br><small class="text-muted">قالب Excel متوافق مع الحقول الجديدة</small>
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- توزيع المراحل -->
+    <div class="col-lg-6">
+        <div class="content-card">
+            <div class="content-card-header">
+                <h5><i class="fas fa-layer-group me-2 text-info"></i>توزيع الطلاب حسب المراحل</h5>
+            </div>
+
+            <div class="content-card-body">
+                {% for item in education_levels_stats %}
+                <div class="distribution-item">
+                    <div class="d-flex justify-content-between mb-2">
+                        <strong>{{ item.level.name }}</strong>
+                        <span>{{ item.student_count }} طالب</span>
+                    </div>
+
+                    <div class="progress">
+                        <div class="progress-bar bg-info" style="width: {{ item.percentage }}%"></div>
+                    </div>
+
+                    <small class="text-muted">{{ item.percentage }}%</small>
+                </div>
+                {% empty %}
+                <p class="text-muted text-center mb-0">لا توجد بيانات مراحل لعرضها</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- توزيع الصفوف -->
+    <div class="col-lg-6">
+        <div class="content-card">
+            <div class="content-card-header">
+                <h5><i class="fas fa-chalkboard me-2 text-success"></i>توزيع الطلاب حسب الصفوف</h5>
+            </div>
+
+            <div class="content-card-body">
+                {% for item in grade_levels_stats %}
+                <div class="distribution-item">
+                    <div class="d-flex justify-content-between mb-2">
+                        <strong>
+                            {% if item.grade.education_level %}
+                                {{ item.grade.education_level.name }} -
+                            {% endif %}
+                            {{ item.grade.name }}
+                        </strong>
+                        <span>{{ item.student_count }} طالب</span>
+                    </div>
+
+                    <div class="progress">
+                        <div class="progress-bar bg-success" style="width: {{ item.percentage }}%"></div>
+                    </div>
+
+                    <small class="text-muted">{{ item.percentage }}%</small>
+                </div>
+                {% empty %}
+                <p class="text-muted text-center mb-0">لا توجد بيانات صفوف لعرضها</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- الطلاب المضافون حديثاً -->
+{% if recent_students %}
+<div class="content-card mt-4">
+    <div class="content-card-header">
+        <h5><i class="fas fa-clock me-2 text-primary"></i>الطلاب المضافون حديثاً</h5>
+    </div>
+
+    <div class="content-card-body">
+        <div class="table-responsive">
+            <table class="table table-custom table-hover">
+                <thead>
+                    <tr>
+                        <th>اسم الطالب</th>
+                        <th>هوية الطالب</th>
+                        <th>المرحلة / الصف</th>
+                        <th>تاريخ الإضافة</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for student in recent_students %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    <i class="fas fa-user-circle fa-2x text-primary"></i>
+                                </div>
+
+                                <div>
+                                    <strong>{{ student.name }}</strong>
+                                    <br>
+                                    <small class="text-muted">
+                                        {% if student.gender == 'M' %}
+                                            ذكر
+                                        {% elif student.gender == 'F' %}
+                                            أنثى
+                                        {% else %}
+                                            غير محدد
+                                        {% endif %}
+                                    </small>
+
+                                    <div class="mt-1">
+                                        {% if student.is_integration_student %}
+                                            <span class="badge bg-warning text-dark">دمج</span>
+                                        {% endif %}
+
+                                        {% if student.is_staff_child %}
+                                            <span class="badge bg-success">ابن عامل</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td>
+                            {% if student.national_number %}
+                                <span class="font-monospace" dir="ltr">{{ student.national_number }}</span>
+                            {% elif student.passport_number %}
+                                <span class="badge bg-info">
+                                    <i class="fas fa-passport me-1"></i>
+                                    {{ student.passport_number }}
+                                </span>
+                            {% else %}
+                                <span class="empty-value">غير محدد</span>
+                            {% endif %}
+
+                            {% if student.student_type == 'EXPATRIATE' %}
+                                <br>
+                                <small class="text-primary fw-bold">
+                                    <i class="fas fa-globe me-1"></i>وافد
+                                </small>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if student.grade_level %}
+                                <span class="grade-badge">
+                                    {% if student.grade_level.education_level %}
+                                        {{ student.grade_level.education_level.name }} -
+                                    {% endif %}
+                                    {{ student.grade_level.name }}
+                                </span>
+                            {% else %}
+                                <span class="empty-value">غير محدد</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <small>{{ student.created_at|date:"d M Y" }}</small>
+                        </td>
+
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'students:student_detail' student.pk %}" class="btn btn-outline-primary" title="عرض">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+
+                                {% if permissions.can_edit %}
+                                <a href="{% url 'students:edit_student' student.pk %}" class="btn btn-outline-warning" title="تعديل">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="text-center mt-3">
+            <a href="{% url 'students:student_list' %}" class="btn btn-outline-primary btn-custom">
+                <i class="fas fa-list me-2"></i>عرض جميع الطلاب
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% comment %} <!-- templates/students/student_affairs_home.html -->
+{% extends 'students/base.html' %}
+
+{% block title %}لوحة تحكم شؤون الطلاب{% endblock %}
+{% block page_title %}لوحة تحكم شؤون الطلاب{% endblock %}
+{% block page_subtitle %}مرحباً {{ user.get_full_name|default:user.username }}، إليك ملخص سريع عن حالة النظام{% endblock %}
+{% block page_icon %}<i class="fas fa-tachometer-alt me-3"></i>{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">لوحة التحكم</li>
+{% endblock %}
+
+{% block page_actions %}
+{% if permissions.can_add %}
+<a href="{% url 'students:add_student' %}" class="btn btn-success btn-custom me-2">
+    <i class="fas fa-user-plus me-1"></i>إضافة طالب جديد
+</a>
+{% endif %}
+
+<a href="{% url 'students:search_student' %}" class="btn btn-outline-primary btn-custom">
+    <i class="fas fa-search me-1"></i>البحث السريع
+</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-card {
+        background: white;
+        border-radius: 16px;
+        padding: 22px;
+        box-shadow: 0 5px 16px rgba(0,0,0,0.08);
+        border-right: 5px solid;
+        height: 100%;
+        transition: all 0.25s ease;
+    }
+
+    .dashboard-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+    }
+
+    .dashboard-card.primary { border-right-color: #007bff; }
+    .dashboard-card.info { border-right-color: #17a2b8; }
+    .dashboard-card.warning { border-right-color: #ffc107; }
+    .dashboard-card.success { border-right-color: #28a745; }
+    .dashboard-card.danger { border-right-color: #dc3545; }
+    .dashboard-card.secondary { border-right-color: #6c757d; }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 800;
+        margin-bottom: 5px;
+    }
+
+    .content-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 5px 16px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+        overflow: hidden;
+    }
+
+    .content-card-header {
+        background: #f8f9fa;
+        padding: 18px 22px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .content-card-header h5 {
+        margin: 0;
+        font-weight: 800;
+    }
+
+    .content-card-body {
+        padding: 22px;
+    }
+
+    .quick-action {
+        border-radius: 14px;
+        padding: 18px 14px;
+        height: 100%;
+        font-weight: 700;
+        transition: all 0.25s ease;
+    }
+
+    .quick-action:hover {
+        transform: translateY(-3px);
+    }
+
+    .table-custom thead th {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+        border: none;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .table-custom td {
+        vertical-align: middle;
+    }
+
+    .grade-badge {
+        background: #e8f7fb;
+        color: #0c5460;
+        padding: 6px 10px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.82rem;
+        display: inline-block;
+    }
+
+    .empty-value {
+        color: #6c757d;
+        font-style: italic;
+    }
+
+    .distribution-item {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 14px;
+        margin-bottom: 10px;
+    }
+
+    .progress {
+        height: 8px;
+        border-radius: 4px;
+    }
+
+    @media (max-width: 768px) {
+        .stat-number {
+            font-size: 1.7rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- إحصائيات سريعة -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="dashboard-card primary">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-number text-primary">{{ total_students|default:0 }}</div>
+                    <p class="text-muted mb-0">إجمالي الطلاب</p>
+                    <small class="text-success">
+                        <i class="fas fa-check-circle me-1"></i>نشط
+                    </small>
+                </div>
+                <div class="text-primary opacity-75">
+                    <i class="fas fa-users fa-2x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="dashboard-card info">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-number text-info">{{ male_students|default:0 }}</div>
+                    <p class="text-muted mb-0">طلاب ذكور</p>
+                    <small class="text-info">
+                        {% if total_students %}
+                            {% widthratio male_students total_students 100 %}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    </small>
+                </div>
+                <div class="text-info opacity-75">
+                    <i class="fas fa-male fa-2x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="dashboard-card warning">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-number text-warning">{{ female_students|default:0 }}</div>
+                    <p class="text-muted mb-0">طالبات إناث</p>
+                    <small class="text-warning">
+                        {% if total_students %}
+                            {% widthratio female_students total_students 100 %}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    </small>
+                </div>
+                <div class="text-warning opacity-75">
+                    <i class="fas fa-female fa-2x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="dashboard-card success">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-number text-success">{{ students_paid|default:0 }}</div>
+                    <p class="text-muted mb-0">مسدد الرسوم</p>
+                    <small class="text-success">
+                        <i class="fas fa-check-circle me-1"></i>مكتمل
+                    </small>
+                </div>
+                <div class="text-success opacity-75">
+                    <i class="fas fa-credit-card fa-2x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- المالية -->
+{% if user_role == 'SYSTEM_ADMIN' %}
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="dashboard-card primary">
+            <div class="stat-number text-primary">{{ total_required|default:0|floatformat:0 }}</div>
+            <p class="text-muted mb-0">إجمالي المطلوب</p>
+            <small class="text-muted">حسب إعدادات المصروفات</small>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="dashboard-card success">
+            <div class="stat-number text-success">{{ total_paid|default:0|floatformat:0 }}</div>
+            <p class="text-muted mb-0">إجمالي المدفوع</p>
+            <small class="text-muted">مدفوعات الطلاب</small>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="dashboard-card danger">
+            <div class="stat-number text-danger">{{ total_outstanding|default:0|floatformat:0 }}</div>
+            <p class="text-muted mb-0">إجمالي المستحقات</p>
+            <small class="text-danger">{{ students_owing|default:0 }} طالب عليهم مستحقات</small>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="dashboard-card info">
+            <div class="stat-number text-info">{{ collection_percentage|default:0|floatformat:1 }}%</div>
+            <p class="text-muted mb-0">نسبة التحصيل</p>
+            <small class="text-muted">من إجمالي المطلوب</small>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- تنبيهات -->
+{% if students_without_grade > 0 %}
+<div class="alert alert-warning">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    يوجد {{ students_without_grade }} طالب بدون صف دراسي. يفضل مراجعة بياناتهم من قائمة الطلاب.
+</div>
+{% endif %}
+
 <!-- إجراءات سريعة -->
 <div class="content-card mb-4">
     <div class="content-card-header">
@@ -496,4 +1040,4 @@
 </div>
 {% endif %}
 
-{% endblock %}
+{% endblock %} {% endcomment %}
