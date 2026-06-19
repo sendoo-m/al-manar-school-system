@@ -25,5 +25,125 @@
         {% block content %}{% endblock %}
     </main>
     {% block extra_js %}{% endblock %}
+
+
+{% if user.is_authenticated %}
+<script>
+(function () {
+  // ─── إعدادات ──────────────────────────────────────────────
+  const IDLE_TIMEOUT_MS  = 30 * 60 * 1000;   // 30 دقيقة (يطابق settings.py)
+  const HEARTBEAT_MS     = 60 * 1000;         // كل دقيقة
+  const WARNING_BEFORE   = 2 * 60 * 1000;     // تحذير قبل 2 دقيقة
+  const HEARTBEAT_URL    = "{% url 'account:heartbeat' %}";
+  const LOGOUT_URL       = "{% url 'account:logout' %}";
+  const CSRF_TOKEN       = "{{ csrf_token }}";
+
+  let lastActivity       = Date.now();
+  let warningShown       = false;
+  let warningEl          = null;
+
+  // ─── رصد نشاط المستخدم ────────────────────────────────────
+  ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(evt => {
+    document.addEventListener(evt, () => { lastActivity = Date.now(); }, { passive: true });
+  });
+
+  // ─── إرسال Heartbeat للسيرفر ──────────────────────────────
+  function sendHeartbeat() {
+    const idle = Date.now() - lastActivity;
+    // لو المستخدم نشط (تحرك خلال آخر دقيقتين) → نجدد الـ session
+    if (idle < HEARTBEAT_MS * 2) {
+      fetch(HEARTBEAT_URL, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': CSRF_TOKEN,
+          'Content-Type': 'application/json',
+        },
+        keepalive: true,
+      }).catch(() => {});
+    }
+  }
+
+  // ─── فحص الخمول محلياً ────────────────────────────────────
+  function checkIdle() {
+    const idle = Date.now() - lastActivity;
+    const remaining = IDLE_TIMEOUT_MS - idle;
+
+    if (remaining <= 0) {
+      // انتهى الوقت → logout فوري
+      showWarning(0);
+      setTimeout(() => { window.location.href = LOGOUT_URL; }, 1000);
+      return;
+    }
+
+    if (remaining <= WARNING_BEFORE && !warningShown) {
+      showWarning(Math.round(remaining / 1000));
+    } else if (remaining > WARNING_BEFORE && warningShown) {
+      hideWarning();
+    }
+  }
+
+  // ─── نافذة التحذير ────────────────────────────────────────
+  function showWarning(secondsLeft) {
+    warningShown = true;
+    if (!warningEl) {
+      warningEl = document.createElement('div');
+      warningEl.id = 'idle-warning';
+      warningEl.innerHTML = `
+        <div style="
+          position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+          background:#1a1a2e; color:#fff; border-radius:12px;
+          padding:18px 28px; box-shadow:0 8px 32px rgba(0,0,0,0.4);
+          z-index:99999; text-align:center; min-width:320px; direction:rtl;
+          border: 2px solid #e74c3c; font-family: 'Segoe UI', sans-serif;
+        ">
+          <div style="font-size:1.4rem; margin-bottom:6px;">⚠️ تنبيه خمول</div>
+          <div id="idle-countdown" style="font-size:1rem; margin-bottom:14px; color:#f39c12;">
+            سيتم تسجيل خروجك خلال <strong id="idle-secs">${secondsLeft}</strong> ثانية
+          </div>
+          <button onclick="window.idleKeepAlive()" style="
+            background:#27ae60; color:#fff; border:none; border-radius:8px;
+            padding:8px 22px; cursor:pointer; font-size:0.95rem; margin-left:8px;
+          ">🟢 أنا هنا، استمر</button>
+          <button onclick="window.location.href='${LOGOUT_URL}'" style="
+            background:#e74c3c; color:#fff; border:none; border-radius:8px;
+            padding:8px 22px; cursor:pointer; font-size:0.95rem;
+          ">🚪 تسجيل خروج</button>
+        </div>
+      `;
+      document.body.appendChild(warningEl);
+
+      // عداد تنازلي كل ثانية
+      let secs = secondsLeft;
+      const countInterval = setInterval(() => {
+        secs -= 1;
+        const el = document.getElementById('idle-secs');
+        if (el) el.textContent = Math.max(0, secs);
+        if (secs <= 0) clearInterval(countInterval);
+      }, 1000);
+    }
+  }
+
+  function hideWarning() {
+    warningShown = false;
+    if (warningEl) {
+      warningEl.remove();
+      warningEl = null;
+    }
+  }
+
+  // زرار "أنا هنا" يجدد النشاط
+  window.idleKeepAlive = function () {
+    lastActivity = Date.now();
+    sendHeartbeat();
+    hideWarning();
+  };
+
+  // ─── تشغيل الـ Timers ─────────────────────────────────────
+  setInterval(sendHeartbeat, HEARTBEAT_MS);
+  setInterval(checkIdle, 10 * 1000);   // فحص كل 10 ثواني
+})();
+</script>
+{% endif %}
+
 </body>
 </html>

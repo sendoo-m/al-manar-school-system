@@ -31,6 +31,7 @@ urlpatterns = [
     path('print-receipts/', views.print_receipts, name='print_receipts'),
     path('print-receipt/<int:payment_id>/', views.print_receipt, name='print_receipt'),
 
+    path('access-denied/', views.access_denied, name='access_denied'),
 
     # ===================================
     # 📊 التقارير المالية

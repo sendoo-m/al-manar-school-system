@@ -500,91 +500,113 @@
                         <th style="width: 8%">عرض</th>
                     </tr>
                 </thead>
-                <tbody>
-                    {% for log in logs %}
-                    <tr data-log-id="{{ log.id }}" 
-                        data-action="{{ log.action }}" 
-                        data-user="{{ log.user.username }}"
-                        data-date="{{ log.timestamp|date:'Y-m-d' }}"
-                        data-user-fullname="{{ log.user.get_full_name|default:log.user.username }}"
-                        data-user-email="{{ log.user.email|default:'لا يوجد' }}"
-                        data-setting-type="{{ log.setting_type|default:'غير محدد' }}"
-                        data-old-value="{{ log.old_value|default:'' }}"
-                        data-new-value="{{ log.new_value|default:'' }}"
-                        data-ip="{{ log.ip_address|default:'غير محدد' }}"
-                        data-timestamp="{{ log.timestamp|date:'Y/m/d H:i:s' }}">
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="user-avatar me-2">
-                                    {{ log.user.first_name.0|default:log.user.username.0|upper }}
-                                </div>
-                                <div style="flex: 1; min-width: 0;">
-                                    <div class="fw-bold">{{ log.user.get_full_name|default:log.user.username|truncatechars:15 }}</div> <!-- تحديد طول النص -->
-                                    <small class="text-muted">{{ log.user.email|default:"لا يوجد"|truncatechars:20 }}</small>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            {% if log.action == 'CREATE' %}
-                                <span class="badge bg-success">
-                                    <i class="fas fa-plus me-1"></i>إنشاء
-                                </span>
-                            {% elif log.action == 'UPDATE' %}
-                                <span class="badge bg-warning">
-                                    <i class="fas fa-edit me-1"></i>تحديث
-                                </span>
-                            {% elif log.action == 'DELETE' %}
-                                <span class="badge bg-danger">
-                                    <i class="fas fa-trash me-1"></i>حذف
-                                </span>
-                            {% else %}
-                                <span class="badge bg-secondary">
-                                    <i class="fas fa-question me-1"></i>{{ log.action }}
-                                </span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-{% if 'مدرسة' in log.setting_type %}school{% elif 'دراسي' in log.setting_type %}calendar{% elif 'خصم' in log.setting_type %}percentage{% elif 'مصروفات' in log.setting_type %}money-bill{% else %}cog{% endif %} me-2 text-primary"></i>
-                                <span>{{ log.setting_type|default:"غير محدد"|truncatechars:12 }}</span> <!-- تحديد طول النص -->
-                            </div>
-                        </td>
-                        <td>
-                            <div class="text-truncate" style="max-width: 180px;" 
-                                 data-bs-toggle="tooltip" 
-                                 title="{{ log.new_value|default:log.old_value|truncatewords:20 }}">
-                                {{ log.new_value|default:log.old_value|truncatewords:6 }} <!-- تقليل عدد الكلمات -->
-                            </div>
-                        </td>
-                        <td>
-                            <div>
-                                <div class="fw-bold">{{ log.timestamp|date:"Y/m/d" }}</div>
-                                <small class="text-muted">{{ log.timestamp|date:"H:i:s" }}</small>
-                            </div>
-                        </td>
-                        <td>
-                            <code class="small">{{ log.ip_address|default:"غير محدد"|truncatechars:12 }}</code> <!-- تحديد طول النص -->
-                        </td>
-                        <td>
-                            <a href="{% url 'school_settings:log_details' log.id %}" 
-                               class="btn btn-outline-info btn-sm"
-                               data-bs-toggle="tooltip" 
-                               title="عرض التفاصيل">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="7" class="text-center py-4">
-                            <div class="text-muted">
-                                <i class="fas fa-history fa-2x mb-2 opacity-50"></i> <!-- تقليل حجم الأيقونة -->
-                                <p class="mb-0">لا توجد سجلات</p>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
+<tbody>
+    {% for log in logs %}
+    <tr data-log-id="{{ log.id }}"
+        data-action="{{ log.action }}"
+        data-user="{% if log.user %}{{ log.user.username }}{% else %}غير محدد{% endif %}"
+        data-date="{{ log.timestamp|date:'Y-m-d' }}"
+        data-user-fullname="{% if log.user %}{% firstof log.user.get_full_name log.user.username %}{% else %}غير محدد{% endif %}"
+        data-user-email="{% if log.user %}{{ log.user.email|default:'لا يوجد' }}{% else %}لا يوجد{% endif %}"
+        data-setting-type="{{ log.setting_type|default:'غير محدد' }}"
+        data-old-value="{{ log.old_value|default:'' }}"
+        data-new-value="{{ log.new_value|default:'' }}"
+        data-ip="{{ log.ip_address|default:'غير محدد' }}"
+        data-timestamp="{{ log.timestamp|date:'Y/m/d H:i:s' }}">
+        <td>
+            <div class="d-flex align-items-center">
+                <div class="user-avatar me-2">
+                    {% if log.user %}
+                        {% if log.user.first_name %}
+                            {{ log.user.first_name|slice:":1"|upper }}
+                        {% elif log.user.username %}
+                            {{ log.user.username|slice:":1"|upper }}
+                        {% else %}
+                            ?
+                        {% endif %}
+                    {% else %}
+                        ?
+                    {% endif %}
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                    <div class="fw-bold">
+                        {% if log.user %}
+                            {% firstof log.user.get_full_name log.user.username %}
+                        {% else %}
+                            غير محدد
+                        {% endif %}
+                    </div>
+                    <small class="text-muted">
+                        {% if log.user %}
+                            {{ log.user.email|default:"لا يوجد"|truncatechars:20 }}
+                        {% else %}
+                            لا يوجد
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </td>
+        <td>
+            {% if log.action == 'CREATE' %}
+                <span class="badge bg-success">
+                    <i class="fas fa-plus me-1"></i>إنشاء
+                </span>
+            {% elif log.action == 'UPDATE' %}
+                <span class="badge bg-warning">
+                    <i class="fas fa-edit me-1"></i>تحديث
+                </span>
+            {% elif log.action == 'DELETE' %}
+                <span class="badge bg-danger">
+                    <i class="fas fa-trash me-1"></i>حذف
+                </span>
+            {% else %}
+                <span class="badge bg-secondary">
+                    <i class="fas fa-question me-1"></i>{{ log.action }}
+                </span>
+            {% endif %}
+        </td>
+        <td>
+            <div class="d-flex align-items-center">
+                <i class="fas fa-{% if 'مدرسة' in log.setting_type %}school{% elif 'دراسي' in log.setting_type %}calendar{% elif 'خصم' in log.setting_type %}percentage{% elif 'مصروفات' in log.setting_type %}money-bill{% else %}cog{% endif %} me-2 text-primary"></i>
+                <span>{{ log.setting_type|default:"غير محدد"|truncatechars:12 }}</span>
+            </div>
+        </td>
+        <td>
+            <div class="text-truncate" style="max-width: 180px;"
+                 data-bs-toggle="tooltip"
+                 title="{{ log.new_value|default:log.old_value|truncatewords:20 }}">
+                {{ log.new_value|default:log.old_value|truncatewords:6 }}
+            </div>
+        </td>
+        <td>
+            <div>
+                <div class="fw-bold">{{ log.timestamp|date:"Y/m/d" }}</div>
+                <small class="text-muted">{{ log.timestamp|date:"H:i:s" }}</small>
+            </div>
+        </td>
+        <td>
+            <code class="small">{{ log.ip_address|default:"غير محدد"|truncatechars:12 }}</code>
+        </td>
+        <td>
+            <a href="{% url 'school_settings:log_details' log.id %}"
+               class="btn btn-outline-info btn-sm"
+               data-bs-toggle="tooltip"
+               title="عرض التفاصيل">
+                <i class="fas fa-eye"></i>
+            </a>
+        </td>
+    </tr>
+    {% empty %}
+    <tr>
+        <td colspan="7" class="text-center py-4">
+            <div class="text-muted">
+                <i class="fas fa-history fa-2x mb-2 opacity-50"></i>
+                <p class="mb-0">لا توجد سجلات</p>
+            </div>
+        </td>
+    </tr>
+    {% endfor %}
+</tbody>
             </table>
         </div>
     </div>

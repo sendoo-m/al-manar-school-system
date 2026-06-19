@@ -53,6 +53,21 @@ INSTALLED_APPS = [
 # Middleware
 # =====================================================
 
+
+# ─── Session Settings ───────────────────────────────────────
+# مدة الـ Session الكلية (بالثواني) — 8 ساعات
+SESSION_COOKIE_AGE = 60 * 60 * 8
+
+# إعادة تعيين العداد عند كل request
+SESSION_SAVE_EVERY_REQUEST = True
+
+# حذف الـ Session لما يقفل المتصفح
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
+# مدة الخمول قبل تسجيل الخروج (بالثواني) — 30 دقيقة
+SESSION_IDLE_TIMEOUT = 60 * 30
+
+# Middleware — لازم يكون بعد SessionMiddleware وقبل CommonMiddleware
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -61,10 +76,13 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+
+    # لازم يكون بعد AuthenticationMiddleware لأنه يعتمد على request.user
+    'LYS_schoolapp.middleware.SessionIdleTimeoutMiddleware',
+
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
 ROOT_URLCONF = 'LYS_schoolapp.urls'
 
 # =====================================================
@@ -233,3 +251,5 @@ LOGGING = {
 }
 
 FORMS_URLFIELD_ASSUME_HTTPS = True
+
+

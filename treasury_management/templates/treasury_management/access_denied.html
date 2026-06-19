@@ -1,4 +1,512 @@
-<!-- templates/treasury_management/access_denied.html -->
+<!-- templates/shared/access_denied.html -->
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>غير مصرح بالدخول — المنار</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:           #0f1117;
+            --surface:      #161920;
+            --surface-2:    #1d2029;
+            --border:       rgba(255,255,255,0.07);
+            --text:         #e8eaf0;
+            --text-muted:   #7a7f94;
+            --text-faint:   #3d4155;
+            --red:          #e05252;
+            --red-glow:     rgba(224, 82, 82, 0.15);
+            --red-border:   rgba(224, 82, 82, 0.25);
+            --blue:         #5b8dee;
+            --blue-glow:    rgba(91, 141, 238, 0.12);
+            --gold:         #f0a355;
+            --radius:       16px;
+            --radius-sm:    10px;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 1.5rem;
+            overflow: hidden;
+        }
+
+        /* ===== خلفية ===== */
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .bg-glow {
+            position: fixed;
+            top: -200px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 700px;
+            height: 500px;
+            background: radial-gradient(ellipse, rgba(224,82,82,0.08) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ===== الكارت الرئيسي ===== */
+        .card {
+            position: relative;
+            z-index: 1;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            width: 100%;
+            max-width: 520px;
+            overflow: hidden;
+            animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== الهيدر ===== */
+        .card-header {
+            padding: 2rem 2rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            text-align: center;
+            background: linear-gradient(180deg, rgba(224,82,82,0.06) 0%, transparent 100%);
+        }
+
+        .shield-wrap {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: var(--red-glow);
+            border: 1px solid var(--red-border);
+            margin-bottom: 1rem;
+            animation: pulse 2.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(224,82,82,0.2); }
+            50%       { box-shadow: 0 0 0 12px rgba(224,82,82,0); }
+        }
+
+        .shield-wrap i {
+            font-size: 1.75rem;
+            color: var(--red);
+        }
+
+        .card-header h1 {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 0.35rem;
+        }
+
+        .card-header p {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        /* ===== الجسم ===== */
+        .card-body {
+            padding: 1.5rem 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        /* ===== الصناديق ===== */
+        .info-block {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 1rem 1.25rem;
+        }
+
+        .info-block.red-tint {
+            border-color: var(--red-border);
+            background: var(--red-glow);
+        }
+
+        .info-block.blue-tint {
+            border-color: rgba(91,141,238,0.2);
+            background: var(--blue-glow);
+        }
+
+        .block-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            margin-bottom: 0.6rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .block-label.red   { color: var(--red); }
+        .block-label.blue  { color: var(--blue); }
+        .block-label.gold  { color: var(--gold); }
+
+        /* ===== الشارات ===== */
+        .badges { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.3rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .badge.red {
+            background: rgba(224,82,82,0.12);
+            color: #f08080;
+            border: 1px solid rgba(224,82,82,0.25);
+        }
+
+        .badge.blue {
+            background: rgba(91,141,238,0.1);
+            color: #8aabf0;
+            border: 1px solid rgba(91,141,238,0.2);
+        }
+
+        .badge.gray {
+            background: rgba(255,255,255,0.05);
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+        }
+
+        /* ===== معلومات المستخدم ===== */
+        .user-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #5b8dee, #a855f7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .user-name { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+        .user-sub  { font-size: 0.75rem; color: var(--text-muted); }
+
+        /* ===== فاصل ===== */
+        .divider {
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* ===== العد التنازلي ===== */
+        .countdown-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .countdown-text {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .countdown-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            border-radius: 6px;
+            background: rgba(224,82,82,0.15);
+            border: 1px solid var(--red-border);
+            color: var(--red);
+            font-weight: 700;
+            font-size: 0.85rem;
+            font-variant-numeric: tabular-nums;
+            transition: all 0.3s;
+        }
+
+        /* ===== الأزرار ===== */
+        .actions {
+            display: flex;
+            gap: 0.6rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            padding: 0.6rem 1.1rem;
+            border-radius: var(--radius-sm);
+            font-family: 'Cairo', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            border: none;
+            transition: all 180ms cubic-bezier(0.16,1,0.3,1);
+            flex: 1;
+        }
+
+        .btn-primary {
+            background: var(--red);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #c94444;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(224,82,82,0.3);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+        }
+
+        .btn-ghost:hover {
+            background: var(--surface-2);
+            color: var(--text);
+            border-color: rgba(255,255,255,0.12);
+        }
+
+        .btn-stop {
+            background: transparent;
+            color: var(--text-faint);
+            border: 1px solid var(--text-faint);
+            font-size: 0.75rem;
+            padding: 0.3rem 0.7rem;
+            flex: 0;
+            border-radius: 6px;
+        }
+
+        .btn-stop:hover {
+            color: var(--text-muted);
+            border-color: var(--text-muted);
+        }
+
+        /* ===== الفوتر ===== */
+        .card-footer {
+            padding: 0.75rem 2rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+        }
+
+        .footer-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--text-faint);
+        }
+
+        .footer-text {
+            font-size: 0.72rem;
+            color: var(--text-faint);
+        }
+
+        /* ===== موبايل ===== */
+        @media (max-width: 480px) {
+            .card-body { padding: 1.25rem; }
+            .card-header { padding: 1.5rem 1.25rem 1.25rem; }
+            .actions { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+
+<div class="card">
+
+    <!-- هيدر -->
+    <div class="card-header">
+        <div class="shield-wrap">
+            <i class="fas fa-shield-halved"></i>
+        </div>
+        <h1>غير مصرح بالدخول</h1>
+        <p>
+            {% if section_name %}
+                ليس لديك صلاحية للوصول إلى <strong style="color:var(--text)">{{ section_name }}</strong>
+            {% else %}
+                ليس لديك صلاحية للوصول إلى هذا القسم
+            {% endif %}
+        </p>
+    </div>
+
+    <!-- جسم -->
+    <div class="card-body">
+
+        <!-- معلومات المستخدم -->
+        <div class="user-row">
+            <div class="avatar">
+                {{ user.get_full_name|default:user.username|slice:":1"|upper }}
+            </div>
+            <div>
+                <div class="user-name">{{ user.get_full_name|default:user.username }}</div>
+                <div class="user-sub">@{{ user.username }}</div>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- الصلاحيات المطلوبة -->
+        {% if required_groups_display %}
+        <div class="info-block red-tint">
+            <div class="block-label red">
+                <i class="fas fa-key fa-xs"></i>
+                الصلاحيات المطلوبة
+            </div>
+            <div class="badges">
+                {% for role in required_groups_display %}
+                <span class="badge red">
+                    <i class="fas fa-user-shield fa-xs"></i>{{ role }}
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- صلاحياتك الحالية -->
+        {% if user_groups %}
+        <div class="info-block blue-tint">
+            <div class="block-label blue">
+                <i class="fas fa-id-badge fa-xs"></i>
+                صلاحياتك الحالية
+            </div>
+            <div class="badges">
+                {% for group in user_groups %}
+                <span class="badge blue">
+                    <i class="fas fa-user fa-xs"></i>{{ group }}
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="info-block">
+            <div class="block-label gold">
+                <i class="fas fa-circle-info fa-xs"></i>
+                ملاحظة
+            </div>
+            <p style="font-size:0.83rem; color:var(--text-muted); margin:0;">
+                لا تملك صلاحيات في هذا القسم — تواصل مع المدير لإضافتك للمجموعة المناسبة
+            </p>
+        </div>
+        {% endif %}
+
+        <!-- الأزرار -->
+        <div class="actions">
+            <a href="{% url 'home:home' %}" class="btn btn-primary">
+                <i class="fas fa-house fa-xs"></i>
+                الرئيسية
+            </a>
+            <a href="javascript:history.back()" class="btn btn-ghost">
+                <i class="fas fa-arrow-right fa-xs"></i>
+                رجوع
+            </a>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- العد التنازلي -->
+        <div class="countdown-row">
+            <div class="countdown-text">
+                <i class="fas fa-clock fa-xs"></i>
+                التحويل التلقائي خلال
+                <span class="countdown-num" id="countdown">10</span>
+                ثانية
+            </div>
+            <button class="btn btn-stop" onclick="stopRedirect()" id="stopBtn">
+                <i class="fas fa-pause fa-xs"></i> إيقاف
+            </button>
+        </div>
+
+    </div>
+
+    <!-- فوتر -->
+    <div class="card-footer">
+        <div class="footer-dot"></div>
+        <span class="footer-text">نظام المنار للإدارة المدرسية — قسم محمي</span>
+        <div class="footer-dot"></div>
+    </div>
+
+</div>
+
+<script>
+    let count = 10;
+    let timer = null;
+    const el = document.getElementById('countdown');
+    const stopBtn = document.getElementById('stopBtn');
+
+    function tick() {
+        count--;
+        el.textContent = count;
+        el.style.transform = 'scale(1.2)';
+        setTimeout(() => el.style.transform = 'scale(1)', 150);
+
+        if (count <= 0) {
+            clearInterval(timer);
+            window.location.href = "{% url 'home:home' %}";
+        }
+    }
+
+    function stopRedirect() {
+        clearInterval(timer);
+        timer = null;
+        stopBtn.innerHTML = '<i class="fas fa-check fa-xs"></i> تم الإيقاف';
+        stopBtn.disabled = true;
+        stopBtn.style.opacity = '0.5';
+        el.style.opacity = '0.4';
+    }
+
+    timer = setInterval(tick, 1000);
+</script>
+
+</body>
+</html>
+
+{% comment %} <!-- templates/treasury_management/access_denied.html -->
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -262,4 +770,4 @@
     });
     </script>
 </body>
-</html>
+</html> {% endcomment %}

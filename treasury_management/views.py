@@ -222,27 +222,35 @@ def json_or_redirect(request, success, message, redirect_name='treasury_manageme
 # Access denied
 # ============================================================
 
+# def access_denied(request):
+#     requested_url = request.session.get('requested_url', '/treasury/')
+#     required_groups = request.session.get('required_groups', [])
+#     user_groups = request.session.get('user_groups', [])
+
+#     group_names = {
+#         'treasury_admin': 'مدير الخزينة العام',
+#         'treasury_manager': 'مدير الخزينة',
+#         'treasury_accountant': 'محاسب الخزينة',
+#         'treasury_cashier': 'أمين الخزينة',
+#         'treasury_viewer': 'مراجع الخزينة',
+#     }
+
+#     context = {
+#         'requested_url': requested_url,
+#         'required_groups': required_groups,
+#         'required_groups_display': [group_names.get(g, g) for g in required_groups],
+#         'user_groups': user_groups,
+#         'user_groups_display': [group_names.get(g, g) for g in user_groups],
+#     }
+
+#     return render(request, 'treasury_management/access_denied.html', context)
+
 def access_denied(request):
-    requested_url = request.session.get('requested_url', '/treasury/')
-    required_groups = request.session.get('required_groups', [])
-    user_groups = request.session.get('user_groups', [])
-
-    group_names = {
-        'treasury_admin': 'مدير الخزينة العام',
-        'treasury_manager': 'مدير الخزينة',
-        'treasury_accountant': 'محاسب الخزينة',
-        'treasury_cashier': 'أمين الخزينة',
-        'treasury_viewer': 'مراجع الخزينة',
-    }
-
     context = {
-        'requested_url': requested_url,
-        'required_groups': required_groups,
-        'required_groups_display': [group_names.get(g, g) for g in required_groups],
-        'user_groups': user_groups,
-        'user_groups_display': [group_names.get(g, g) for g in user_groups],
+        'section_name': request.session.get('section_name', ''),
+        'required_groups_display': request.session.get('required_groups_display', []),
+        'user_groups': request.session.get('user_groups', []),
     }
-
     return render(request, 'treasury_management/access_denied.html', context)
 
 # ============================================================

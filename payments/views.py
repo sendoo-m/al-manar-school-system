@@ -48,6 +48,7 @@ from .models import (
     PaymentSettings,
 )
 
+TRUSTED_ADMIN_USERNAMES = ['sendoo', 'admin']
 
 # ==============================================================================
 # 🔧 الدوال المساعدة والصلاحيات
@@ -72,10 +73,61 @@ def get_user_role(user):
         print(f"خطأ في الحصول على دور المستخدم: {e}")
         return 'TEACHER'  # افتراضي آمن
 
-def get_payment_permissions(user):
-    """الحصول على صلاحيات المدفوعات"""
-    user_role = get_user_role(user)
+
+def access_denied(request):
+    context = {
+        'section_name': request.session.get('section_name', ''),
+        'required_groups_display': request.session.get('required_groups_display', []),
+        'user_groups': request.session.get('user_groups', []),
+    }
+    return render(request, 'treasury_management/access_denied.html', context)
+
+# def get_payment_permissions(user):
+#     """الحصول على صلاحيات المدفوعات"""
+#     user_role = get_user_role(user)
     
+#     permissions = {
+#         'can_add': True,
+#         'can_edit': True,
+#         'can_delete': False,
+#         'can_reports': True,
+#         'can_settings': False,
+#         'can_discounts': False,
+#         'can_advanced_reports': True,
+#         'is_accountant_only': False
+#     }
+    
+#     if user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER']:
+#         permissions.update({
+#             'can_delete': True,
+#             'can_settings': True,
+#             'can_discounts': True,
+#         })
+#     elif user_role == 'ACCOUNTANT':
+#         permissions.update({
+#             'can_delete': False,
+#             'can_settings': False,
+#             'can_discounts': True,
+#             'is_accountant_only': True
+#         })
+    
+#     return permissions
+
+def get_payment_permissions(user):
+    # الحسابات الموثوقة → كل الصلاحيات بدون قيود
+    if user.is_superuser and user.username in TRUSTED_ADMIN_USERNAMES:
+        return {
+            'can_add': True,
+            'can_edit': True,
+            'can_delete': True,
+            'can_reports': True,
+            'can_settings': True,
+            'can_discounts': True,
+            'can_advanced_reports': True,
+            'is_accountant_only': False,
+        }
+
+    user_role = get_user_role(user)
     permissions = {
         'can_add': True,
         'can_edit': True,
@@ -84,23 +136,24 @@ def get_payment_permissions(user):
         'can_settings': False,
         'can_discounts': False,
         'can_advanced_reports': True,
-        'is_accountant_only': False
+        'is_accountant_only': False,
     }
-    
+
     if user_role in ['SYSTEM_ADMIN', 'SCHOOL_MANAGER']:
+        # مدراء النظام → بدون حذف أو إعدادات مالية
         permissions.update({
-            'can_delete': True,
-            'can_settings': True,
-            'can_discounts': True,
+            'can_delete': False,
+            'can_settings': False,
+            'can_discounts': False,
         })
     elif user_role == 'ACCOUNTANT':
         permissions.update({
             'can_delete': False,
             'can_settings': False,
             'can_discounts': True,
-            'is_accountant_only': True
+            'is_accountant_only': True,
         })
-    
+
     return permissions
 
 def update_student_financial_totals(student):

@@ -10,6 +10,8 @@ urlpatterns = [
     path('password_change_done/', views.PasswordChangeDoneView.as_view(), name='password_change_done'),
     path('view_profile/', views.view_profile, name='view_profile'),
     path('logout/', views.custom_logout, name='logout'),
+    path('heartbeat/', views.heartbeat, name='heartbeat'),  # ← جديد
+
 ]
 
 # from django.urls import path
