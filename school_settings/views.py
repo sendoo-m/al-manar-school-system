@@ -1675,268 +1675,334 @@ def delete_education_level(request, pk):
     
     return redirect('school_settings:education_levels_list')
 
-# ============================================================================
-# إدارة الصفوف الدراسية
-# ============================================================================
+# # ============================================================================
+# # إدارة الصفوف الدراسية
+# # ============================================================================
 
-@never_cache
-@login_required
-@settings_admin_required  # تأكد من وجود هذا decorator
-def grade_levels_list(request):
-    """قائمة الصفوف الدراسية محسنة ومتطورة"""
+# @never_cache
+# @login_required
+# @settings_admin_required  # تأكد من وجود هذا decorator
+# def grade_levels_list(request):
+#     """قائمة الصفوف الدراسية محسنة ومتطورة"""
     
-    try:
-        # استيراد آمن للنماذج
-        try:
-            from students.models import Student
-        except ImportError:
-            Student = None
+#     try:
+#         # استيراد آمن للنماذج
+#         try:
+#             from students.models import Student
+#         except ImportError:
+#             Student = None
             
-        try:
-            from students.models import StudentGroup as Group
-        except ImportError:
-            try:
-                from students.models import Group
-            except ImportError:
-                Group = None
+#         try:
+#             from students.models import StudentGroup as Group
+#         except ImportError:
+#             try:
+#                 from students.models import Group
+#             except ImportError:
+#                 Group = None
         
-        # إعداد السياق الأساسي
-        context = get_base_context(request)
+#         # إعداد السياق الأساسي
+#         context = get_base_context(request)
         
-        # معايير البحث والفلترة
-        search_query = request.GET.get('search', '').strip()
-        education_level_filter = request.GET.get('education_level', '').strip()
-        status_filter = request.GET.get('status', '').strip()
-        view_type = request.GET.get('view', 'cards').strip()
-        sort_by = request.GET.get('sort_by', 'order').strip()
+#         # معايير البحث والفلترة
+#         search_query = request.GET.get('search', '').strip()
+#         education_level_filter = request.GET.get('education_level', '').strip()
+#         status_filter = request.GET.get('status', '').strip()
+#         view_type = request.GET.get('view', 'cards').strip()
+#         sort_by = request.GET.get('sort_by', 'order').strip()
         
-        # الاستعلام الأساسي
-        grade_levels_qs = GradeLevel.objects.select_related('education_level')
+#         # الاستعلام الأساسي
+#         grade_levels_qs = GradeLevel.objects.select_related('education_level')
         
-        # تطبيق الفلاتر
-        if search_query:
-            grade_levels_qs = grade_levels_qs.filter(
-                Q(name__icontains=search_query) |
-                Q(name_en__icontains=search_query) |
-                Q(education_level__name__icontains=search_query)
-            )
+#         # تطبيق الفلاتر
+#         if search_query:
+#             grade_levels_qs = grade_levels_qs.filter(
+#                 Q(name__icontains=search_query) |
+#                 Q(name_en__icontains=search_query) |
+#                 Q(education_level__name__icontains=search_query)
+#             )
         
-        if education_level_filter:
-            try:
-                level_id = int(education_level_filter)
-                grade_levels_qs = grade_levels_qs.filter(education_level_id=level_id)
-            except (ValueError, TypeError):
-                pass
+#         if education_level_filter:
+#             try:
+#                 level_id = int(education_level_filter)
+#                 grade_levels_qs = grade_levels_qs.filter(education_level_id=level_id)
+#             except (ValueError, TypeError):
+#                 pass
         
-        if status_filter:
-            if status_filter == 'active':
-                grade_levels_qs = grade_levels_qs.filter(is_active=True)
-            elif status_filter == 'inactive':
-                grade_levels_qs = grade_levels_qs.filter(is_active=False)
+#         if status_filter:
+#             if status_filter == 'active':
+#                 grade_levels_qs = grade_levels_qs.filter(is_active=True)
+#             elif status_filter == 'inactive':
+#                 grade_levels_qs = grade_levels_qs.filter(is_active=False)
         
-        # الترتيب
-        sort_mapping = {
-            'name': 'name',
-            'order': ['education_level__order', 'order'],
-            'level': 'education_level__name',
-        }
+#         # الترتيب
+#         sort_mapping = {
+#             'name': 'name',
+#             'order': ['education_level__order', 'order'],
+#             'level': 'education_level__name',
+#         }
         
-        order_fields = sort_mapping.get(sort_by, ['education_level__order', 'order'])
-        if isinstance(order_fields, list):
-            grade_levels_qs = grade_levels_qs.order_by(*order_fields)
-        else:
-            grade_levels_qs = grade_levels_qs.order_by(order_fields)
+#         order_fields = sort_mapping.get(sort_by, ['education_level__order', 'order'])
+#         if isinstance(order_fields, list):
+#             grade_levels_qs = grade_levels_qs.order_by(*order_fields)
+#         else:
+#             grade_levels_qs = grade_levels_qs.order_by(order_fields)
         
-        # الترقيم
-        items_per_page = 12 if view_type == 'cards' else 15
-        paginator = Paginator(grade_levels_qs, items_per_page)
-        page_number = request.GET.get('page', 1)
+#         # الترقيم
+#         items_per_page = 12 if view_type == 'cards' else 15
+#         paginator = Paginator(grade_levels_qs, items_per_page)
+#         page_number = request.GET.get('page', 1)
         
-        try:
-            grade_levels = paginator.page(page_number)
-        except PageNotAnInteger:
-            grade_levels = paginator.page(1)
-        except EmptyPage:
-            grade_levels = paginator.page(paginator.num_pages)
+#         try:
+#             grade_levels = paginator.page(page_number)
+#         except PageNotAnInteger:
+#             grade_levels = paginator.page(1)
+#         except EmptyPage:
+#             grade_levels = paginator.page(paginator.num_pages)
         
-        # إضافة إحصائيات لكل صف
-        for grade in grade_levels:
-            # إحصائيات الطلاب
-            if Student:
-                try:
-                    grade.students_count = Student.objects.filter(grade_level=grade).count()
-                    # إحصائيات إضافية للطلاب
-                    if hasattr(Student, 'is_active'):
-                        grade.active_students = Student.objects.filter(
-                            grade_level=grade, is_active=True
-                        ).count()
-                    else:
-                        grade.active_students = grade.students_count
-                except Exception as e:
-                    grade.students_count = 0
-                    grade.active_students = 0
-            else:
-                grade.students_count = 0
-                grade.active_students = 0
+#         # إضافة إحصائيات لكل صف
+#         for grade in grade_levels:
+#             # إحصائيات الطلاب
+#             if Student:
+#                 try:
+#                     grade.students_count = Student.objects.filter(grade_level=grade).count()
+#                     # إحصائيات إضافية للطلاب
+#                     if hasattr(Student, 'is_active'):
+#                         grade.active_students = Student.objects.filter(
+#                             grade_level=grade, is_active=True
+#                         ).count()
+#                     else:
+#                         grade.active_students = grade.students_count
+#                 except Exception as e:
+#                     grade.students_count = 0
+#                     grade.active_students = 0
+#             else:
+#                 grade.students_count = 0
+#                 grade.active_students = 0
             
-            # إحصائيات المجموعات
-            if Group:
-                try:
-                    grade.groups_count = Group.objects.filter(grade_level=grade).count()
-                except Exception as e:
-                    grade.groups_count = 0
-            else:
-                grade.groups_count = 0
+#             # إحصائيات المجموعات
+#             if Group:
+#                 try:
+#                     grade.groups_count = Group.objects.filter(grade_level=grade).count()
+#                 except Exception as e:
+#                     grade.groups_count = 0
+#             else:
+#                 grade.groups_count = 0
             
-            # حالة الصف
-            grade.status_class = 'success' if grade.is_active else 'secondary'
-            grade.status_text = 'نشط' if grade.is_active else 'غير نشط'
+#             # حالة الصف
+#             grade.status_class = 'success' if grade.is_active else 'secondary'
+#             grade.status_text = 'نشط' if grade.is_active else 'غير نشط'
             
-            # متوسط الطلاب للمجموعات
-            if grade.groups_count > 0:
-                grade.avg_students_per_group = round(grade.students_count / grade.groups_count, 1)
-            else:
-                grade.avg_students_per_group = 0
+#             # متوسط الطلاب للمجموعات
+#             if grade.groups_count > 0:
+#                 grade.avg_students_per_group = round(grade.students_count / grade.groups_count, 1)
+#             else:
+#                 grade.avg_students_per_group = 0
         
-        # تجميع حسب المرحلة التعليمية
-        grouped_grades = {}
-        education_levels = EducationLevel.objects.filter(is_active=True).order_by('order')
-        
-        for edu_level in education_levels:
-            level_grades = [g for g in grade_levels if g.education_level == edu_level]
-            if level_grades:
-                grouped_grades[edu_level] = level_grades
-        
-        # إحصائيات شاملة
-        total_grades = GradeLevel.objects.count()
-        active_grades = GradeLevel.objects.filter(is_active=True).count()
-        inactive_grades = total_grades - active_grades
-        
-        # إحصائيات الطلاب الإجمالية
-        if Student:
-            try:
-                total_students = Student.objects.count()
-                active_students = Student.objects.filter(is_active=True).count() if hasattr(Student, 'is_active') else total_students
-            except:
-                total_students = 0
-                active_students = 0
-        else:
-            total_students = 0
-            active_students = 0
-        
-        # إحصائيات المجموعات الإجمالية
-        if Group:
-            try:
-                total_groups = Group.objects.count()
-            except:
-                total_groups = 0
-        else:
-            total_groups = 0
-        
-        # متوسط الطلاب لكل صف
-        avg_students_per_grade = round(total_students / total_grades, 1) if total_grades > 0 else 0
-        
-        # إحصائيات لكل مرحلة تعليمية
-        level_stats = {}
-        for level in education_levels:
-            level_grades_count = GradeLevel.objects.filter(education_level=level).count()
-            
-            if Student:
-                try:
-                    level_students = Student.objects.filter(grade_level__education_level=level).count()
-                except:
-                    level_students = 0
-            else:
-                level_students = 0
-            
-            level_stats[level.id] = {
-                'grades_count': level_grades_count,
-                'students_count': level_students,
-                'active_grades': GradeLevel.objects.filter(
-                    education_level=level, is_active=True
-                ).count(),
-            }
-        
-        # معلومات الترقيم
-        page_info = {
-            'current_page': grade_levels.number,
-            'total_pages': paginator.num_pages,
-            'total_items': paginator.count,
-            'start_index': grade_levels.start_index(),
-            'end_index': grade_levels.end_index(),
-            'has_previous': grade_levels.has_previous(),
-            'has_next': grade_levels.has_next(),
-            'previous_page': grade_levels.previous_page_number() if grade_levels.has_previous() else None,
-            'next_page': grade_levels.next_page_number() if grade_levels.has_next() else None,
-        }
-        
-        # تحديث السياق
-        context.update({
-            # البيانات الأساسية
-            'grade_levels': grade_levels,
-            'grouped_grades': grouped_grades,
-            'education_levels': education_levels,
-            
-            # معايير البحث والفلترة
-            'search_query': search_query,
-            'education_level_filter': education_level_filter,
-            'status_filter': status_filter,
-            'view_type': view_type,
-            'sort_by': sort_by,
-            
-            # الإحصائيات الشاملة
-            'total_grades': total_grades,
-            'active_grades': active_grades,
-            'inactive_grades': inactive_grades,
-            'total_students': total_students,
-            'active_students': active_students,
-            'total_groups': total_groups,
-            'avg_students_per_grade': avg_students_per_grade,
-            
-            # إحصائيات متقدمة
-            'level_stats': level_stats,
-            'page_info': page_info,
-            
-            # خيارات العرض
-            'view_options': ['cards', 'table'],
-            'sort_options': [
-                ('order', 'الترتيب الافتراضي'),
-                ('name', 'حسب الاسم'),
-                ('level', 'حسب المرحلة'),
-                ('created', 'الأحدث أولاً'),
-            ],
-            
-            # معلومات للـ UI
-            'has_filters_applied': bool(search_query or education_level_filter or status_filter),
-            'page_title': 'إدارة الصفوف الدراسية',
-            'page_description': f'إدارة {total_grades} صف دراسي بإجمالي {total_students} طالب',
-            
-            # توفر النماذج
-            'student_model_available': Student is not None,
-            'group_model_available': Group is not None,
-        })
-        
-        # رسائل إعلامية
-        if not grade_levels:
-            if search_query or education_level_filter or status_filter:
-                messages.info(request, 'لم يتم العثور على صفوف دراسية تطابق معايير البحث المحددة.')
-            else:
-                messages.info(request, 'لا توجد صفوف دراسية مضافة بعد. يمكنك إضافة أول صف دراسي الآن.')
-        
-        return render(request, 'school_settings/grade_levels_list.html', context)
-        
-    except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"خطأ في قائمة الصفوف الدراسية: {str(e)}", exc_info=True)
-        
-        from django.contrib import messages
-        messages.error(
-            request, 
-            'حدث خطأ في تحميل قائمة الصفوف الدراسية. يرجى المحاولة مرة أخرى.'
-        )
-        return redirect('school_settings:comprehensive_settings')
+#         # تجميع حسب المرحلة التعليمية
+#         grouped_grades = {}
+#         education_levels = EducationLevel.objects.filter(is_active=True).order_by('order')
 
+#         for edu_level in education_levels:
+#             level_grades = [g for g in grade_levels if g.education_level == edu_level]
+#             if level_grades:
+#                 grouped_grades[edu_level] = level_grades
+        
+#         # إحصائيات شاملة
+#         total_grades = GradeLevel.objects.count()
+#         active_grades = GradeLevel.objects.filter(is_active=True).count()
+#         inactive_grades = total_grades - active_grades
+        
+#         # إحصائيات الطلاب الإجمالية
+#         if Student:
+#             try:
+#                 total_students = Student.objects.count()
+#                 active_students = Student.objects.filter(is_active=True).count() if hasattr(Student, 'is_active') else total_students
+#             except:
+#                 total_students = 0
+#                 active_students = 0
+#         else:
+#             total_students = 0
+#             active_students = 0
+        
+#         # إحصائيات المجموعات الإجمالية
+#         if Group:
+#             try:
+#                 total_groups = Group.objects.count()
+#             except:
+#                 total_groups = 0
+#         else:
+#             total_groups = 0
+        
+#         # متوسط الطلاب لكل صف
+#         avg_students_per_grade = round(total_students / total_grades, 1) if total_grades > 0 else 0
+        
+#         # إحصائيات لكل مرحلة تعليمية
+#         level_stats = {}
+#         for level in education_levels:
+#             level_grades_count = GradeLevel.objects.filter(education_level=level).count()
+            
+#             if Student:
+#                 try:
+#                     level_students = Student.objects.filter(grade_level__education_level=level).count()
+#                 except:
+#                     level_students = 0
+#             else:
+#                 level_students = 0
+            
+#             level_stats[level.id] = {
+#                 'grades_count': level_grades_count,
+#                 'students_count': level_students,
+#                 'active_grades': GradeLevel.objects.filter(
+#                     education_level=level, is_active=True
+#                 ).count(),
+#             }
+        
+#         # معلومات الترقيم
+#         page_info = {
+#             'current_page': grade_levels.number,
+#             'total_pages': paginator.num_pages,
+#             'total_items': paginator.count,
+#             'start_index': grade_levels.start_index(),
+#             'end_index': grade_levels.end_index(),
+#             'has_previous': grade_levels.has_previous(),
+#             'has_next': grade_levels.has_next(),
+#             'previous_page': grade_levels.previous_page_number() if grade_levels.has_previous() else None,
+#             'next_page': grade_levels.next_page_number() if grade_levels.has_next() else None,
+#         }
+        
+#         # تحديث السياق
+#         context.update({
+#             # البيانات الأساسية
+#             'grade_levels': grade_levels,
+#             'grouped_grades': grouped_grades,
+#             'education_levels': education_levels,
+            
+#             # معايير البحث والفلترة
+#             'search_query': search_query,
+#             'education_level_filter': education_level_filter,
+#             'status_filter': status_filter,
+#             'view_type': view_type,
+#             'sort_by': sort_by,
+            
+#             # الإحصائيات الشاملة
+#             'total_grades': total_grades,
+#             'active_grades': active_grades,
+#             'inactive_grades': inactive_grades,
+#             'total_students': total_students,
+#             'active_students': active_students,
+#             'total_groups': total_groups,
+#             'avg_students_per_grade': avg_students_per_grade,
+            
+#             # إحصائيات متقدمة
+#             'level_stats': level_stats,
+#             'page_info': page_info,
+            
+#             # خيارات العرض
+#             'view_options': ['cards', 'table'],
+#             'sort_options': [
+#                 ('order', 'الترتيب الافتراضي'),
+#                 ('name', 'حسب الاسم'),
+#                 ('level', 'حسب المرحلة'),
+#                 ('created', 'الأحدث أولاً'),
+#             ],
+            
+#             # معلومات للـ UI
+#             'has_filters_applied': bool(search_query or education_level_filter or status_filter),
+#             'page_title': 'إدارة الصفوف الدراسية',
+#             'page_description': f'إدارة {total_grades} صف دراسي بإجمالي {total_students} طالب',
+            
+#             # توفر النماذج
+#             'student_model_available': Student is not None,
+#             'group_model_available': Group is not None,
+#         })
+        
+#         # رسائل إعلامية
+#         if not grade_levels:
+#             if search_query or education_level_filter or status_filter:
+#                 messages.info(request, 'لم يتم العثور على صفوف دراسية تطابق معايير البحث المحددة.')
+#             else:
+#                 messages.info(request, 'لا توجد صفوف دراسية مضافة بعد. يمكنك إضافة أول صف دراسي الآن.')
+        
+#         return render(request, 'school_settings/grade_levels_list.html', context)
+        
+#     except Exception as e:
+#         import logging
+#         logger = logging.getLogger(__name__)
+#         logger.error(f"خطأ في قائمة الصفوف الدراسية: {str(e)}", exc_info=True)
+        
+#         from django.contrib import messages
+#         messages.error(
+#             request, 
+#             'حدث خطأ في تحميل قائمة الصفوف الدراسية. يرجى المحاولة مرة أخرى.'
+#         )
+#         return redirect('school_settings:comprehensive_settings')
+
+from django.shortcuts import render
+from django.db.models import Count
+from school_settings.models import SystemSettings, EducationLevel, GradeLevel
+
+def grade_levels_list(request):
+    system_settings = SystemSettings.get_current_settings()
+
+    education_levels = EducationLevel.objects.all().order_by('order')
+    grade_levels = GradeLevel.objects.select_related('education_level').all().order_by(
+        'education_level__order', 'order', 'grade_number', 'name'
+    )
+
+    grouped_grades = {}
+    total_students = 0
+    total_groups = 0
+
+    for level in education_levels:
+        level_grades = grade_levels.filter(education_level=level)
+
+        grades_data = []
+        for grade in level_grades:
+            students_count = 0
+            groups_count = 0
+
+            try:
+                if hasattr(grade, 'student_set'):
+                    students_count = grade.student_set.count()
+            except Exception:
+                students_count = 0
+
+            try:
+                if hasattr(grade, 'group_set'):
+                    groups_count = grade.group_set.count()
+            except Exception:
+                groups_count = 0
+
+            total_students += students_count
+            total_groups += groups_count
+
+            grades_data.append({
+                'pk': grade.pk,
+                'id': grade.id,
+                'name': grade.name,
+                'name_en': grade.name_en,
+                'grade_number': grade.grade_number,
+                'typical_age': grade.typical_age,
+                'order': grade.order,
+                'is_active': grade.is_active,
+                'created_date': getattr(grade, 'created_date', None),
+                'students_count': students_count,
+                'groups_count': groups_count,
+                'education_level': level,
+            })
+
+        grouped_grades[level] = grades_data
+
+    context = {
+        'system_settings': system_settings,
+        'education_levels': education_levels,
+        'grade_levels': grade_levels,
+        'grouped_grades': grouped_grades,
+        'total_grades': grade_levels.count(),
+        'total_students': total_students,
+        'total_groups': total_groups,
+    }
+    return render(request, 'school_settings/grade_levels_list.html', context)
 
 # دالة API للإحصائيات السريعة
 @never_cache
