@@ -79,3 +79,15 @@ urlpatterns = [
     path('get-grades-by-level/<int:level_id>/', views.get_grades_by_level, name='get_grades_by_level_old'),
     path('student/<int:pk>/enrollment-statement-word/', views.student_enrollment_statement_word, name='student_enrollment_statement_word'),
 ]
+
+
+def get_urls(self):
+    urls = super().get_urls()
+    custom_urls = [
+        path('export/', self.admin_site.admin_view(self.export_students), name='students_student_export'),
+        path('import/', self.admin_site.admin_view(self.import_students_view), name='students_student_import'),
+        path('import/process/', self.admin_site.admin_view(self.process_import), name='students_student_import_process'),
+        path('export/template/', self.admin_site.admin_view(self.download_template), name='students_student_export_template'),
+        path('export/reference/', self.admin_site.admin_view(self.download_reference_data), name='students_student_export_reference'),
+    ]
+    return custom_urls + urls

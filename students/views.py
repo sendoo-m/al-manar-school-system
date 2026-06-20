@@ -1568,6 +1568,269 @@ def export_students_advanced(request):
 
 # استبدل دالة download_import_template في students/views.py بهذه النسخة
 
+# @never_cache
+# @students_import_export_access
+# def download_import_template(request):
+#     """تحميل قالب استيراد الطلاب CSV أو Excel متوافق مع الحقول الجديدة"""
+#     template_format = request.GET.get('format', 'excel').lower()
+
+#     headers = [
+#     'الاسم',
+#     'نوع الطالب',
+#     'الرقم القومي',
+#     'رقم جواز السفر',
+#     'الجنسية',
+#     'الديانة',
+#     'العمر',
+#     'النوع',
+#     'تاريخ الميلاد',
+#     'رقم الهاتف',
+#     'العنوان',
+
+#     'العام الدراسي',
+#     'المرحلة التعليمية',
+#     'الصف الدراسي',
+#     'حالة القيد',
+#     'محول من مدرسة',
+#     'محول إلى مدرسة',
+
+#     'طالب دمج',
+#     'نوع الإعاقة',
+#     'إعفاء من العربي',
+#     'إعفاء من الإنجليزي',
+#     'إعفاء من الفرنسي',
+#     'إعفاءات أخرى',
+
+#     'من أبناء العاملين',
+#     'اسم الموظف',
+#     'وظيفة الموظف داخل المدرسة',
+
+#     'اسم ولي الأمر',
+#     'هاتف ولي الأمر',
+#     'بريد ولي الأمر',
+#     'وظيفة الأب',
+#     'صاحب الولاية التعليمية',
+#     'اسم صاحب الولاية التعليمية',
+#     'هاتف صاحب الولاية التعليمية',
+#     ]
+
+#     sample_rows = [
+#         [
+#             'أحمد محمد علي',
+#             'طالب عادي',
+#             '30001011234567',
+#             '',
+#             'مصري',
+#             'مسلم',
+#             '',
+#             'ذكر',
+#             '',
+#             '01000000000',
+#             'القاهرة',
+
+#             '',
+#             'الابتدائية',
+#             'الأول الابتدائي',
+#             'مستجد',
+#             '',
+#             '',
+
+#             'لا',
+#             '',
+#             'لا',
+#             'لا',
+#             'لا',
+#             '',
+
+#             'لا',
+#             '',
+#             '',
+
+#             'محمد علي',
+#             '01111111111',
+#             'parent@example.com',
+#             'محاسب',
+#             'الأب',
+#             '',
+#             '',
+#         ],
+#         [
+#             'يوسف جون سميث',
+#             'وافد',
+#             '',
+#             'A12345678',
+#             'أمريكي',
+#             'مسيحي',
+#             '8',
+#             'ذكر',
+#             '2018-05-10',
+#             '01000000002',
+#             'الإسماعيلية',
+
+#             '',
+#             'الثاني الابتدائي',
+#             'محول',
+#             'مدرسة دولية سابقة',
+#             '',
+
+#             'لا',
+#             '',
+#             'لا',
+#             'لا',
+#             'لا',
+#             '',
+
+#             'لا',
+#             '',
+#             '',
+
+#             'John Smith',
+#             '01111111113',
+#             'john@example.com',
+#             'مهندس',
+#             'الأب',
+#             '',
+#             '',
+#         ],
+#         [
+#             'مريم أحمد حسن',
+#             'طالب عادي',
+#             '30303031234567',
+#             '',
+#             'مصري',
+#             'مسلم',
+#             '',
+#             'أنثى',
+#             '',
+#             '01000000003',
+#             'القاهرة',
+
+#             '',
+#             'الثالث الابتدائي',
+#             'ناجح ومنقول',
+#             '',
+#             '',
+
+#             'نعم',
+#             'صعوبات تعلم',
+#             'لا',
+#             'لا',
+#             'نعم',
+#             'إعفاء من الفرنسي',
+
+#             'نعم',
+#             'أحمد حسن',
+#             'مدرس لغة عربية',
+
+#             'أحمد حسن',
+#             '01111111114',
+#             '',
+#             'مدرس',
+#             'الأم',
+#             '',
+#             '',
+#         ],
+#     ]
+
+#     if template_format == 'csv':
+#         response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
+#         response['Content-Disposition'] = 'attachment; filename="student_import_template_extended.csv"'
+#         response.write('\ufeff')
+
+#         writer = csv.writer(response)
+#         writer.writerow(headers)
+#         writer.writerows(sample_rows)
+
+#         return response
+
+#     workbook = openpyxl.Workbook()
+#     worksheet = workbook.active
+#     worksheet.title = 'قالب استيراد الطلاب'
+#     worksheet.sheet_view.rightToLeft = True
+
+#     header_fill = PatternFill(
+#         start_color='1F4E79',
+#         end_color='1F4E79',
+#         fill_type='solid'
+#     )
+#     header_font = Font(
+#         bold=True,
+#         color='FFFFFF'
+#     )
+#     center_alignment = Alignment(
+#         horizontal='center',
+#         vertical='center',
+#         wrap_text=True
+#     )
+
+#     for col_num, header in enumerate(headers, 1):
+#         cell = worksheet.cell(row=1, column=col_num, value=header)
+#         cell.fill = header_fill
+#         cell.font = header_font
+#         cell.alignment = center_alignment
+
+#     for row_num, row_data in enumerate(sample_rows, 2):
+#         for col_num, value in enumerate(row_data, 1):
+#             cell = worksheet.cell(row=row_num, column=col_num, value=value)
+#             cell.alignment = center_alignment
+
+#     instructions = [
+#         'تعليمات الاستيراد:',
+#         '1. الاسم هو الحقل الإجباري الوحيد.',
+#         '2. الرقم القومي اختياري، وإذا تم إدخاله يجب أن يكون 14 رقم وغير مكرر.',
+#         '3. رقم جواز السفر اختياري ويستخدم غالباً للوافدين، ويجب ألا يكون مكرراً إذا تم إدخاله.',
+#         '4. نوع الطالب يقبل: طالب عادي / وافد.',
+#         '5. النوع يقبل: ذكر / أنثى / M / F.',
+#         '6. حالة القيد تقبل: مستجد / ناجح ومنقول / محول / باق للإعادة.',
+#         '7. صاحب الولاية التعليمية يقبل: الأب / الأم / آخر.',
+#         '8. حقول نعم/لا تقبل: نعم / لا / 1 / 0.',
+#         '9. الصف الدراسي يمكن كتابته بالاسم مثل: الأول الابتدائي.',
+#         '10. العام الدراسي يمكن تركه فارغاً وسيتم استخدام العام الحالي إن وجد.',
+#         '11. تاريخ الميلاد اختياري ويفضل بصيغة YYYY-MM-DD.',
+#         '12. لا تغير أسماء الأعمدة في الصف الأول.',
+#     ]
+
+#     start_row = len(sample_rows) + 4
+
+#     for index, instruction in enumerate(instructions):
+#         cell = worksheet.cell(row=start_row + index, column=1, value=instruction)
+
+#         if index == 0:
+#             cell.font = Font(bold=True, color='D32F2F')
+#         else:
+#             cell.font = Font(color='666666')
+
+#         cell.alignment = Alignment(horizontal='right', vertical='center')
+
+#     worksheet.freeze_panes = 'A2'
+#     worksheet.auto_filter.ref = f'A1:{worksheet.cell(row=1, column=len(headers)).coordinate}'
+
+#     for column_cells in worksheet.columns:
+#         max_length = 0
+#         column_letter = column_cells[0].column_letter
+
+#         for cell in column_cells:
+#             try:
+#                 cell_length = len(str(cell.value)) if cell.value else 0
+#                 if cell_length > max_length:
+#                     max_length = cell_length
+#             except Exception:
+#                 pass
+
+#         worksheet.column_dimensions[column_letter].width = min(max_length + 4, 35)
+
+#     output = io.BytesIO()
+#     workbook.save(output)
+#     output.seek(0)
+
+#     response = HttpResponse(
+#         output.read(),
+#         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+#     )
+#     response['Content-Disposition'] = 'attachment; filename="student_import_template_extended.xlsx"'
+
+#     return response
+
 @never_cache
 @students_import_export_access
 def download_import_template(request):
@@ -1588,6 +1851,7 @@ def download_import_template(request):
         'العنوان',
 
         'العام الدراسي',
+        'المرحلة التعليمية',
         'الصف الدراسي',
         'حالة القيد',
         'محول من مدرسة',
@@ -1628,6 +1892,7 @@ def download_import_template(request):
             'القاهرة',
 
             '',
+            'الابتدائية',
             'الأول الابتدائي',
             'مستجد',
             '',
@@ -1666,6 +1931,7 @@ def download_import_template(request):
             'الإسماعيلية',
 
             '',
+            'الابتدائية',
             'الثاني الابتدائي',
             'محول',
             'مدرسة دولية سابقة',
@@ -1704,6 +1970,7 @@ def download_import_template(request):
             'القاهرة',
 
             '',
+            'الابتدائية',
             'الثالث الابتدائي',
             'ناجح ومنقول',
             '',
@@ -1782,10 +2049,12 @@ def download_import_template(request):
         '6. حالة القيد تقبل: مستجد / ناجح ومنقول / محول / باق للإعادة.',
         '7. صاحب الولاية التعليمية يقبل: الأب / الأم / آخر.',
         '8. حقول نعم/لا تقبل: نعم / لا / 1 / 0.',
-        '9. الصف الدراسي يمكن كتابته بالاسم مثل: الأول الابتدائي.',
-        '10. العام الدراسي يمكن تركه فارغاً وسيتم استخدام العام الحالي إن وجد.',
-        '11. تاريخ الميلاد اختياري ويفضل بصيغة YYYY-MM-DD.',
-        '12. لا تغير أسماء الأعمدة في الصف الأول.',
+        '9. المرحلة التعليمية يمكن كتابتها بالاسم مثل: الابتدائية / الإعدادية / الثانوية.',
+        '10. الصف الدراسي يمكن كتابته بالاسم مثل: الأول الابتدائي.',
+        '11. عند تكرار اسم الصف في أكثر من مرحلة، يجب كتابة المرحلة التعليمية.',
+        '12. العام الدراسي يمكن تركه فارغاً وسيتم استخدام العام الحالي إن وجد.',
+        '13. تاريخ الميلاد اختياري ويفضل بصيغة YYYY-MM-DD.',
+        '14. لا تغير أسماء الأعمدة في الصف الأول.',
     ]
 
     start_row = len(sample_rows) + 4
@@ -1828,7 +2097,6 @@ def download_import_template(request):
     response['Content-Disposition'] = 'attachment; filename="student_import_template_extended.xlsx"'
 
     return response
-
 
 @never_cache
 @students_import_export_access
@@ -2320,4 +2588,468 @@ def student_enrollment_statement_word(request, pk):
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
 
     document.save(response)
+    return response
+
+
+def download_template(self, request):
+    from openpyxl.worksheet.datavalidation import DataValidation
+    from openpyxl.workbook.defined_name import DefinedName
+    from openpyxl.utils import get_column_letter
+
+    wb = openpyxl.Workbook()
+
+    # =========================================
+    # أدوات مساعدة
+    # =========================================
+    def sanitize_range_name(value):
+        value = str(value or '').strip()
+        if not value:
+            return 'EMPTY'
+        value = value.replace(' ', '_')
+        value = value.replace('-', '_')
+        value = value.replace('/', '_')
+        value = value.replace('\\', '_')
+        value = value.replace('(', '_')
+        value = value.replace(')', '_')
+        value = value.replace('.', '_')
+        value = value.replace(',', '_')
+        value = value.replace('،', '_')
+        value = value.replace(':', '_')
+        while '__' in value:
+            value = value.replace('__', '_')
+        if value and value[0].isdigit():
+            value = f'LVL_{value}'
+        return value
+
+    header_fill = openpyxl.styles.PatternFill(
+        start_color="4472C4",
+        end_color="4472C4",
+        fill_type="solid"
+    )
+    header_font = openpyxl.styles.Font(bold=True, color="FFFFFF")
+    center_alignment = openpyxl.styles.Alignment(
+        horizontal="center",
+        vertical="center",
+        wrap_text=True
+    )
+
+    # =========================================
+    # جلب البيانات
+    # =========================================
+    academic_years = list(
+        SettingsAcademicYear.objects.filter(is_active=True).order_by('-start_date', '-id')
+    )
+
+    grade_levels = list(
+        GradeLevel.objects.filter(is_active=True)
+        .select_related('education_level')
+        .order_by('education_level__order', 'order', 'name')
+    )
+
+    education_levels = []
+    education_level_map = {}
+    seen_education_levels = set()
+
+    for grade_level in grade_levels:
+        education_name = grade_level.education_level.name if getattr(grade_level, 'education_level', None) else ''
+        if not education_name:
+            continue
+
+        if education_name not in seen_education_levels:
+            seen_education_levels.add(education_name)
+            education_levels.append(education_name)
+
+        education_level_map.setdefault(education_name, [])
+        education_level_map[education_name].append(grade_level.name)
+
+    # =========================================
+    # الشيت 1: قالب الاستيراد
+    # =========================================
+    ws = wb.active
+    ws.title = "قالب الاستيراد"
+    ws.sheet_view.rightToLeft = True
+
+    headers = self.get_import_headers()
+
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = center_alignment
+
+    sample_rows = [
+        [
+            'أحمد محمد علي',
+            'طالب عادي',
+            '30012010012345',
+            '',
+            'مصري',
+            'مسلم',
+            '14',
+            'M',
+            '2010-01-01',
+            '01234567890',
+            'القاهرة',
+            academic_years[0].name if academic_years else '',
+            education_levels[0] if education_levels else '',
+            education_level_map.get(education_levels[0], [''])[0] if education_levels else '',
+            'مستجد',
+            '',
+            '',
+            'لا',
+            '',
+            'لا',
+            'لا',
+            'لا',
+            '',
+            'لا',
+            '',
+            '',
+            'محمد علي أحمد',
+            '01098765432',
+            'parent@email.com',
+            'محاسب',
+            'الأب',
+            '',
+            '',
+            '15000',
+            '5000',
+        ]
+    ]
+
+    for row_num, row_data in enumerate(sample_rows, 2):
+        for col, value in enumerate(row_data, 1):
+            cell = ws.cell(row=row_num, column=col, value=value)
+            cell.alignment = center_alignment
+
+    instructions = [
+        "تعليمات سريعة:",
+        "1. استخدم نفس أسماء الأعمدة بدون تغيير.",
+        "2. استخدم القوائم المنسدلة لاختيار العام الدراسي والمرحلة التعليمية والصف الدراسي.",
+        "3. قائمة الصف الدراسي تعتمد على المرحلة التعليمية المختارة في نفس الصف.",
+        "4. الاسم هو الحقل الإجباري الوحيد.",
+        "5. الرقم القومي أو جواز السفر يجب ألا يكون مكرراً إذا تم إدخاله.",
+        "6. النوع يقبل: M / F أو ذكر / أنثى.",
+        "7. تاريخ الميلاد يفضل بصيغة YYYY-MM-DD.",
+    ]
+
+    start_row = len(sample_rows) + 4
+    for index, instruction in enumerate(instructions):
+        cell = ws.cell(row=start_row + index, column=1, value=instruction)
+        if index == 0:
+            cell.font = openpyxl.styles.Font(bold=True, color="D32F2F")
+        else:
+            cell.font = openpyxl.styles.Font(color="666666")
+
+    ws.freeze_panes = 'A2'
+    ws.auto_filter.ref = f'A1:{ws.cell(row=1, column=len(headers)).coordinate}'
+
+    # =========================================
+    # الشيت 2: الأعوام الدراسية
+    # =========================================
+    ws_years = wb.create_sheet(title="الاعوام الدراسية")
+    ws_years.sheet_view.rightToLeft = True
+
+    year_headers = ['م', 'العام الدراسي', 'نشط؟']
+    for col, header in enumerate(year_headers, 1):
+        cell = ws_years.cell(row=1, column=col, value=header)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = center_alignment
+
+    for row_num, academic_year in enumerate(academic_years, 2):
+        ws_years.cell(row=row_num, column=1, value=row_num - 1)
+        ws_years.cell(row=row_num, column=2, value=getattr(academic_year, 'name', str(academic_year)))
+        ws_years.cell(row=row_num, column=3, value='نعم' if getattr(academic_year, 'is_active', False) else 'لا')
+
+    ws_years.freeze_panes = 'A2'
+    ws_years.auto_filter.ref = f'A1:C{max(ws_years.max_row, 2)}'
+
+    # =========================================
+    # الشيت 3: المراحل والصفوف
+    # =========================================
+    ws_grades = wb.create_sheet(title="المراحل والصفوف")
+    ws_grades.sheet_view.rightToLeft = True
+
+    grade_headers = ['م', 'المرحلة التعليمية', 'اسم النطاق', 'الصف الدراسي', 'نشط؟']
+    for col, header in enumerate(grade_headers, 1):
+        cell = ws_grades.cell(row=1, column=col, value=header)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = center_alignment
+
+    grade_row = 2
+    for education_name, grades in education_level_map.items():
+        range_name = sanitize_range_name(education_name)
+        for idx, grade_name in enumerate(grades, 1):
+            ws_grades.cell(row=grade_row, column=1, value=grade_row - 1)
+            ws_grades.cell(row=grade_row, column=2, value=education_name)
+            ws_grades.cell(row=grade_row, column=3, value=range_name)
+            ws_grades.cell(row=grade_row, column=4, value=grade_name)
+            ws_grades.cell(row=grade_row, column=5, value='نعم')
+            grade_row += 1
+
+    ws_grades.freeze_panes = 'A2'
+    ws_grades.auto_filter.ref = f'A1:E{max(ws_grades.max_row, 2)}'
+
+    # =========================================
+    # الشيت 4: القيم المسموح بها
+    # =========================================
+    ws_choices = wb.create_sheet(title="قيم مسموح بها")
+    ws_choices.sheet_view.rightToLeft = True
+
+    choice_headers = ['نوع البيان', 'القيمة المعروضة', 'القيمة الداخلية']
+    for col, header in enumerate(choice_headers, 1):
+        cell = ws_choices.cell(row=1, column=col, value=header)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = center_alignment
+
+    row_num = 2
+
+    for value, label in getattr(Student, 'STUDENT_TYPE_CHOICES', []):
+        ws_choices.cell(row=row_num, column=1, value='نوع الطالب')
+        ws_choices.cell(row=row_num, column=2, value=str(label))
+        ws_choices.cell(row=row_num, column=3, value=str(value))
+        row_num += 1
+
+    for value, label in getattr(Student, 'RELIGION_CHOICES', []):
+        ws_choices.cell(row=row_num, column=1, value='الديانة')
+        ws_choices.cell(row=row_num, column=2, value=str(label))
+        ws_choices.cell(row=row_num, column=3, value=str(value))
+        row_num += 1
+
+    for value, label in getattr(Student, 'ENROLLMENT_STATUS_CHOICES', []):
+        ws_choices.cell(row=row_num, column=1, value='حالة القيد')
+        ws_choices.cell(row=row_num, column=2, value=str(label))
+        ws_choices.cell(row=row_num, column=3, value=str(value))
+        row_num += 1
+
+    for value, label in getattr(Student, 'EDUCATIONAL_GUARDIAN_CHOICES', []):
+        ws_choices.cell(row=row_num, column=1, value='صاحب الولاية التعليمية')
+        ws_choices.cell(row=row_num, column=2, value=str(label))
+        ws_choices.cell(row=row_num, column=3, value=str(value))
+        row_num += 1
+
+    extra_values = [
+        ('النوع', 'M', 'M'),
+        ('النوع', 'F', 'F'),
+        ('النوع', 'ذكر', 'M'),
+        ('النوع', 'أنثى', 'F'),
+        ('القيم المنطقية', 'نعم', 'True'),
+        ('القيم المنطقية', 'لا', 'False'),
+        ('القيم المنطقية', '1', 'True'),
+        ('القيم المنطقية', '0', 'False'),
+    ]
+
+    for item_type, display_value, internal_value in extra_values:
+        ws_choices.cell(row=row_num, column=1, value=item_type)
+        ws_choices.cell(row=row_num, column=2, value=display_value)
+        ws_choices.cell(row=row_num, column=3, value=internal_value)
+        row_num += 1
+
+    ws_choices.freeze_panes = 'A2'
+    ws_choices.auto_filter.ref = f'A1:C{max(ws_choices.max_row, 2)}'
+
+    # =========================================
+    # شيت مخفي للقوائم
+    # =========================================
+    ws_lists = wb.create_sheet(title="_lists")
+    ws_lists.sheet_view.rightToLeft = True
+
+    student_type_labels = [str(label) for value, label in getattr(Student, 'STUDENT_TYPE_CHOICES', [])]
+    religion_labels = [str(label) for value, label in getattr(Student, 'RELIGION_CHOICES', [])]
+    enrollment_labels = [str(label) for value, label in getattr(Student, 'ENROLLMENT_STATUS_CHOICES', [])]
+    guardian_labels = [str(label) for value, label in getattr(Student, 'EDUCATIONAL_GUARDIAN_CHOICES', [])]
+    gender_values = ['M', 'F', 'ذكر', 'أنثى']
+    yes_no_values = ['نعم', 'لا', '1', '0']
+
+    for idx, value in enumerate(student_type_labels, 1):
+        ws_lists.cell(row=idx, column=1, value=value)
+
+    for idx, value in enumerate(religion_labels, 1):
+        ws_lists.cell(row=idx, column=2, value=value)
+
+    for idx, value in enumerate(enrollment_labels, 1):
+        ws_lists.cell(row=idx, column=3, value=value)
+
+    for idx, value in enumerate(guardian_labels, 1):
+        ws_lists.cell(row=idx, column=4, value=value)
+
+    for idx, value in enumerate(gender_values, 1):
+        ws_lists.cell(row=idx, column=5, value=value)
+
+    for idx, value in enumerate(yes_no_values, 1):
+        ws_lists.cell(row=idx, column=6, value=value)
+
+    for idx, academic_year in enumerate(academic_years, 1):
+        ws_lists.cell(row=idx, column=7, value=getattr(academic_year, 'name', str(academic_year)))
+
+    for idx, value in enumerate(education_levels, 1):
+        ws_lists.cell(row=idx, column=8, value=value)
+
+    max_grade_list_len = 1
+    dependent_start_col = 9
+
+    for offset, education_name in enumerate(education_levels):
+        col_num = dependent_start_col + offset
+        col_letter = get_column_letter(col_num)
+        range_name = sanitize_range_name(education_name)
+
+        ws_lists.cell(row=1, column=col_num, value=education_name)
+        grade_names = education_level_map.get(education_name, [])
+        max_grade_list_len = max(max_grade_list_len, len(grade_names))
+
+        for grade_idx, grade_name in enumerate(grade_names, 2):
+            ws_lists.cell(row=grade_idx, column=col_num, value=grade_name)
+
+        end_row = max(len(grade_names) + 1, 2)
+        wb.defined_names.add(
+            DefinedName(
+                range_name,
+                attr_text=f"'_lists'!${col_letter}$2:${col_letter}${end_row}"
+            )
+        )
+
+    wb.defined_names.add(
+        DefinedName(
+            'student_type_choices',
+            attr_text=f"'_lists'!$A$1:$A${max(len(student_type_labels), 1)}"
+        )
+    )
+    wb.defined_names.add(
+        DefinedName(
+            'religion_choices',
+            attr_text=f"'_lists'!$B$1:$B${max(len(religion_labels), 1)}"
+        )
+    )
+    wb.defined_names.add(
+        DefinedName(
+            'enrollment_choices',
+            attr_text=f"'_lists'!$C$1:$C${max(len(enrollment_labels), 1)}"
+        )
+    )
+    wb.defined_names.add(
+        DefinedName(
+            'guardian_choices',
+            attr_text=f"'_lists'!$D$1:$D${max(len(guardian_labels), 1)}"
+        )
+    )
+    wb.defined_names.add(
+        DefinedName(
+            'gender_choices',
+            attr_text=f"'_lists'!$E$1:$E${max(len(gender_values), 1)}"
+        )
+    )
+    wb.defined_names.add(
+        DefinedName(
+            'boolean_choices',
+            attr_text=f"'_lists'!$F$1:$F${max(len(yes_no_values), 1)}"
+        )
+    )
+    wb.defined_names.add(
+        DefinedName(
+            'academic_year_choices',
+            attr_text=f"'_lists'!$G$1:$G${max(len(academic_years), 1)}"
+        )
+    )
+    wb.defined_names.add(
+        DefinedName(
+            'education_level_choices',
+            attr_text=f"'_lists'!$H$1:$H${max(len(education_levels), 1)}"
+        )
+    )
+
+    ws_lists.sheet_state = 'hidden'
+
+    # =========================================
+    # Data Validation
+    # =========================================
+    max_rows = 5000
+
+    dv_student_type = DataValidation(type="list", formula1="=student_type_choices", allow_blank=True)
+    dv_student_type.prompt = "اختر نوع الطالب من القائمة"
+    dv_student_type.error = "اختر قيمة صحيحة لنوع الطالب"
+    ws.add_data_validation(dv_student_type)
+    dv_student_type.add(f'B2:B{max_rows}')
+
+    dv_religion = DataValidation(type="list", formula1="=religion_choices", allow_blank=True)
+    dv_religion.prompt = "اختر الديانة من القائمة"
+    dv_religion.error = "اختر قيمة صحيحة للديانة"
+    ws.add_data_validation(dv_religion)
+    dv_religion.add(f'F2:F{max_rows}')
+
+    dv_gender = DataValidation(type="list", formula1="=gender_choices", allow_blank=True)
+    dv_gender.prompt = "اختر النوع من القائمة"
+    dv_gender.error = "اختر قيمة صحيحة للنوع"
+    ws.add_data_validation(dv_gender)
+    dv_gender.add(f'H2:H{max_rows}')
+
+    dv_academic_year = DataValidation(type="list", formula1="=academic_year_choices", allow_blank=True)
+    dv_academic_year.prompt = "اختر العام الدراسي من القائمة"
+    dv_academic_year.error = "اختر عاماً دراسياً صحيحاً"
+    ws.add_data_validation(dv_academic_year)
+    dv_academic_year.add(f'L2:L{max_rows}')
+
+    dv_education_level = DataValidation(type="list", formula1="=education_level_choices", allow_blank=True)
+    dv_education_level.prompt = "اختر المرحلة التعليمية من القائمة"
+    dv_education_level.error = "اختر مرحلة تعليمية صحيحة"
+    ws.add_data_validation(dv_education_level)
+    dv_education_level.add(f'M2:M{max_rows}')
+
+    for row in range(2, max_rows + 1):
+        dv_grade_level = DataValidation(
+            type="list",
+            formula1=f'=INDIRECT(SUBSTITUTE($M{row}," ","_"))',
+            allow_blank=True
+        )
+        dv_grade_level.prompt = "اختر الصف الدراسي بناءً على المرحلة التعليمية"
+        dv_grade_level.error = "اختر صفاً دراسياً من القائمة المرتبطة بالمرحلة التعليمية"
+        ws.add_data_validation(dv_grade_level)
+        dv_grade_level.add(f'N{row}')
+
+    dv_enrollment = DataValidation(type="list", formula1="=enrollment_choices", allow_blank=True)
+    dv_enrollment.prompt = "اختر حالة القيد من القائمة"
+    dv_enrollment.error = "اختر حالة قيد صحيحة"
+    ws.add_data_validation(dv_enrollment)
+    dv_enrollment.add(f'O2:O{max_rows}')
+
+    dv_boolean = DataValidation(type="list", formula1="=boolean_choices", allow_blank=True)
+    dv_boolean.prompt = "اختر نعم أو لا"
+    dv_boolean.error = "اختر قيمة صحيحة من القائمة"
+    ws.add_data_validation(dv_boolean)
+    for col in ['R', 'T', 'U', 'V', 'X']:
+        dv_boolean.add(f'{col}2:{col}{max_rows}')
+
+    dv_guardian = DataValidation(type="list", formula1="=guardian_choices", allow_blank=True)
+    dv_guardian.prompt = "اختر صاحب الولاية التعليمية من القائمة"
+    dv_guardian.error = "اختر قيمة صحيحة لصاحب الولاية التعليمية"
+    ws.add_data_validation(dv_guardian)
+    dv_guardian.add(f'AE2:AE{max_rows}')
+
+    # =========================================
+    # ضبط عرض الأعمدة
+    # =========================================
+    for sheet in wb.worksheets:
+        for column in sheet.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    value_length = len(str(cell.value)) if cell.value else 0
+                    if value_length > max_length:
+                        max_length = value_length
+                except Exception:
+                    pass
+            sheet.column_dimensions[column_letter].width = min(max_length + 4, 40)
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    response = HttpResponse(
+        output.read(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="student_import_template.xlsx"'
     return response
